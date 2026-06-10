@@ -1,0 +1,678 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GlobalRole {
+  SUPER_ADMIN
+  USER
+}
+
+enum TenantRole {
+  HOST_ADMIN
+  TEAM_MEMBER
+}
+
+enum MembershipStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+}
+
+enum TenantStatus {
+  TRIAL
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum EventStatus {
+  LEAD
+  QUOTED
+  BOOKED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum ContractStatus {
+  DRAFT
+  SENT_TO_CLIENT
+  CLIENT_SIGNED
+  HOST_SIGNED
+  FULLY_EXECUTED
+  VOIDED
+}
+
+enum AutomationTrigger {
+  LEAD_CREATED
+  QUOTE_SENT
+  BOOKING_CONFIRMED
+  EVENT_DATE_MINUS_14_DAYS
+  EVENT_DATE_MINUS_7_DAYS
+  EVENT_DATE_MINUS_1_DAY
+  EVENT_DATE_PLUS_1_DAY
+  EVENT_DATE_PLUS_3_DAYS
+  INVOICE_SENT
+  PAYMENT_RECEIVED
+  CONTRACT_SENT
+  CONTRACT_FULLY_EXECUTED
+  GALLERY_PUBLISHED
+}
+
+enum AutomationActionType {
+  EMAIL
+  SMS
+}
+
+enum AutomationExecutionStatus {
+  SCHEDULED
+  SENT
+  FAILED
+  SKIPPED
+}
+
+enum GalleryApprovalStatus {
+  PENDING_UPLOAD
+  PENDING_REVIEW
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+enum AssetType {
+  PHOTO
+  GIF
+  VIDEO
+  OVERLAY_TEMPLATE
+  PRINT_TEMPLATE
+}
+
+enum AssetApprovalStatus {
+  PENDING
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+enum StripeConnectStatus {
+  NOT_CONNECTED
+  ONBOARDING_INITIATED
+  ACTIVE
+  RESTRICTED
+  DEAUTHORIZED
+}
+
+enum SubscriptionPlan {
+  FREE_TRIAL
+  MONTHLY
+  ANNUAL
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  UNPAID
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+}
+
+model Tenant {
+  id          String       @id @default(cuid())
+  clerkOrgId  String?      @unique
+  name        String
+  slug        String       @unique
+  status      TenantStatus @default(TRIAL)
+  trialEndsAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  memberships          TenantMembership[]
+  branding             TenantBranding?
+  clients              Client[]
+  events               Event[]
+  invoices             Invoice[]
+  contracts            Contract[]
+  contractTemplates    ContractTemplate[]
+  emailTemplates       EmailTemplate[]
+  automationRules      AutomationRule[]
+  automationExecutions AutomationExecution[]
+  galleries            Gallery[]
+  stripeConnect        StripeConnectAccount?
+  stripeSubscription   StripeSubscription?
+  apiKeys              TenantApiKey[]
+  leadSubmissions      LeadSubmission[]
+  auditLogs            AuditLog[]
+  servicePackages      ServicePackage[]
+
+  @@map("tenants")
+}
+
+model User {
+  id          String     @id @default(cuid())
+  clerkUserId String?    @unique
+  email       String     @unique
+  name        String
+  avatarUrl    String?
+  passwordHash String?
+  globalRole   GlobalRole @default(USER)
+  lastLoginAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  memberships          TenantMembership[]
+  hostSignedContracts  Contract[]            @relation("HostSignedBy")
+  eventAssignments     EventAssignment[]
+  automationExecutions AutomationExecution[] @relation("ExecutionSentBy")
+  auditLogs            AuditLog[]
+
+  @@map("users")
+}
+
+model TenantMembership {
+  id          String           @id @default(cuid())
+  tenantId    String
+  userId      String
+  role        TenantRole       @default(TEAM_MEMBER)
+  status      MembershipStatus @default(INVITED)
+  inviteToken String?          @unique
+  invitedAt   DateTime         @default(now())
+  joinedAt    DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@map("tenant_memberships")
+}
+
+model TenantBranding {
+  id                String   @id @default(cuid())
+  tenantId          String   @unique
+  companyName       String?
+  logoUrl           String?
+  faviconUrl        String?
+  primaryColor      String   @default("#F97316")
+  secondaryColor    String   @default("#EA6100")
+  accentColor       String   @default("#FED7AA")
+  emailHeaderHtml   String?
+  invoiceFooterText String?
+  portalDomain      String?  @unique
+  replyToEmail      String?
+  supportPhone      String?
+  websiteUrl        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_branding")
+}
+
+model TenantApiKey {
+  id         String    @id @default(cuid())
+  tenantId   String
+  name       String
+  keyHash    String    @unique
+  prefix     String
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leadSubmissions LeadSubmission[]
+
+  @@index([tenantId])
+  @@map("tenant_api_keys")
+}
+
+model Client {
+  id           String   @id @default(cuid())
+  tenantId     String
+  firstName    String
+  lastName     String
+  email        String
+  phone        String?
+  company      String?
+  addressLine1 String?
+  city         String?
+  state        String?
+  postalCode   String?
+  country      String?
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  events    Event[]
+  invoices  Invoice[]
+  contracts Contract[]
+  leads     LeadSubmission[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("clients")
+}
+
+model Event {
+  id            String      @id @default(cuid())
+  tenantId      String
+  clientId      String
+  portalToken   String      @unique @default(cuid())
+  title         String
+  status        EventStatus @default(LEAD)
+  eventDate     DateTime
+  setupTime     DateTime?
+  startTime     DateTime?
+  endTime       DateTime?
+  venueName     String?
+  venueAddress  String?
+  venueCity     String?
+  venueState    String?
+  venuePostalCode String?
+  packageName   String?
+  packageNotes  String?     @db.Text
+  internalNotes String?     @db.Text
+  guestCount    Int?
+  hearAboutUs   String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client               Client                @relation(fields: [clientId], references: [id])
+  assignments          EventAssignment[]
+  invoices             Invoice[]
+  contracts            Contract[]
+  gallery              Gallery?
+  automationExecutions AutomationExecution[]
+  leadSubmission       LeadSubmission?       @relation("LeadConvertedFrom")
+
+  @@index([tenantId])
+  @@index([tenantId, eventDate])
+  @@map("events")
+}
+
+model EventAssignment {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  tenantId  String
+  role      String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId])
+  @@map("event_assignments")
+}
+
+model Invoice {
+  id                    String        @id @default(cuid())
+  tenantId              String
+  clientId              String
+  eventId               String?
+  invoiceNumber         String
+  status                InvoiceStatus @default(DRAFT)
+  dueDate               DateTime?
+  paidAt                DateTime?
+  notes                 String?       @db.Text
+  subtotalCents         Int           @default(0)
+  taxRateBps            Int           @default(0)
+  taxAmountCents        Int           @default(0)
+  discountCents         Int           @default(0)
+  totalCents            Int           @default(0)
+  amountPaidCents       Int           @default(0)
+  balanceDueCents       Int           @default(0)
+  retainerPercent       Int?
+  retainerAmountCents   Int?
+  retainerPaidAt        DateTime?
+  stripePaymentIntentId String?
+  stripeInvoiceId       String?
+  currency              String        @default("usd")
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client    Client            @relation(fields: [clientId], references: [id])
+  event     Event?            @relation(fields: [eventId], references: [id])
+  lineItems InvoiceLineItem[]
+  payments  Payment[]
+
+  @@unique([tenantId, invoiceNumber])
+  @@index([tenantId])
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  description String
+  quantity    Float    @default(1)
+  unitCents   Int
+  totalCents  Int
+  sortOrder   Int      @default(0)
+  taxable     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_line_items")
+}
+
+model Payment {
+  id                    String   @id @default(cuid())
+  invoiceId             String
+  tenantId              String
+  amountCents           Int
+  currency              String   @default("usd")
+  stripeChargeId        String?  @unique
+  stripePaymentIntentId String?
+  paymentMethod         String?
+  notes                 String?
+  paidAt                DateTime @default(now())
+  createdAt             DateTime @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model ContractTemplate {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  bodyHtml  String   @db.Text
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contracts Contract[]
+
+  @@map("contract_templates")
+}
+
+model Contract {
+  id                  String         @id @default(cuid())
+  tenantId            String
+  clientId            String
+  eventId             String?
+  templateId          String?
+  title               String
+  status              ContractStatus @default(DRAFT)
+  templateContent     String         @db.Text
+  renderedContent     String         @db.Text
+  clientToken         String         @unique @default(cuid())
+  clientSignatureData String?
+  clientSignedAt      DateTime?
+  clientIpAddress     String?
+  clientUserAgent     String?
+  hostSignatureData   String?
+  hostSignedAt        DateTime?
+  hostIpAddress       String?
+  hostSignedByUserId  String?
+  pdfUrl              String?
+  pdfLockedAt         DateTime?
+  contentHash         String?
+  voidedAt            DateTime?
+  voidedReason        String?
+  expiresAt           DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client       Client            @relation(fields: [clientId], references: [id])
+  event        Event?            @relation(fields: [eventId], references: [id])
+  template     ContractTemplate? @relation(fields: [templateId], references: [id])
+  hostSignedBy User?             @relation("HostSignedBy", fields: [hostSignedByUserId], references: [id])
+
+  @@index([tenantId])
+  @@index([clientToken])
+  @@map("contracts")
+}
+
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  tenantId    String?
+  name        String
+  subject     String
+  previewText String?
+  bodyHtml    String   @db.Text
+  isGlobal    Boolean  @default(false)
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant          Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  automationRules AutomationRule[]
+
+  @@map("email_templates")
+}
+
+model AutomationRule {
+  id                 String               @id @default(cuid())
+  tenantId           String
+  name               String
+  description        String?
+  isActive           Boolean              @default(true)
+  trigger            AutomationTrigger
+  triggerOffsetHours Int                  @default(0)
+  actionType         AutomationActionType
+  emailTemplateId    String?
+  smsBody            String?
+  sortOrder          Int                  @default(0)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  tenant        Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  emailTemplate EmailTemplate?        @relation(fields: [emailTemplateId], references: [id])
+  executions    AutomationExecution[]
+
+  @@index([tenantId])
+  @@map("automation_rules")
+}
+
+model AutomationExecution {
+  id             String                    @id @default(cuid())
+  tenantId       String
+  ruleId         String
+  eventId        String
+  status         AutomationExecutionStatus @default(SCHEDULED)
+  scheduledFor   DateTime
+  executedAt     DateTime?
+  sentByUserId   String?
+  errorMessage   String?
+  recipientEmail String?
+  messagePreview String?
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+
+  tenant Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rule   AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  event  Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  sentBy User?          @relation("ExecutionSentBy", fields: [sentByUserId], references: [id])
+
+  @@index([scheduledFor, status])
+  @@map("automation_executions")
+}
+
+model Gallery {
+  id              String                @id @default(cuid())
+  tenantId        String
+  eventId         String                @unique
+  title           String
+  isPublished     Boolean               @default(false)
+  accessCode      String?
+  clientToken     String                @unique @default(cuid())
+  approvalStatus  GalleryApprovalStatus @default(PENDING_UPLOAD)
+  approvalDueDate DateTime?
+  clientNotes     String?               @db.Text
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  tenant Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event  Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  assets GalleryAsset[]
+
+  @@map("galleries")
+}
+
+model GalleryAsset {
+  id             String              @id @default(cuid())
+  galleryId      String
+  assetType      AssetType
+  url            String
+  thumbnailUrl   String?
+  filename       String
+  fileSizeBytes  Int
+  mimeType       String
+  width          Int?
+  height         Int?
+  durationMs     Int?
+  sortOrder      Int                 @default(0)
+  approvalStatus AssetApprovalStatus @default(PENDING)
+  clientNotes    String?
+  isHero         Boolean             @default(false)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  gallery Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+
+  @@map("gallery_assets")
+}
+
+model LeadSubmission {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  apiKeyId           String?
+  clientId           String?
+  firstName          String
+  lastName           String
+  email              String
+  phone              String?
+  eventDate          DateTime?
+  eventType          String?
+  venueName          String?
+  guestCount         Int?
+  packageInterest    String?
+  message            String?   @db.Text
+  hearAboutUs        String?
+  source             String    @default("iframe")
+  referrerUrl        String?
+  utmSource          String?
+  utmMedium          String?
+  utmCampaign        String?
+  ipAddress          String?
+  userAgent          String?
+  convertedToEventId String?   @unique
+  convertedAt        DateTime?
+  isSpam             Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  apiKey           TenantApiKey? @relation(fields: [apiKeyId], references: [id])
+  client           Client?       @relation(fields: [clientId], references: [id])
+  convertedToEvent Event?        @relation("LeadConvertedFrom", fields: [convertedToEventId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@map("lead_submissions")
+}
+
+model StripeSubscription {
+  id                   String             @id @default(cuid())
+  tenantId             String             @unique
+  stripeCustomerId     String             @unique
+  stripeSubscriptionId String?            @unique
+  plan                 SubscriptionPlan   @default(FREE_TRIAL)
+  status               SubscriptionStatus @default(TRIALING)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  trialStart           DateTime?
+  trialEnd             DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  cancelledAt          DateTime?
+  stripePriceId        String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("stripe_subscriptions")
+}
+
+model StripeConnectAccount {
+  id               String              @id @default(cuid())
+  tenantId         String              @unique
+  stripeAccountId  String              @unique
+  onboardingStatus StripeConnectStatus @default(NOT_CONNECTED)
+  accountType      String              @default("express")
+  chargesEnabled   Boolean             @default(false)
+  payoutsEnabled   Boolean             @default(false)
+  detailsSubmitted Boolean             @default(false)
+  defaultCurrency  String              @default("usd")
+  country          String?
+  email            String?
+  livemode         Boolean             @default(false)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("stripe_connect_accounts")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  tenantId     String?
+  userId       String?
+  action       String
+  resourceType String?
+  resourceId   String?
+  metadata     Json?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model ServicePackage {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  priceCents  Int      @default(0)
+  category    String   @default("package")
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@index([tenantId])
+  @@map("service_packages")
+}
