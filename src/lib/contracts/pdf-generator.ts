@@ -1,4 +1,3 @@
-
 import { Document, Page, Text, View, Image, StyleSheet, renderToBuffer } from '@react-pdf/renderer';
 import { createHash } from 'crypto';
 import { format } from 'date-fns';
@@ -36,12 +35,23 @@ const S = (c: string) => StyleSheet.create({
   hash: { fontSize: 7, color: '#9ca3af', fontFamily: 'Courier', marginTop: 4 },
 });
 
+function stripHtml(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .trim();
+}
+
 function ContractDoc({ input, hash }: { input: ContractPdfInput; hash: string }) {
   const s = S(input.branding.primaryColor);
-  const plain = input.renderedContent.replace(/<brs*/?>/gi,'
-').replace(/</p>/gi,'
-
-').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').trim();
+  const plain = stripHtml(input.renderedContent);
   return (
     React.createElement(Document, { title: input.title },
       React.createElement(Page, { size: 'LETTER', style: s.page },
@@ -57,7 +67,9 @@ function ContractDoc({ input, hash }: { input: ContractPdfInput; hash: string })
             React.createElement(Text, { style: s.meta }, 'Generated: ' + format(new Date(), 'MMMM d, yyyy'))
           )
         ),
-        React.createElement(View, { style: s.banner }, React.createElement(Text, { style: s.bannerTxt }, 'FULLY EXECUTED — LOCKED AND LEGALLY BINDING')),
+        React.createElement(View, { style: s.banner },
+          React.createElement(Text, { style: s.bannerTxt }, 'FULLY EXECUTED \u2014 LOCKED AND LEGALLY BINDING')
+        ),
         React.createElement(View, null, React.createElement(Text, { style: s.body }, plain)),
         React.createElement(View, { style: s.sigs },
           React.createElement(View, { style: s.sigBlock },
@@ -69,7 +81,7 @@ function ContractDoc({ input, hash }: { input: ContractPdfInput; hash: string })
             React.createElement(Text, { style: s.sigMeta }, 'IP: ' + input.clientIpAddress)
           ),
           React.createElement(View, { style: s.sigBlock },
-            React.createElement(Text, { style: s.sigLbl }, input.branding.companyName + ' — Authorized'),
+            React.createElement(Text, { style: s.sigLbl }, input.branding.companyName + ' \u2014 Authorized'),
             React.createElement(View, { style: s.sigWrap }, React.createElement(Image, { src: input.hostSignatureDataUrl, style: s.sigImg })),
             React.createElement(Text, { style: s.sigName }, input.hostFullName),
             React.createElement(Text, { style: s.sigMeta }, input.hostEmail),
@@ -91,10 +103,10 @@ function ContractDoc({ input, hash }: { input: ContractPdfInput; hash: string })
 }
 
 export async function generateLockedContractPdf(input: ContractPdfInput) {
-  const raw = [input.contractId,input.renderedContent,input.clientSignatureDataUrl,input.clientSignedAt.toISOString(),input.clientIpAddress,input.hostSignatureDataUrl,input.hostSignedAt.toISOString(),input.hostIpAddress].join('|');
+  const raw = [input.contractId, input.renderedContent, input.clientSignatureDataUrl, input.clientSignedAt.toISOString(), input.clientIpAddress, input.hostSignatureDataUrl, input.hostSignedAt.toISOString(), input.hostIpAddress].join('|');
   const contentHash = createHash('sha256').update(raw).digest('hex');
   const buf = Buffer.from(await renderToBuffer(React.createElement(ContractDoc, { input, hash: contentHash })));
-  const blobPath = 'contracts/' + input.tenantId + '/' + input.contractId + '/' + contentHash.slice(0,16) + '-signed.pdf';
+  const blobPath = 'contracts/' + input.tenantId + '/' + input.contractId + '/' + contentHash.slice(0, 16) + '-signed.pdf';
   const pdfUrl = await uploadContractPdf(buf, blobPath);
   return { pdfUrl, contentHash };
 }
