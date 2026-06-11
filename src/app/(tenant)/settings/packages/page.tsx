@@ -65,11 +65,11 @@ export default function PackagesPage() {
   return (
     <>
       <TopBar title="Settings" />
-      <div className="p-8 max-w-3xl space-y-6">
-        <div className="flex gap-2 border-b pb-4 flex-wrap">
-          {TABS.map(([href, label]) => <Link key={href} href={'/settings/' + href} className={'px-4 py-2 rounded-lg text-sm font-medium ' + (href === 'packages' ? 'bg-brand text-white' : 'text-gray-600 hover:bg-gray-100')}>{label}</Link>)}
+      <div className="p-4 sm:p-8 max-w-3xl space-y-6">
+        <div className="flex flex-wrap gap-2 border-b pb-4">
+          {TABS.map(([href, label]) => <Link key={href} href={'/settings/' + href} className={'px-3 sm:px-4 py-2 rounded-lg text-sm font-medium ' + (href === 'packages' ? 'bg-brand text-white' : 'text-gray-600 hover:bg-gray-100')}>{label}</Link>)}
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <p className="text-sm text-gray-500">Define packages, add-ons, and a la carte items. These appear as quick-add options when building invoices.</p>
           <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2"/>Add Item</Button>
         </div>
@@ -87,24 +87,26 @@ export default function PackagesPage() {
           <Card key={key}>
             <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Layers className="w-4 h-4"/>{label}s</CardTitle></CardHeader>
             <CardContent className="p-0">
-              <table className="w-full">
-                <thead><tr className="border-b bg-gray-50 text-xs font-medium text-gray-500 uppercase"><th className="text-left px-6 py-3">Name</th><th className="text-left px-6 py-3">Description</th><th className="text-right px-6 py-3">Price</th><th className="px-6 py-3"></th></tr></thead>
-                <tbody>
-                  {items.map(p => (
-                    <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50">
-                      <td className="px-6 py-3"><p className="font-medium text-sm">{p.name}</p><span className={'text-xs px-2 py-0.5 rounded-full font-medium ' + (CAT_COLOR[p.category] ?? 'bg-gray-100 text-gray-600')}>{CATS.find(c=>c[0]===p.category)?.[1] ?? p.category}</span></td>
-                      <td className="px-6 py-3 text-sm text-gray-500">{p.description ?? '—'}</td>
-                      <td className="px-6 py-3 text-right font-semibold text-sm">{fmt(p.priceCents)}</td>
-                      <td className="px-6 py-3">
-                        <div className="flex gap-1 justify-end">
-                          <Button size="sm" variant="ghost" onClick={() => openEdit(p)}><Edit2 className="w-3 h-3"/></Button>
-                          <Button size="sm" variant="ghost" onClick={() => remove(p.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-3 h-3"/></Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[480px]">
+                  <thead><tr className="border-b bg-gray-50 text-xs font-medium text-gray-500 uppercase"><th className="text-left px-6 py-3">Name</th><th className="text-left px-6 py-3">Description</th><th className="text-right px-6 py-3">Price</th><th className="px-6 py-3"></th></tr></thead>
+                  <tbody>
+                    {items.map(p => (
+                      <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50">
+                        <td className="px-6 py-3"><p className="font-medium text-sm">{p.name}</p><span className={'text-xs px-2 py-0.5 rounded-full font-medium ' + (CAT_COLOR[p.category] ?? 'bg-gray-100 text-gray-600')}>{CATS.find(c=>c[0]===p.category)?.[1] ?? p.category}</span></td>
+                        <td className="px-6 py-3 text-sm text-gray-500">{p.description ?? '—'}</td>
+                        <td className="px-6 py-3 text-right font-semibold text-sm">{fmt(p.priceCents)}</td>
+                        <td className="px-6 py-3">
+                          <div className="flex gap-1 justify-end">
+                            <Button size="sm" variant="ghost" onClick={() => openEdit(p)}><Edit2 className="w-3 h-3"/></Button>
+                            <Button size="sm" variant="ghost" onClick={() => remove(p.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-3 h-3"/></Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
         ))}

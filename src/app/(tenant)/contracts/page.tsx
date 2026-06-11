@@ -20,9 +20,9 @@ export default async function ContractsPage() {
   return (
     <>
       <TopBar title="Contracts" />
-      <div className="p-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <div className="p-4 sm:p-8 space-y-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-3">
             <Link href="/contracts/new"><Button>New Contract</Button></Link>
             <Link href="/contracts/templates">
               <Button variant="outline" size="sm">
@@ -41,20 +41,22 @@ export default async function ContractsPage() {
           {contracts.length === 0 ? (
             <div className="text-center py-16 text-gray-400"><FileText className="w-12 h-12 mx-auto mb-4 opacity-30"/><p>No contracts yet.</p></div>
           ) : (
-            <table className="w-full">
-              <thead><tr className="border-b bg-gray-50"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Title</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Client</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Created</th><th className="px-6 py-3"></th></tr></thead>
-              <tbody>
-                {contracts.map(c => (
-                  <tr key={c.id} className="border-b last:border-0 hover:bg-gray-50">
-                    <td className="px-6 py-4"><p className="font-semibold text-sm">{c.title}</p>{c.event && <p className="text-xs text-gray-400">{c.event.title}</p>}</td>
-                    <td className="px-6 py-4 text-sm">{c.client.firstName} {c.client.lastName}</td>
-                    <td className="px-6 py-4"><Badge variant={CC[c.status]}>{c.status.replace(/_/g,' ')}</Badge></td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{format(c.createdAt,'MMM d, yyyy')}</td>
-                    <td className="px-6 py-4 text-right"><Link href={'/contracts/' + c.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px]">
+                <thead><tr className="border-b bg-gray-50"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Title</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Client</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Created</th><th className="px-6 py-3"></th></tr></thead>
+                <tbody>
+                  {contracts.map(c => (
+                    <tr key={c.id} className="border-b last:border-0 hover:bg-gray-50">
+                      <td className="px-6 py-4"><p className="font-semibold text-sm">{c.title}</p>{c.event && <p className="text-xs text-gray-400">{c.event.title}</p>}</td>
+                      <td className="px-6 py-4 text-sm">{c.client.firstName} {c.client.lastName}</td>
+                      <td className="px-6 py-4"><Badge variant={CC[c.status]}>{c.status.replace(/_/g,' ')}</Badge></td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{format(c.createdAt,'MMM d, yyyy')}</td>
+                      <td className="px-6 py-4 text-right"><Link href={'/contracts/' + c.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </CardContent></Card>
       </div>

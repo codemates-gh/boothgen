@@ -1,154 +1,355 @@
-
 'use client';
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { SignatureCanvas } from '@/components/contracts/SignatureCanvas';
-import { CheckCircle2, Calendar, MapPin, FileText, Receipt, Camera, Lock, AlertCircle } from 'lucide-react';
+import { useParams, useSearchParams } from 'next/navigation';
+import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Download, Printer } from 'lucide-react';
 
-type PortalData = { booking: any; client: any; branding: any; invoice: any; contract: any; gallery: any; meta: any };
+type Tab = 'quote' | 'contract' | 'invoice' | 'gallery';
 
-function Spinner() { return <div className="w-8 h-8 border-4 border-brand/20 border-t-brand rounded-full animate-spin mx-auto"/>; }
-
-function NavTab({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return <button onClick={onClick} className={'px-5 py-3 text-sm font-semibold border-b-2 transition-colors ' + (active ? 'border-brand text-brand' : 'border-transparent text-gray-500 hover:text-gray-700')}>{children}</button>;
+interface PortalData {
+  event: any; client: any; tenant: any;
+  quote: any | null; contract: any | null;
+  invoice: any | null; gallery: any | null;
+  assets: any[];
 }
 
-export default function PortalPage() {
+const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+
+export default function ClientPortalPage() {
   const { portalToken } = useParams<{ portalToken: string }>();
+  const searchParams = useSearchParams();
   const [data, setData] = useState<PortalData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [tab, setTab] = useState<'booking'|'invoice'|'contract'|'gallery'>('booking');
-  const [sigData, setSigData] = useState('');
-  const [signing, setSigning] = useState(false);
-  const [signError, setSignError] = useState('');
-  const [signed, setSigned] = useState(false);
+  const [tab, setTab] = useState<Tab>((searchParams.get('tab') as Tab) || 'quote');
+  const [sigPad, setSigPad] = useState('');
+  const [sigName, setSigName] = useState('');
+  const [declining, setDeclining] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+  const [processing, setProcessing] = useState(false);
+  const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    fetch('/api/portal/' + portalToken)
-      .then(r => r.json())
-      .then(d => { if (d.error) { setError(d.error); } else { setData(d); if (!d.meta.tabs.contract) setTab('booking'); } })
-      .catch(() => setError('Failed to load.'))
-      .finally(() => setLoading(false));
-  }, [portalToken]);
+  useEffect(() => { load(); }, [portalToken]);
 
-  async function signContract() {
-    if (!sigData) { setSignError('Please draw your signature first.'); return; }
-    if (!data?.contract) return;
-    setSigning(true); setSignError('');
-    const res = await fetch('/api/contracts/' + data.contract.contractId + '/sign/client', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientToken: data.contract.clientToken, signatureDataUrl: sigData, hasReadAndAgreed: true }) });
-    const d = await res.json();
-    if (res.ok) { setSigned(true); setData(prev => prev ? { ...prev, contract: { ...prev.contract, clientHasSigned: true, status: d.status, pdfUrl: d.pdfUrl } } : prev); }
-    else { setSignError(d.error ?? 'Signing failed. Please try again.'); }
-    setSigning(false);
+  async function load() {
+    const r = await fetch('/api/portal/' + portalToken);
+    if (r.ok) { setData(await r.json()); }
+    setLoading(false);
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><Spinner/></div>;
-  if (error) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center"><AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3"/><p className="text-gray-600">{error}</p></div></div>;
-  if (!data) return null;
+  const pc = data?.tenant?.branding?.primaryColor || '#F97316';
 
-  const { booking, client, branding, invoice, contract, meta } = data;
-  const pc = branding.primaryColor || '#F97316';
+  const quoteAccepted = data?.quote?.status === 'ACCEPTED';
+  const contractSigned = data?.contract?.status === 'FULLY_EXECUTED' || data?.contract?.status === 'CLIENT_SIGNED';
+  const invoicePaid = data?.invoice?.status === 'PAID';
+
+  const tabs: { id: Tab; label: string; icon: any; locked: boolean; done: boolean }[] = [
+    { id: 'quote', label: 'Quote', icon: FileText, locked: false, done: quoteAccepted },
+    { id: 'contract', label: 'Contract', icon: FileText, locked: !quoteAccepted, done: contractSigned },
+    { id: 'invoice', label: 'Invoice', icon: Receipt, locked: !contractSigned, done: invoicePaid },
+    { id: 'gallery', label: 'Gallery', icon: Image, locked: !data?.gallery?.isPublished, done: false },
+  ];
+
+  async function acceptQuote() {
+    if (!sigName.trim()) { setMessage('Please enter your name to sign'); return; }
+    setProcessing(true);
+    const r = await fetch('/api/quotes/' + data?.quote?.id + '/accept', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ signatureData: sigName, clientName: sigName, portalToken }),
+    });
+    if (r.ok) { setMessage('Quote accepted! Your contract is now available.'); await load(); setTab('contract'); }
+    else { const d = await r.json(); setMessage(d.error || 'Error'); }
+    setProcessing(false);
+  }
+
+  async function declineQuote() {
+    setProcessing(true);
+    await fetch('/api/quotes/' + data?.quote?.id + '/decline', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: declineReason, portalToken }),
+    });
+    setMessage('Quote declined. The host will be notified.'); await load(); setProcessing(false);
+  }
+
+  async function signContract() {
+    if (!sigName.trim()) { setMessage('Please enter your name to sign'); return; }
+    setProcessing(true);
+    const r = await fetch('/api/contracts/' + data?.contract?.id + '/sign/client', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientToken: data?.contract?.clientToken || '', signatureDataUrl: sigName, signerName: sigName }),
+    });
+    if (r.ok) { setMessage('Contract signed! Your invoice is now available.'); await load(); setTab('invoice'); }
+    else { const d = await r.json(); setMessage(d.error || 'Error'); }
+    setProcessing(false);
+  }
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center"><div className="w-12 h-12 border-4 border-orange-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"/><p className="text-gray-500">Loading your portal...</p></div>
+    </div>
+  );
+
+  if (!data) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center"><p className="text-xl font-bold text-gray-700 mb-2">Portal not found</p><p className="text-gray-500">This link may be invalid or expired.</p></div>
+    </div>
+  );
+
+  const brandColor = pc;
+  const companyName = data.tenant?.branding?.companyName || data.tenant?.name || 'Photo Booth Co.';
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
-          {branding.logoUrl && <img src={branding.logoUrl} alt={branding.companyName} className="h-8 object-contain"/>}
-          <div>
-            <p className="font-bold text-sm text-gray-900">{branding.companyName}</p>
-            <p className="text-xs text-gray-500">Booking Portal</p>
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {data.tenant?.branding?.logoUrl
+              ? <img src={data.tenant.branding.logoUrl} alt={companyName} className="h-10 object-contain"/>
+              : <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: brandColor }}><Camera className="w-5 h-5 text-white"/></div>}
+            <div><p className="font-bold text-gray-900">{companyName}</p><p className="text-xs text-gray-500">Client Portal</p></div>
           </div>
-        </div>
-        <div className="max-w-3xl mx-auto px-4 flex gap-1 border-t">
-          <NavTab active={tab==='booking'} onClick={() => setTab('booking')}><Calendar className="inline w-3.5 h-3.5 mr-1.5"/>Booking</NavTab>
-          {meta.tabs.invoice && <NavTab active={tab==='invoice'} onClick={() => setTab('invoice')}><Receipt className="inline w-3.5 h-3.5 mr-1.5"/>Invoice</NavTab>}
-          {meta.tabs.contract && <NavTab active={tab==='contract'} onClick={() => setTab('contract')}><FileText className="inline w-3.5 h-3.5 mr-1.5"/>Contract</NavTab>}
-          {meta.tabs.gallery && <NavTab active={tab==='gallery'} onClick={() => setTab('gallery')}><Camera className="inline w-3.5 h-3.5 mr-1.5"/>Gallery</NavTab>}
+          <div className="text-right"><p className="font-semibold text-sm text-gray-800">{data.event?.title}</p><p className="text-xs text-gray-500">{data.event?.eventDate ? new Date(data.event.eventDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}</p></div>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        <div className="bg-white rounded-2xl shadow-sm p-6 border-l-4" style={{ borderLeftColor: pc }}>
-          <p className="text-sm text-gray-500 mb-1">Hi {client.firstName} — welcome to your booking portal</p>
-          <h1 className="text-2xl font-bold text-gray-900">{booking.title}</h1>
-          <p className="text-brand font-semibold mt-1">{booking.status?.replace(/_/g,' ')}</p>
+      {/* Tab Navigation */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-3xl mx-auto px-6">
+          <div className="flex">
+            {tabs.map((t, i) => {
+              const Icon = t.icon;
+              const active = tab === t.id;
+              const clickable = !t.locked;
+              return (
+                <button key={t.id} onClick={() => clickable && setTab(t.id)} disabled={t.locked}
+                  className={'flex items-center gap-2 px-5 py-4 text-sm font-medium border-b-2 transition-colors ' +
+                    (active ? 'border-orange-500 text-orange-600' : t.locked ? 'border-transparent text-gray-300 cursor-not-allowed' : 'border-transparent text-gray-500 hover:text-gray-700 cursor-pointer')}>
+                  {t.done ? <CheckCircle2 className="w-4 h-4 text-green-500"/> : t.locked ? <Lock className="w-4 h-4"/> : <Icon className="w-4 h-4"/>}
+                  <span className="hidden sm:inline">{t.label}</span>
+                  {i < tabs.length - 1 && !t.locked && <ChevronRight className="w-3 h-3 text-gray-300 hidden sm:inline"/>}
+                </button>
+              );
+            })}
+          </div>
         </div>
+      </div>
 
-        {tab === 'booking' && (
-          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
-            <h2 className="text-lg font-bold">Event Details</h2>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="flex items-start gap-3"><Calendar className="w-4 h-4 mt-0.5 text-gray-400"/><div><p className="text-xs text-gray-400 uppercase font-medium">Date &amp; Time</p><p className="font-semibold">{booking.eventDate}</p>{booking.startTime && <p className="text-gray-600">{booking.startTime}{booking.endTime ? ' – ' + booking.endTime : ''}</p>}</div></div>
-              {booking.venueName && <div className="flex items-start gap-3"><MapPin className="w-4 h-4 mt-0.5 text-gray-400"/><div><p className="text-xs text-gray-400 uppercase font-medium">Venue</p><p className="font-semibold">{booking.venueName}</p>{booking.venueAddress && <p className="text-gray-600">{booking.venueAddress}</p>}</div></div>}
-              {booking.packageName && <div className="col-span-2"><p className="text-xs text-gray-400 uppercase font-medium mb-1">Package</p><p className="font-semibold">{booking.packageName}</p></div>}
-            </div>
-            {branding.contactEmail && <div className="pt-4 border-t text-sm text-gray-500">Questions? <a href={'mailto:' + branding.contactEmail} className="text-brand hover:underline">{branding.contactEmail}</a>{branding.contactPhone && <span className="ml-4">{branding.contactPhone}</span>}</div>}
+      {/* Content */}
+      <div className="max-w-3xl mx-auto px-6 py-8">
+        {message && (
+          <div className="mb-6 p-4 rounded-xl border text-sm font-medium" style={{ backgroundColor: '#fff7ed', borderColor: '#fed7aa', color: '#c2410c' }}>
+            {message}
           </div>
         )}
 
-        {tab === 'invoice' && invoice && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="p-6 flex items-center justify-between border-b">
-              <div><h2 className="text-lg font-bold">Invoice {invoice.invoiceNumber}</h2><p className="text-sm text-gray-500">{invoice.isPaid ? 'Paid in full' : 'Balance due: ' + invoice.balanceDueFormatted}</p></div>
-              <span className={'px-3 py-1 rounded-full text-xs font-bold ' + (invoice.isPaid ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')}>{invoice.status}</span>
-            </div>
-            <table className="w-full text-sm">
-              <thead><tr className="border-b bg-gray-50"><th className="text-left px-6 py-3 font-medium text-gray-500">Description</th><th className="text-right px-6 py-3 font-medium text-gray-500">Qty</th><th className="text-right px-6 py-3 font-medium text-gray-500">Total</th></tr></thead>
-              <tbody>{invoice.lineItems?.map((li: any) => (<tr key={li.id} className="border-b"><td className="px-6 py-3">{li.description}</td><td className="px-6 py-3 text-right">{li.quantity}</td><td className="px-6 py-3 text-right font-medium">{new Intl.NumberFormat('en-US',{style:'currency',currency:'usd'}).format(li.totalCents/100)}</td></tr>))}</tbody>
-            </table>
-            <div className="p-6 border-t text-right space-y-1 text-sm">
-              <p className="text-gray-500">Total: {invoice.totalFormatted}</p>
-              <p className="text-gray-500">Paid: {invoice.amountPaidFormatted}</p>
-              <p className={'text-xl font-bold ' + (invoice.balanceDueCents === 0 ? 'text-green-600' : 'text-gray-900')}>Balance Due: {invoice.balanceDueFormatted}</p>
-              {invoice.dueDate && <p className="text-gray-400 text-xs">Due {invoice.dueDate}</p>}
-            </div>
-            {invoice.canPay && invoice.balanceDueCents > 0 && (
-              <div className="px-6 pb-6">
-                <button className="w-full py-3 rounded-xl text-white font-bold text-base transition-opacity hover:opacity-90" style={{ backgroundColor: pc }}>Pay {invoice.balanceDueFormatted} Online</button>
-                <p className="text-xs text-center text-gray-400 mt-2">Secure payment powered by Stripe</p>
+        {/* QUOTE TAB */}
+        {tab === 'quote' && (
+          <div className="space-y-6">
+            {!data.quote ? (
+              <div className="text-center py-16 text-gray-400"><FileText className="w-12 h-12 mx-auto mb-4 opacity-30"/><p>No quote has been sent yet. The host will send your quote shortly.</p></div>
+            ) : (
+              <>
+                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                  <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                    <div><p className="text-xs text-gray-500 uppercase font-medium">Quote</p><p className="text-xl font-bold text-gray-900 mt-0.5">{data.quote.quoteNumber}</p></div>
+                    <div className="text-right">
+                      <span className={'px-3 py-1 rounded-full text-xs font-bold ' + (data.quote.status === 'ACCEPTED' ? 'bg-green-100 text-green-700' : data.quote.status === 'DECLINED' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700')}>
+                        {data.quote.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <table className="w-full text-sm mb-6">
+                      <thead><tr className="border-b"><th className="text-left py-2 text-gray-500 font-medium">Description</th><th className="text-right py-2 text-gray-500 font-medium">Qty</th><th className="text-right py-2 text-gray-500 font-medium">Price</th><th className="text-right py-2 text-gray-500 font-medium">Total</th></tr></thead>
+                      <tbody>
+                        {data.quote.lineItems?.map((li: any) => (
+                          <tr key={li.id} className="border-b last:border-0">
+                            <td className="py-3">{li.description}</td>
+                            <td className="py-3 text-right">{li.quantity}</td>
+                            <td className="py-3 text-right">{fmt(li.unitCents)}</td>
+                            <td className="py-3 text-right font-medium">{fmt(li.totalCents)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="text-right space-y-1 text-sm border-t pt-4">
+                      <p className="text-gray-500">Subtotal: {fmt(data.quote.subtotalCents)}</p>
+                      {data.quote.taxAmountCents > 0 && <p className="text-gray-500">Tax: {fmt(data.quote.taxAmountCents)}</p>}
+                      {data.quote.discountCents > 0 && <p className="text-green-600">Discount: -{fmt(data.quote.discountCents)}</p>}
+                      <p className="text-2xl font-bold" style={{ color: brandColor }}>Total: {fmt(data.quote.totalCents)}</p>
+                    </div>
+                    {data.quote.notes && <div className="mt-4 p-4 bg-gray-50 rounded-xl"><p className="text-xs font-medium text-gray-500 uppercase mb-1">Notes</p><p className="text-sm text-gray-700">{data.quote.notes}</p></div>}
+                    {data.quote.terms && <div className="mt-3 p-4 bg-gray-50 rounded-xl"><p className="text-xs font-medium text-gray-500 uppercase mb-1">Terms</p><p className="text-sm text-gray-600">{data.quote.terms}</p></div>}
+                  </div>
+                </div>
+
+                {/* Accept/Decline */}
+                {(data.quote.status === 'SENT' || data.quote.status === 'VIEWED') && (
+                  <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 shadow-sm">
+                    <h3 className="font-bold text-gray-900">Accept This Quote</h3>
+                    <p className="text-sm text-gray-600">By typing your name below, you agree to the terms and authorize this quote.</p>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Type your full name to sign *</label>
+                      <input type="text" value={sigName} onChange={e => setSigName(e.target.value)} placeholder="Jane Smith"
+                        className="w-full border border-gray-300 rounded-xl px-4 py-3 text-lg font-medium focus:outline-none focus:ring-2" style={{ fontFamily: 'cursive' }}/>
+                    </div>
+                    <div className="flex gap-3">
+                      <button onClick={acceptQuote} disabled={processing || !sigName.trim()}
+                        className="flex-1 py-3 rounded-xl text-white font-bold text-sm transition-all disabled:opacity-50"
+                        style={{ backgroundColor: brandColor }}>{processing ? 'Processing...' : '✓ Accept Quote'}</button>
+                      <button onClick={() => setDeclining(!declining)} className="px-6 py-3 rounded-xl border border-gray-300 text-gray-600 font-medium text-sm hover:bg-gray-50">Decline</button>
+                    </div>
+                    {declining && (
+                      <div className="space-y-3 pt-2 border-t">
+                        <textarea value={declineReason} onChange={e => setDeclineReason(e.target.value)} placeholder="Reason for declining (optional)" className="w-full border border-gray-300 rounded-xl p-3 text-sm resize-none h-20 focus:outline-none"/>
+                        <button onClick={declineQuote} disabled={processing} className="w-full py-2.5 rounded-xl border border-red-300 text-red-600 font-medium text-sm hover:bg-red-50">{processing ? '...' : 'Confirm Decline'}</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {data.quote.status === 'ACCEPTED' && (
+                  <div className="flex items-center gap-3 p-4 bg-green-50 rounded-xl border border-green-200">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0"/>
+                    <div><p className="font-semibold text-green-800">Quote Accepted</p><p className="text-sm text-green-600">Signed by {data.quote.clientName} on {data.quote.clientSignedAt ? new Date(data.quote.clientSignedAt).toLocaleDateString() : ''}</p></div>
+                    <button onClick={() => setTab('contract')} className="ml-auto text-sm font-semibold px-4 py-2 rounded-lg" style={{ backgroundColor: brandColor, color: 'white' }}>View Contract →</button>
+                  </div>
+                )}
+
+                {data.quote.status === 'DECLINED' && (
+                  <div className="flex items-center gap-3 p-4 bg-red-50 rounded-xl border border-red-200">
+                    <p className="font-semibold text-red-800">Quote Declined</p>
+                    {data.quote.declineReason && <p className="text-sm text-red-600">Reason: {data.quote.declineReason}</p>}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* CONTRACT TAB */}
+        {tab === 'contract' && (
+          <div className="space-y-6">
+            {!data.contract ? (
+              <div className="text-center py-16 text-gray-400"><FileText className="w-12 h-12 mx-auto mb-4 opacity-30"/><p>Your contract is being prepared. Check back shortly.</p></div>
+            ) : (
+              <>
+                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                  <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                    <div><p className="text-xs text-gray-500 uppercase font-medium">Contract</p><p className="text-xl font-bold text-gray-900 mt-0.5">{data.contract.title}</p></div>
+                    <div className="flex gap-2">
+                      <button onClick={() => window.print()} className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"><Printer className="w-4 h-4"/>Print</button>
+                      <span className={'px-3 py-1 rounded-full text-xs font-bold self-center ' + (contractSigned ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700')}>
+                        {data.contract.status.replace(/_/g,' ')}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-6 prose max-w-none text-sm" dangerouslySetInnerHTML={{ __html: data.contract.bodyHtml || '' }}/>
+                </div>
+
+                {!contractSigned && (
+                  <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 shadow-sm">
+                    <h3 className="font-bold text-gray-900">Sign This Contract</h3>
+                    <p className="text-sm text-gray-600">By typing your name, you agree to all terms in this contract.</p>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Type your full name to sign *</label>
+                      <input type="text" value={sigName} onChange={e => setSigName(e.target.value)} placeholder="Jane Smith"
+                        className="w-full border border-gray-300 rounded-xl px-4 py-3 text-lg font-medium focus:outline-none focus:ring-2"
+                        style={{ fontFamily: 'cursive' }}/>
+                    </div>
+                    <button onClick={signContract} disabled={processing || !sigName.trim()}
+                      className="w-full py-3 rounded-xl text-white font-bold text-sm disabled:opacity-50"
+                      style={{ backgroundColor: brandColor }}>{processing ? 'Signing...' : '✓ Sign Contract'}</button>
+                  </div>
+                )}
+
+                {contractSigned && (
+                  <div className="flex items-center gap-3 p-4 bg-green-50 rounded-xl border border-green-200">
+                    <CheckCircle2 className="w-5 h-5 text-green-600"/>
+                    <div><p className="font-semibold text-green-800">Contract Signed</p><p className="text-sm text-green-600">Signed on {data.contract.clientSignedAt ? new Date(data.contract.clientSignedAt).toLocaleDateString() : ''}</p></div>
+                    <button onClick={() => setTab('invoice')} className="ml-auto text-sm font-semibold px-4 py-2 rounded-lg" style={{ backgroundColor: brandColor, color: 'white' }}>View Invoice →</button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* INVOICE TAB */}
+        {tab === 'invoice' && (
+          <div className="space-y-6">
+            {!data.invoice ? (
+              <div className="text-center py-16 text-gray-400"><Receipt className="w-12 h-12 mx-auto mb-4 opacity-30"/><p>Your invoice is being prepared.</p></div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                  <div><p className="text-xs text-gray-500 uppercase font-medium">Invoice</p><p className="text-xl font-bold text-gray-900 mt-0.5">{data.invoice.invoiceNumber}</p></div>
+                  <span className={'px-3 py-1 rounded-full text-xs font-bold ' + (data.invoice.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700')}>
+                    {data.invoice.status}
+                  </span>
+                </div>
+                <div className="p-6 space-y-4">
+                  <table className="w-full text-sm">
+                    <thead><tr className="border-b"><th className="text-left py-2 text-gray-500 font-medium">Description</th><th className="text-right py-2 text-gray-500 font-medium">Total</th></tr></thead>
+                    <tbody>
+                      {data.invoice.lineItems?.map((li: any) => (
+                        <tr key={li.id} className="border-b last:border-0"><td className="py-3">{li.description}</td><td className="py-3 text-right font-medium">{fmt(li.totalCents)}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="text-right space-y-1 text-sm border-t pt-4">
+                    <p className="text-gray-500">Total: {fmt(data.invoice.totalCents)}</p>
+                    <p className="text-gray-500">Paid: {fmt(data.invoice.amountPaidCents)}</p>
+                    <p className="text-xl font-bold" style={{ color: data.invoice.balanceDueCents > 0 ? brandColor : '#16a34a' }}>
+                      Balance Due: {fmt(data.invoice.balanceDueCents)}
+                    </p>
+                  </div>
+                  {data.invoice.milestones && data.invoice.milestones.length > 0 && (
+                    <div className="border-t pt-4">
+                      <p className="text-sm font-semibold text-gray-700 mb-3">Payment Schedule</p>
+                      {data.invoice.milestones.map((m: any) => (
+                        <div key={m.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                          <div><p className="font-medium text-sm">{m.label}</p><p className="text-xs text-gray-500">Due {new Date(m.dueDate).toLocaleDateString()}</p></div>
+                          <div className="text-right"><p className="font-semibold">{fmt(m.amountCents)}</p>
+                          <span className={'text-xs px-2 py-0.5 rounded-full ' + (m.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')}>{m.status}</span></div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {data.invoice.balanceDueCents > 0 && (
+                    <div className="pt-2">
+                      <button className="w-full py-3 rounded-xl text-white font-bold" style={{ backgroundColor: brandColor }}>
+                        Pay Now — {fmt(data.invoice.balanceDueCents)}
+                      </button>
+                      <p className="text-xs text-center text-gray-400 mt-2">Secure payment powered by Stripe</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
         )}
 
-        {tab === 'contract' && contract && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="p-6 border-b flex items-center justify-between">
-              <div><h2 className="text-lg font-bold">{contract.title}</h2><p className="text-sm text-gray-500">{contract.status?.replace(/_/g,' ')}</p></div>
-              {contract.isFullyExecuted && <span className="flex items-center gap-1.5 text-green-700 bg-green-50 px-3 py-1 rounded-full text-xs font-bold"><Lock className="w-3 h-3"/>Fully Executed</span>}
-            </div>
-            {contract.renderedContent && <div className="p-6 prose max-w-none text-sm leading-relaxed border-b" dangerouslySetInnerHTML={{ __html: contract.renderedContent }}/>}
-            {contract.canSign && !signed && (
-              <div className="p-6 space-y-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">Your Signature</h3>
-                <p className="text-sm text-gray-600">By signing, you agree to the terms in this contract.</p>
-                <SignatureCanvas onCapture={setSigData}/>
-                {signError && <p className="text-red-600 text-sm flex items-center gap-1"><AlertCircle className="w-4 h-4"/>{signError}</p>}
-                <button disabled={signing || !sigData} onClick={signContract} className="w-full py-3 rounded-xl text-white font-bold text-base disabled:opacity-50 transition-opacity hover:opacity-90" style={{ backgroundColor: pc }}>{signing ? 'Signing...' : 'Sign Contract'}</button>
-              </div>
-            )}
-            {(signed || contract.clientHasSigned) && !contract.isFullyExecuted && (
-              <div className="p-6 bg-green-50 text-center">
-                <CheckCircle2 className="w-10 h-10 text-green-600 mx-auto mb-2"/>
-                <p className="font-semibold text-green-800">Signature Received</p>
-                <p className="text-sm text-green-600">Awaiting countersignature from {branding.companyName}.</p>
-              </div>
-            )}
-            {contract.isFullyExecuted && (
-              <div className="p-6 bg-green-50 text-center space-y-3">
-                <Lock className="w-10 h-10 text-green-600 mx-auto"/>
-                <p className="font-semibold text-green-800">Contract Fully Executed</p>
-                {contract.pdfUrl && <a href={contract.pdfUrl} target="_blank" rel="noopener noreferrer" className="inline-block px-6 py-2.5 rounded-xl text-white font-semibold text-sm" style={{ backgroundColor: pc }}>Download Signed PDF</a>}
-              </div>
+        {/* GALLERY TAB */}
+        {tab === 'gallery' && (
+          <div className="space-y-6">
+            {!data.gallery?.isPublished ? (
+              <div className="text-center py-16 text-gray-400"><Image className="w-12 h-12 mx-auto mb-4 opacity-30"/><p>Your gallery will appear here after your event.</p></div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between"><h3 className="font-bold text-gray-900 text-lg">{data.gallery.title}</h3><p className="text-sm text-gray-500">{data.assets.length} photos</p></div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {data.assets.map((a: any) => (
+                    <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className="aspect-square rounded-xl overflow-hidden block hover:opacity-90 transition-opacity">
+                      <img src={a.url} alt="" className="w-full h-full object-cover"/>
+                    </a>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
-
-        {tab === 'gallery' && <div className="bg-white rounded-2xl shadow-sm p-8 text-center text-gray-400"><Camera className="w-12 h-12 mx-auto mb-4 opacity-30"/><p className="font-medium">Gallery Coming Soon</p><p className="text-sm mt-1">Your photos will appear here once uploaded.</p></div>}
-      </main>
-
-      <footer className="text-center py-8 text-xs text-gray-400">Powered by {branding.companyName}</footer>
+      </div>
+      <style>{`@media print { header, nav { display: none; } }`}</style>
     </div>
   );
 }

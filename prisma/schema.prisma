@@ -48,6 +48,8 @@ enum InvoiceStatus {
   CANCELLED
 }
 
+enum QuoteStatus { DRAFT SENT VIEWED ACCEPTED DECLINED EXPIRED }
+enum PaymentMilestoneStatus { PENDING PAID OVERDUE }
 enum ContractStatus {
   DRAFT
   SENT_TO_CLIENT
@@ -157,6 +159,8 @@ model Tenant {
   leadSubmissions      LeadSubmission[]
   auditLogs            AuditLog[]
   servicePackages      ServicePackage[]
+  quotes               Quote[]
+  paymentMilestones    PaymentMilestone[]
 
   @@map("tenants")
 }
@@ -675,4 +679,69 @@ model ServicePackage {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   @@index([tenantId])
   @@map("service_packages")
+}
+
+model Quote {
+  id             String      @id @default(cuid())
+  tenantId       String
+  eventId        String
+  clientId       String
+  quoteNumber    String
+  status         QuoteStatus @default(DRAFT)
+  subtotalCents  Int         @default(0)
+  taxRatePercent Float       @default(0)
+  taxAmountCents Int         @default(0)
+  discountCents  Int         @default(0)
+  totalCents     Int         @default(0)
+  notes          String?
+  terms          String?
+  validUntil     DateTime?
+  sentAt         DateTime?
+  viewedAt       DateTime?
+  acceptedAt     DateTime?
+  declinedAt     DateTime?
+  declineReason  String?
+  clientSignatureData String?
+  clientSignedAt DateTime?
+  clientIpAddress String?
+  clientName     String?
+  portalToken    String      @unique @default(cuid())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event     Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  client    Client        @relation(fields: [clientId], references: [id])
+  lineItems QuoteLineItem[]
+  @@index([tenantId])
+  @@index([eventId])
+  @@map("quotes")
+}
+
+model QuoteLineItem {
+  id          String @id @default(cuid())
+  quoteId     String
+  description String
+  quantity    Float  @default(1)
+  unitCents   Int    @default(0)
+  totalCents  Int    @default(0)
+  sortOrder   Int    @default(0)
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  @@map("quote_line_items")
+}
+
+model PaymentMilestone {
+  id          String                 @id @default(cuid())
+  invoiceId   String
+  tenantId    String
+  label       String
+  amountCents Int
+  dueDate     DateTime
+  status      PaymentMilestoneStatus @default(PENDING)
+  paidAt      DateTime?
+  stripePaymentIntentId String?
+  createdAt   DateTime @default(now())
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@index([invoiceId])
+  @@map("payment_milestones")
 }

@@ -37,7 +37,7 @@ export default function NewContractPage() {
   return (
     <>
       <TopBar title="New Contract" />
-      <div className="p-8 max-w-lg">
+      <div className="p-4 sm:p-8 max-w-lg">
         <Card>
           <CardHeader><CardTitle>Create Contract</CardTitle></CardHeader>
           <CardContent className="space-y-4">

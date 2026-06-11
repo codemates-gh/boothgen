@@ -18,26 +18,28 @@ export default async function TeamSettingsPage() {
   return (
     <>
       <TopBar title="Settings" />
-      <div className="p-8 max-w-3xl space-y-6">
-        <div className="flex gap-2 border-b pb-4">
-          {tabs.map(([href, label]) => <Link key={href} href={'/settings/' + href} className={'px-4 py-2 rounded-lg text-sm font-medium ' + (href === 'team' ? 'bg-brand text-white' : 'text-gray-600 hover:bg-gray-100')}>{label}</Link>)}
+      <div className="p-4 sm:p-8 max-w-3xl space-y-6">
+        <div className="flex flex-wrap gap-2 border-b pb-4">
+          {tabs.map(([href, label]) => <Link key={href} href={'/settings/' + href} className={'px-3 sm:px-4 py-2 rounded-lg text-sm font-medium ' + (href === 'team' ? 'bg-brand text-white' : 'text-gray-600 hover:bg-gray-100')}>{label}</Link>)}
         </div>
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Users className="w-5 h-5"/>Team Members ({members.length})</CardTitle></CardHeader>
           <CardContent className="p-0">
-            <table className="w-full">
-              <thead><tr className="border-b bg-gray-50"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Member</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Role</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Joined</th></tr></thead>
-              <tbody>
-                {members.map(m => (
-                  <tr key={m.id} className="border-b last:border-0">
-                    <td className="px-6 py-4"><p className="font-medium text-sm">{m.user.name}</p><p className="text-xs text-gray-400">{m.user.email}</p></td>
-                    <td className="px-6 py-4"><Badge variant={RC[m.role]}>{m.role.replace('_',' ')}</Badge></td>
-                    <td className="px-6 py-4"><Badge variant={SC[m.status]}>{m.status}</Badge></td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{m.joinedAt ? format(m.joinedAt,'MMM d, yyyy') : '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[480px]">
+                <thead><tr className="border-b bg-gray-50"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Member</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Role</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Joined</th></tr></thead>
+                <tbody>
+                  {members.map(m => (
+                    <tr key={m.id} className="border-b last:border-0">
+                      <td className="px-6 py-4"><p className="font-medium text-sm">{m.user.name}</p><p className="text-xs text-gray-400">{m.user.email}</p></td>
+                      <td className="px-6 py-4"><Badge variant={RC[m.role]}>{m.role.replace('_',' ')}</Badge></td>
+                      <td className="px-6 py-4"><Badge variant={SC[m.status]}>{m.status}</Badge></td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{m.joinedAt ? format(m.joinedAt,'MMM d, yyyy') : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
       </div>

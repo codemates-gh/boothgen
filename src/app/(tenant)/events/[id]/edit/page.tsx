@@ -65,19 +65,19 @@ export default function EditEventPage() {
   return (
     <>
       <TopBar title="Edit Event" />
-      <div className="p-8 max-w-3xl space-y-6">
+      <div className="p-4 sm:p-8 max-w-3xl space-y-6">
         <Link href={'/events/' + id} className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Back to Event</Link>
         <Card>
           <CardHeader><CardTitle>Client</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {F('firstName','First Name')} {F('lastName','Last Name')}
             {F('email','Email','email')} {F('phone','Phone','tel')}
           </CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle>Event Details</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">{F('title','Event Name')}</div>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">{F('title','Event Name')}</div>
             {F('eventDate','Event Date','date')}
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
               <Select value={form.status} onChange={e => set('status',e.target.value)}>
@@ -89,18 +89,18 @@ export default function EditEventPage() {
         </Card>
         <Card>
           <CardHeader><CardTitle>Venue</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">{F('venueName','Venue Name')}</div>
-            <div className="col-span-2">{F('venueAddress','Street Address')}</div>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">{F('venueName','Venue Name')}</div>
+            <div className="sm:col-span-2">{F('venueAddress','Street Address')}</div>
             {F('venueCity','City')} {F('venueState','State')}
             {F('venuePostalCode','Zip Code')} <div/>
           </CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle>Package & Notes</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {F('packageName','Package')} {F('guestCount','Guest Count','number')}
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Internal Notes</label>
               <Textarea value={form.internalNotes} onChange={e => set('internalNotes',e.target.value)} className="resize-none h-24"/>
             </div>

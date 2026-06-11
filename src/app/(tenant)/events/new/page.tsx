@@ -40,11 +40,11 @@ export default function NewEventPage() {
   return (
     <>
       <TopBar title="New Event" />
-      <div className="p-8 max-w-3xl">
+      <div className="p-4 sm:p-8 max-w-3xl">
         <form onSubmit={submit} className="space-y-6">
           <Card>
             <CardHeader><CardTitle>Client Information</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {F('firstName','First Name','text','Jane',true)}
               {F('lastName','Last Name','text','Smith',true)}
               {F('email','Email','email','jane@example.com',true)}
@@ -53,8 +53,8 @@ export default function NewEventPage() {
           </Card>
           <Card>
             <CardHeader><CardTitle>Event Details</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">{F('title','Event Name','text','Smith Wedding',true)}</div>
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">{F('title','Event Name','text','Smith Wedding',true)}</div>
               {F('eventDate','Event Date','date','',true)}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -68,9 +68,9 @@ export default function NewEventPage() {
           </Card>
           <Card>
             <CardHeader><CardTitle>Venue</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">{F('venueName','Venue Name','text','The Grand Ballroom')}</div>
-              <div className="col-span-2">{F('venueAddress','Street Address','text','123 Main St')}</div>
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">{F('venueName','Venue Name','text','The Grand Ballroom')}</div>
+              <div className="sm:col-span-2">{F('venueAddress','Street Address','text','123 Main St')}</div>
               {F('venueCity','City','text','Austin')}
               {F('venueState','State','text','TX')}
               {F('venuePostalCode','Zip Code','text','78701')}
@@ -79,10 +79,10 @@ export default function NewEventPage() {
           </Card>
           <Card>
             <CardHeader><CardTitle>Package & Notes</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {F('packageName','Package','text','Deluxe 4-Hour Package')}
               {F('guestCount','Guest Count','number','150')}
-              <div className="col-span-2">
+              <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Internal Notes</label>
                 <Textarea value={form.internalNotes} onChange={e => set('internalNotes', e.target.value)} placeholder="Notes visible only to your team..." />
               </div>

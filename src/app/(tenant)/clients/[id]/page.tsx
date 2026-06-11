@@ -55,30 +55,30 @@ export default function ClientDetailPage() {
   return (
     <>
       <TopBar title={client.firstName + ' ' + client.lastName} />
-      <div className="p-8 max-w-3xl space-y-6">
+      <div className="p-4 sm:p-8 max-w-3xl space-y-6">
         <Link href="/clients" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Clients</Link>
 
         <Card>
-          <CardHeader><div className="flex items-center justify-between"><CardTitle>Client Details</CardTitle>
-            <div className="flex gap-2">
+          <CardHeader><div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between"><CardTitle>Client Details</CardTitle>
+            <div className="flex flex-wrap gap-2">
               <Button onClick={save} disabled={saving}><Save className="w-4 h-4 mr-1"/>{saving ? 'Saving...' : 'Save'}</Button>
               {!confirmDelete
                 ? <Button variant="destructive" size="sm" onClick={() => setConfirmDelete(true)}><Trash2 className="w-4 h-4 mr-1"/>Delete</Button>
-                : <div className="flex items-center gap-2"><span className="text-xs text-red-600 font-medium">Are you sure?</span><Button variant="destructive" size="sm" onClick={deleteClient} disabled={deleting}>{deleting ? 'Deleting...' : 'Yes, Delete'}</Button><Button variant="outline" size="sm" onClick={() => setConfirmDelete(false)}>Cancel</Button></div>
+                : <div className="flex flex-wrap items-center gap-2"><span className="text-xs text-red-600 font-medium">Are you sure?</span><Button variant="destructive" size="sm" onClick={deleteClient} disabled={deleting}>{deleting ? 'Deleting...' : 'Yes, Delete'}</Button><Button variant="outline" size="sm" onClick={() => setConfirmDelete(false)}>Cancel</Button></div>
               }
             </div>
           </div></CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {F('firstName','First Name','text','Jane')}
             {F('lastName','Last Name','text','Smith')}
             {F('email','Email','email','jane@example.com')}
             {F('phone','Phone','tel','(555) 123-4567')}
             {F('company','Company / Organization')}
-            <div className="col-span-2">{F('addressLine1','Address')}</div>
+            <div className="sm:col-span-2">{F('addressLine1','Address')}</div>
             {F('city','City')}
             {F('state','State')}
             {F('postalCode','Zip Code')}
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
               <Textarea value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Internal notes about this client..." className="resize-none h-24"/>
             </div>
@@ -89,7 +89,8 @@ export default function ClientDetailPage() {
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2"><Calendar className="w-4 h-4"/>Events ({events.length})</CardTitle></CardHeader>
             <CardContent className="p-0">
-              <table className="w-full">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[400px]">
                 <thead><tr className="border-b bg-gray-50"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Event</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Date</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="px-6 py-3"></th></tr></thead>
                 <tbody>
                   {events.map((ev: any) => (
@@ -102,6 +103,7 @@ export default function ClientDetailPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
             </CardContent>
           </Card>
         )}

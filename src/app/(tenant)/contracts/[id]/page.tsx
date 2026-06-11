@@ -51,16 +51,16 @@ export default function ContractDetailPage() {
   return (
     <>
       <TopBar title={contract.title} />
-      <div className="p-8 max-w-4xl space-y-6">
+      <div className="p-4 sm:p-8 max-w-4xl space-y-6">
         <Link href="/contracts" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Contracts</Link>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3"><h2 className="text-2xl font-bold">{contract.title}</h2><Badge variant={CC[contract.status]}>{(contract.status ?? '').replace(/_/g,' ')}</Badge></div>
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-3"><h2 className="text-xl sm:text-2xl font-bold">{contract.title}</h2><Badge variant={CC[contract.status]}>{(contract.status ?? '').replace(/_/g,' ')}</Badge></div>
+          <div className="flex flex-wrap gap-2">
             {canSend && <Button variant="outline" onClick={sendToClient} disabled={sending}><Send className="w-4 h-4 mr-1"/>{sending ? 'Sending...' : 'Send to Client'}</Button>}
             {contract.pdfUrl && <a href={contract.pdfUrl} target="_blank" rel="noopener noreferrer"><Button variant="outline"><Download className="w-4 h-4 mr-1"/>Download PDF</Button></a>}
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-3 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
           <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-400 mb-1">Client</p><p className="font-medium">{contract.client?.firstName} {contract.client?.lastName}</p></div>
           <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-400 mb-1">Client Signed</p><p className="font-medium">{contract.clientSignedAt ? new Date(contract.clientSignedAt).toLocaleDateString() : 'Pending'}</p></div>
           <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-400 mb-1">Host Signed</p><p className="font-medium">{contract.hostSignedAt ? new Date(contract.hostSignedAt).toLocaleDateString() : 'Pending'}</p></div>

@@ -61,16 +61,16 @@ export default function AutomationPage() {
   return (
     <>
       <TopBar title="Automation" />
-      <div className="p-8 space-y-6">
-        <div className="flex items-start justify-between">
-          <div className="bg-brand-surface border border-brand/20 rounded-xl p-4 flex items-start gap-3 flex-1 mr-4">
+      <div className="p-4 sm:p-8 space-y-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-start sm:justify-between">
+          <div className="bg-brand-surface border border-brand/20 rounded-xl p-4 flex items-start gap-3 flex-1">
             <Zap className="w-5 h-5 text-brand mt-0.5 flex-shrink-0"/>
             <div>
               <p className="font-semibold text-brand-dark">Email Automation</p>
               <p className="text-sm text-gray-600 mt-1">Rules trigger automated emails at key points in your client journey. Create email templates in <a href="/contracts/templates" className="text-brand underline">Settings → Templates</a> first.</p>
             </div>
           </div>
-          <Button onClick={() => setShowModal(true)}><Plus className="w-4 h-4 mr-2"/>New Rule</Button>
+          <Button onClick={() => setShowModal(true)} className="flex-shrink-0"><Plus className="w-4 h-4 mr-2"/>New Rule</Button>
         </div>
 
         <Card>
@@ -84,7 +84,7 @@ export default function AutomationPage() {
                 <Button onClick={() => setShowModal(true)}>Create First Rule</Button>
               </div>
             ) : (
-              <table className="w-full">
+              <div className="overflow-x-auto"><table className="w-full min-w-[560px]">
                 <thead><tr className="border-b bg-gray-50"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Rule</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Trigger</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Email Template</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="px-6 py-3"></th></tr></thead>
                 <tbody>
                   {rules.map((r: any) => (
@@ -102,7 +102,7 @@ export default function AutomationPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </CardContent>
         </Card>

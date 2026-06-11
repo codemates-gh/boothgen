@@ -54,7 +54,7 @@ export default function EmailTemplatesPage() {
   return (
     <>
       <TopBar title="Email Templates" />
-      <div className="p-8 max-w-4xl space-y-6">
+      <div className="p-4 sm:p-8 max-w-4xl space-y-6">
         <div className="flex items-center justify-between">
           <Link href="/automation" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
             <ArrowLeft className="w-4 h-4"/>Automation
@@ -72,12 +72,12 @@ export default function EmailTemplatesPage() {
         ) : (
           <div className="space-y-3">
             {templates.map(t => (
-              <Card key={t.id}><CardContent className="flex items-center justify-between py-4">
+              <Card key={t.id}><CardContent className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between py-4">
                 <div>
                   <p className="font-semibold">{t.name}</p>
                   <p className="text-sm text-gray-500">Subject: {t.subject}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-shrink-0">
                   <Button size="sm" variant="outline" onClick={() => openEdit(t)}><Edit2 className="w-4 h-4 mr-1"/>Edit</Button>
                   <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-600" onClick={() => remove(t.id)}><Trash2 className="w-4 h-4"/></Button>
                 </div>

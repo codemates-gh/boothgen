@@ -122,8 +122,8 @@ export default function ContractTemplatesPage() {
   return (
     <>
       <TopBar title="Contract Templates" />
-      <div className="p-8 max-w-4xl space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="p-4 sm:p-8 max-w-4xl space-y-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <div>
             <Link href="/contracts" className="text-sm text-gray-500 hover:text-gray-700">← Contracts</Link>
             <p className="text-sm text-gray-500 mt-1">Create reusable contract templates with merge tags for client and event details.</p>
@@ -141,18 +141,18 @@ export default function ContractTemplatesPage() {
         ) : (
           <div className="space-y-3">
             {templates.map(t => (
-              <Card key={t.id}><CardContent className="flex items-center justify-between py-4">
+              <Card key={t.id}><CardContent className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between py-4">
                 <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-gray-400"/>
+                  <FileText className="w-5 h-5 text-gray-400 flex-shrink-0"/>
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold">{t.name}</p>
                       {t.isDefault && <span className="flex items-center gap-1 text-xs bg-brand-surface text-brand px-2 py-0.5 rounded-full font-medium"><Star className="w-3 h-3"/>Default</span>}
                     </div>
                     <p className="text-xs text-gray-400">Created {new Date(t.createdAt).toLocaleDateString()}</p>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {!t.isDefault && <Button variant="outline" size="sm" onClick={() => setDefault(t.id)}>Set Default</Button>}
                   <Button variant="outline" size="sm" onClick={() => openEdit(t)}><Edit2 className="w-4 h-4 mr-1"/>Edit</Button>
                   <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600" onClick={() => remove(t.id)}><Trash2 className="w-4 h-4"/></Button>

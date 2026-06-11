@@ -66,7 +66,7 @@ export default function EmbedPage() {
   return (
     <>
       <TopBar title="Lead Capture Embed" />
-      <div className="p-8 max-w-3xl space-y-6">
+      <div className="p-4 sm:p-8 max-w-3xl space-y-6">
 
         <div className="bg-brand-surface border border-brand/20 rounded-xl p-4 flex items-start gap-3">
           <Globe className="w-5 h-5 text-brand mt-0.5 flex-shrink-0"/>
