@@ -56,11 +56,13 @@ enum QuoteStatus {
   DECLINED
   EXPIRED
 }
+
 enum PaymentMilestoneStatus {
   PENDING
   PAID
   OVERDUE
 }
+
 enum ContractStatus {
   DRAFT
   SENT_TO_CLIENT
@@ -177,16 +179,16 @@ model Tenant {
 }
 
 model User {
-  id          String     @id @default(cuid())
-  clerkUserId String?    @unique
-  email       String     @unique
-  name        String
+  id           String     @id @default(cuid())
+  clerkUserId  String?    @unique
+  email        String     @unique
+  name         String
   avatarUrl    String?
   passwordHash String?
   globalRole   GlobalRole @default(USER)
-  lastLoginAt DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   memberships          TenantMembership[]
   hostSignedContracts  Contract[]            @relation("HostSignedBy")
@@ -278,6 +280,7 @@ model Client {
   tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   events    Event[]
   invoices  Invoice[]
+  quotes    Quote[]
   contracts Contract[]
   leads     LeadSubmission[]
 
@@ -287,28 +290,28 @@ model Client {
 }
 
 model Event {
-  id            String      @id @default(cuid())
-  tenantId      String
-  clientId      String
-  portalToken   String      @unique @default(cuid())
-  title         String
-  status        EventStatus @default(LEAD)
-  eventDate     DateTime
-  setupTime     DateTime?
-  startTime     DateTime?
-  endTime       DateTime?
-  venueName     String?
-  venueAddress  String?
-  venueCity     String?
-  venueState    String?
+  id              String      @id @default(cuid())
+  tenantId        String
+  clientId        String
+  portalToken     String      @unique @default(cuid())
+  title           String
+  status          EventStatus @default(LEAD)
+  eventDate       DateTime
+  setupTime       DateTime?
+  startTime       DateTime?
+  endTime         DateTime?
+  venueName       String?
+  venueAddress    String?
+  venueCity       String?
+  venueState      String?
   venuePostalCode String?
-  packageName   String?
-  packageNotes  String?     @db.Text
-  internalNotes String?     @db.Text
-  guestCount    Int?
-  hearAboutUs   String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  packageName     String?
+  packageNotes    String?     @db.Text
+  internalNotes   String?     @db.Text
+  guestCount      Int?
+  hearAboutUs     String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   client               Client                @relation(fields: [clientId], references: [id])
@@ -318,6 +321,7 @@ model Event {
   gallery              Gallery?
   automationExecutions AutomationExecution[]
   leadSubmission       LeadSubmission?       @relation("LeadConvertedFrom")
+  Quote                Quote[]
 
   @@index([tenantId])
   @@index([tenantId, eventDate])
@@ -366,11 +370,12 @@ model Invoice {
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
-  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client    Client            @relation(fields: [clientId], references: [id])
-  event     Event?            @relation(fields: [eventId], references: [id])
-  lineItems InvoiceLineItem[]
-  payments  Payment[]
+  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client           Client             @relation(fields: [clientId], references: [id])
+  event            Event?             @relation(fields: [eventId], references: [id])
+  lineItems        InvoiceLineItem[]
+  payments         Payment[]
+  PaymentMilestone PaymentMilestone[]
 
   @@unique([tenantId, invoiceNumber])
   @@index([tenantId])
@@ -687,42 +692,44 @@ model ServicePackage {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   @@index([tenantId])
   @@map("service_packages")
 }
 
 model Quote {
-  id             String      @id @default(cuid())
-  tenantId       String
-  eventId        String
-  clientId       String
-  quoteNumber    String
-  status         QuoteStatus @default(DRAFT)
-  subtotalCents  Int         @default(0)
-  taxRatePercent Float       @default(0)
-  taxAmountCents Int         @default(0)
-  discountCents  Int         @default(0)
-  totalCents     Int         @default(0)
-  notes          String?
-  terms          String?
-  validUntil     DateTime?
-  sentAt         DateTime?
-  viewedAt       DateTime?
-  acceptedAt     DateTime?
-  declinedAt     DateTime?
-  declineReason  String?
+  id                  String          @id @default(cuid())
+  tenantId            String
+  eventId             String
+  clientId            String
+  quoteNumber         String
+  status              QuoteStatus     @default(DRAFT)
+  subtotalCents       Int             @default(0)
+  taxRatePercent      Float           @default(0)
+  taxAmountCents      Int             @default(0)
+  discountCents       Int             @default(0)
+  totalCents          Int             @default(0)
+  notes               String?
+  terms               String?
+  validUntil          DateTime?
+  sentAt              DateTime?
+  viewedAt            DateTime?
+  acceptedAt          DateTime?
+  declinedAt          DateTime?
+  declineReason       String?
   clientSignatureData String?
-  clientSignedAt DateTime?
-  clientIpAddress String?
-  clientName     String?
-  portalToken    String      @unique @default(cuid())
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  event     Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  client    Client        @relation(fields: [clientId], references: [id])
-  lineItems QuoteLineItem[]
+  clientSignedAt      DateTime?
+  clientIpAddress     String?
+  clientName          String?
+  portalToken         String          @unique @default(cuid())
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  tenant              Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event               Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  client              Client          @relation(fields: [clientId], references: [id])
+  lineItems           QuoteLineItem[]
+
   @@index([tenantId])
   @@index([eventId])
   @@map("quotes")
@@ -736,23 +743,25 @@ model QuoteLineItem {
   unitCents   Int    @default(0)
   totalCents  Int    @default(0)
   sortOrder   Int    @default(0)
-  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  quote       Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
   @@map("quote_line_items")
 }
 
 model PaymentMilestone {
-  id          String                 @id @default(cuid())
-  invoiceId   String
-  tenantId    String
-  label       String
-  amountCents Int
-  dueDate     DateTime
-  status      PaymentMilestoneStatus @default(PENDING)
-  paidAt      DateTime?
+  id                    String                 @id @default(cuid())
+  invoiceId             String
+  tenantId              String
+  label                 String
+  amountCents           Int
+  dueDate               DateTime
+  status                PaymentMilestoneStatus @default(PENDING)
+  paidAt                DateTime?
   stripePaymentIntentId String?
-  createdAt   DateTime @default(now())
-  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt             DateTime               @default(now())
+  invoice               Invoice                @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   @@index([invoiceId])
   @@map("payment_milestones")
 }
