@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { requireSuperAdminSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { requireTenantSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
 import { TopBar } from '@/components/layout/TopBar';
