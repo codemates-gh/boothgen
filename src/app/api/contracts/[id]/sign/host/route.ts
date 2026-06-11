@@ -25,7 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const updated = await prisma.contract.update({
     where: { id: params.id },
     data: {
-      hostSignatureDataUrl: signatureDataUrl,
+      hostSignatureData: signatureDataUrl,
       hostSignedAt: now,
       hostIpAddress: ip,
       hostSignerName: signerName,

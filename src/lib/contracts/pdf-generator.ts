@@ -105,7 +105,7 @@ function ContractDoc({ input, hash }: { input: ContractPdfInput; hash: string })
 export async function generateLockedContractPdf(input: ContractPdfInput) {
   const raw = [input.contractId, input.renderedContent, input.clientSignatureDataUrl, input.clientSignedAt.toISOString(), input.clientIpAddress, input.hostSignatureDataUrl, input.hostSignedAt.toISOString(), input.hostIpAddress].join('|');
   const contentHash = createHash('sha256').update(raw).digest('hex');
-  const buf = Buffer.from(await renderToBuffer(React.createElement(ContractDoc, { input, hash: contentHash })));
+  const buf = Buffer.from(await (renderToBuffer as any)(React.createElement(ContractDoc, { input, hash: contentHash })));
   const blobPath = 'contracts/' + input.tenantId + '/' + input.contractId + '/' + contentHash.slice(0, 16) + '-signed.pdf';
   const pdfUrl = await uploadContractPdf(buf, blobPath);
   return { pdfUrl, contentHash };

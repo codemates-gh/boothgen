@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!parsed.success) return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   const { clientToken, signatureDataUrl, signerName } = parsed.data;
   const contract = await prisma.contract.findFirst({
-    where: { id: params.id, clientSignToken: clientToken },
+    where: { id: params.id, clientToken: clientToken },
     include: { tenant: { include: { branding: true } }, client: true },
   });
   if (!contract) return NextResponse.json({ error: 'Invalid token' }, { status: 404 });
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const updated = await prisma.contract.update({
     where: { id: params.id },
     data: {
-      clientSignatureDataUrl: signatureDataUrl,
+      clientSignatureData: signatureDataUrl,
       clientSignedAt: now,
       clientIpAddress: ip,
       clientSignerName: signerName,
