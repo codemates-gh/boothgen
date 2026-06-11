@@ -36,14 +36,14 @@ export default async function DashboardPage() {
   return (
     <>
       <TopBar title="Dashboard" />
-      <div className="p-8 space-y-8">
+      <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
         {tenant?.status === 'TRIAL' && tenant.trialEndsAt && (
-          <div className="bg-brand-surface border border-brand/20 rounded-xl p-4 flex items-center justify-between">
+          <div className="bg-brand-surface border border-brand/20 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
             <div><p className="font-semibold text-brand-dark">Free Trial Active</p><p className="text-sm text-gray-600">Trial ends {format(tenant.trialEndsAt, 'MMMM d, yyyy')}</p></div>
             <Link href="/settings/billing"><Button size="sm">Upgrade Plan</Button></Link>
           </div>
         )}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {stats.map(s => (
             <Card key={s.label}><CardContent className="pt-6"><div className="flex items-center justify-between mb-2"><p className="text-sm font-medium text-gray-500">{s.label}</p><s.icon className={'w-5 h-5 ' + s.color} /></div><p className="text-2xl font-bold">{s.value}</p></CardContent></Card>
           ))}
@@ -54,20 +54,22 @@ export default async function DashboardPage() {
             {upcomingEvents.length === 0 ? (
               <div className="text-center py-12 text-gray-400"><Calendar className="w-10 h-10 mx-auto mb-3 opacity-40"/><p>No upcoming events. <Link href="/events/new" className="text-brand hover:underline">Create one</Link></p></div>
             ) : (
-              <table className="w-full">
-                <thead><tr className="border-b"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Event</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Client</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Date</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="px-6 py-3"></th></tr></thead>
-                <tbody>
-                  {upcomingEvents.map(ev => (
-                    <tr key={ev.id} className="border-b last:border-0 hover:bg-gray-50">
-                      <td className="px-6 py-4"><p className="font-medium">{ev.title}</p><p className="text-sm text-gray-500">{ev.venueName ?? 'Venue TBD'}</p></td>
-                      <td className="px-6 py-4 text-sm">{ev.client.firstName} {ev.client.lastName}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{format(ev.eventDate, 'MMM d, yyyy')}</td>
-                      <td className="px-6 py-4"><Badge variant={SC[ev.status]}>{ev.status}</Badge></td>
-                      <td className="px-6 py-4 text-right"><Link href={'/events/' + ev.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[600px]">
+                  <thead><tr className="border-b"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Event</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Client</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Date</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="px-6 py-3"></th></tr></thead>
+                  <tbody>
+                    {upcomingEvents.map(ev => (
+                      <tr key={ev.id} className="border-b last:border-0 hover:bg-gray-50">
+                        <td className="px-6 py-4"><p className="font-medium">{ev.title}</p><p className="text-sm text-gray-500">{ev.venueName ?? 'Venue TBD'}</p></td>
+                        <td className="px-6 py-4 text-sm">{ev.client.firstName} {ev.client.lastName}</td>
+                        <td className="px-6 py-4 text-sm text-gray-700">{format(ev.eventDate, 'MMM d, yyyy')}</td>
+                        <td className="px-6 py-4"><Badge variant={SC[ev.status]}>{ev.status}</Badge></td>
+                        <td className="px-6 py-4 text-right"><Link href={'/events/' + ev.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </CardContent>
         </Card>

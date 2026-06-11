@@ -14,7 +14,7 @@ export default function EmbedPage() {
   }, []);
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://boothgen.vercel.app';
-  const slug = tenant?.slug ?? 'your-slug';
+  const slug = tenant?.tenantSlug ?? tenant?.slug ?? 'your-slug';
   const embedUrl = `${appUrl}/embed/${slug}/inquiry`;
 
   function copy(key: string, text: string) {
