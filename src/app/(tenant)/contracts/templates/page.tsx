@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
-import { Plus, Edit2, Star, FileText } from 'lucide-react';
+import { Plus, Edit2, Star, FileText, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import EmailTemplateEditor from '@/components/email/EmailTemplateEditor';
 
