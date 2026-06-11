@@ -19,6 +19,7 @@ const MERGE_TAGS = [
   { label: 'Venue Address', value: '{{event.venue_address}}' },
   { label: 'Venue City', value: '{{event.venue_city}}' },
   { label: 'Venue State', value: '{{event.venue_state}}' },
+  { label: 'Venue Zip Code', value: '{{event.venue_zip}}' },
   { label: 'Package Name', value: '{{event.package_name}}' },
   { label: 'Guest Count', value: '{{event.guest_count}}' },
   { label: 'Invoice Total', value: '{{invoice.total}}' },
