@@ -30,8 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       clientSignedAt: now,
       clientIpAddress: ip,
       status: contract.hostSignedAt ? 'FULLY_EXECUTED' : 'CLIENT_SIGNED',
-      fullyExecutedAt: contract.hostSignedAt ? now : null,
-    },
+          },
   });
   return NextResponse.json({ success: true, status: updated.status });
 }
