@@ -5,7 +5,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Image, Trash2, Globe, GlobeOff, X, CheckCircle2 } from 'lucide-react';
+import { Upload, Image, Trash2, Globe, EyeOff, X, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function GalleryDetailPage({ params }: { params: { id: string } }) {
@@ -80,7 +80,7 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
           <Link href="/gallery" className="text-sm text-gray-500 hover:text-gray-700">← Gallery</Link>
           <div className="flex gap-3">
             <Button variant="outline" onClick={togglePublish}>
-              {gallery?.isPublished ? <><GlobeOff className="w-4 h-4 mr-2"/>Unpublish</> : <><Globe className="w-4 h-4 mr-2"/>Publish to Client</>}
+              {gallery?.isPublished ? <><EyeOff className="w-4 h-4 mr-2"/>Unpublish</> : <><Globe className="w-4 h-4 mr-2"/>Publish to Client</>}
             </Button>
           </div>
         </div>
