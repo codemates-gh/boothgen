@@ -48,8 +48,19 @@ enum InvoiceStatus {
   CANCELLED
 }
 
-enum QuoteStatus { DRAFT SENT VIEWED ACCEPTED DECLINED EXPIRED }
-enum PaymentMilestoneStatus { PENDING PAID OVERDUE }
+enum QuoteStatus {
+  DRAFT
+  SENT
+  VIEWED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+enum PaymentMilestoneStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
 enum ContractStatus {
   DRAFT
   SENT_TO_CLIENT
