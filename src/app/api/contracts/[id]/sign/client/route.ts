@@ -29,7 +29,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       clientSignatureData: signatureDataUrl,
       clientSignedAt: now,
       clientIpAddress: ip,
-      clientSignerName: signerName,
       status: contract.hostSignedAt ? 'FULLY_EXECUTED' : 'CLIENT_SIGNED',
       fullyExecutedAt: contract.hostSignedAt ? now : null,
     },

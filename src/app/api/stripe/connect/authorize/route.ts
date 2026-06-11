@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   } else {
     const acct = await stripe.accounts.create({ type: 'express', capabilities: { card_payments: { requested: true }, transfers: { requested: true } }, business_profile: { name: tenant.branding?.companyName ?? tenant.name, mcc: '7929' }, metadata: { tenant_id: tenant.id } });
     accountId = acct.id;
-    await prisma.stripeConnectAccount.upsert({ where: { tenantId: tenant.id }, create: { tenantId: tenant.id, stripeAccountId: acct.id, onboardingStatus: 'ONBOARDING_INITIATED', livemode: acct.livemode }, update: { stripeAccountId: acct.id, onboardingStatus: 'ONBOARDING_INITIATED' } });
+    await prisma.stripeConnectAccount.upsert({ where: { tenantId: tenant.id }, create: { tenantId: tenant.id, stripeAccountId: acct.id, onboardingStatus: 'ONBOARDING_INITIATED', livemode: acct }, update: { stripeAccountId: acct.id, onboardingStatus: 'ONBOARDING_INITIATED' } });
   }
   const link = await stripe.accountLinks.create({ account: accountId, refresh_url: APP + '/api/stripe/connect/authorize', return_url: APP + '/api/stripe/connect/callback?account_id=' + accountId + '&tenant_id=' + tenant.id, type: 'account_onboarding' });
   return NextResponse.redirect(link.url);
