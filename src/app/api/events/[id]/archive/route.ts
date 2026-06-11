@@ -9,14 +9,14 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const event = await prisma.event.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  const updated = await prisma.event.update({ where: { id: params.id }, data: { status: 'ARCHIVED' } });
+  const updated = await prisma.event.update({ where: { id: params.id }, data: { status: 'CANCELLED' } });
   return NextResponse.json(updated);
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const event = await prisma.event.findFirst({ where: { id: params.id, tenantId: session.tenantId, status: 'ARCHIVED' } });
+  const event = await prisma.event.findFirst({ where: { id: params.id, tenantId: session.tenantId, status: 'CANCELLED' } });
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const updated = await prisma.event.update({ where: { id: params.id }, data: { status: 'COMPLETED' } });
   return NextResponse.json(updated);

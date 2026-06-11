@@ -1,4 +1,473 @@
-'use client';
+#!/usr/bin/env node
+// BoothGen — Stripe Connect build script
+// Run from: /Users/gnolasco/Desktop/BoothGen
+// Creates 6 new files and rewrites the client portal with live payments.
+
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = process.cwd();
+
+function w(fp, content) {
+  const full = path.join(ROOT, fp);
+  fs.mkdirSync(path.dirname(full), { recursive: true });
+  fs.writeFileSync(full, content, 'utf8');
+  console.log('  ✓  ' + fp);
+}
+
+console.log('\n🔌  BoothGen — Stripe Connect\n');
+
+// ─── 1. Shared Stripe client ──────────────────────────────────────────────────
+w('src/lib/stripe.ts',
+`import Stripe from 'stripe';
+
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
+  apiVersion: '2024-04-10',
+  typescript: true,
+});
+
+export const PLATFORM_FEE_PERCENT = parseFloat(
+  process.env.STRIPE_PLATFORM_FEE_PERCENT ?? '2'
+);
+
+/** Returns the application_fee_amount for a payment (in cents). */
+export function applicationFee(amountCents: number): number {
+  return Math.round(amountCents * (PLATFORM_FEE_PERCENT / 100));
+}
+`);
+
+// ─── 2. Connect callback (host returns from Stripe onboarding) ────────────────
+w('src/app/api/stripe/connect/callback/route.ts',
+`export const dynamic = 'force-dynamic';
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/config';
+import { prisma } from '@/lib/prisma/client';
+import { stripe } from '@/lib/stripe';
+
+export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.tenantId) {
+    return NextResponse.redirect(new URL('/sign-in', req.url));
+  }
+
+  const connect = await prisma.stripeConnectAccount.findUnique({
+    where: { tenantId: session.tenantId },
+  });
+
+  if (connect?.stripeAccountId) {
+    const acct = await stripe.accounts.retrieve(connect.stripeAccountId);
+    await prisma.stripeConnectAccount.update({
+      where: { tenantId: session.tenantId },
+      data: {
+        onboardingStatus: acct.charges_enabled ? 'ACTIVE' : 'ONBOARDING_INITIATED',
+        chargesEnabled:   acct.charges_enabled,
+        payoutsEnabled:   acct.payouts_enabled,
+        detailsSubmitted: acct.details_submitted,
+        email:   acct.email   ?? undefined,
+        country: acct.country ?? undefined,
+        livemode: acct.livemode,
+      },
+    });
+  }
+
+  const base   = process.env.NEXT_PUBLIC_APP_URL ?? req.url;
+  const status = connect?.onboardingStatus === 'ACTIVE' ? 'connected' : 'pending';
+  return NextResponse.redirect(new URL('/settings/billing?stripe=' + status, base));
+}
+`);
+
+// ─── 3. Connect dashboard (host opens their Stripe Express dashboard) ─────────
+w('src/app/api/stripe/connect/dashboard/route.ts',
+`export const dynamic = 'force-dynamic';
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/config';
+import { prisma } from '@/lib/prisma/client';
+import { stripe } from '@/lib/stripe';
+
+export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.tenantId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const connect = await prisma.stripeConnectAccount.findUnique({
+    where: { tenantId: session.tenantId },
+  });
+
+  if (!connect?.stripeAccountId) {
+    // Not connected yet — kick off onboarding
+    return NextResponse.redirect(
+      new URL('/api/stripe/connect/authorize', req.url)
+    );
+  }
+
+  const loginLink = await stripe.accounts.createLoginLink(
+    connect.stripeAccountId
+  );
+  return NextResponse.redirect(loginLink.url);
+}
+`);
+
+// ─── 4. Webhook — /api/webhooks/stripe (already in middleware PUBLIC list) ────
+w('src/app/api/webhooks/stripe/route.ts',
+`export const dynamic = 'force-dynamic';
+import { NextRequest, NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import { stripe } from '@/lib/stripe';
+import { prisma } from '@/lib/prisma/client';
+import type Stripe from 'stripe';
+
+export async function POST(req: NextRequest) {
+  const body = await req.text();
+  const sig  = headers().get('stripe-signature');
+
+  if (!sig) {
+    return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
+  }
+
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(
+      body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET!
+    );
+  } catch (err: any) {
+    console.error('[stripe-webhook] sig error:', err.message);
+    return NextResponse.json({ error: err.message }, { status: 400 });
+  }
+
+  try {
+    switch (event.type) {
+
+      // ── Invoice or milestone payment succeeded ──────────────────────────────
+      case 'payment_intent.succeeded': {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        const { invoiceId, milestoneId } = pi.metadata;
+
+        if (milestoneId) {
+          // Mark milestone paid and recalculate invoice totals
+          const milestone = await prisma.paymentMilestone.update({
+            where: { id: milestoneId },
+            data: {
+              status:                'PAID',
+              paidAt:                new Date(),
+              stripePaymentIntentId: pi.id,
+            },
+            include: { invoice: { include: { milestones: true } } },
+          });
+
+          const updated = milestone.invoice.milestones.map(m =>
+            m.id === milestoneId ? { ...m, status: 'PAID' as const } : m
+          );
+          const paidCents   = updated.filter(m => m.status === 'PAID').reduce((s, m) => s + m.amountCents, 0);
+          const balanceCents = Math.max(0, milestone.invoice.totalCents - paidCents);
+
+          await prisma.invoice.update({
+            where: { id: milestone.invoiceId },
+            data: {
+              amountPaidCents: paidCents,
+              balanceDueCents: balanceCents,
+              status:  balanceCents <= 0 ? 'PAID' : 'PARTIALLY_PAID',
+              paidAt:  balanceCents <= 0 ? new Date() : undefined,
+            },
+          });
+
+        } else if (invoiceId) {
+          // Full invoice payment
+          const inv = await prisma.invoice.findUnique({ where: { id: invoiceId } });
+          if (inv) {
+            await prisma.invoice.update({
+              where: { id: invoiceId },
+              data: {
+                status:                'PAID',
+                paidAt:                new Date(),
+                amountPaidCents:       inv.totalCents,
+                balanceDueCents:       0,
+                stripePaymentIntentId: pi.id,
+              },
+            });
+          }
+        }
+        break;
+      }
+
+      // ── Host account updated (fires when onboarding completes) ──────────────
+      case 'account.updated': {
+        const acct = event.data.object as Stripe.Account;
+        await prisma.stripeConnectAccount.updateMany({
+          where: { stripeAccountId: acct.id },
+          data: {
+            onboardingStatus: acct.charges_enabled ? 'ACTIVE' : 'ONBOARDING_INITIATED',
+            chargesEnabled:   acct.charges_enabled,
+            payoutsEnabled:   acct.payouts_enabled,
+            detailsSubmitted: acct.details_submitted,
+          },
+        });
+        break;
+      }
+    }
+  } catch (err) {
+    console.error('[stripe-webhook] handler error:', err);
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
+
+  return NextResponse.json({ received: true });
+}
+`);
+
+// ─── 5. Payment intent — /api/public/stripe/payment-intent ───────────────────
+//        Called from the portal (no auth needed — it's public)
+w('src/app/api/public/stripe/payment-intent/route.ts',
+`export const dynamic = 'force-dynamic';
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma/client';
+import { stripe, applicationFee } from '@/lib/stripe';
+
+export async function POST(req: NextRequest) {
+  const { invoiceId, milestoneId } = await req.json();
+  if (!invoiceId) {
+    return NextResponse.json({ error: 'invoiceId required' }, { status: 400 });
+  }
+
+  const invoice = await prisma.invoice.findUnique({
+    where:   { id: invoiceId },
+    include: {
+      tenant:     { include: { stripeConnect: true } },
+      milestones: true,
+    },
+  });
+
+  if (!invoice) {
+    return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+  }
+  if (invoice.status === 'PAID') {
+    return NextResponse.json({ error: 'Invoice already paid' }, { status: 400 });
+  }
+
+  const connect = invoice.tenant.stripeConnect;
+  if (!connect?.stripeAccountId || connect.onboardingStatus !== 'ACTIVE') {
+    return NextResponse.json(
+      { error: 'This host has not completed their payment setup yet.' },
+      { status: 400 }
+    );
+  }
+
+  let amountCents: number;
+  const meta: Record<string, string> = {
+    invoiceId: invoice.id,
+    tenantId:  invoice.tenantId,
+  };
+
+  if (milestoneId) {
+    const ms = invoice.milestones.find(m => m.id === milestoneId);
+    if (!ms) {
+      return NextResponse.json({ error: 'Milestone not found' }, { status: 404 });
+    }
+    if (ms.status === 'PAID') {
+      return NextResponse.json({ error: 'Milestone already paid' }, { status: 400 });
+    }
+    amountCents       = ms.amountCents;
+    meta.milestoneId  = milestoneId;
+
+    // Reuse existing PaymentIntent if still usable
+    if (ms.stripePaymentIntentId) {
+      try {
+        const ex = await stripe.paymentIntents.retrieve(ms.stripePaymentIntentId);
+        if (['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(ex.status)) {
+          return NextResponse.json({ clientSecret: ex.client_secret });
+        }
+      } catch { /* stale PI — create a new one */ }
+    }
+  } else {
+    amountCents = invoice.balanceDueCents;
+    if (amountCents <= 0) {
+      return NextResponse.json({ error: 'No balance due' }, { status: 400 });
+    }
+
+    // Reuse existing PaymentIntent if still usable
+    if (invoice.stripePaymentIntentId) {
+      try {
+        const ex = await stripe.paymentIntents.retrieve(invoice.stripePaymentIntentId);
+        if (['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(ex.status)) {
+          return NextResponse.json({ clientSecret: ex.client_secret });
+        }
+      } catch { /* stale PI — create a new one */ }
+    }
+  }
+
+  const fee = applicationFee(amountCents);
+
+  const pi = await stripe.paymentIntents.create({
+    amount:                  amountCents,
+    currency:                invoice.currency ?? 'usd',
+    application_fee_amount:  fee,
+    transfer_data:           { destination: connect.stripeAccountId },
+    metadata:                meta,
+    description:             'Invoice ' + invoice.invoiceNumber +
+                               (milestoneId ? ' – milestone payment' : ''),
+  });
+
+  // Persist PI id for idempotency
+  if (milestoneId) {
+    await prisma.paymentMilestone.update({
+      where: { id: milestoneId },
+      data:  { stripePaymentIntentId: pi.id },
+    });
+  } else {
+    await prisma.invoice.update({
+      where: { id: invoiceId },
+      data:  { stripePaymentIntentId: pi.id },
+    });
+  }
+
+  return NextResponse.json({ clientSecret: pi.client_secret });
+}
+`);
+
+// ─── 6. InvoicePaymentForm component ─────────────────────────────────────────
+w('src/components/stripe/PaymentForm.tsx',
+`'use client';
+import { useState, useEffect } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from '@stripe/react-stripe-js';
+import { Loader2, Lock } from 'lucide-react';
+
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''
+);
+
+const fmt = (c: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+
+function Checkout({
+  amountCents,
+  brandColor,
+  returnUrl,
+}: {
+  amountCents: number;
+  brandColor: string;
+  returnUrl: string;
+}) {
+  const stripe     = useStripe();
+  const elements   = useElements();
+  const [err, setErr]           = useState<string | null>(null);
+  const [busy, setBusy]         = useState(false);
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setBusy(true);
+    setErr(null);
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: { return_url: returnUrl },
+    });
+    if (error) {
+      setErr(error.message ?? 'Payment failed. Please try again.');
+      setBusy(false);
+    }
+    // Success → Stripe redirects to returnUrl automatically
+  };
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <PaymentElement options={{ layout: 'tabs' }} />
+      {err && (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+          {err}
+        </p>
+      )}
+      <button
+        type="submit"
+        disabled={!stripe || busy}
+        className="w-full py-3 rounded-xl text-white font-bold flex items-center justify-center gap-2 transition-opacity disabled:opacity-60"
+        style={{ backgroundColor: brandColor }}
+      >
+        {busy
+          ? <><Loader2 className="w-4 h-4 animate-spin" />Processing…</>
+          : <><Lock className="w-4 h-4" />Pay {fmt(amountCents)}</>}
+      </button>
+      <p className="text-xs text-center text-gray-400 flex items-center justify-center gap-1">
+        <Lock className="w-3 h-3" /> Secured by Stripe
+      </p>
+    </form>
+  );
+}
+
+export function InvoicePaymentForm({
+  invoiceId,
+  milestoneId,
+  amountCents,
+  brandColor,
+  returnUrl,
+}: {
+  invoiceId:   string;
+  milestoneId?: string;
+  amountCents: number;
+  brandColor:  string;
+  returnUrl:   string;
+}) {
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [fetchErr,     setFetchErr]     = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/public/stripe/payment-intent', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ invoiceId, milestoneId }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.error) setFetchErr(d.error);
+        else         setClientSecret(d.clientSecret);
+      })
+      .catch(() => setFetchErr('Could not initialise payment form.'));
+  }, [invoiceId, milestoneId]);
+
+  if (fetchErr) return (
+    <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 text-center">
+      {fetchErr}
+    </div>
+  );
+
+  if (!clientSecret) return (
+    <div className="flex justify-center py-8">
+      <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+    </div>
+  );
+
+  return (
+    <Elements
+      stripe={stripePromise}
+      options={{
+        clientSecret,
+        appearance: {
+          theme: 'stripe',
+          variables: { colorPrimary: brandColor },
+        },
+      }}
+    >
+      <Checkout
+        amountCents={amountCents}
+        brandColor={brandColor}
+        returnUrl={returnUrl}
+      />
+    </Elements>
+  );
+}
+`);
+
+// ─── 7. Updated portal page — wire up Pay Now button ─────────────────────────
+w('src/app/portal/[portalToken]/page.tsx',
+`'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Printer } from 'lucide-react';
@@ -572,7 +1041,49 @@ export default function ClientPortalPage() {
         )}
       </div>
 
-      <style>{`@media print { header, nav { display: none; } }`}</style>
+      <style>{\`@media print { header, nav { display: none; } }\`}</style>
     </div>
   );
+}
+`);
+
+// ─── Verify ───────────────────────────────────────────────────────────────────
+const files = [
+  'src/lib/stripe.ts',
+  'src/app/api/stripe/connect/callback/route.ts',
+  'src/app/api/stripe/connect/dashboard/route.ts',
+  'src/app/api/webhooks/stripe/route.ts',
+  'src/app/api/public/stripe/payment-intent/route.ts',
+  'src/components/stripe/PaymentForm.tsx',
+  'src/app/portal/[portalToken]/page.tsx',
+];
+
+console.log('\n── Verifying files ──');
+let allOk = true;
+files.forEach(f => {
+  const exists = fs.existsSync(path.join(ROOT, f));
+  console.log((exists ? '  ✓  ' : '  ✗  ') + f);
+  if (!exists) allOk = false;
+});
+
+if (allOk) {
+  console.log('\n✅  All 7 files created.\n');
+  console.log('══════════════════════════════════════════════════════');
+  console.log('  NEXT STEPS');
+  console.log('══════════════════════════════════════════════════════');
+  console.log('\n1. Install Stripe client libs:');
+  console.log('   npm install @stripe/stripe-js @stripe/react-stripe-js\n');
+  console.log('2. Add to .env.local (if not already there):');
+  console.log('   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_live_..."');
+  console.log('   STRIPE_PLATFORM_FEE_PERCENT="2"\n');
+  console.log('3. Add same vars to Vercel → Settings → Environment Variables\n');
+  console.log('4. Stripe Dashboard → Developers → Webhooks:');
+  console.log('   Endpoint: https://boothgen.vercel.app/api/webhooks/stripe');
+  console.log('   Events:   payment_intent.succeeded');
+  console.log('             payment_intent.payment_failed');
+  console.log('             account.updated\n');
+  console.log('5. git add . && git commit -m "feat: Stripe Connect payments" && git push\n');
+} else {
+  console.log('\n❌  Some files failed. Check errors above.\n');
+  process.exit(1);
 }
