@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CreditCard, Link2, CheckCircle2, AlertCircle } from 'lucide-react';
 
-const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team']];
+const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['embed','Lead Capture']];
 
 export default async function BillingSettingsPage() {
   const session = await requireTenantSession();

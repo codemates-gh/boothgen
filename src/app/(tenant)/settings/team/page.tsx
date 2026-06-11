@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Users } from 'lucide-react';
 import { format } from 'date-fns';
 
-const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team']];
+const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['embed','Lead Capture']];
 const RC: Record<string,any> = { HOST_ADMIN:'brand', TEAM_MEMBER:'default' };
 const SC: Record<string,any> = { ACTIVE:'success', INVITED:'info', SUSPENDED:'danger' };
 
