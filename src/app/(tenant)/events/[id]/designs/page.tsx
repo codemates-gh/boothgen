@@ -34,20 +34,16 @@ export default function TemplateDesignsPage() {
     setError('');
     setUploading(true);
     try {
-      const { uploadUrl, publicUrl } = await fetch('/api/events/' + eventId + '/template-designs/upload', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: file.name, contentType: file.type }),
-      }).then(r => r.json());
-
-      await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-
-      await fetch('/api/events/' + eventId + '/template-designs', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileUrl: publicUrl, filename: file.name }),
-      });
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/events/' + eventId + '/template-designs/upload', { method: 'POST', body: fd });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Upload failed');
+      }
       await load();
-    } catch {
-      setError('Upload failed. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Upload failed. Please try again.');
     }
     setUploading(false);
   }
@@ -149,8 +145,20 @@ export default function TemplateDesignsPage() {
               <div className="divide-y">
                 {designs.map(d => (
                   <div key={d.id} className="p-5 flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <FileImage className="w-5 h-5 text-gray-400" />
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5 border border-gray-200">
+                      {/\.(jpe?g|png|gif|webp)$/i.test(d.filename) ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={d.fileUrl} alt={d.filename} className="w-full h-full object-cover" />
+                      ) : (
+                        <FileImage className="w-6 h-6 text-gray-400" />
+                      )}
+                      {d.status !== 'APPROVED' && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <span className="text-white text-[9px] font-bold tracking-widest rotate-[-25deg] border border-white/70 px-1 py-0.5 rounded uppercase">
+                            {d.status === 'PENDING_APPROVAL' ? 'Review' : d.status === 'REVISION_REQUESTED' ? 'Revision' : 'Draft'}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">

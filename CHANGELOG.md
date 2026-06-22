@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [0.9.7] — 2026-06-22
+
+### Fixed
+- **Template Design upload** — switched from browser-to-R2 presigned URL (CORS-blocked) to server-side upload via FormData; upload now works reliably with meaningful error messages
+- **Event status progression** — sending a quote now advances event from LEAD → QUOTED; quote acceptance already advanced to BOOKED
+- **Assigned To overflow** — dropdown no longer bleeds outside the card on the event detail page
+
+### Added
+- **Design watermark overlay** — image thumbnails in Design History show a status badge overlay (DRAFT / Review / Revision) until the design is APPROVED; approved designs show clean thumbnails
+
+---
+
 ## [0.9.6] — 2026-06-22
 
 ### Fixed
