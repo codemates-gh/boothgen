@@ -31,17 +31,17 @@ export default function AssignEventButton({
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 min-w-0">
       <UserCheck className="w-4 h-4 text-gray-400 flex-shrink-0" />
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
         disabled={saving}
-        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white disabled:opacity-50"
+        className="min-w-0 flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white disabled:opacity-50 truncate"
       >
         <option value="">Unassigned</option>
         {members.map(m => (
-          <option key={m.id} value={m.id}>{m.name} ({m.email})</option>
+          <option key={m.id} value={m.id}>{m.name}</option>
         ))}
       </select>
       {saving && <Loader2 className="w-4 h-4 animate-spin text-gray-400 flex-shrink-0" />}

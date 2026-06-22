@@ -18,6 +18,11 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
 
   const updated = await prisma.quote.update({ where: { id: params.id }, data: { status: 'SENT', sentAt: new Date() } });
 
+  // Advance event status to QUOTED if still at LEAD
+  if (q.event.status === 'LEAD') {
+    await prisma.event.update({ where: { id: q.eventId }, data: { status: 'QUOTED' } });
+  }
+
   const branding = q.tenant.branding;
   const companyName = branding?.companyName ?? q.tenant.name;
   const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
