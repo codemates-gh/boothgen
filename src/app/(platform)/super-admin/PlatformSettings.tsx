@@ -2,12 +2,20 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings } from 'lucide-react';
+import { Settings, Image } from 'lucide-react';
 
-export default function PlatformSettings({ initial }: { initial: { message_retention_months: string } }) {
-  const [months, setMonths] = useState(initial.message_retention_months);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+interface InitialSettings {
+  message_retention_months: string;
+  gallery_expire_days: string;
+  gallery_delete_days: string;
+}
+
+export default function PlatformSettings({ initial }: { initial: InitialSettings }) {
+  const [months, setMonths]   = useState(initial.message_retention_months);
+  const [expireDays, setExpireDays] = useState(initial.gallery_expire_days);
+  const [deleteDays, setDeleteDays] = useState(initial.gallery_delete_days);
+  const [saving, setSaving]   = useState(false);
+  const [saved, setSaved]     = useState(false);
 
   async function save() {
     setSaving(true);
@@ -15,7 +23,11 @@ export default function PlatformSettings({ initial }: { initial: { message_reten
     await fetch('/api/super-admin/settings', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message_retention_months: months }),
+      body: JSON.stringify({
+        message_retention_months: months,
+        gallery_expire_days: expireDays,
+        gallery_delete_days: deleteDays,
+      }),
     });
     setSaving(false);
     setSaved(true);
@@ -23,35 +35,84 @@ export default function PlatformSettings({ initial }: { initial: { message_reten
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Settings className="w-4 h-4" /> Platform Settings
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center gap-4 max-w-sm">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Lead message retention (months)
-            </label>
-            <p className="text-xs text-gray-400 mb-2">Messages older than this are purged nightly</p>
-            <input
-              type="number"
-              min={1}
-              max={120}
-              value={months}
-              onChange={e => setMonths(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
-            />
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Settings className="w-4 h-4" /> Platform Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4 max-w-sm">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Lead message retention (months)
+              </label>
+              <p className="text-xs text-gray-400 mb-2">Messages older than this are purged nightly</p>
+              <input
+                type="number" min={1} max={120} value={months}
+                onChange={e => setMonths(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              />
+            </div>
           </div>
-          <div className="pt-8">
-            <Button onClick={save} disabled={saving} size="sm">
-              {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save'}
-            </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Image className="w-4 h-4" /> Gallery Retention
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <p className="text-sm text-gray-500">
+            Galleries are automatically expired and then permanently deleted based on the event date.
+            The nightly job runs at 4 AM UTC.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-lg">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Days until expiry
+              </label>
+              <p className="text-xs text-gray-400 mb-2">
+                After this many days past the event date, the gallery is hidden from the client portal.
+              </p>
+              <input
+                type="number" min={1} max={3650} value={expireDays}
+                onChange={e => setExpireDays(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Additional days until deletion
+              </label>
+              <p className="text-xs text-gray-400 mb-2">
+                After expiry, photos are kept for this many more days before being permanently deleted from storage.
+              </p>
+              <input
+                type="number" min={1} max={3650} value={deleteDays}
+                onChange={e => setDeleteDays(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              />
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+
+          <div className="p-4 bg-gray-50 rounded-xl text-sm text-gray-600 max-w-lg">
+            <p className="font-medium text-gray-800 mb-1">Current schedule</p>
+            <p>Galleries expire <strong>{expireDays} days</strong> after the event date.</p>
+            <p>Photos are permanently deleted <strong>{parseInt(expireDays) + parseInt(deleteDays || '0')} days</strong> after the event date ({deleteDays} days after expiry).</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div>
+        <Button onClick={save} disabled={saving}>
+          {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save All Settings'}
+        </Button>
+      </div>
+    </div>
   );
 }

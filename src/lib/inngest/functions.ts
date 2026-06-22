@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma/client';
 import { sendEmail, sendDesignReadyEmail, sendDesignDecisionEmail } from '@/lib/email/send';
 import { parseMergeTags, buildCtx } from '@/lib/contracts/merge-tags';
 import { triggerAutomation, scheduleEventDateAutomations } from './trigger';
+import { deleteFromR2, r2KeyFromUrl } from '@/lib/storage/r2';
 
 export const processAutomation = inngest.createFunction(
   { id: 'process-automation', retries: 3 },
@@ -183,5 +184,82 @@ export const purgeOldLeadMessages = inngest.createFunction(
     const { count } = await prisma.leadMessage.deleteMany({ where: { sentAt: { lt: cutoff } } });
     console.log(`[PURGE] Deleted ${count} lead messages older than ${months} months`);
     return { deleted: count, months };
+  }
+);
+
+// Expire galleries: unpublish + flag galleries whose event date is past the expiry window
+export const expireGalleries = inngest.createFunction(
+  { id: 'expire-galleries' },
+  { cron: '0 4 * * *' }, // 4 AM UTC daily
+  async () => {
+    const setting = await prisma.systemSetting.findUnique({ where: { key: 'gallery_expire_days' } });
+    const expireDays = parseInt(setting?.value ?? '30', 10);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - expireDays);
+
+    // Find published, non-expired galleries whose event date is before the cutoff
+    const toExpire = await prisma.gallery.findMany({
+      where: {
+        isPublished: true,
+        isExpired: false,
+        event: { eventDate: { lt: cutoff } },
+      },
+      select: { id: true },
+    });
+
+    if (toExpire.length === 0) return { expired: 0 };
+
+    const { count } = await prisma.gallery.updateMany({
+      where: { id: { in: toExpire.map(g => g.id) } },
+      data: { isPublished: false, isExpired: true },
+    });
+
+    console.log(`[GALLERY_EXPIRE] Expired ${count} galleries (cutoff: ${cutoff.toISOString()})`);
+    return { expired: count, expireDays };
+  }
+);
+
+// Delete expired galleries: remove R2 files and DB records after the delete window
+export const deleteExpiredGalleries = inngest.createFunction(
+  { id: 'delete-expired-galleries' },
+  { cron: '30 4 * * *' }, // 4:30 AM UTC daily (30 min after expire job)
+  async () => {
+    const [expireSetting, deleteSetting] = await Promise.all([
+      prisma.systemSetting.findUnique({ where: { key: 'gallery_expire_days' } }),
+      prisma.systemSetting.findUnique({ where: { key: 'gallery_delete_days' } }),
+    ]);
+    const expireDays = parseInt(expireSetting?.value ?? '30', 10);
+    const deleteDays = parseInt(deleteSetting?.value ?? '30', 10);
+    const totalDays = expireDays + deleteDays;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - totalDays);
+
+    const toDelete = await prisma.gallery.findMany({
+      where: {
+        isExpired: true,
+        event: { eventDate: { lt: cutoff } },
+      },
+      include: { assets: { select: { id: true, url: true } } },
+    });
+
+    if (toDelete.length === 0) return { deleted: 0 };
+
+    let filesDeleted = 0;
+    for (const gallery of toDelete) {
+      // Delete each asset from R2
+      for (const asset of gallery.assets) {
+        try {
+          await deleteFromR2(r2KeyFromUrl(asset.url));
+          filesDeleted++;
+        } catch (err) {
+          console.error(`[GALLERY_DELETE] R2 delete failed for ${asset.url}:`, err);
+        }
+      }
+      // Delete gallery record (cascades to assets in DB)
+      await prisma.gallery.delete({ where: { id: gallery.id } });
+    }
+
+    console.log(`[GALLERY_DELETE] Deleted ${toDelete.length} galleries, ${filesDeleted} R2 files (cutoff: ${cutoff.toISOString()})`);
+    return { deleted: toDelete.length, filesDeleted, expireDays, deleteDays };
   }
 );

@@ -564,6 +564,7 @@ model Gallery {
   eventId         String                @unique
   title           String
   isPublished     Boolean               @default(false)
+  isExpired       Boolean               @default(false)
   accessCode      String?
   clientToken     String                @unique @default(cuid())
   approvalStatus  GalleryApprovalStatus @default(PENDING_UPLOAD)

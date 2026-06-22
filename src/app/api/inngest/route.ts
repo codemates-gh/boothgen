@@ -13,6 +13,8 @@ import {
   purgeOldLeadMessages,
   notifyClientDesignReady,
   notifyHostDesignDecision,
+  expireGalleries,
+  deleteExpiredGalleries,
 } from '@/lib/inngest/functions';
 
 const handler = serve({
@@ -29,6 +31,8 @@ const handler = serve({
     purgeOldLeadMessages,
     notifyClientDesignReady,
     notifyHostDesignDecision,
+    expireGalleries,
+    deleteExpiredGalleries,
   ],
   signingKey: process.env.INNGEST_SIGNING_KEY,
 });

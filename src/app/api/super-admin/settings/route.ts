@@ -3,14 +3,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdminSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
 
-const ALLOWED_KEYS = ['message_retention_months'];
+const ALLOWED_KEYS = ['message_retention_months', 'gallery_expire_days', 'gallery_delete_days'];
 
 export async function GET() {
   await requireSuperAdminSession();
   const settings = await prisma.systemSetting.findMany({ where: { key: { in: ALLOWED_KEYS } } });
   const map: Record<string, string> = {};
   for (const s of settings) map[s.key] = s.value;
-  return NextResponse.json({ message_retention_months: map.message_retention_months ?? '12' });
+  return NextResponse.json({
+    message_retention_months: map.message_retention_months ?? '12',
+    gallery_expire_days: map.gallery_expire_days ?? '30',
+    gallery_delete_days: map.gallery_delete_days ?? '30',
+  });
 }
 
 export async function PATCH(req: NextRequest) {

@@ -759,7 +759,13 @@ export default function ClientPortalPage() {
         {/* ── GALLERY TAB ──────────────────────────────────────────────────── */}
         {tab === 'gallery' && (
           <div className="space-y-6">
-            {!data.gallery?.isPublished ? (
+            {data.gallery?.isExpired ? (
+              <div className="text-center py-16">
+                <Image className="w-12 h-12 mx-auto mb-4 opacity-20 text-gray-400"/>
+                <p className="text-lg font-semibold text-gray-700 mb-2">Gallery Expired</p>
+                <p className="text-sm text-gray-400 max-w-xs mx-auto">The access period for this gallery has ended. Please contact your host if you need assistance.</p>
+              </div>
+            ) : !data.gallery?.isPublished ? (
               <div className="text-center py-16 text-gray-400">
                 <Image className="w-12 h-12 mx-auto mb-4 opacity-30"/>
                 <p>Your gallery will appear here after your event.</p>
@@ -782,6 +788,7 @@ export default function ClientPortalPage() {
             )}
           </div>
         )}
+
       </div>
 
       <style>{`@media print { header, nav { display: none; } }`}</style>
