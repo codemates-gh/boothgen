@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [0.9.6] — 2026-06-22
+
+### Fixed
+- **Host countersign error** — "Invalid request" when countersigning a contract; `signerName` is now optional for host signing since the host is already authenticated via session
+
+---
+
 ## [0.9.5] — 2026-06-22
 
 ### Fixed

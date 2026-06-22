@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 const Schema = z.object({
   signatureDataUrl: z.string().min(1),
-  signerName: z.string().min(1).max(200),
+  signerName: z.string().max(200).optional(),
 });
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
