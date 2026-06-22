@@ -18,9 +18,12 @@ export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await req.json();
-  const { companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, invoiceFooterText, emailHeaderHtml, logoUrl } = body;
+  const { companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, invoiceFooterText, emailHeaderHtml, logoUrl, defaultDepositPercent, balanceDueDaysBeforeEvent, fullPaymentIfWithinDays } = body;
   const updateData: any = { companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, invoiceFooterText, emailHeaderHtml };
   if (logoUrl !== undefined) updateData.logoUrl = logoUrl;
+  if (defaultDepositPercent !== undefined) updateData.defaultDepositPercent = parseInt(defaultDepositPercent);
+  if (balanceDueDaysBeforeEvent !== undefined) updateData.balanceDueDaysBeforeEvent = parseInt(balanceDueDaysBeforeEvent);
+  if (fullPaymentIfWithinDays !== undefined) updateData.fullPaymentIfWithinDays = parseInt(fullPaymentIfWithinDays);
   const branding = await prisma.tenantBranding.upsert({
     where: { tenantId: session.tenantId },
     update: updateData,

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CreditCard, Link2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { PaymentTermsCard } from './PaymentTermsCard';
 
 const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['embed','Lead Capture']];
 
@@ -42,6 +43,7 @@ export default async function BillingSettingsPage() {
             <a href="/api/stripe/connect/authorize"><Button variant={conn?.onboardingStatus === 'ACTIVE' ? 'outline' : 'default'}>{conn ? 'Update Stripe' : 'Connect Stripe Account'}</Button></a>
           </CardContent>
         </Card>
+        <PaymentTermsCard />
       </div>
     </>
   );

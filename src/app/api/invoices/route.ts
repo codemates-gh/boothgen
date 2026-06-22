@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await req.json();
-  const { eventId, lineItems, taxRatePercent, dueDate, notes, paymentType, depositPercent } = body;
+  const { eventId, lineItems, taxRatePercent, dueDate, depositDueDate, balanceDueDate, notes, paymentType, depositPercent } = body;
   if (!eventId) return NextResponse.json({ error: 'Event required' }, { status: 400 });
   const event = await prisma.event.findFirst({ where: { id: eventId, tenantId: session.tenantId } });
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
@@ -25,20 +25,25 @@ export async function POST(req: NextRequest) {
   const subtotal = items.reduce((s: number, i: any) => s + (i.totalCents || 0), 0);
   const tax = Math.round(subtotal * ((taxRatePercent || 0) / 100));
   const total = subtotal + tax;
-  const deposit = paymentType === 'deposit' ? Math.round(total * ((depositPercent||50)/100)) : total;
+  const depositAmt = paymentType === 'deposit' ? Math.round(total * ((depositPercent||50)/100)) : total;
+
+  // For full payment, use dueDate; for deposit, each milestone has its own due date
+  const fullDueDate = dueDate ? new Date(dueDate) : null;
+  const depositMilestoneDue = depositDueDate ? new Date(depositDueDate) : (fullDueDate ?? new Date());
+  const balanceMilestoneDue = balanceDueDate ? new Date(balanceDueDate) : (fullDueDate ?? new Date());
 
   const invoice = await prisma.invoice.create({
     data: {
       tenantId: session.tenantId, eventId, clientId: event.clientId,
       invoiceNumber, subtotalCents: subtotal, taxAmountCents: tax, totalCents: total,
       balanceDueCents: total, amountPaidCents: 0,
-      dueDate: dueDate ? new Date(dueDate) : null,
+      dueDate: fullDueDate,
       notes: notes || null, status: 'DRAFT',
       lineItems: { create: items.map((li: any, i: number) => ({ description: li.description, quantity: li.quantity||1, unitCents: li.unitCents||0, totalCents: li.totalCents||0, sortOrder: i })) },
       ...(paymentType === 'deposit' ? {
         PaymentMilestone: { create: [
-          { tenantId: session.tenantId, label: 'Deposit', amountCents: deposit, dueDate: dueDate ? new Date(dueDate) : new Date() },
-          { tenantId: session.tenantId, label: 'Balance', amountCents: total - deposit, dueDate: dueDate ? new Date(dueDate) : new Date() },
+          { tenantId: session.tenantId, label: 'Deposit', amountCents: depositAmt, dueDate: depositMilestoneDue },
+          { tenantId: session.tenantId, label: 'Balance', amountCents: total - depositAmt, dueDate: balanceMilestoneDue },
         ]},
       } : {}),
     },

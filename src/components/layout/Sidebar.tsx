@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, ChevronRight, Mail, Menu, X, Inbox } from 'lucide-react';
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
+import { APP_VERSION } from '@/lib/version';
 
 const nav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -108,6 +109,7 @@ export function Sidebar() {
           >
             <LogOut className="w-4 h-4" />Sign Out
           </button>
+          <p className="text-sidebar-text text-xs px-3 pt-2 opacity-40">v{APP_VERSION}</p>
         </div>
       </aside>
     </>

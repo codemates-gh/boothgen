@@ -26,33 +26,80 @@ export async function GET(_: NextRequest, { params }: { params: { portalToken: s
 
   // Reconcile invoice against Stripe if webhook hasn't fired yet
   let rawInvoice = event.invoices[0] || null;
-  if (rawInvoice && rawInvoice.status !== 'PAID' && rawInvoice.stripePaymentIntentId) {
+  const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+  const companyName = event.tenant.branding?.companyName ?? event.tenant.name;
+  const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
+  const portalUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com') + '/portal/' + params.portalToken + '?tab=invoice';
+
+  if (rawInvoice && rawInvoice.status !== 'PAID') {
     try {
-      const pi = await stripe.paymentIntents.retrieve(rawInvoice.stripePaymentIntentId);
-      if (pi.status === 'succeeded') {
-        rawInvoice = await prisma.invoice.update({
-          where: { id: rawInvoice.id },
-          data: {
-            status: 'PAID', paidAt: new Date(),
-            amountPaidCents: rawInvoice.totalCents, balanceDueCents: 0,
-          },
-          include: { lineItems: { orderBy: { sortOrder: 'asc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } },
-        });
-        // Webhook may have missed — send confirmation email from here as fallback
-        const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
-        const companyName = event.tenant.branding?.companyName ?? event.tenant.name;
-        const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
-        sendPaymentConfirmationEmail({
-          to: event.client.email,
-          firstName: event.client.firstName,
-          companyName,
-          invoiceNumber: rawInvoice.invoiceNumber,
-          amountPaidFormatted: fmt(rawInvoice.totalCents),
-          eventTitle: event.title,
-          portalUrl: (process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com') + '/portal/' + params.portalToken + '?tab=invoice',
-          replyTo: event.tenant.branding?.replyToEmail ?? undefined,
-          from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
-        }).catch(e => console.error('[portal-reconcile] confirmation email error:', e));
+      // ── 1. Full-invoice PI (no milestones) ────────────────────────────────
+      if (rawInvoice.stripePaymentIntentId) {
+        const pi = await stripe.paymentIntents.retrieve(rawInvoice.stripePaymentIntentId);
+        if (pi.status === 'succeeded') {
+          rawInvoice = await prisma.invoice.update({
+            where: { id: rawInvoice.id },
+            data: { status: 'PAID', paidAt: new Date(), amountPaidCents: rawInvoice.totalCents, balanceDueCents: 0 },
+            include: { lineItems: { orderBy: { sortOrder: 'asc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } },
+          });
+          sendPaymentConfirmationEmail({
+            to: event.client.email, firstName: event.client.firstName, companyName,
+            invoiceNumber: rawInvoice.invoiceNumber, amountPaidFormatted: fmt(rawInvoice.totalCents),
+            eventTitle: event.title, portalUrl,
+            replyTo: event.tenant.branding?.replyToEmail ?? undefined,
+            from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
+          }).catch(e => console.error('[portal-reconcile] email error:', e));
+        }
+      }
+
+      // ── 2. Milestone PIs (partial payments) ───────────────────────────────
+      if (rawInvoice.status !== 'PAID') {
+        const unpaidMilestones = ((rawInvoice as any).PaymentMilestone ?? []).filter(
+          (m: any) => m.status !== 'PAID' && m.stripePaymentIntentId
+        );
+
+        let anySettled = false;
+        for (const ms of unpaidMilestones) {
+          try {
+            const pi = await stripe.paymentIntents.retrieve(ms.stripePaymentIntentId);
+            if (pi.status === 'succeeded') {
+              await prisma.paymentMilestone.update({
+                where: { id: ms.id },
+                data: { status: 'PAID', paidAt: new Date() },
+              });
+              anySettled = true;
+            }
+          } catch { /* individual PI unavailable — skip */ }
+        }
+
+        if (anySettled) {
+          // Recalculate invoice totals from all milestones
+          const allMilestones = await prisma.paymentMilestone.findMany({ where: { invoiceId: rawInvoice.id } });
+          const paidCents = allMilestones.filter((m: any) => m.status === 'PAID').reduce((s: number, m: any) => s + m.amountCents, 0);
+          const balanceCents = rawInvoice.totalCents - paidCents;
+          const newStatus = balanceCents <= 0 ? 'PAID' : 'PARTIALLY_PAID';
+
+          rawInvoice = await prisma.invoice.update({
+            where: { id: rawInvoice.id },
+            data: {
+              amountPaidCents: paidCents,
+              balanceDueCents: balanceCents,
+              status: newStatus,
+              ...(newStatus === 'PAID' ? { paidAt: new Date() } : {}),
+            },
+            include: { lineItems: { orderBy: { sortOrder: 'asc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } },
+          });
+
+          if (newStatus === 'PAID') {
+            sendPaymentConfirmationEmail({
+              to: event.client.email, firstName: event.client.firstName, companyName,
+              invoiceNumber: rawInvoice.invoiceNumber, amountPaidFormatted: fmt(rawInvoice.totalCents),
+              eventTitle: event.title, portalUrl,
+              replyTo: event.tenant.branding?.replyToEmail ?? undefined,
+              from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
+            }).catch(e => console.error('[portal-reconcile] email error:', e));
+          }
+        }
       }
     } catch { /* Stripe unavailable — return DB state as-is */ }
   }
