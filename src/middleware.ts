@@ -10,6 +10,12 @@ const PORTAL_CLIENT = [
 const TENANT = ['/dashboard', '/events', '/clients', '/invoices', '/contracts', '/automation', '/settings', '/gallery'];
 const ADMIN = ['/super-admin', '/api/super-admin'];
 
+// Routes team members cannot access (redirect to /events)
+const TEAM_MEMBER_BLOCKED = [
+  '/dashboard', '/clients', '/leads', '/quotes', '/invoices',
+  '/contracts', '/gallery', '/automation', '/settings',
+];
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (PUBLIC.some(p => pathname.startsWith(p))) return NextResponse.next();
@@ -25,6 +31,11 @@ export async function middleware(req: NextRequest) {
 
   if (ADMIN.some(p => pathname.startsWith(p)) && token.globalRole !== 'SUPER_ADMIN') {
     return NextResponse.redirect(new URL('/dashboard', req.url));
+  }
+
+  // Block team members from admin-only pages
+  if (token.tenantRole === 'TEAM_MEMBER' && TEAM_MEMBER_BLOCKED.some(p => pathname.startsWith(p))) {
+    return NextResponse.redirect(new URL('/events', req.url));
   }
 
   return NextResponse.next();

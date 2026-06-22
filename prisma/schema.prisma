@@ -195,6 +195,7 @@ model Tenant {
   servicePackages      ServicePackage[]
   quotes               Quote[]
   paymentMilestones    PaymentMilestone[]
+  eventNotes           EventNote[]
 
   @@map("tenants")
 }
@@ -217,6 +218,7 @@ model User {
   assignedEvents       Event[]               @relation("EventAssignee")
   automationExecutions AutomationExecution[] @relation("ExecutionSentBy")
   auditLogs            AuditLog[]
+  eventNotes           EventNote[]
 
   @@map("users")
 }
@@ -351,10 +353,28 @@ model Event {
   automationExecutions AutomationExecution[]
   leadSubmission       LeadSubmission?       @relation("LeadConvertedFrom")
   Quote                Quote[]
+  notes                EventNote[]
 
   @@index([tenantId])
   @@index([tenantId, eventDate])
   @@map("events")
+}
+
+model EventNote {
+  id        String   @id @default(cuid())
+  eventId   String
+  tenantId  String
+  userId    String
+  userName  String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([eventId])
+  @@map("event_notes")
 }
 
 model EventAssignment {

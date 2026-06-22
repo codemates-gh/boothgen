@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [0.9.8] — 2026-06-22
+
+### Added
+- **Team member role restrictions** — TEAM_MEMBER users now see only Events in the sidebar; middleware blocks access to Dashboard, Clients, Leads, Quotes, Invoices, Contracts, Gallery, Automation, Email Templates, Settings
+- **Team member event view** — event detail page hides action buttons (Edit, Create Quote, Create Invoice, Delete), Client Portal link, Invoices section, and Contracts section for team members; client info is read-only
+- **Event Notes** — new timestamped notes section on every event detail page; all team members can add notes; each note records the author name and exact date/time; visible to both admins and team members
+- `EventNote` model added to schema and pushed to database
+
+---
+
 ## [0.9.7] — 2026-06-22
 
 ### Fixed

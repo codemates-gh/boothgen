@@ -11,6 +11,7 @@ import { Calendar, MapPin, Users, Package, ArrowLeft, ExternalLink, FileText, Re
 import { format } from 'date-fns';
 import DeleteEventButton from './DeleteEventButton';
 import AssignEventButton from './AssignEventButton';
+import EventNotes from './EventNotes';
 
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', CANCELLED:'danger' };
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
@@ -52,17 +53,27 @@ export default async function EventDetailPage({ params }: { params: { id: string
       <TopBar title={event.title} />
       <div className="p-4 sm:p-8 space-y-6">
         <Link href="/events" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Back to Events</Link>
+
+        {/* Header — admin sees action buttons, team member sees read-only header */}
         <div className="flex flex-col sm:flex-row gap-3 sm:items-start sm:justify-between">
-          <div><div className="flex flex-wrap items-center gap-3 mb-1"><h2 className="text-xl sm:text-2xl font-bold">{event.title}</h2><Badge variant={SC[event.status]}>{event.status.replace('_',' ')}</Badge></div>
-          <p className="text-gray-500 text-sm">{event.client.firstName} {event.client.lastName} &bull; {event.client.email}</p></div>
-          <div className="flex flex-wrap gap-2">
-            <Link href={'/events/' + event.id + '/edit'}><Button variant="outline" size="sm"><Edit2 className="w-4 h-4 mr-1"/>Edit Event</Button></Link>
-            <a href={portalUrl} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><ExternalLink className="w-4 h-4 mr-1"/>Client Portal</Button></a>
-            <Link href={'/quotes/new?eventId=' + event.id}><Button variant="outline" size="sm"><ClipboardList className="w-4 h-4 mr-1"/>Create Quote</Button></Link>
-            <Link href={'/invoices/new?eventId=' + event.id}><Button size="sm"><Receipt className="w-4 h-4 mr-1"/>Create Invoice</Button></Link>
-            <DeleteEventButton eventId={event.id} hasInvoices={event.invoices.length > 0} hasContracts={event.contracts.length > 0} />
+          <div>
+            <div className="flex flex-wrap items-center gap-3 mb-1">
+              <h2 className="text-xl sm:text-2xl font-bold">{event.title}</h2>
+              <Badge variant={SC[event.status]}>{event.status.replace('_',' ')}</Badge>
+            </div>
+            <p className="text-gray-500 text-sm">{event.client.firstName} {event.client.lastName} &bull; {event.client.email}</p>
           </div>
+          {isAdmin && (
+            <div className="flex flex-wrap gap-2">
+              <Link href={'/events/' + event.id + '/edit'}><Button variant="outline" size="sm"><Edit2 className="w-4 h-4 mr-1"/>Edit Event</Button></Link>
+              <a href={portalUrl} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><ExternalLink className="w-4 h-4 mr-1"/>Client Portal</Button></a>
+              <Link href={'/quotes/new?eventId=' + event.id}><Button variant="outline" size="sm"><ClipboardList className="w-4 h-4 mr-1"/>Create Quote</Button></Link>
+              <Link href={'/invoices/new?eventId=' + event.id}><Button size="sm"><Receipt className="w-4 h-4 mr-1"/>Create Invoice</Button></Link>
+              <DeleteEventButton eventId={event.id} hasInvoices={event.invoices.length > 0} hasContracts={event.contracts.length > 0} />
+            </div>
+          )}
         </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-2">
             <CardHeader><CardTitle>Event Details</CardTitle></CardHeader>
@@ -74,18 +85,25 @@ export default async function EventDetailPage({ params }: { params: { id: string
               {event.internalNotes && <div className="sm:col-span-2"><p className="text-xs text-gray-500 mb-1">Notes</p><p className="text-sm bg-gray-50 rounded-lg p-3">{event.internalNotes}</p></div>}
             </CardContent>
           </Card>
+
           <div className="space-y-4">
+            {/* Client card — team members see view-only, no portal link */}
             <Card>
               <CardHeader><CardTitle>Client</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <p className="font-semibold">{event.client.firstName} {event.client.lastName}</p>
                 <p className="text-gray-600">{event.client.email}</p>
                 {event.client.phone && <p className="text-gray-600">{event.client.phone}</p>}
-                <Link href={'/clients/' + event.clientId} className="text-brand text-xs hover:underline block pt-1">Edit client details</Link>
-                <div className="pt-2 border-t"><p className="text-xs text-gray-400 mb-1">Client Portal</p><a href={portalUrl} target="_blank" className="text-brand hover:underline text-xs break-all">{portalUrl}</a></div>
+                {isAdmin && (
+                  <>
+                    <Link href={'/clients/' + event.clientId} className="text-brand text-xs hover:underline block pt-1">Edit client details</Link>
+                    <div className="pt-2 border-t"><p className="text-xs text-gray-400 mb-1">Client Portal</p><a href={portalUrl} target="_blank" className="text-brand hover:underline text-xs break-all">{portalUrl}</a></div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
+            {/* Assigned To — team member sees name only */}
             <Card>
               <CardHeader><CardTitle>Assigned To</CardTitle></CardHeader>
               <CardContent className="space-y-3 text-sm">
@@ -96,7 +114,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
                     members={members.map(m => m.user)}
                   />
                 ) : (
-                  <p className="text-gray-600">{event.assignedTo?.name ?? 'Unassigned'}</p>
+                  <p className="text-gray-600">{event.assignedTo?.name ?? '—'}</p>
                 )}
                 {event.assignedTo && (
                   <p className="text-xs text-gray-400">{event.assignedTo.email}</p>
@@ -108,7 +126,9 @@ export default async function EventDetailPage({ params }: { params: { id: string
             </Card>
           </div>
         </div>
-        {event.invoices.length > 0 && (
+
+        {/* Invoices & Contracts — admin only */}
+        {isAdmin && event.invoices.length > 0 && (
           <Card>
             <CardHeader><div className="flex items-center justify-between"><CardTitle>Invoices</CardTitle><Link href={'/invoices/new?eventId=' + event.id}><Button variant="outline" size="sm">Add Invoice</Button></Link></div></CardHeader>
             <CardContent className="p-0">
@@ -119,7 +139,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
             </CardContent>
           </Card>
         )}
-        {event.contracts.length > 0 && (
+        {isAdmin && event.contracts.length > 0 && (
           <Card>
             <CardHeader><div className="flex items-center justify-between"><CardTitle>Contracts</CardTitle><Link href={'/contracts/new?eventId=' + event.id}><Button variant="outline" size="sm">Add Contract</Button></Link></div></CardHeader>
             <CardContent className="p-0">
@@ -130,17 +150,19 @@ export default async function EventDetailPage({ params }: { params: { id: string
             </CardContent>
           </Card>
         )}
-        {event.invoices.length === 0 && event.contracts.length === 0 && (
+        {isAdmin && event.invoices.length === 0 && event.contracts.length === 0 && (
           <div className="flex flex-wrap gap-3">
             <Link href={'/invoices/new?eventId=' + event.id}><Button variant="outline"><Receipt className="w-4 h-4 mr-2"/>Create Invoice</Button></Link>
             <Link href={'/contracts/new?eventId=' + event.id}><Button variant="outline"><FileText className="w-4 h-4 mr-2"/>Create Contract</Button></Link>
           </div>
         )}
+
+        {/* Template Designs — visible to all */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2"><Layers className="w-4 h-4"/>Template Designs</CardTitle>
-              <Link href={'/events/' + event.id + '/designs'}><Button variant="outline" size="sm">Manage Designs</Button></Link>
+              <Link href={'/events/' + event.id + '/designs'}><Button variant="outline" size="sm">{isAdmin ? 'Manage Designs' : 'View Designs'}</Button></Link>
             </div>
           </CardHeader>
           <CardContent>
@@ -162,6 +184,9 @@ export default async function EventDetailPage({ params }: { params: { id: string
             )}
           </CardContent>
         </Card>
+
+        {/* Notes — visible to all, editable by all */}
+        <EventNotes eventId={event.id} />
       </div>
     </>
   );

@@ -8,7 +8,7 @@ import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Cam
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 import { APP_VERSION } from '@/lib/version';
 
-const nav = [
+const adminNav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/events', label: 'Events', icon: Calendar },
   { href: '/clients', label: 'Clients', icon: Users },
@@ -20,6 +20,10 @@ const nav = [
   { href: '/automation', label: 'Automation', icon: Zap },
   { href: '/automation/email-templates', label: 'Email Templates', icon: Mail },
   { href: '/settings', label: 'Settings', icon: Settings },
+];
+
+const teamMemberNav = [
+  { href: '/events', label: 'Events', icon: Calendar },
 ];
 
 export function Sidebar() {
@@ -40,6 +44,8 @@ export function Sidebar() {
   }, []);
 
   const displayName = companyName || session?.tenant?.name || 'Loading...';
+  const isTeamMember = session?.tenantRole === 'TEAM_MEMBER';
+  const nav = isTeamMember ? teamMemberNav : adminNav;
 
   return (
     <>
