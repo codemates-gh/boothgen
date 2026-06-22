@@ -27,6 +27,7 @@ function InvoiceNewForm() {
   const eventId = params.get('eventId');
 
   const [events, setEvents] = useState<any[]>([]);
+  const [packages, setPackages] = useState<any[]>([]);
   const [selectedEventId, setSelectedEventId] = useState(eventId || '');
   const [items, setItems] = useState<LineItem[]>([{ description: '', quantity: 1, unitPrice: '' }]);
   const [taxRate, setTaxRate] = useState('0');
@@ -60,7 +61,10 @@ function InvoiceNewForm() {
       });
   }, []);
 
-  useEffect(() => { fetch('/api/events').then(r=>r.json()).then(setEvents); }, []);
+  useEffect(() => {
+    fetch('/api/events').then(r=>r.json()).then(setEvents);
+    fetch('/api/settings/packages').then(r=>r.json()).then(setPackages);
+  }, []);
 
   // When event selection changes, auto-calculate dates and check full-payment window
   useEffect(() => {
@@ -85,6 +89,14 @@ function InvoiceNewForm() {
       setBalanceDueDate(addDays(eventDate, -balanceDueDays));
     }
   }, [selectedEventId, events, fullPaymentDays, balanceDueDays]);
+
+  function addFromPackage(pkg: any) {
+    setItems(prev => [...prev.filter(i => i.description.trim() || i.unitPrice), {
+      description: pkg.name + (pkg.description ? ' — ' + pkg.description : ''),
+      quantity: 1,
+      unitPrice: (pkg.priceCents / 100).toFixed(2),
+    }]);
+  }
 
   function addItem() { setItems(i => [...i, { description:'', quantity:1, unitPrice:'' }]); }
   function removeItem(idx: number) { setItems(i => i.filter((_,j) => j !== idx)); }
@@ -147,6 +159,21 @@ function InvoiceNewForm() {
           <Card>
             <CardHeader><div className="flex items-center justify-between"><CardTitle>Line Items</CardTitle><Button type="button" size="sm" variant="outline" onClick={addItem}><Plus className="w-4 h-4 mr-1"/>Add Item</Button></div></CardHeader>
             <CardContent className="space-y-3">
+              {packages.length > 0 && (
+                <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                  <p className="text-xs font-medium text-gray-500 uppercase">Add from Packages</p>
+                  <div className="flex flex-wrap gap-2">
+                    {packages.map((pkg: any) => (
+                      <button key={pkg.id} type="button" onClick={() => addFromPackage(pkg)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-sm hover:border-brand hover:text-brand transition-colors text-left">
+                        <Plus className="w-3 h-3 flex-shrink-0" />
+                        <span className="font-medium">{pkg.name}</span>
+                        <span className="text-gray-400">${(pkg.priceCents / 100).toFixed(2)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-500 uppercase px-1">
                 <div className="col-span-6">Description</div><div className="col-span-2">Qty</div><div className="col-span-3">Unit Price</div><div className="col-span-1"></div>
               </div>
