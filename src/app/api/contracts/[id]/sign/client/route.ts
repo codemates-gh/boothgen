@@ -23,7 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       event: { include: { client: true } },
       tenant: {
         include: {
-          branding: { select: { companyName: true } },
+          branding: { select: { companyName: true, balanceDueDaysBeforeEvent: true } },
           memberships: { where: { role: 'HOST_ADMIN' }, include: { user: { select: { email: true } } } },
         },
       },
@@ -55,6 +55,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           const isDeposit = quote.paymentType === 'deposit';
           const depositAmt = isDeposit ? Math.round(quote.totalCents * ((quote.depositPercent || 50) / 100)) : 0;
           const balanceAmt = isDeposit ? quote.totalCents - depositAmt : 0;
+
+          // Calculate balance due date: event date minus tenant's balanceDueDaysBeforeEvent setting
+          const balanceDueDays = (contract.tenant as any)?.branding?.balanceDueDaysBeforeEvent ?? 30;
+          const eventDate = (contract.event as any)?.date ? new Date((contract.event as any).date) : null;
+          const balanceDueDate = eventDate
+            ? new Date(eventDate.getTime() - balanceDueDays * 24 * 60 * 60 * 1000)
+            : new Date();
+
           await tx.invoice.create({
             data: {
               tenantId: contract.tenantId,
@@ -80,7 +88,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
               ...(isDeposit ? {
                 PaymentMilestone: { create: [
                   { tenantId: contract.tenantId, label: 'Deposit (' + (quote.depositPercent || 50) + '%)', amountCents: depositAmt, dueDate: new Date() },
-                  { tenantId: contract.tenantId, label: 'Balance', amountCents: balanceAmt, dueDate: new Date() },
+                  { tenantId: contract.tenantId, label: 'Balance', amountCents: balanceAmt, dueDate: balanceDueDate },
                 ]},
               } : {}),
             },
