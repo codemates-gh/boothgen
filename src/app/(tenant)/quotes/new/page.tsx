@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, AlertCircle } from 'lucide-react';
 import { Suspense } from 'react';
 
 interface LineItem { description: string; quantity: number; unitPrice: string; }
@@ -22,6 +22,8 @@ function QuoteNewForm() {
   const [contractTemplateId, setContractTemplateId] = useState('');
   const [paymentType, setPaymentType] = useState<'full' | 'deposit'>('full');
   const [depositPercent, setDepositPercent] = useState(50);
+  const [fullPaymentDays, setFullPaymentDays] = useState(14);
+  const [forceFullPayment, setForceFullPayment] = useState(false);
   const [items, setItems] = useState<LineItem[]>([{ description: '', quantity: 1, unitPrice: '' }]);
   const [taxRate, setTaxRate] = useState('0');
   const [validUntil, setValidUntil] = useState('');
@@ -36,8 +38,23 @@ function QuoteNewForm() {
     fetch('/api/contracts/templates').then(r => r.json()).then(d => setTemplates(Array.isArray(d) ? d : []));
     fetch('/api/settings/branding').then(r => r.json()).then(d => {
       if (d.defaultDepositPercent != null) setDepositPercent(d.defaultDepositPercent);
+      if (d.fullPaymentIfWithinDays != null) setFullPaymentDays(d.fullPaymentIfWithinDays);
     });
   }, []);
+
+  // Enforce full payment if event is within the configured window
+  useEffect(() => {
+    if (!selectedEvent) { setForceFullPayment(false); return; }
+    const ev = events.find(e => e.id === selectedEvent);
+    if (!ev?.date) { setForceFullPayment(false); return; }
+    const daysUntil = Math.floor((new Date(ev.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    if (daysUntil <= fullPaymentDays) {
+      setForceFullPayment(true);
+      setPaymentType('full');
+    } else {
+      setForceFullPayment(false);
+    }
+  }, [selectedEvent, events, fullPaymentDays]);
 
   function addFromPackage(pkg: any) {
     setItems(prev => [...prev.filter(i => i.description.trim() || i.unitPrice), {
@@ -196,15 +213,23 @@ function QuoteNewForm() {
               )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Payment Schedule</label>
-                <div className="flex gap-2 mb-3">
-                  {(['full', 'deposit'] as const).map(t => (
-                    <button key={t} type="button" onClick={() => setPaymentType(t)}
-                      className={'px-4 py-2 rounded-xl border text-sm font-medium transition-colors ' + (paymentType === t ? 'bg-brand text-white border-brand' : 'border-gray-300 text-gray-600 hover:border-brand hover:text-brand')}>
-                      {t === 'full' ? 'Full Payment' : 'Deposit + Balance'}
-                    </button>
-                  ))}
-                </div>
-                {paymentType === 'deposit' && (
+                {forceFullPayment && (
+                  <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800 mb-3">
+                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <span>This event is within {fullPaymentDays} days — full payment is required at booking.</span>
+                  </div>
+                )}
+                {!forceFullPayment && (
+                  <div className="flex gap-2 mb-3">
+                    {(['full', 'deposit'] as const).map(t => (
+                      <button key={t} type="button" onClick={() => setPaymentType(t)}
+                        className={'px-4 py-2 rounded-xl border text-sm font-medium transition-colors ' + (paymentType === t ? 'bg-brand text-white border-brand' : 'border-gray-300 text-gray-600 hover:border-brand hover:text-brand')}>
+                        {t === 'full' ? 'Full Payment' : 'Deposit + Balance'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {paymentType === 'deposit' && !forceFullPayment && (
                   <div className="flex items-center gap-3">
                     <label className="text-sm text-gray-600 whitespace-nowrap">Deposit %</label>
                     <Input type="number" min="1" max="99" value={depositPercent} onChange={e => setDepositPercent(parseInt(e.target.value) || 50)} className="w-24" />
