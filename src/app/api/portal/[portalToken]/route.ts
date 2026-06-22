@@ -42,6 +42,10 @@ export async function GET(_: NextRequest, { params }: { params: { portalToken: s
             data: { status: 'PAID', paidAt: new Date(), amountPaidCents: rawInvoice.totalCents, balanceDueCents: 0 },
             include: { lineItems: { orderBy: { sortOrder: 'asc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } },
           });
+          await prisma.event.updateMany({
+            where: { id: event.id, status: { in: ['LEAD', 'QUOTED'] } },
+            data: { status: 'BOOKED' },
+          });
           sendPaymentConfirmationEmail({
             to: event.client.email, firstName: event.client.firstName, companyName,
             invoiceNumber: rawInvoice.invoiceNumber, amountPaidFormatted: fmt(rawInvoice.totalCents),
@@ -88,6 +92,11 @@ export async function GET(_: NextRequest, { params }: { params: { portalToken: s
               ...(newStatus === 'PAID' ? { paidAt: new Date() } : {}),
             },
             include: { lineItems: { orderBy: { sortOrder: 'asc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } },
+          });
+          // Advance event to BOOKED once any payment (deposit or full) is received
+          await prisma.event.updateMany({
+            where: { id: event.id, status: { in: ['LEAD', 'QUOTED'] } },
+            data: { status: 'BOOKED' },
           });
 
           if (newStatus === 'PAID') {

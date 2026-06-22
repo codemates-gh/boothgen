@@ -59,6 +59,13 @@ export async function POST(req: NextRequest) {
               paidAt:  balanceCents <= 0 ? new Date() : undefined,
             },
           });
+          // Advance event to BOOKED once any payment is received
+          if ((milestone.invoice as any).eventId) {
+            await prisma.event.updateMany({
+              where: { id: (milestone.invoice as any).eventId, status: { in: ['LEAD', 'QUOTED'] } },
+              data: { status: 'BOOKED' },
+            });
+          }
         } else if (invoiceId) {
           const inv = await prisma.invoice.findUnique({
             where: { id: invoiceId },
@@ -81,6 +88,13 @@ export async function POST(req: NextRequest) {
                 stripePaymentIntentId: pi.id,
               },
             });
+            // Advance event to BOOKED on full payment
+            if (inv.eventId) {
+              await prisma.event.updateMany({
+                where: { id: inv.eventId, status: { in: ['LEAD', 'QUOTED'] } },
+                data: { status: 'BOOKED' },
+              });
+            }
             if (inv.event?.client) {
               const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
               const companyName = inv.tenant.branding?.companyName ?? inv.tenant.name;

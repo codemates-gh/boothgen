@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.0.2] — 2026-06-22
+
+### Fixed
+- **Event status advancement on deposit payment** — event now advances from LEAD/QUOTED → BOOKED as soon as any payment is received (deposit or full); previously the status was not updated after partial/deposit payment via Stripe webhook or portal reconciliation
+
+---
+
 ## [1.0.1] — 2026-06-22
 
 ### Added
