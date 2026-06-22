@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
-import { inngest } from '@/lib/inngest/client';
+import { triggerAutomation, scheduleEventDateAutomations } from '@/lib/inngest/trigger';
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -44,11 +44,12 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Fire automation triggers
+  // Fire automation triggers directly — bypass Inngest for reliability
   if (eventStatus === 'LEAD') {
-    inngest.send({ name: 'lead/created', data: { tenantId: session.tenantId, eventId: event.id } }).catch(() => {});
+    triggerAutomation({ tenantId: session.tenantId, eventId: event.id, trigger: 'LEAD_CREATED' }).catch(() => {});
   } else if (eventStatus === 'BOOKED') {
-    inngest.send({ name: 'booking/confirmed', data: { tenantId: session.tenantId, eventId: event.id, eventDate: event.eventDate.toISOString() } }).catch(() => {});
+    triggerAutomation({ tenantId: session.tenantId, eventId: event.id, trigger: 'BOOKING_CONFIRMED' }).catch(() => {});
+    scheduleEventDateAutomations({ tenantId: session.tenantId, eventId: event.id, eventDate: event.eventDate }).catch(() => {});
   }
 
   return NextResponse.json(event, { status: 201 });

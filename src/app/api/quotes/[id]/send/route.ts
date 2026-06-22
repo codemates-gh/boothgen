@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
-import { inngest } from '@/lib/inngest/client';
+import { triggerAutomation } from '@/lib/inngest/trigger';
 import { sendQuoteLink } from '@/lib/email/send';
 
 export async function POST(_: NextRequest, { params }: { params: { id: string } }) {
@@ -45,9 +45,9 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
 
   console.log('[QUOTE_SEND] to:', q.client.email, 'from:', fromAddress, 'result:', JSON.stringify(emailResult));
 
-  // Fire Inngest separately for any QUOTE_SENT automation rules the tenant has configured
-  inngest.send({ name: 'quote/sent', data: { tenantId: session.tenantId, eventId: q.eventId } }).catch(e =>
-    console.error('[QUOTE_SEND] Inngest error:', e)
+  // Fire QUOTE_SENT automation rules directly — bypass Inngest for reliability
+  triggerAutomation({ tenantId: session.tenantId, eventId: q.eventId, trigger: 'QUOTE_SENT' }).catch(e =>
+    console.error('[QUOTE_SEND] automation error:', e)
   );
 
   return NextResponse.json({ ...updated, _email: emailResult });

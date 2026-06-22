@@ -1,9 +1,8 @@
 
 import { inngest } from './client';
 import { prisma } from '@/lib/prisma/client';
-import { sendEmail, sendDesignReadyEmail, sendDesignDecisionEmail } from '@/lib/email/send';
-import { parseMergeTags, buildCtx } from '@/lib/contracts/merge-tags';
-import { triggerAutomation, scheduleEventDateAutomations } from './trigger';
+import { sendDesignReadyEmail, sendDesignDecisionEmail } from '@/lib/email/send';
+import { triggerAutomation, scheduleEventDateAutomations, executeAutomation } from './trigger';
 import { deleteFromR2, r2KeyFromUrl } from '@/lib/storage/r2';
 
 export const processAutomation = inngest.createFunction(
@@ -11,29 +10,7 @@ export const processAutomation = inngest.createFunction(
   { event: 'automation/execute' },
   async ({ event: evt }) => {
     const { executionId } = evt.data;
-    const execution = await prisma.automationExecution.findUnique({
-      where: { id: executionId },
-      include: { rule: { include: { emailTemplate: true } }, event: { include: { client: true, invoices: { take: 1, orderBy: { createdAt: 'desc' } }, Quote: { take: 1, orderBy: { createdAt: 'desc' } }, tenant: { include: { branding: true } } } } },
-    });
-    if (!execution || execution.status !== 'SCHEDULED') return;
-    if (execution.rule.actionType !== 'EMAIL' || !execution.rule.emailTemplate) {
-      await prisma.automationExecution.update({ where: { id: executionId }, data: { status: 'SKIPPED' } });
-      return;
-    }
-    const { event: ev } = execution;
-    const branding = ev.tenant.branding;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
-    const ctx = buildCtx({ client: ev.client, event: ev, invoice: ev.invoices[0] ?? null, quote: ev.Quote[0] ?? null, branding: branding ?? {}, appUrl });
-    const subject = parseMergeTags(execution.rule.emailTemplate.subject, ctx);
-    const body = parseMergeTags(execution.rule.emailTemplate.bodyHtml, ctx);
-    const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
-    const fromAddress = branding?.companyName ? `${branding.companyName} <${emailFrom}>` : emailFrom;
-    const replyTo = branding?.replyToEmail ?? undefined;
-    const result = await sendEmail(ev.client.email, subject, body, replyTo, fromAddress);
-    await prisma.automationExecution.update({
-      where: { id: executionId },
-      data: { status: result.success ? 'SENT' : 'FAILED', executedAt: new Date(), errorMessage: result.success ? null : String(result.error), recipientEmail: ev.client.email, messagePreview: subject },
-    });
+    await executeAutomation(executionId);
   }
 );
 

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { z } from 'zod';
 import { sendHostNotificationEmail } from '@/lib/email/send';
+import { triggerAutomation, scheduleEventDateAutomations } from '@/lib/inngest/trigger';
 
 const Schema = z.object({
   clientToken: z.string().min(1).max(256),
@@ -99,6 +100,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return updatedContract;
   });
+
+  // Fire BOOKING_CONFIRMED automations directly
+  if (contract.eventId) {
+    const ev = (contract as any).event;
+    triggerAutomation({ tenantId: contract.tenantId, eventId: contract.eventId, trigger: 'BOOKING_CONFIRMED' }).catch(e =>
+      console.error('[contract/sign] booking automation error:', e)
+    );
+    if (ev?.eventDate) {
+      scheduleEventDateAutomations({ tenantId: contract.tenantId, eventId: contract.eventId, eventDate: new Date(ev.eventDate) }).catch(() => {});
+    }
+  }
 
   // Notify all host admins that the contract was signed
   const hostEmails = (contract.tenant as any)?.memberships?.map((m: any) => m.user.email).filter(Boolean) ?? [];

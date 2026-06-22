@@ -4,6 +4,24 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.0.7] — 2026-06-22
+
+### Added
+- **Refund options on event cancellation** — "Cancel Event" now shows a panel with three choices: No Refund (keep all payments), Refund Deposit (returns the first paid milestone via Stripe), and Refund All Payments (returns every collected payment). Disabled options show when no payment has been collected. Stripe refunds are issued through the tenant's Connect account; if a payment was collected outside Stripe the milestone is marked REFUNDED without an API call
+- **REFUNDED milestone status** — `PaymentMilestoneStatus` enum extended with `REFUNDED`; schema pushed
+
+### Fixed
+- **Sidebar version number** — was hardcoded to v0.9.0; now reads from `src/lib/version.ts` and updated to v1.0.7
+
+---
+
+## [1.0.6] — 2026-06-22
+
+### Fixed
+- **Email automations now deliver reliably** — Lead Created, Quote Sent, and Booking Confirmed automations were silently failing because they depended on Inngest receiving and processing two sequential events in a serverless environment (Inngest was not reliably delivering). All three automation triggers now call `triggerAutomation` directly from their respective API routes; rules with `triggerOffsetHours === 0` execute the email synchronously in the same request without any Inngest hop. Delayed rules (event date offsets) still schedule via Inngest as before. The Inngest `processAutomation` function also delegates to the same shared `executeAutomation` function so both paths stay in sync
+
+---
+
 ## [1.0.5] — 2026-06-22
 
 ### Fixed

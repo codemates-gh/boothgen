@@ -74,6 +74,7 @@ enum PaymentMilestoneStatus {
   PENDING
   PAID
   OVERDUE
+  REFUNDED
 }
 
 enum ContractStatus {

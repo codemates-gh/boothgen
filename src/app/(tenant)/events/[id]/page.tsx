@@ -32,7 +32,13 @@ export default async function EventDetailPage({ params }: { params: { id: string
     include: {
       client: true,
       assignedTo: { select: { id: true, name: true, email: true } },
-      invoices: { include: { lineItems: { orderBy: { sortOrder: 'asc' } } }, orderBy: { createdAt: 'desc' } },
+      invoices: {
+        include: {
+          lineItems: { orderBy: { sortOrder: 'asc' } },
+          PaymentMilestone: { orderBy: { dueDate: 'asc' } },
+        },
+        orderBy: { createdAt: 'desc' },
+      },
       contracts: { orderBy: { createdAt: 'desc' } },
       templateDesigns: { orderBy: { version: 'desc' }, take: 3 },
     },
@@ -49,6 +55,12 @@ export default async function EventDetailPage({ params }: { params: { id: string
     : [];
   const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
   const portalUrl = process.env.NEXT_PUBLIC_APP_URL + '/portal/' + event.portalToken;
+
+  // Payment totals for cancel refund options
+  const allMilestones = event.invoices.flatMap(inv => (inv as any).PaymentMilestone ?? []);
+  const paidMilestones = allMilestones.filter((m: any) => m.status === 'PAID');
+  const depositPaidCents = paidMilestones[0]?.amountCents ?? 0;
+  const totalPaidCents = paidMilestones.reduce((sum: number, m: any) => sum + m.amountCents, 0);
   return (
     <>
       <TopBar title={event.title} />
@@ -70,7 +82,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
               <a href={portalUrl} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><ExternalLink className="w-4 h-4 mr-1"/>Client Portal</Button></a>
               <Link href={'/quotes/new?eventId=' + event.id}><Button variant="outline" size="sm"><ClipboardList className="w-4 h-4 mr-1"/>Create Quote</Button></Link>
               <Link href={'/invoices/new?eventId=' + event.id}><Button size="sm"><Receipt className="w-4 h-4 mr-1"/>Create Invoice</Button></Link>
-              <CancelEventButton eventId={event.id} status={event.status} />
+              <CancelEventButton eventId={event.id} status={event.status} depositPaidCents={depositPaidCents} totalPaidCents={totalPaidCents} />
               <DeleteEventButton eventId={event.id} hasInvoices={event.invoices.length > 0} hasContracts={event.contracts.length > 0} />
             </div>
           )}
