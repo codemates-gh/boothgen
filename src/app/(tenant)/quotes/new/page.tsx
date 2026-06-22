@@ -49,15 +49,15 @@ function QuoteNewForm() {
   useEffect(() => {
     if (!selectedEvent) { setForceFullPayment(false); return; }
     const ev = events.find(e => e.id === selectedEvent);
-    if (!ev?.date) { setForceFullPayment(false); return; }
-    const daysUntil = Math.floor((new Date(ev.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    if (!ev?.eventDate) { setForceFullPayment(false); return; }
+    const daysUntil = Math.floor((new Date(ev.eventDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     if (daysUntil <= fullPaymentDays) {
       setForceFullPayment(true);
       setPaymentType('full');
       setBalanceDueDate(null);
     } else {
       setForceFullPayment(false);
-      const bd = new Date(ev.date);
+      const bd = new Date(ev.eventDate);
       bd.setDate(bd.getDate() - balanceDueDays);
       setBalanceDueDate(bd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }));
     }

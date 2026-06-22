@@ -70,21 +70,19 @@ function InvoiceNewForm() {
   useEffect(() => {
     if (!selectedEventId) { setForceFullPayment(false); return; }
     const ev = events.find(e => e.id === selectedEventId);
-    if (!ev?.date) { setForceFullPayment(false); return; }
+    if (!ev?.eventDate) { setForceFullPayment(false); return; }
 
-    const eventDate = new Date(ev.date);
+    const eventDate = new Date(ev.eventDate);
     const today = new Date();
     today.setHours(0,0,0,0);
     const daysUntilEvent = daysBetween(eventDate, today);
 
     if (daysUntilEvent <= fullPaymentDays) {
-      // Event is too soon — require full payment
       setForceFullPayment(true);
       setPaymentType('full');
       setDueDate(eventDate.toISOString().split('T')[0]);
     } else {
       setForceFullPayment(false);
-      // Auto-fill deposit due (today) and balance due (event - balanceDueDays)
       setDepositDueDate(today.toISOString().split('T')[0]);
       setBalanceDueDate(addDays(eventDate, -balanceDueDays));
     }
