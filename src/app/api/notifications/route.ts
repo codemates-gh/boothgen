@@ -9,33 +9,61 @@ export async function GET() {
   if (!session?.tenantId) return NextResponse.json([]);
 
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const isTeamMember = session.tenantRole === 'TEAM_MEMBER';
+
+  // For team members, scope everything to their assigned events
+  let assignedEventIds: string[] | null = null;
+  if (isTeamMember) {
+    const assigned = await prisma.event.findMany({
+      where: { tenantId: session.tenantId, assignedToUserId: session.userId },
+      select: { id: true },
+    });
+    assignedEventIds = assigned.map(e => e.id);
+  }
 
   const [leads, replies, bookings, payments, contracts] = await Promise.all([
-    prisma.leadSubmission.findMany({
+    // Team members don't have access to leads
+    isTeamMember ? Promise.resolve([]) : prisma.leadSubmission.findMany({
       where: { tenantId: session.tenantId, createdAt: { gte: since } },
       orderBy: { createdAt: 'desc' },
       take: 5,
     }),
-    prisma.leadMessage.findMany({
+    // Team members don't have access to lead replies
+    isTeamMember ? Promise.resolve([]) : prisma.leadMessage.findMany({
       where: { direction: 'INBOUND', sentAt: { gte: since }, lead: { tenantId: session.tenantId } },
       include: { lead: { select: { id: true, firstName: true, lastName: true } } },
       orderBy: { sentAt: 'desc' },
       take: 5,
     }),
     prisma.event.findMany({
-      where: { tenantId: session.tenantId, status: 'BOOKED', updatedAt: { gte: since } },
+      where: {
+        tenantId: session.tenantId,
+        status: 'BOOKED',
+        updatedAt: { gte: since },
+        ...(assignedEventIds ? { id: { in: assignedEventIds } } : {}),
+      },
       include: { client: { select: { firstName: true, lastName: true } } },
       orderBy: { updatedAt: 'desc' },
       take: 5,
     }),
     prisma.invoice.findMany({
-      where: { tenantId: session.tenantId, status: 'PAID', updatedAt: { gte: since } },
+      where: {
+        tenantId: session.tenantId,
+        status: 'PAID',
+        updatedAt: { gte: since },
+        ...(assignedEventIds ? { eventId: { in: assignedEventIds } } : {}),
+      },
       include: { client: { select: { firstName: true, lastName: true } } },
       orderBy: { updatedAt: 'desc' },
       take: 5,
     }),
     prisma.contract.findMany({
-      where: { tenantId: session.tenantId, status: 'FULLY_EXECUTED', updatedAt: { gte: since } },
+      where: {
+        tenantId: session.tenantId,
+        status: 'FULLY_EXECUTED',
+        updatedAt: { gte: since },
+        ...(assignedEventIds ? { eventId: { in: assignedEventIds } } : {}),
+      },
       include: { client: { select: { firstName: true, lastName: true } } },
       orderBy: { updatedAt: 'desc' },
       take: 5,

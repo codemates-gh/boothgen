@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 import { uploadToR2 } from '@/lib/storage/r2';
+import { inngest } from '@/lib/inngest/client';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -41,8 +42,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const version = (latest?.version ?? 0) + 1;
 
   const design = await prisma.templateDesign.create({
-    data: { tenantId: session.tenantId, eventId: params.id, fileUrl: publicUrl, filename: file.name, version, status: 'DRAFT' },
+    data: { tenantId: session.tenantId, eventId: params.id, fileUrl: publicUrl, filename: file.name, version, status: 'PENDING_APPROVAL' },
   });
+
+  // Notify the client immediately — upload = ready for review
+  inngest.send({ name: 'template-design/ready-for-review', data: { designId: design.id } }).catch(() => {});
 
   return NextResponse.json(design, { status: 201 });
 }

@@ -4,6 +4,25 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.0.1] — 2026-06-22
+
+### Added
+- **Global Search** — search bar in the top bar (or press ⌘K) searches across clients, events, invoices, and contracts; keyboard-navigable results with category icons
+- **Add Event from Client** — client detail page now has a "New Event" button; clicking it opens the New Event form with the client pre-selected
+- **Existing client selection on New Event** — toggle between "New Client" and "Existing Client" when creating a new event; live client search with name/email filtering; arriving via client page auto-locks the client
+- **Leads & Messages** — "Leads" renamed to "Leads & Messages" in the sidebar to reflect the message thread feature
+
+---
+
+## [0.9.9] — 2026-06-22
+
+### Fixed
+- **Template design auto-notification** — uploading a design now immediately sets status to `PENDING_APPROVAL` and fires the client review email; the separate "Request Approval" button has been removed (upload = send for review)
+- **Design portal visibility** — designs appear in the client portal immediately after upload since they are no longer created in `DRAFT` state
+- **Team member notifications** — bell icon now shows only events, payments, and contracts related to events assigned to that team member; leads and replies are hidden (team members have no access to those pages)
+
+---
+
 ## [0.9.8] — 2026-06-22
 
 ### Added

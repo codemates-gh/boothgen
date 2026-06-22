@@ -19,7 +19,6 @@ export default function TemplateDesignsPage() {
   const { id: eventId } = useParams<{ id: string }>();
   const [designs, setDesigns] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [submitting, setSubmitting] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState('');
 
@@ -48,19 +47,6 @@ export default function TemplateDesignsPage() {
     setUploading(false);
   }
 
-  async function requestApproval(id: string) {
-    setError('');
-    setSubmitting(id);
-    const r = await fetch('/api/template-designs/' + id + '/request-approval', { method: 'PATCH' });
-    if (!r.ok) {
-      const d = await r.json().catch(() => ({}));
-      setError(d.error || 'Failed to request approval.');
-    } else {
-      await load();
-    }
-    setSubmitting(null);
-  }
-
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setDragOver(false);
     const file = e.dataTransfer.files[0];
@@ -68,6 +54,7 @@ export default function TemplateDesignsPage() {
   }, [eventId]);
 
   const latestDesign = designs[0] ?? null;
+  // Can upload a new version when there's no design, client requested revision, or design is approved and a new version is needed
   const canUpload = !latestDesign || latestDesign.status === 'REVISION_REQUESTED' || latestDesign.status === 'APPROVED';
 
   return (
@@ -107,7 +94,7 @@ export default function TemplateDesignsPage() {
                   <>
                     <Upload className="w-10 h-10 mx-auto mb-3 text-gray-300" />
                     <p className="text-gray-600 font-medium">Drop a file here or click to browse</p>
-                    <p className="text-xs text-gray-400 mt-1">Images and PDF files supported</p>
+                    <p className="text-xs text-gray-400 mt-1">Images and PDF files supported — uploading automatically sends to client for review</p>
                     <label className="mt-4 inline-block cursor-pointer">
                       <input
                         type="file"
@@ -193,15 +180,6 @@ export default function TemplateDesignsPage() {
                       >
                         View file ↗
                       </a>
-                      {(d.status === 'DRAFT' || d.status === 'REVISION_REQUESTED') && (
-                        <Button
-                          size="sm"
-                          onClick={() => requestApproval(d.id)}
-                          disabled={submitting === d.id}
-                        >
-                          {submitting === d.id ? 'Sending…' : 'Request Approval'}
-                        </Button>
-                      )}
                       {d.status === 'PENDING_APPROVAL' && (
                         <span className="text-xs text-blue-500 flex items-center gap-1">
                           <Clock className="w-3 h-3" />Awaiting client

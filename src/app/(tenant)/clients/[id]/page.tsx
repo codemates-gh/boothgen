@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, Trash2, Calendar, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Calendar, ArrowRight, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
@@ -85,9 +85,14 @@ export default function ClientDetailPage() {
           </CardContent>
         </Card>
 
-        {events.length > 0 && (
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><Calendar className="w-4 h-4"/>Events ({events.length})</CardTitle></CardHeader>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2"><Calendar className="w-4 h-4"/>Events ({events.length})</CardTitle>
+              <Link href={'/events/new?clientId=' + id}><Button size="sm"><Plus className="w-4 h-4 mr-1"/>New Event</Button></Link>
+            </div>
+          </CardHeader>
+          {events.length > 0 && (
             <CardContent className="p-0">
               <div className="overflow-x-auto">
               <table className="w-full min-w-[400px]">
@@ -105,8 +110,13 @@ export default function ClientDetailPage() {
               </table>
             </div>
             </CardContent>
-          </Card>
-        )}
+          )}
+          {events.length === 0 && (
+            <CardContent>
+              <p className="text-sm text-gray-400 py-2">No events yet. Click "New Event" to add one.</p>
+            </CardContent>
+          )}
+        </Card>
       </div>
     </>
   );

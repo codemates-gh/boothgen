@@ -12,7 +12,7 @@ const adminNav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/events', label: 'Events', icon: Calendar },
   { href: '/clients', label: 'Clients', icon: Users },
-  { href: '/leads', label: 'Leads', icon: Inbox },
+  { href: '/leads', label: 'Leads & Messages', icon: Inbox },
   { href: '/quotes', label: 'Quotes', icon: FileText },
   { href: '/invoices', label: 'Invoices', icon: Receipt },
   { href: '/contracts', label: 'Contracts', icon: FileText },
