@@ -150,26 +150,36 @@ export const notifyHostDesignDecision = inngest.createFunction(
             branding: true,
             memberships: {
               where: { role: 'HOST_ADMIN', status: 'ACTIVE' },
-              include: { user: true },
-              take: 1,
+              include: { user: { select: { email: true } } },
             },
           },
         },
       },
     });
     if (!design) return;
-    const hostEmail = design.tenant.branding?.replyToEmail ?? design.tenant.memberships[0]?.user?.email;
-    if (!hostEmail) return;
+
+    // Collect all host admin emails; fall back to branding replyToEmail if set
+    const adminEmails = design.tenant.memberships
+      .map(m => m.user?.email)
+      .filter((e): e is string => Boolean(e));
+    const replyTo = design.tenant.branding?.replyToEmail;
+    const recipients = replyTo ? [replyTo, ...adminEmails.filter(e => e !== replyTo)] : adminEmails;
+    if (recipients.length === 0) return;
+
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
-    await sendDesignDecisionEmail({
-      to: hostEmail,
-      clientName: design.event.client.firstName + ' ' + design.event.client.lastName,
-      eventTitle: design.event.title,
-      version: design.version,
-      decision,
-      revisionNote: design.revisionNote ?? undefined,
-      designUrl: appUrl + '/events/' + design.eventId + '/designs',
-    });
+    await Promise.all(
+      recipients.map(to =>
+        sendDesignDecisionEmail({
+          to,
+          clientName: design.event.client.firstName + ' ' + design.event.client.lastName,
+          eventTitle: design.event.title,
+          version: design.version,
+          decision,
+          revisionNote: design.revisionNote ?? undefined,
+          designUrl: appUrl + '/events/' + design.eventId + '/designs',
+        })
+      )
+    );
   }
 );
 

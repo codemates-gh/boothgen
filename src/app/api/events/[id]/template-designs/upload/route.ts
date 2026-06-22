@@ -46,7 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   });
 
   // Notify the client immediately — upload = ready for review
-  inngest.send({ name: 'template-design/ready-for-review', data: { designId: design.id } }).catch(() => {});
+  await inngest.send({ name: 'template-design/ready-for-review', data: { designId: design.id } });
 
   return NextResponse.json(design, { status: 201 });
 }
