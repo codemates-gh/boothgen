@@ -34,6 +34,9 @@ function QuoteNewForm() {
     fetch('/api/events').then(r => r.json()).then(setEvents);
     fetch('/api/settings/packages').then(r => r.json()).then(setPackages);
     fetch('/api/contracts/templates').then(r => r.json()).then(d => setTemplates(Array.isArray(d) ? d : []));
+    fetch('/api/settings/branding').then(r => r.json()).then(d => {
+      if (d.defaultDepositPercent != null) setDepositPercent(d.defaultDepositPercent);
+    });
   }, []);
 
   function addFromPackage(pkg: any) {

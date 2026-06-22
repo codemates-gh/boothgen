@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [0.9.5] — 2026-06-22
+
+### Fixed
+- **New Quote deposit %** — now pre-fills from the default deposit % set in Settings → Billing → Payment Terms (was hardcoded to 50%)
+
+---
+
 ## [0.9.4] — 2026-06-22
 
 ### Added
