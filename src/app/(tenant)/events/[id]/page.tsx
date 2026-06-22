@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Users, Package, ArrowLeft, ExternalLink, FileText, Receipt, Edit2, ClipboardList, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import DeleteEventButton from './DeleteEventButton';
+import AssignEventButton from './AssignEventButton';
 
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', CANCELLED:'danger' };
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
@@ -17,8 +18,33 @@ const CC: Record<string,any> = { DRAFT:'default', SENT_TO_CLIENT:'info', CLIENT_
 
 export default async function EventDetailPage({ params }: { params: { id: string } }) {
   const session = await requireTenantSession();
-  const event = await prisma.event.findFirst({ where: { id: params.id, tenantId: session.tenantId }, include: { client: true, invoices: { include: { lineItems: { orderBy: { sortOrder: 'asc' } } }, orderBy: { createdAt: 'desc' } }, contracts: { orderBy: { createdAt: 'desc' } }, templateDesigns: { orderBy: { version: 'desc' }, take: 3 } } });
+  const isAdmin = session.tenantRole === 'HOST_ADMIN';
+
+  const event = await prisma.event.findFirst({
+    where: {
+      id: params.id,
+      tenantId: session.tenantId,
+      // Team members can only access events assigned to them
+      ...(isAdmin ? {} : { assignedToUserId: session.userId }),
+    },
+    include: {
+      client: true,
+      assignedTo: { select: { id: true, name: true, email: true } },
+      invoices: { include: { lineItems: { orderBy: { sortOrder: 'asc' } } }, orderBy: { createdAt: 'desc' } },
+      contracts: { orderBy: { createdAt: 'desc' } },
+      templateDesigns: { orderBy: { version: 'desc' }, take: 3 },
+    },
+  });
   if (!event) notFound();
+
+  // Fetch active members for the assignment dropdown (admins only)
+  const members = isAdmin
+    ? await prisma.tenantMembership.findMany({
+        where: { tenantId: session.tenantId, status: 'ACTIVE' },
+        include: { user: { select: { id: true, name: true, email: true } } },
+        orderBy: { user: { name: 'asc' } },
+      })
+    : [];
   const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
   const portalUrl = process.env.NEXT_PUBLIC_APP_URL + '/portal/' + event.portalToken;
   return (
@@ -48,16 +74,39 @@ export default async function EventDetailPage({ params }: { params: { id: string
               {event.internalNotes && <div className="sm:col-span-2"><p className="text-xs text-gray-500 mb-1">Notes</p><p className="text-sm bg-gray-50 rounded-lg p-3">{event.internalNotes}</p></div>}
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader><CardTitle>Client</CardTitle></CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <p className="font-semibold">{event.client.firstName} {event.client.lastName}</p>
-              <p className="text-gray-600">{event.client.email}</p>
-              {event.client.phone && <p className="text-gray-600">{event.client.phone}</p>}
-              <Link href={'/clients/' + event.clientId} className="text-brand text-xs hover:underline block pt-1">Edit client details</Link>
-              <div className="pt-2 border-t"><p className="text-xs text-gray-400 mb-1">Client Portal</p><a href={portalUrl} target="_blank" className="text-brand hover:underline text-xs break-all">{portalUrl}</a></div>
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            <Card>
+              <CardHeader><CardTitle>Client</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <p className="font-semibold">{event.client.firstName} {event.client.lastName}</p>
+                <p className="text-gray-600">{event.client.email}</p>
+                {event.client.phone && <p className="text-gray-600">{event.client.phone}</p>}
+                <Link href={'/clients/' + event.clientId} className="text-brand text-xs hover:underline block pt-1">Edit client details</Link>
+                <div className="pt-2 border-t"><p className="text-xs text-gray-400 mb-1">Client Portal</p><a href={portalUrl} target="_blank" className="text-brand hover:underline text-xs break-all">{portalUrl}</a></div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle>Assigned To</CardTitle></CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {isAdmin ? (
+                  <AssignEventButton
+                    eventId={event.id}
+                    currentAssigneeId={event.assignedToUserId ?? null}
+                    members={members.map(m => m.user)}
+                  />
+                ) : (
+                  <p className="text-gray-600">{event.assignedTo?.name ?? 'Unassigned'}</p>
+                )}
+                {event.assignedTo && (
+                  <p className="text-xs text-gray-400">{event.assignedTo.email}</p>
+                )}
+                {isAdmin && !event.assignedTo && (
+                  <p className="text-xs text-gray-400">Select a team member to assign this event.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
         {event.invoices.length > 0 && (
           <Card>

@@ -214,6 +214,7 @@ model User {
   memberships          TenantMembership[]
   hostSignedContracts  Contract[]            @relation("HostSignedBy")
   eventAssignments     EventAssignment[]
+  assignedEvents       Event[]               @relation("EventAssignee")
   automationExecutions AutomationExecution[] @relation("ExecutionSentBy")
   auditLogs            AuditLog[]
 
@@ -311,6 +312,7 @@ model Client {
 }
 
 model Event {
+  assignedToUserId     String?
   id              String      @id @default(cuid())
   tenantId        String
   clientId        String
@@ -336,6 +338,7 @@ model Event {
 
   tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   client               Client                @relation(fields: [clientId], references: [id])
+  assignedTo           User?                 @relation("EventAssignee", fields: [assignedToUserId], references: [id])
   assignments          EventAssignment[]
   invoices             Invoice[]
   contracts            Contract[]
