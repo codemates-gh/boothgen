@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
       packageName: packageName || null,
       guestCount: guestCount ? parseInt(guestCount) : null,
       internalNotes: internalNotes || null,
+      gallery: { create: { tenantId: session.tenantId, title: title + ' Gallery' } },
     },
   });
 
