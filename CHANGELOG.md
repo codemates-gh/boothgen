@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.0.4] — 2026-06-22
+
+### Fixed
+- **Invoice detail page crash** — `fmt` function cannot be passed as a prop from server to client component (Next.js serialization error); moved `fmt` into `MilestonesCard` client component
+- **"Due" column on invoice list** — was always showing `—` because `inv.dueDate` is null on milestone-based invoices; now shows the next unpaid milestone due date
+
+---
+
 ## [1.0.3] — 2026-06-22
 
 ### Fixed

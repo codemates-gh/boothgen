@@ -17,10 +17,12 @@ interface Milestone {
   status: string;
 }
 
-export default function MilestonesCard({ invoiceId, milestones: initial, fmt }: {
+const fmt = (c: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(c / 100);
+
+export default function MilestonesCard({ invoiceId, milestones: initial }: {
   invoiceId: string;
   milestones: Milestone[];
-  fmt: (c: number) => string;
 }) {
   const [milestones, setMilestones] = useState(initial);
   const [editing, setEditing] = useState<string | null>(null);

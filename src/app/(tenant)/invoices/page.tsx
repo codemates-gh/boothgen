@@ -14,7 +14,7 @@ const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', c
 
 export default async function InvoicesPage() {
   const session = await requireTenantSession();
-  const invoices = await prisma.invoice.findMany({ where: { tenantId: session.tenantId }, include: { client: true, event: true }, orderBy: { createdAt: 'desc' }, take: 200 });
+  const invoices = await prisma.invoice.findMany({ where: { tenantId: session.tenantId }, include: { client: true, event: true, PaymentMilestone: { orderBy: { dueDate: 'asc' } } }, orderBy: { createdAt: 'desc' }, take: 200 });
   return (
     <>
       <TopBar title="Invoices" />
@@ -32,7 +32,12 @@ export default async function InvoicesPage() {
                     <td className="px-6 py-4 text-sm">{inv.client.firstName} {inv.client.lastName}</td>
                     <td className="px-6 py-4 text-sm font-medium">{fmt(inv.totalCents)}</td>
                     <td className="px-6 py-4 text-sm">{fmt(inv.balanceDueCents)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{inv.dueDate ? format(inv.dueDate,'MMM d') : '—'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{(() => {
+                        // Show next unpaid milestone due date, fall back to invoice dueDate
+                        const nextMs = (inv as any).PaymentMilestone?.find((m: any) => m.status !== 'PAID');
+                        const d = nextMs?.dueDate ?? inv.dueDate;
+                        return d ? format(new Date(d), 'MMM d') : '—';
+                      })()}</td>
                     <td className="px-6 py-4"><Badge variant={IC[inv.status]}>{inv.status}</Badge></td>
                     <td className="px-6 py-4 text-right"><Link href={'/invoices/' + inv.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
                   </tr>

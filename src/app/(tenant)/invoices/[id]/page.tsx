@@ -55,7 +55,6 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
           <MilestonesCard
             invoiceId={inv.id}
             milestones={(inv as any).PaymentMilestone}
-            fmt={fmt}
           />
         )}
       </div>
