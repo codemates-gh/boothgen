@@ -23,6 +23,8 @@ function QuoteNewForm() {
   const [paymentType, setPaymentType] = useState<'full' | 'deposit'>('full');
   const [depositPercent, setDepositPercent] = useState(50);
   const [fullPaymentDays, setFullPaymentDays] = useState(14);
+  const [balanceDueDays, setBalanceDueDays] = useState(30);
+  const [balanceDueDate, setBalanceDueDate] = useState<string | null>(null);
   const [forceFullPayment, setForceFullPayment] = useState(false);
   const [items, setItems] = useState<LineItem[]>([{ description: '', quantity: 1, unitPrice: '' }]);
   const [taxRate, setTaxRate] = useState('0');
@@ -39,6 +41,7 @@ function QuoteNewForm() {
     fetch('/api/settings/branding').then(r => r.json()).then(d => {
       if (d.defaultDepositPercent != null) setDepositPercent(d.defaultDepositPercent);
       if (d.fullPaymentIfWithinDays != null) setFullPaymentDays(d.fullPaymentIfWithinDays);
+      if (d.balanceDueDaysBeforeEvent != null) setBalanceDueDays(d.balanceDueDaysBeforeEvent);
     });
   }, []);
 
@@ -51,10 +54,14 @@ function QuoteNewForm() {
     if (daysUntil <= fullPaymentDays) {
       setForceFullPayment(true);
       setPaymentType('full');
+      setBalanceDueDate(null);
     } else {
       setForceFullPayment(false);
+      const bd = new Date(ev.date);
+      bd.setDate(bd.getDate() - balanceDueDays);
+      setBalanceDueDate(bd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }));
     }
-  }, [selectedEvent, events, fullPaymentDays]);
+  }, [selectedEvent, events, fullPaymentDays, balanceDueDays]);
 
   function addFromPackage(pkg: any) {
     setItems(prev => [...prev.filter(i => i.description.trim() || i.unitPrice), {
@@ -233,7 +240,11 @@ function QuoteNewForm() {
                   <div className="flex items-center gap-3">
                     <label className="text-sm text-gray-600 whitespace-nowrap">Deposit %</label>
                     <Input type="number" min="1" max="99" value={depositPercent} onChange={e => setDepositPercent(parseInt(e.target.value) || 50)} className="w-24" />
-                    <span className="text-sm text-gray-500">= {new Intl.NumberFormat('en-US',{style:'currency',currency:'usd'}).format(total * (depositPercent/100))} due now, {new Intl.NumberFormat('en-US',{style:'currency',currency:'usd'}).format(total * (1 - depositPercent/100))} balance</span>
+                    <span className="text-sm text-gray-500">
+                      = {new Intl.NumberFormat('en-US',{style:'currency',currency:'usd'}).format(total * (depositPercent/100))} due now,{' '}
+                      {new Intl.NumberFormat('en-US',{style:'currency',currency:'usd'}).format(total * (1 - depositPercent/100))} balance
+                      {balanceDueDate && <> due <strong>{balanceDueDate}</strong></>}
+                    </span>
                   </div>
                 )}
               </div>
