@@ -59,6 +59,36 @@ export async function sendQuoteLink(params: {
   );
 }
 
+export async function sendPaymentConfirmationEmail(params: {
+  to: string; firstName: string; companyName: string; invoiceNumber: string;
+  amountPaidFormatted: string; eventTitle: string; portalUrl: string; replyTo?: string; from?: string;
+}) {
+  const { to, firstName, companyName, invoiceNumber, amountPaidFormatted, eventTitle, portalUrl, replyTo, from } = params;
+  return sendEmail(
+    to,
+    `Payment Confirmed — ${invoiceNumber}`,
+    `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
+<h2 style="font-size:20px;color:#111827">Hi ${firstName}, you're all set! 🎉</h2>
+<p style="color:#374151">We've received your payment for <strong>${eventTitle}</strong>. Your booking is confirmed.</p>
+<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin:24px 0">
+  <p style="margin:0;color:#166534;font-weight:600;font-size:18px;">✓ ${amountPaidFormatted} received</p>
+  <p style="margin:4px 0 0;color:#16a34a;font-size:14px;">Invoice ${invoiceNumber}</p>
+</div>
+<h3 style="font-size:16px;color:#111827;margin:28px 0 12px">What happens next</h3>
+<table style="width:100%;border-collapse:collapse">
+  <tr><td style="padding:12px 0;border-bottom:1px solid #f3f4f6;vertical-align:top;width:32px;font-size:20px">🎨</td><td style="padding:12px 0 12px 12px;border-bottom:1px solid #f3f4f6"><strong style="color:#111827">Template Design Review</strong><br/><span style="color:#6b7280;font-size:14px;">${companyName} will share your custom photo booth design and ask for your approval.</span></td></tr>
+  <tr><td style="padding:12px 0;border-bottom:1px solid #f3f4f6;vertical-align:top;font-size:20px">📸</td><td style="padding:12px 0 12px 12px;border-bottom:1px solid #f3f4f6"><strong style="color:#111827">Your Event</strong><br/><span style="color:#6b7280;font-size:14px;">Sit back and enjoy! Your photo booth team will handle everything on the day.</span></td></tr>
+  <tr><td style="padding:12px 0;vertical-align:top;font-size:20px">🖼️</td><td style="padding:12px 0 12px 12px"><strong style="color:#111827">Online Gallery</strong><br/><span style="color:#6b7280;font-size:14px;">Your event photos will be available to download from your client portal after the event.</span></td></tr>
+</table>
+<p style="margin:28px 0"><a href="${portalUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View Your Portal</a></p>
+<p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">Questions? Reply to this email — we're happy to help.</p>
+<p>Warm regards,<br/><strong>${companyName}</strong></p>
+</div>`,
+    replyTo,
+    from,
+  );
+}
+
 export async function sendDesignReadyEmail(params: {
   to: string; firstName: string; companyName: string; version: number; portalUrl: string;
 }) {

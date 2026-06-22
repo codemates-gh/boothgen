@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { stripe } from '@/lib/stripe';
+import { sendPaymentConfirmationEmail } from '@/lib/email/send';
 
 export async function GET(_: NextRequest, { params }: { params: { portalToken: string } }) {
   const event = await prisma.event.findFirst({
@@ -37,6 +38,21 @@ export async function GET(_: NextRequest, { params }: { params: { portalToken: s
           },
           include: { lineItems: { orderBy: { sortOrder: 'asc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } },
         });
+        // Webhook may have missed — send confirmation email from here as fallback
+        const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+        const companyName = event.tenant.branding?.companyName ?? event.tenant.name;
+        const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
+        sendPaymentConfirmationEmail({
+          to: event.client.email,
+          firstName: event.client.firstName,
+          companyName,
+          invoiceNumber: rawInvoice.invoiceNumber,
+          amountPaidFormatted: fmt(rawInvoice.totalCents),
+          eventTitle: event.title,
+          portalUrl: (process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com') + '/portal/' + params.portalToken + '?tab=invoice',
+          replyTo: event.tenant.branding?.replyToEmail ?? undefined,
+          from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
+        }).catch(e => console.error('[portal-reconcile] confirmation email error:', e));
       }
     } catch { /* Stripe unavailable — return DB state as-is */ }
   }

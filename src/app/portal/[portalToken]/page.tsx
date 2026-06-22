@@ -603,6 +603,48 @@ export default function ClientPortalPage() {
           </div>
         )}
 
+        {/* What's next — shown below the paid invoice */}
+        {tab === 'invoice' && invoicePaid && (
+          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="px-6 py-5 border-b border-gray-100">
+              <p className="font-bold text-gray-900 text-lg">What happens next</p>
+              <p className="text-sm text-gray-500 mt-0.5">Your booking is confirmed — here's the road ahead.</p>
+            </div>
+            <div className="divide-y divide-gray-50">
+              <div className="flex gap-4 px-6 py-5">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0 text-lg">🎨</div>
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">Template Design Review</p>
+                  <p className="text-sm text-gray-500 mt-0.5">{data.tenant?.branding?.companyName || data.tenant?.name} will share your custom photo booth design for your approval. You'll receive an email when it's ready — you can also check the Design tab above.</p>
+                  {!designUnlocked ? null : (
+                    <button onClick={() => setTab('design')} className="mt-2 text-sm font-semibold" style={{ color: pc }}>
+                      Go to Design tab →
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-4 px-6 py-5">
+                <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0 text-lg">📸</div>
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">Your Event</p>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    {data.event?.eventDate
+                      ? 'Your event is scheduled for ' + new Date(data.event.eventDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) + '. Your photo booth team will handle everything on the day.'
+                      : 'Your photo booth team will handle everything on the day. Sit back and enjoy!'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-4 px-6 py-5">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0 text-lg">🖼️</div>
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">Online Gallery</p>
+                  <p className="text-sm text-gray-500 mt-0.5">Your event photos will be available to view and download here in your portal after the event.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── DESIGN TAB ───────────────────────────────────────────────────── */}
         {tab === 'design' && (
           <div className="space-y-6">

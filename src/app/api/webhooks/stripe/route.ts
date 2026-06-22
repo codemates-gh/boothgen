@@ -3,7 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma/client';
+import { sendPaymentConfirmationEmail } from '@/lib/email/send';
 import type Stripe from 'stripe';
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -57,7 +60,13 @@ export async function POST(req: NextRequest) {
             },
           });
         } else if (invoiceId) {
-          const inv = await prisma.invoice.findUnique({ where: { id: invoiceId } });
+          const inv = await prisma.invoice.findUnique({
+            where: { id: invoiceId },
+            include: {
+              event: { include: { client: true } },
+              tenant: { include: { branding: { select: { companyName: true, replyToEmail: true } } } },
+            },
+          });
           if (inv) {
             await prisma.invoice.update({
               where: { id: invoiceId },
@@ -67,6 +76,22 @@ export async function POST(req: NextRequest) {
                 stripePaymentIntentId: pi.id,
               },
             });
+            if (inv.event?.client) {
+              const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+              const companyName = inv.tenant.branding?.companyName ?? inv.tenant.name;
+              const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
+              sendPaymentConfirmationEmail({
+                to: inv.event.client.email,
+                firstName: inv.event.client.firstName,
+                companyName,
+                invoiceNumber: inv.invoiceNumber,
+                amountPaidFormatted: fmt(inv.totalCents),
+                eventTitle: inv.event.title,
+                portalUrl: APP_URL + '/portal/' + inv.event.portalToken + '?tab=invoice',
+                replyTo: inv.tenant.branding?.replyToEmail ?? undefined,
+                from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
+              }).catch(e => console.error('[stripe-webhook] confirmation email error:', e));
+            }
           }
         }
         break;
