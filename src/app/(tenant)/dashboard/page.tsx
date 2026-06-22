@@ -27,10 +27,10 @@ export default async function DashboardPage() {
 
   const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
   const stats = [
-    { label: 'Upcoming Events', value: upcomingEvents.length, icon: Calendar, color: 'text-brand' },
-    { label: 'Total Clients', value: totalClients, icon: Users, color: 'text-blue-500' },
-    { label: 'New Leads (Month)', value: newLeads, icon: TrendingUp, color: 'text-purple-500' },
-    { label: 'Revenue (Month)', value: fmt(revenue._sum.amountCents ?? 0), icon: DollarSign, color: 'text-green-500' },
+    { label: 'Upcoming Events', value: upcomingEvents.length, icon: Calendar, color: 'text-brand', href: '/events' },
+    { label: 'Total Clients', value: totalClients, icon: Users, color: 'text-blue-500', href: '/clients' },
+    { label: 'New Leads (Month)', value: newLeads, icon: TrendingUp, color: 'text-purple-500', href: '/leads' },
+    { label: 'Revenue (Month)', value: fmt(revenue._sum.amountCents ?? 0), icon: DollarSign, color: 'text-green-500', href: '/invoices' },
   ];
 
   return (
@@ -45,7 +45,9 @@ export default async function DashboardPage() {
         )}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {stats.map(s => (
-            <Card key={s.label}><CardContent className="pt-6"><div className="flex items-center justify-between mb-2"><p className="text-sm font-medium text-gray-500">{s.label}</p><s.icon className={'w-5 h-5 ' + s.color} /></div><p className="text-2xl font-bold">{s.value}</p></CardContent></Card>
+            <Link key={s.label} href={s.href}>
+              <Card className="hover:shadow-md transition-shadow cursor-pointer"><CardContent className="pt-6"><div className="flex items-center justify-between mb-2"><p className="text-sm font-medium text-gray-500">{s.label}</p><s.icon className={'w-5 h-5 ' + s.color} /></div><p className="text-2xl font-bold">{s.value}</p></CardContent></Card>
+            </Link>
           ))}
         </div>
         <Card>

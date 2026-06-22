@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Camera } from 'lucide-react';
+import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 
 export default function OnboardingPage() {
   const [name, setName] = useState('');
@@ -37,11 +37,9 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-brand rounded-xl flex items-center justify-center">
-            <Camera className="w-5 h-5 text-white" />
-          </div>
+          <BoothGeniusIcon size={40} />
           <div>
-            <h1 className="text-xl font-bold">Welcome to Photo Booth CRM</h1>
+            <h1 className="text-xl font-bold">Welcome to Booth Genius</h1>
             <p className="text-sm text-gray-500">Let's set up your company</p>
           </div>
         </div>

@@ -4,14 +4,14 @@ import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { useSidebar } from './sidebar-context';
-import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, ChevronRight, Mail } from 'lucide-react';
-import Image from 'next/image';
+import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, ChevronRight, Mail, Menu, X, Inbox } from 'lucide-react';
+import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 
 const nav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/events', label: 'Events', icon: Calendar },
   { href: '/clients', label: 'Clients', icon: Users },
+  { href: '/leads', label: 'Leads', icon: Inbox },
   { href: '/quotes', label: 'Quotes', icon: FileText },
   { href: '/invoices', label: 'Invoices', icon: Receipt },
   { href: '/contracts', label: 'Contracts', icon: FileText },
@@ -24,16 +24,15 @@ const nav = [
 export function Sidebar() {
   const path = usePathname();
   const { data: session } = useSession();
-  const { isOpen, close } = useSidebar();
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
   const [companyName, setCompanyName] = useState<string>('');
+  const close = () => setIsOpen(false);
 
   useEffect(() => {
     fetch('/api/settings/branding')
       .then(r => r.json())
       .then(d => {
         if (d && !d.error) {
-          setLogoUrl(d.logoUrl ?? null);
           setCompanyName(d.companyName ?? '');
         }
       });
@@ -43,6 +42,15 @@ export function Sidebar() {
 
   return (
     <>
+      {!isOpen && (
+        <button
+          className="fixed top-0 left-0 h-14 w-14 z-40 lg:hidden flex items-center justify-center text-gray-500 hover:text-gray-700"
+          onClick={() => setIsOpen(true)}
+          aria-label="Open menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+      )}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -55,21 +63,21 @@ export function Sidebar() {
       )}>
         <div className="px-6 py-5 border-b border-white/10">
           <div className="flex items-center gap-3">
-            {logoUrl ? (
-              <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-white/10">
-                <Image src={logoUrl} alt={displayName} width={36} height={36} className="w-full h-full object-contain" />
-              </div>
-            ) : (
-              <div className="w-9 h-9 bg-brand rounded-lg flex items-center justify-center flex-shrink-0">
-                <Camera className="w-5 h-5 text-white" />
-              </div>
-            )}
-            <p className="text-white font-bold text-sm leading-tight truncate">{displayName}</p>
+            <div className="flex-shrink-0">
+              <BoothGeniusIcon size={36} />
+            </div>
+            <p className="text-white font-bold text-sm leading-tight truncate flex-1">{displayName}</p>
+            <button onClick={close} className="lg:hidden text-white/60 hover:text-white ml-auto" aria-label="Close menu">
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           {nav.map(({ href, label, icon: Icon }) => {
-            const active = path === href || path.startsWith(href + '/');
+            const active = path === href || (
+              path.startsWith(href + '/') &&
+              !nav.some(item => item.href !== href && (path === item.href || path.startsWith(item.href + '/')))
+            );
             return (
               <Link
                 key={href}

@@ -1,13 +1,19 @@
 import { getToken } from 'next-auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 
-const PUBLIC = ['/sign-in', '/sign-up', '/portal', '/embed', '/api/public', '/api/webhooks', '/api/auth', '/onboarding', '/_next', '/favicon'];
+const PUBLIC = ['/sign-in', '/sign-up', '/portal', '/embed', '/api/public', '/api/portal', '/api/webhooks', '/api/auth', '/onboarding', '/_next', '/favicon'];
+// Portal client-facing routes — authenticated via portalToken in body, no session required
+const PORTAL_CLIENT = [
+  /^\/api\/quotes\/[^/]+\/(accept|decline)$/,
+  /^\/api\/contracts\/[^/]+\/sign\/client$/,
+];
 const TENANT = ['/dashboard', '/events', '/clients', '/invoices', '/contracts', '/automation', '/settings', '/gallery'];
 const ADMIN = ['/super-admin', '/api/super-admin'];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (PUBLIC.some(p => pathname.startsWith(p))) return NextResponse.next();
+  if (PORTAL_CLIENT.some(r => r.test(pathname))) return NextResponse.next();
 
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 

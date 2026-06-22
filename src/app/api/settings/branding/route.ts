@@ -18,11 +18,13 @@ export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await req.json();
-  const { companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, invoiceFooterText } = body;
+  const { companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, invoiceFooterText, emailHeaderHtml, logoUrl } = body;
+  const updateData: any = { companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, invoiceFooterText, emailHeaderHtml };
+  if (logoUrl !== undefined) updateData.logoUrl = logoUrl;
   const branding = await prisma.tenantBranding.upsert({
     where: { tenantId: session.tenantId },
-    update: { companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, invoiceFooterText },
-    create: { tenantId: session.tenantId, companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, invoiceFooterText },
+    update: updateData,
+    create: { tenantId: session.tenantId, ...updateData },
   });
   return NextResponse.json(branding);
 }

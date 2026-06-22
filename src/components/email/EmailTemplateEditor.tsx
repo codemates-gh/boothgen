@@ -30,6 +30,8 @@ const MERGE_TAGS = [
   { label: 'Company Name', value: '{{host.company_name}}' },
   { label: 'Company Email', value: '{{host.email}}' },
   { label: 'Company Phone', value: '{{host.phone}}' },
+  { label: 'Company Website', value: '{{host.website}}' },
+  { label: 'Email Signature', value: '{{host.signature}}' },
 ];
 
 interface Props {
@@ -136,6 +138,8 @@ export default function EmailTemplateEditor({ value, onChange }: Props) {
         '{{host.company_name}}': 'Your Photo Booth Co.',
         '{{host.email}}': 'hello@yourbusiness.com',
         '{{host.phone}}': '(555) 123-4567',
+        '{{host.website}}': 'https://yourbusiness.com',
+        '{{host.signature}}': 'Warm regards,\nYour Name\nYour Company',
       };
       html = html.replaceAll(t.value, `<strong style="color:#ea6100">${ex[t.value] ?? t.value}</strong>`);
     });

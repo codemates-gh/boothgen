@@ -36,13 +36,13 @@ export async function POST(req: NextRequest) {
       notes: notes || null, status: 'DRAFT',
       lineItems: { create: items.map((li: any, i: number) => ({ description: li.description, quantity: li.quantity||1, unitCents: li.unitCents||0, totalCents: li.totalCents||0, sortOrder: i })) },
       ...(paymentType === 'deposit' ? {
-        milestones: { create: [
+        PaymentMilestone: { create: [
           { tenantId: session.tenantId, label: 'Deposit', amountCents: deposit, dueDate: dueDate ? new Date(dueDate) : new Date() },
           { tenantId: session.tenantId, label: 'Balance', amountCents: total - deposit, dueDate: dueDate ? new Date(dueDate) : new Date() },
         ]},
       } : {}),
     },
-    include: { lineItems: true, milestones: true },
+    include: { lineItems: true, PaymentMilestone: true },
   });
   return NextResponse.json(invoice, { status: 201 });
 }

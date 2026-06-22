@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await req.json();
-  const { eventId, lineItems, notes, terms, taxRatePercent, validUntil, discountCents } = body;
+  const { eventId, lineItems, notes, terms, taxRatePercent, validUntil, discountCents, contractTemplateId, paymentType, depositPercent } = body;
   if (!eventId) return NextResponse.json({ error: 'Event required' }, { status: 400 });
   const event = await prisma.event.findFirst({ where: { id: eventId, tenantId: session.tenantId }, include: { client: true } });
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
@@ -39,6 +39,9 @@ export async function POST(req: NextRequest) {
       taxRatePercent: taxRatePercent || 0, taxAmountCents: tax,
       subtotalCents: subtotal, discountCents: discount, totalCents: total,
       validUntil: validUntil ? new Date(validUntil) : null,
+      contractTemplateId: contractTemplateId || null,
+      paymentType: paymentType || 'full',
+      depositPercent: depositPercent ?? 50,
       lineItems: { create: items.map((li: any, i: number) => ({ description: li.description, quantity: li.quantity || 1, unitCents: li.unitCents || 0, totalCents: li.totalCents || 0, sortOrder: i })) },
     },
     include: { lineItems: true },

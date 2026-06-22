@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users } from 'lucide-react';
 import { format } from 'date-fns';
+import { InviteForm } from './InviteForm';
 
 const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['embed','Lead Capture']];
 const RC: Record<string,any> = { HOST_ADMIN:'brand', TEAM_MEMBER:'default' };
@@ -22,6 +23,9 @@ export default async function TeamSettingsPage() {
         <div className="flex flex-wrap gap-2 border-b pb-4">
           {tabs.map(([href, label]) => <Link key={href} href={'/settings/' + href} className={'px-3 sm:px-4 py-2 rounded-lg text-sm font-medium ' + (href === 'team' ? 'bg-brand text-white' : 'text-gray-600 hover:bg-gray-100')}>{label}</Link>)}
         </div>
+
+        <InviteForm />
+
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Users className="w-5 h-5"/>Team Members ({members.length})</CardTitle></CardHeader>
           <CardContent className="p-0">

@@ -31,6 +31,8 @@ const CONTRACT_TAGS = [
   { label: 'Company Name', value: '{{host.company_name}}' },
   { label: 'Company Email', value: '{{host.email}}' },
   { label: 'Company Phone', value: '{{host.phone}}' },
+  { label: 'Company Website', value: '{{host.website}}' },
+  { label: 'Email Signature', value: '{{host.signature}}' },
   { label: 'Today\'s Date', value: '{{today}}' },
 ];
 

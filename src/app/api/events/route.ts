@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
+import { inngest } from '@/lib/inngest/client';
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -18,10 +19,11 @@ export async function POST(req: NextRequest) {
     update: { firstName, lastName, phone: phone || null },
     create: { tenantId: session.tenantId, firstName, lastName, email, phone: phone || null },
   });
+  const eventStatus = status || 'LEAD';
   const event = await prisma.event.create({
     data: {
       tenantId: session.tenantId, clientId: client.id,
-      title, status: status || 'LEAD', eventDate: new Date(eventDate),
+      title, status: eventStatus, eventDate: new Date(eventDate),
       startTime: startTime ? new Date(eventDate + 'T' + startTime) : null,
       endTime: endTime ? new Date(eventDate + 'T' + endTime) : null,
       venueName: venueName || null, venueAddress: venueAddress || null,
@@ -32,6 +34,14 @@ export async function POST(req: NextRequest) {
       internalNotes: internalNotes || null,
     },
   });
+
+  // Fire automation triggers
+  if (eventStatus === 'LEAD') {
+    inngest.send({ name: 'lead/created', data: { tenantId: session.tenantId, eventId: event.id } }).catch(() => {});
+  } else if (eventStatus === 'BOOKED') {
+    inngest.send({ name: 'booking/confirmed', data: { tenantId: session.tenantId, eventId: event.id, eventDate: event.eventDate.toISOString() } }).catch(() => {});
+  }
+
   return NextResponse.json(event, { status: 201 });
 }
 

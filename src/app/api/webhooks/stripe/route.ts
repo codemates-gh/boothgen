@@ -40,12 +40,12 @@ export async function POST(req: NextRequest) {
           const milestone = await prisma.paymentMilestone.update({
             where: { id: milestoneId },
             data: { status: 'PAID', paidAt: new Date(), stripePaymentIntentId: pi.id },
-            include: { invoice: { include: { milestones: true } } },
+            include: { invoice: { include: { PaymentMilestone: true } } },
           });
-          const updated = milestone.invoice.milestones.map(m =>
+          const updated = (milestone.invoice as any).PaymentMilestone.map((m: any) =>
             m.id === milestoneId ? { ...m, status: 'PAID' as const } : m
           );
-          const paidCents    = updated.filter(m => m.status === 'PAID').reduce((s, m) => s + m.amountCents, 0);
+          const paidCents    = updated.filter((m: any) => m.status === 'PAID').reduce((s: number, m: any) => s + m.amountCents, 0);
           const balanceCents = Math.max(0, milestone.invoice.totalCents - paidCents);
           await prisma.invoice.update({
             where: { id: milestone.invoiceId },

@@ -12,8 +12,8 @@ export async function POST(req: NextRequest) {
   const invoice = await prisma.invoice.findUnique({
     where:   { id: invoiceId },
     include: {
-      tenant:     { include: { stripeConnect: true } },
-      milestones: true,
+      tenant:          { include: { stripeConnect: true } },
+      PaymentMilestone: true,
     },
   });
 
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   };
 
   if (milestoneId) {
-    const ms = invoice.milestones.find(m => m.id === milestoneId);
+    const ms = (invoice as any).PaymentMilestone?.find((m: any) => m.id === milestoneId);
     if (!ms) {
       return NextResponse.json({ error: 'Milestone not found' }, { status: 404 });
     }

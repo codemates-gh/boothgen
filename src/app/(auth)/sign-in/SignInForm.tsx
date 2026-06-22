@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Camera, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 
 export default function SignInForm() {
   const [email, setEmail] = useState('');
@@ -28,10 +29,10 @@ export default function SignInForm() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 bg-brand rounded-2xl flex items-center justify-center mb-4">
-            <Camera className="w-7 h-7 text-white" />
+          <div className="mb-4">
+            <BoothGeniusIcon size={68} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Photo Booth CRM</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Booth Genius</h1>
           <p className="text-gray-500 text-sm mt-1">Sign in to your account</p>
         </div>
         {error && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-6"><AlertCircle className="w-4 h-4 flex-shrink-0"/>{error}</div>}
@@ -46,6 +47,9 @@ export default function SignInForm() {
               <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required autoComplete="current-password" className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent pr-10"/>
               <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">{showPw ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}</button>
             </div>
+          </div>
+          <div className="flex justify-end -mt-1">
+            <Link href="/forgot-password" className="text-xs text-brand hover:underline">Forgot password?</Link>
           </div>
           <button type="submit" disabled={loading || !email || !password} className="w-full py-2.5 bg-brand hover:bg-brand-dark text-white font-semibold rounded-xl text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{loading ? 'Signing in...' : 'Sign In'}</button>
         </form>

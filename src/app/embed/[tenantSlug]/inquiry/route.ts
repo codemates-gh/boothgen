@@ -76,8 +76,15 @@ export async function GET(
     '<div><label>Phone</label><input type="tel" name="phone" autocomplete="tel"/></div>' +
     '<div><label>Event Date <span class="req">*</span></label><input type="date" name="eventDate" required/></div>' +
     '<div><label>Event Type</label><select name="eventType"><option value="">-- Select --</option><option>Wedding</option><option>Corporate Event</option><option>Birthday Party</option><option>Quincea\xf1era / Sweet 16</option><option>Graduation</option><option>Holiday Party</option><option>Other</option></select></div>' +
+    '<div><label>Start Time</label><input type="time" name="startTime"/></div>' +
+    '<div><label>End Time</label><input type="time" name="endTime"/></div>' +
     '<div><label>Est. Guest Count</label><input type="number" name="guestCount" min="1" max="5000" placeholder="150"/></div>' +
-    '<div class="full"><label>Tell us about your event</label><textarea name="message" placeholder="Venue, vibe, special requests..."></textarea></div>' +
+    '<div class="full"><label>Venue Name</label><input type="text" name="venueName" placeholder="Ballroom, backyard, event hall..."/></div>' +
+    '<div class="full"><label>Venue Address</label><input type="text" name="venueAddress" autocomplete="street-address" placeholder="123 Main St"/></div>' +
+    '<div><label>City</label><input type="text" name="venueCity" autocomplete="address-level2"/></div>' +
+    '<div><label>State</label><input type="text" name="venueState" autocomplete="address-level1" placeholder="MD"/></div>' +
+    '<div><label>Zip Code</label><input type="text" name="venuePostalCode" autocomplete="postal-code" placeholder="20001"/></div>' +
+    '<div class="full"><label>Additional Notes</label><textarea name="message" placeholder="Special requests, theme, anything else we should know..."></textarea></div>' +
     '</div>' +
     '<div class="errbox" id="eb"></div>' +
     '<button type="submit" class="btn" id="sb">Send My Inquiry</button>' +

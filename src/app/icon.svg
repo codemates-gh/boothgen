@@ -1,0 +1,14 @@
+<svg width="90" height="108" viewBox="0 0 90 108" xmlns="http://www.w3.org/2000/svg">
+  <rect x="28" y="50" width="34" height="52" rx="3" fill="#2D1B69"/>
+  <rect x="33" y="89" width="24" height="1.5" rx="0.75" fill="#ffffff" opacity="0.2"/>
+  <rect x="33" y="92" width="24" height="1.5" rx="0.75" fill="#ffffff" opacity="0.14"/>
+  <rect x="33" y="95" width="24" height="1.5" rx="0.75" fill="#ffffff" opacity="0.08"/>
+  <rect x="33" y="61" width="24" height="4" rx="1.5" fill="#ffffff" opacity="0.78"/>
+  <rect x="33" y="70" width="24" height="4" rx="1.5" fill="#ffffff" opacity="0.78"/>
+  <rect x="33" y="79" width="24" height="4" rx="1.5" fill="#ffffff" opacity="0.78"/>
+  <circle cx="45" cy="33" r="25" fill="#F7B731"/>
+  <circle cx="40" cy="27" r="9" fill="#ffffff" opacity="0.18"/>
+  <path d="M38 43L45 31L52 43" stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="38" y1="43" x2="38" y2="48" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+  <line x1="52" y1="43" x2="52" y2="48" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+</svg>
