@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.0.3] — 2026-06-22
+
+### Fixed
+- **Balance due date on auto-generated invoice** — contract signing route used `event.date` (undefined) instead of `event.eventDate`; balance milestone was always falling back to today. Now correctly calculates `eventDate − balanceDueDaysBeforeEvent`
+
+### Added
+- **Payment schedule on invoice detail** — invoice page now shows the Payment Schedule card with each milestone, its status, and due date
+- **Editable milestone due dates** — pencil icon on unpaid milestones lets admins correct due dates without recreating the invoice; paid milestones are locked
+
+---
+
 ## [1.0.2] — 2026-06-22
 
 ### Fixed

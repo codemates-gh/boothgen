@@ -9,13 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
+import MilestonesCard from './MilestonesCard';
 
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
 
 export default async function InvoiceDetailPage({ params }: { params: { id: string } }) {
   const session = await requireTenantSession();
   const tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId }, include: { branding: true } });
-  const inv = await prisma.invoice.findFirst({ where: { id: params.id, tenantId: session.tenantId }, include: { client: true, event: true, lineItems: { orderBy: { sortOrder: 'asc' } }, payments: { orderBy: { paidAt: 'desc' } } } });
+  const inv = await prisma.invoice.findFirst({ where: { id: params.id, tenantId: session.tenantId }, include: { client: true, event: true, lineItems: { orderBy: { sortOrder: 'asc' } }, payments: { orderBy: { paidAt: 'desc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } } });
   if (!inv) notFound();
   const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
   return (
@@ -50,6 +51,13 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
             </div>
           </CardContent>
         </Card>
+        {(inv as any).PaymentMilestone?.length > 0 && (
+          <MilestonesCard
+            invoiceId={inv.id}
+            milestones={(inv as any).PaymentMilestone}
+            fmt={fmt}
+          />
+        )}
       </div>
     </>
   );

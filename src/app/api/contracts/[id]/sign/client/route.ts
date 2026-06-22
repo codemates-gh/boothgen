@@ -58,7 +58,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
           // Calculate balance due date: event date minus tenant's balanceDueDaysBeforeEvent setting
           const balanceDueDays = (contract.tenant as any)?.branding?.balanceDueDaysBeforeEvent ?? 30;
-          const eventDate = (contract.event as any)?.date ? new Date((contract.event as any).date) : null;
+          const eventDate = (contract.event as any)?.eventDate ? new Date((contract.event as any).eventDate) : null;
           const balanceDueDate = eventDate
             ? new Date(eventDate.getTime() - balanceDueDays * 24 * 60 * 60 * 1000)
             : new Date();
