@@ -1,16 +1,17 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Printer } from 'lucide-react';
+import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Printer, Layers, AlertCircle } from 'lucide-react';
 import { InvoicePaymentForm } from '@/components/stripe/PaymentForm';
 
-type Tab = 'quote' | 'contract' | 'invoice' | 'gallery';
+type Tab = 'quote' | 'contract' | 'invoice' | 'design' | 'gallery';
 
 interface PortalData {
   event: any; client: any; tenant: any;
   quote: any | null; contract: any | null;
   invoice: any | null; gallery: any | null;
   assets: any[];
+  templateDesigns: any[];
 }
 
 const fmt = (c: number) =>
@@ -30,21 +31,35 @@ export default function ClientPortalPage() {
   const [message,     setMessage]     = useState('');
   // showPayment: null = hidden | 'full' = full balance | milestoneId = that milestone
   const [showPayment, setShowPayment] = useState<string | null>(null);
+  const [revisionNote, setRevisionNote] = useState('');
+  const [showRevisionForm, setShowRevisionForm] = useState(false);
 
   useEffect(() => { load(); }, [portalToken]);
 
-  // Handle Stripe's redirect back after payment
+  // Handle Stripe's redirect back after payment — poll until the webhook has updated the DB
   useEffect(() => {
     const rs = searchParams.get('redirect_status');
     if (rs === 'succeeded') {
       setMessage('Payment successful! Your invoice has been updated. 🎉');
       setTab('invoice');
-      load();
+      pollUntilPaid(0);
     } else if (rs === 'failed') {
       setMessage('Payment was not completed. Please try again.');
       setTab('invoice');
     }
   }, []);
+
+  async function pollUntilPaid(attempt: number) {
+    const r = await fetch('/api/portal/' + portalToken);
+    if (!r.ok) return;
+    const d = await r.json();
+    setData(d);
+    setLoading(false);
+    // Keep polling while no payment recorded yet, up to 5 attempts (~10s total)
+    if (attempt < 5 && d.invoice && d.invoice.amountPaidCents === 0) {
+      setTimeout(() => pollUntilPaid(attempt + 1), 2000);
+    }
+  }
 
   async function load() {
     const r = await fetch('/api/portal/' + portalToken);
@@ -58,44 +73,88 @@ export default function ClientPortalPage() {
   const contractSigned = data?.contract?.status === 'FULLY_EXECUTED' ||
                          data?.contract?.status === 'CLIENT_SIGNED';
   const invoicePaid    = data?.invoice?.status === 'PAID';
+  const eventBooked    = data?.event?.status === 'BOOKED';
+  const designUnlocked = invoicePaid || eventBooked;
+  const latestDesign   = data?.templateDesigns?.[0] ?? null;
+  const designDone     = latestDesign?.status === 'APPROVED';
 
   const tabs: { id: Tab; label: string; icon: any; locked: boolean; done: boolean }[] = [
-    { id: 'quote',    label: 'Quote',    icon: FileText, locked: false,             done: quoteAccepted  },
-    { id: 'contract', label: 'Contract', icon: FileText, locked: !quoteAccepted,   done: contractSigned },
-    { id: 'invoice',  label: 'Invoice',  icon: Receipt,  locked: !contractSigned,  done: invoicePaid    },
+    { id: 'quote',    label: 'Quote',    icon: FileText, locked: false,              done: quoteAccepted  },
+    { id: 'contract', label: 'Contract', icon: FileText, locked: !quoteAccepted,    done: contractSigned },
+    { id: 'invoice',  label: 'Invoice',  icon: Receipt,  locked: !contractSigned,   done: invoicePaid    },
+    { id: 'design',   label: 'Design',   icon: Layers,   locked: !designUnlocked,   done: designDone     },
     { id: 'gallery',  label: 'Gallery',  icon: Image,    locked: !data?.gallery?.isPublished, done: false },
   ];
 
   async function acceptQuote() {
     if (!sigName.trim()) { setMessage('Please enter your name to sign'); return; }
     setProcessing(true);
-    const r = await fetch('/api/quotes/' + data?.quote?.id + '/accept', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ signatureData: sigName, clientName: sigName, portalToken }),
-    });
-    if (r.ok) { setMessage('Quote accepted! Your contract is now available.'); await load(); setTab('contract'); }
-    else { const d = await r.json(); setMessage(d.error || 'Error'); }
+    try {
+      const r = await fetch('/api/quotes/' + data?.quote?.id + '/accept', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signatureData: sigName, clientName: sigName, portalToken }),
+      });
+      if (r.ok) { setMessage('Quote accepted! Your contract is now available.'); await load(); setTab('contract'); }
+      else { const d = await r.json().catch(() => ({})); setMessage(d.error || 'Something went wrong. Please try again.'); }
+    } catch { setMessage('Network error. Please try again.'); }
     setProcessing(false);
   }
 
   async function declineQuote() {
     setProcessing(true);
-    await fetch('/api/quotes/' + data?.quote?.id + '/decline', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason: declineReason, portalToken }),
-    });
-    setMessage('Quote declined. The host will be notified.'); await load(); setProcessing(false);
+    try {
+      await fetch('/api/quotes/' + data?.quote?.id + '/decline', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: declineReason, portalToken }),
+      });
+      setMessage('Quote declined. The host will be notified.'); await load();
+    } catch { setMessage('Network error. Please try again.'); }
+    setProcessing(false);
   }
 
   async function signContract() {
     if (!sigName.trim()) { setMessage('Please enter your name to sign'); return; }
     setProcessing(true);
-    const r = await fetch('/api/contracts/' + data?.contract?.id + '/sign/client', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clientToken: data?.contract?.clientToken || '', signatureDataUrl: sigName, signerName: sigName }),
-    });
-    if (r.ok) { setMessage('Contract signed! Your invoice is now available.'); await load(); setTab('invoice'); }
-    else { const d = await r.json(); setMessage(d.error || 'Error'); }
+    try {
+      const r = await fetch('/api/contracts/' + data?.contract?.id + '/sign/client', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientToken: data?.contract?.clientToken || '', signatureDataUrl: sigName, signerName: sigName }),
+      });
+      if (r.ok) { setMessage('Contract signed! Your invoice is now available.'); await load(); setTab('invoice'); }
+      else { const d = await r.json().catch(() => ({})); setMessage(d.error || 'Something went wrong. Please try again.'); }
+    } catch { setMessage('Network error. Please try again.'); }
+    setProcessing(false);
+  }
+
+  async function approveDesign() {
+    if (!latestDesign) return;
+    setProcessing(true);
+    try {
+      const r = await fetch('/api/template-designs/' + latestDesign.id + '/approve', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ portalToken }),
+      });
+      if (r.ok) { setMessage('Design approved! Thank you.'); await load(); }
+      else { const d = await r.json().catch(() => ({})); setMessage(d.error || 'Something went wrong. Please try again.'); }
+    } catch { setMessage('Network error. Please try again.'); }
+    setProcessing(false);
+  }
+
+  async function requestDesignRevision() {
+    if (!latestDesign) return;
+    if (!revisionNote.trim()) { setMessage('Please enter your feedback before submitting.'); return; }
+    setProcessing(true);
+    try {
+      const r = await fetch('/api/template-designs/' + latestDesign.id + '/request-revision', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ portalToken, revisionNote }),
+      });
+      if (r.ok) {
+        setMessage('Revision requested. The host has been notified and will upload a new version.');
+        setRevisionNote(''); setShowRevisionForm(false);
+        await load();
+      } else { const d = await r.json().catch(() => ({})); setMessage(d.error || 'Something went wrong. Please try again.'); }
+    } catch { setMessage('Network error. Please try again.'); }
     setProcessing(false);
   }
 
@@ -369,7 +428,7 @@ export default function ClientPortalPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="p-6 prose max-w-none text-sm" dangerouslySetInnerHTML={{ __html: data.contract.bodyHtml || '' }}/>
+                  <div className="p-6 prose max-w-none text-sm" dangerouslySetInnerHTML={{ __html: data.contract.renderedContent || data.contract.templateContent || '' }}/>
                 </div>
 
                 {!contractSigned && (
@@ -539,6 +598,117 @@ export default function ClientPortalPage() {
                   )}
 
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── DESIGN TAB ───────────────────────────────────────────────────── */}
+        {tab === 'design' && (
+          <div className="space-y-6">
+            {!latestDesign ? (
+              <div className="text-center py-16 text-gray-400">
+                <Layers className="w-12 h-12 mx-auto mb-4 opacity-30"/>
+                <p>Your template design will appear here once it's ready for review.</p>
+              </div>
+            ) : latestDesign.status === 'PENDING_APPROVAL' ? (
+              <>
+                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                  <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase font-medium">Template Design</p>
+                      <p className="text-xl font-bold text-gray-900 mt-0.5">Version {latestDesign.version}</p>
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">Awaiting Your Review</span>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <p className="text-sm text-gray-600">Please review the template design file below, then approve it or request changes.</p>
+                    <a
+                      href={latestDesign.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                    >
+                      <Layers className="w-8 h-8 text-gray-400 flex-shrink-0"/>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{latestDesign.filename}</p>
+                        <p className="text-xs text-blue-600">Click to view file ↗</p>
+                      </div>
+                    </a>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 shadow-sm">
+                  <h3 className="font-bold text-gray-900">Your Decision</h3>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={approveDesign} disabled={processing}
+                      className="flex-1 py-3 rounded-xl text-white font-bold text-sm transition-all disabled:opacity-50"
+                      style={{ backgroundColor: pc }}
+                    >
+                      {processing && !showRevisionForm ? 'Processing…' : '✓ Approve Design'}
+                    </button>
+                    <button
+                      onClick={() => { setShowRevisionForm(!showRevisionForm); setMessage(''); }}
+                      className="px-5 py-3 rounded-xl border border-gray-300 text-gray-600 font-medium text-sm hover:bg-gray-50"
+                    >
+                      Request Changes
+                    </button>
+                  </div>
+                  {showRevisionForm && (
+                    <div className="space-y-3 pt-2 border-t">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Describe what you'd like changed <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        value={revisionNote} onChange={e => setRevisionNote(e.target.value)}
+                        placeholder="e.g. Please change the font to something more elegant, and move the logo to the top right corner."
+                        className="w-full border border-gray-300 rounded-xl p-3 text-sm resize-none h-28 focus:outline-none focus:ring-2"
+                        style={{ '--tw-ring-color': pc } as React.CSSProperties}
+                      />
+                      <button
+                        onClick={requestDesignRevision} disabled={processing || !revisionNote.trim()}
+                        className="w-full py-2.5 rounded-xl border border-amber-400 text-amber-700 font-medium text-sm hover:bg-amber-50 disabled:opacity-50"
+                      >
+                        {processing ? '…' : 'Submit Revision Request'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : latestDesign.status === 'APPROVED' ? (
+              <div className="flex items-center gap-3 p-5 bg-green-50 rounded-2xl border border-green-200">
+                <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0"/>
+                <div>
+                  <p className="font-semibold text-green-800">Design Approved</p>
+                  <p className="text-sm text-green-600">
+                    You approved version {latestDesign.version} on{' '}
+                    {latestDesign.approvedAt ? new Date(latestDesign.approvedAt).toLocaleDateString() : ''}. Your photo booth is all set!
+                  </p>
+                </div>
+              </div>
+            ) : latestDesign.status === 'REVISION_REQUESTED' ? (
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-5 bg-amber-50 rounded-2xl border border-amber-200">
+                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"/>
+                  <div>
+                    <p className="font-semibold text-amber-800">Revision in Progress</p>
+                    <p className="text-sm text-amber-700 mt-1">
+                      Your feedback has been sent. The host is working on a new version and will notify you when it's ready.
+                    </p>
+                    {latestDesign.revisionNote && (
+                      <div className="mt-3 p-3 bg-white border border-amber-200 rounded-lg">
+                        <p className="text-xs font-semibold text-amber-800 mb-1">Your feedback (version {latestDesign.version})</p>
+                        <p className="text-sm text-amber-700">{latestDesign.revisionNote}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-16 text-gray-400">
+                <Layers className="w-12 h-12 mx-auto mb-4 opacity-30"/>
+                <p>Your design is being prepared. Check back shortly.</p>
               </div>
             )}
           </div>

@@ -1,10 +1,35 @@
 export const dynamic = 'force-dynamic';
 import { serve } from 'inngest/next';
 import { inngest } from '@/lib/inngest/client';
+import {
+  processAutomation,
+  scheduleLeadCreatedAutomations,
+  scheduleBookingConfirmedAutomations,
+  scheduleContractSentAutomations,
+  scheduleContractExecutedAutomations,
+  scheduleInvoiceSentAutomations,
+  schedulePaymentReceivedAutomations,
+  scheduleQuoteSentAutomations,
+  purgeOldLeadMessages,
+  notifyClientDesignReady,
+  notifyHostDesignDecision,
+} from '@/lib/inngest/functions';
 
 const handler = serve({
   client: inngest,
-  functions: [],
+  functions: [
+    processAutomation,
+    scheduleLeadCreatedAutomations,
+    scheduleBookingConfirmedAutomations,
+    scheduleContractSentAutomations,
+    scheduleContractExecutedAutomations,
+    scheduleInvoiceSentAutomations,
+    schedulePaymentReceivedAutomations,
+    scheduleQuoteSentAutomations,
+    purgeOldLeadMessages,
+    notifyClientDesignReady,
+    notifyHostDesignDecision,
+  ],
   signingKey: process.env.INNGEST_SIGNING_KEY,
 });
 

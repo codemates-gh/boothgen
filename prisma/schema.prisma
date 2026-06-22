@@ -12,6 +12,19 @@ enum GlobalRole {
   USER
 }
 
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUOTED
+  CONVERTED
+  CLOSED_LOST
+}
+
+enum MessageDirection {
+  OUTBOUND
+  INBOUND
+}
+
 enum TenantRole {
   HOST_ADMIN
   TEAM_MEMBER
@@ -121,6 +134,13 @@ enum AssetApprovalStatus {
   CHANGES_REQUESTED
 }
 
+enum TemplateDesignStatus {
+  DRAFT
+  PENDING_APPROVAL
+  REVISION_REQUESTED
+  APPROVED
+}
+
 enum StripeConnectStatus {
   NOT_CONNECTED
   ONBOARDING_INITIATED
@@ -166,6 +186,7 @@ model Tenant {
   automationRules      AutomationRule[]
   automationExecutions AutomationExecution[]
   galleries            Gallery[]
+  templateDesigns      TemplateDesign[]
   stripeConnect        StripeConnectAccount?
   stripeSubscription   StripeSubscription?
   apiKeys              TenantApiKey[]
@@ -319,6 +340,7 @@ model Event {
   invoices             Invoice[]
   contracts            Contract[]
   gallery              Gallery?
+  templateDesigns      TemplateDesign[]
   automationExecutions AutomationExecution[]
   leadSubmission       LeadSubmission?       @relation("LeadConvertedFrom")
   Quote                Quote[]
@@ -427,6 +449,7 @@ model ContractTemplate {
 
   tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   contracts Contract[]
+  quotes    Quote[]
 
   @@map("contract_templates")
 }
@@ -592,6 +615,12 @@ model LeadSubmission {
   eventDate          DateTime?
   eventType          String?
   venueName          String?
+  venueAddress       String?
+  venueCity          String?
+  venueState         String?
+  venuePostalCode    String?
+  startTime          String?
+  endTime            String?
   guestCount         Int?
   packageInterest    String?
   message            String?   @db.Text
@@ -605,6 +634,8 @@ model LeadSubmission {
   userAgent          String?
   convertedToEventId String?   @unique
   convertedAt        DateTime?
+  status             LeadStatus @default(NEW)
+  notes              String?   @db.Text
   isSpam             Boolean   @default(false)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -613,9 +644,28 @@ model LeadSubmission {
   apiKey           TenantApiKey? @relation(fields: [apiKeyId], references: [id])
   client           Client?       @relation(fields: [clientId], references: [id])
   convertedToEvent Event?        @relation("LeadConvertedFrom", fields: [convertedToEventId], references: [id])
+  messages         LeadMessage[]
 
   @@index([tenantId, createdAt])
   @@map("lead_submissions")
+}
+
+model LeadMessage {
+  id        String           @id @default(cuid())
+  leadId    String
+  direction MessageDirection
+  fromEmail String
+  toEmail   String
+  subject   String
+  bodyText  String?          @db.Text
+  bodyHtml  String?          @db.Text
+  sentAt    DateTime         @default(now())
+  resendId  String?
+
+  lead LeadSubmission @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, sentAt])
+  @@map("lead_messages")
 }
 
 model StripeSubscription {
@@ -721,14 +771,18 @@ model Quote {
   clientSignatureData String?
   clientSignedAt      DateTime?
   clientIpAddress     String?
-  clientName          String?
-  portalToken         String          @unique @default(cuid())
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
-  tenant              Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  event               Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  client              Client          @relation(fields: [clientId], references: [id])
-  lineItems           QuoteLineItem[]
+  clientName              String?
+  contractTemplateId      String?
+  paymentType             String          @default("full")
+  depositPercent          Int             @default(50)
+  portalToken             String          @unique @default(cuid())
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+  tenant                  Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event                   Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  client                  Client          @relation(fields: [clientId], references: [id])
+  contractTemplate        ContractTemplate? @relation(fields: [contractTemplateId], references: [id], onDelete: SetNull)
+  lineItems               QuoteLineItem[]
 
   @@index([tenantId])
   @@index([eventId])
@@ -764,4 +818,33 @@ model PaymentMilestone {
 
   @@index([invoiceId])
   @@map("payment_milestones")
+}
+
+model TemplateDesign {
+  id           String               @id @default(cuid())
+  tenantId     String
+  eventId      String
+  fileUrl      String
+  filename     String
+  status       TemplateDesignStatus @default(DRAFT)
+  version      Int                  @default(1)
+  revisionNote String?              @db.Text
+  approvedAt   DateTime?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([eventId])
+  @@map("template_designs")
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
 }

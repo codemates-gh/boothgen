@@ -7,7 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Package, ArrowLeft, ExternalLink, FileText, Receipt, Edit2 } from 'lucide-react';
+import { Calendar, MapPin, Users, Package, ArrowLeft, ExternalLink, FileText, Receipt, Edit2, ClipboardList, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import DeleteEventButton from './DeleteEventButton';
 
@@ -17,7 +17,7 @@ const CC: Record<string,any> = { DRAFT:'default', SENT_TO_CLIENT:'info', CLIENT_
 
 export default async function EventDetailPage({ params }: { params: { id: string } }) {
   const session = await requireTenantSession();
-  const event = await prisma.event.findFirst({ where: { id: params.id, tenantId: session.tenantId }, include: { client: true, invoices: { include: { lineItems: { orderBy: { sortOrder: 'asc' } } }, orderBy: { createdAt: 'desc' } }, contracts: { orderBy: { createdAt: 'desc' } } } });
+  const event = await prisma.event.findFirst({ where: { id: params.id, tenantId: session.tenantId }, include: { client: true, invoices: { include: { lineItems: { orderBy: { sortOrder: 'asc' } } }, orderBy: { createdAt: 'desc' } }, contracts: { orderBy: { createdAt: 'desc' } }, templateDesigns: { orderBy: { version: 'desc' }, take: 3 } } });
   if (!event) notFound();
   const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
   const portalUrl = process.env.NEXT_PUBLIC_APP_URL + '/portal/' + event.portalToken;
@@ -32,6 +32,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
           <div className="flex flex-wrap gap-2">
             <Link href={'/events/' + event.id + '/edit'}><Button variant="outline" size="sm"><Edit2 className="w-4 h-4 mr-1"/>Edit Event</Button></Link>
             <a href={portalUrl} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><ExternalLink className="w-4 h-4 mr-1"/>Client Portal</Button></a>
+            <Link href={'/quotes/new?eventId=' + event.id}><Button variant="outline" size="sm"><ClipboardList className="w-4 h-4 mr-1"/>Create Quote</Button></Link>
             <Link href={'/invoices/new?eventId=' + event.id}><Button size="sm"><Receipt className="w-4 h-4 mr-1"/>Create Invoice</Button></Link>
             <DeleteEventButton eventId={event.id} hasInvoices={event.invoices.length > 0} hasContracts={event.contracts.length > 0} />
           </div>
@@ -86,6 +87,32 @@ export default async function EventDetailPage({ params }: { params: { id: string
             <Link href={'/contracts/new?eventId=' + event.id}><Button variant="outline"><FileText className="w-4 h-4 mr-2"/>Create Contract</Button></Link>
           </div>
         )}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2"><Layers className="w-4 h-4"/>Template Designs</CardTitle>
+              <Link href={'/events/' + event.id + '/designs'}><Button variant="outline" size="sm">Manage Designs</Button></Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {event.templateDesigns.length === 0 ? (
+              <p className="text-sm text-gray-500">No designs uploaded yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {event.templateDesigns.map(d => (
+                  <div key={d.id} className="flex items-center gap-3 text-sm">
+                    <FileText className="w-4 h-4 text-gray-400 flex-shrink-0"/>
+                    <span className="font-medium">Version {d.version}</span>
+                    <Badge variant={({ DRAFT: 'default', PENDING_APPROVAL: 'info', REVISION_REQUESTED: 'warning', APPROVED: 'success' } as Record<string,any>)[d.status]}>
+                      {d.status.replace(/_/g, ' ')}
+                    </Badge>
+                    <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs text-blue-600 hover:underline">View ↗</a>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </>
   );
