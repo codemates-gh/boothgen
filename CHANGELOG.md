@@ -11,7 +11,7 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 - **Auto-generated invoice from quote acceptance** — deposit milestone due date is today; balance milestone due date now calculated from event date minus `balanceDueDaysBeforeEvent` (was both set to today)
 - Balance due date also respects tenant's `balanceDueDaysBeforeEvent` branding setting when auto-creating invoices on contract signing
 - **New Invoice "Add from Packages"** — package quick-add buttons now appear on the New Invoice form, matching the New Quote experience
-- **Balance due date in quote deposit summary** — "Deposit + Balance" line now shows the actual balance due date (e.g. "$700.00 balance due June 10, 2026") calculated from event date minus `balanceDueDaysBeforeEvent`
+- **Balance due date in deposit summary** — both New Quote and New Invoice show the actual balance due date (e.g. "$700.00 due June 10, 2026") calculated from event date minus `balanceDueDaysBeforeEvent`
 - **New Quote full-payment enforcement** — "Deposit + Balance" option is hidden and a warning banner shown when the selected event is within the full payment window (same logic as New Invoice)
 
 ---

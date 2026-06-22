@@ -226,7 +226,13 @@ function InvoiceNewForm() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-700 mb-1">Balance</p>
-                      <p className="text-sm text-gray-600 mt-2">{fmt(total - depositAmt)} remaining</p>
+                      <p className="text-sm text-gray-600 mt-2">
+                        {fmt(total - depositAmt)} due{' '}
+                        {balanceDueDate
+                          ? <strong>{new Date(balanceDueDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>
+                          : <span className="text-gray-400">— select event</span>
+                        }
+                      </p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
