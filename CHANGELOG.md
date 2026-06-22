@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.0.5] — 2026-06-22
+
+### Fixed
+- **Template design notifications** — removed Inngest dependency for design emails; client notification on upload and operator notifications on approval/revision now send directly via Resend, eliminating the Inngest relay that was silently failing
+- **Quote default payment schedule** — Deposit + Balance is now the default selection; Full Payment only activates when forced by the full-payment window setting
+- **Events sorted by event date ascending** — upcoming events appear first in the list
+
+### Added
+- **Cancel Event** — "Cancel Event" button on the event detail page (admin only) marks the event as CANCELLED with a confirm step; status badge updates immediately; cancelled events cannot be cancelled again
+
+---
+
 ## [1.0.4] — 2026-06-22
 
 ### Fixed

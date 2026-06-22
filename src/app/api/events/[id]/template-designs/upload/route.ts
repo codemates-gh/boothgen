@@ -4,13 +4,19 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 import { uploadToR2 } from '@/lib/storage/r2';
-import { inngest } from '@/lib/inngest/client';
+import { sendDesignReadyEmail } from '@/lib/email/send';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const event = await prisma.event.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
+  const event = await prisma.event.findFirst({
+    where: { id: params.id, tenantId: session.tenantId },
+    include: {
+      client: true,
+      tenant: { include: { branding: { select: { companyName: true } } } },
+    },
+  });
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   let formData: FormData;
@@ -45,8 +51,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     data: { tenantId: session.tenantId, eventId: params.id, fileUrl: publicUrl, filename: file.name, version, status: 'PENDING_APPROVAL' },
   });
 
-  // Notify the client immediately — upload = ready for review
-  await inngest.send({ name: 'template-design/ready-for-review', data: { designId: design.id } });
+  // Send client notification directly — bypasses Inngest for reliability
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
+  const companyName = (event as any).tenant?.branding?.companyName || (event as any).tenant?.name || 'Your photo booth company';
+  sendDesignReadyEmail({
+    to: (event as any).client.email,
+    firstName: (event as any).client.firstName,
+    companyName,
+    version,
+    portalUrl: appUrl + '/portal/' + event.portalToken + '?tab=design',
+  }).catch(e => console.error('[design-upload] client email error:', e));
 
   return NextResponse.json(design, { status: 201 });
 }

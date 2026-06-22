@@ -25,7 +25,7 @@ export default async function EventsPage() {
       client: true,
       assignedTo: { select: { id: true, name: true } },
     },
-    orderBy: { eventDate: 'desc' },
+    orderBy: { eventDate: 'asc' },
     take: 100,
   });
 

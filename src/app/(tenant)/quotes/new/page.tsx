@@ -20,7 +20,7 @@ function QuoteNewForm() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [selectedEvent, setSelectedEvent] = useState(eventId || '');
   const [contractTemplateId, setContractTemplateId] = useState('');
-  const [paymentType, setPaymentType] = useState<'full' | 'deposit'>('full');
+  const [paymentType, setPaymentType] = useState<'full' | 'deposit'>('deposit');
   const [depositPercent, setDepositPercent] = useState(50);
   const [fullPaymentDays, setFullPaymentDays] = useState(14);
   const [balanceDueDays, setBalanceDueDays] = useState(30);

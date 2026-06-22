@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Users, Package, ArrowLeft, ExternalLink, FileText, Receipt, Edit2, ClipboardList, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import DeleteEventButton from './DeleteEventButton';
+import CancelEventButton from './CancelEventButton';
 import AssignEventButton from './AssignEventButton';
 import EventNotes from './EventNotes';
 
@@ -69,6 +70,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
               <a href={portalUrl} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><ExternalLink className="w-4 h-4 mr-1"/>Client Portal</Button></a>
               <Link href={'/quotes/new?eventId=' + event.id}><Button variant="outline" size="sm"><ClipboardList className="w-4 h-4 mr-1"/>Create Quote</Button></Link>
               <Link href={'/invoices/new?eventId=' + event.id}><Button size="sm"><Receipt className="w-4 h-4 mr-1"/>Create Invoice</Button></Link>
+              <CancelEventButton eventId={event.id} status={event.status} />
               <DeleteEventButton eventId={event.id} hasInvoices={event.invoices.length > 0} hasContracts={event.contracts.length > 0} />
             </div>
           )}
