@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     const lead = await prisma.leadSubmission.findUnique({
       where: { id: leadId },
-      include: { tenant: { include: { members: { where: { role: 'HOST_ADMIN' }, include: { user: { select: { email: true } } } }, branding: { select: { companyName: true } } } } },
+      include: { tenant: { include: { memberships: { where: { role: 'HOST_ADMIN' }, include: { user: { select: { email: true } } } }, branding: { select: { companyName: true } } } } },
     });
     if (!lead) {
       console.error('[INBOUND_WEBHOOK] Lead not found:', leadId);
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     const stripQuoted = (text: string) =>
       text
-        .split(/\n\nOn .{0,200}wrote:/s)[0]
+        .split(/\n\nOn [\s\S]{0,200}wrote:/)[0]
         .split(/\n-- \n/)[0]
         .trim();
 
@@ -130,7 +130,7 @@ ${preview ? `<p style="color:#374151;background:#f3f4f6;border-left:3px solid #f
 <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:16px">${companyName}</p>
 </div>`;
 
-    for (const member of lead.tenant.members) {
+    for (const member of lead.tenant.memberships) {
       await sendEmail(
         member.user.email,
         `${leadName} replied to their inquiry`,

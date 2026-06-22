@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const designs = await prisma.templateDesign.findMany({
-    where: { id: params.id, tenantId: session.tenantId },
+    where: { eventId: params.id, tenantId: session.tenantId },
     orderBy: { version: 'desc' },
   });
   return NextResponse.json(designs);
@@ -29,13 +29,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!fileUrl || !filename) return NextResponse.json({ error: 'fileUrl and filename are required' }, { status: 400 });
 
   const latest = await prisma.templateDesign.findFirst({
-    where: { id: params.id, tenantId: session.tenantId },
+    where: { eventId: params.id, tenantId: session.tenantId },
     orderBy: { version: 'desc' },
   });
   const version = (latest?.version ?? 0) + 1;
 
   const design = await prisma.templateDesign.create({
-    data: { tenantId: session.tenantId, id: params.id, fileUrl, filename, version, status: 'DRAFT' },
+    data: { tenantId: session.tenantId, eventId: params.id, fileUrl, filename, version, status: 'DRAFT' },
   });
   return NextResponse.json(design, { status: 201 });
 }

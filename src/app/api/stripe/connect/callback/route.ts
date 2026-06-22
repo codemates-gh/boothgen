@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
         detailsSubmitted: acct.details_submitted,
         email:   acct.email   ?? undefined,
         country: acct.country ?? undefined,
-        livemode: acct.livemode,
+        livemode: (acct as any).livemode ?? false,
       },
     });
   }
