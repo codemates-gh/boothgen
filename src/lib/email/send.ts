@@ -59,6 +59,22 @@ export async function sendQuoteLink(params: {
   );
 }
 
+export async function sendHostNotificationEmail(params: {
+  to: string | string[]; subject: string; heading: string; body: string;
+  ctaLabel: string; ctaUrl: string; from?: string;
+}) {
+  const { to, subject, heading, body, ctaLabel, ctaUrl, from } = params;
+  const html =
+    `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">` +
+    `<h2 style="font-size:20px;color:#111827;margin:0 0 12px">${heading}</h2>` +
+    `<p style="color:#374151;margin:0 0 20px">${body}</p>` +
+    `<p style="margin:24px 0"><a href="${ctaUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">${ctaLabel}</a></p>` +
+    `<p style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px">This notification was sent by Booth Genius.</p>` +
+    `</div>`;
+  const recipients = Array.isArray(to) ? to : [to];
+  await Promise.all(recipients.map(addr => sendEmail(addr, subject, html, undefined, from)));
+}
+
 export async function sendPaymentConfirmationEmail(params: {
   to: string; firstName: string; companyName: string; invoiceNumber: string;
   amountPaidFormatted: string; eventTitle: string; portalUrl: string; replyTo?: string; from?: string;

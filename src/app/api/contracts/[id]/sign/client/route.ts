@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { z } from 'zod';
+import { sendHostNotificationEmail } from '@/lib/email/send';
 
 const Schema = z.object({
   clientToken: z.string().min(1).max(256),
@@ -18,6 +19,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const contract = await prisma.contract.findFirst({
     where: { id: params.id, clientToken },
+    include: {
+      event: { include: { client: true } },
+      tenant: {
+        include: {
+          branding: { select: { companyName: true } },
+          memberships: { where: { role: 'HOST_ADMIN' }, include: { user: { select: { email: true } } } },
+        },
+      },
+    },
   });
   if (!contract) return NextResponse.json({ error: 'Invalid token' }, { status: 404 });
   if (contract.status === 'FULLY_EXECUTED') return NextResponse.json({ error: 'Already signed' }, { status: 400 });
@@ -81,6 +91,24 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return updatedContract;
   });
+
+  // Notify all host admins that the contract was signed
+  const hostEmails = (contract.tenant as any)?.memberships?.map((m: any) => m.user.email).filter(Boolean) ?? [];
+  if (hostEmails.length > 0) {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
+    const companyName = (contract.tenant as any)?.branding?.companyName ?? (contract.tenant as any)?.name ?? '';
+    const client = (contract.event as any)?.client;
+    const clientName = client ? `${client.firstName} ${client.lastName}` : 'Your client';
+    sendHostNotificationEmail({
+      to: hostEmails,
+      subject: `Contract signed — ${(contract.event as any)?.title ?? 'Event'}`,
+      heading: `${clientName} signed the contract`,
+      body: `<strong>${clientName}</strong> has signed the contract for <strong>${(contract.event as any)?.title ?? 'an event'}</strong>. An invoice has been automatically created and sent to the client.`,
+      ctaLabel: 'View Event',
+      ctaUrl: `${appUrl}/events/${contract.eventId}`,
+      from: companyName ? `${companyName} via Booth Genius <${process.env.EMAIL_FROM ?? 'noreply@boothgen.com'}>` : undefined,
+    }).catch(e => console.error('[contract/sign] host notification error:', e));
+  }
 
   return NextResponse.json({ success: true, status: updated.status });
 }

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { parseMergeTags, buildCtx } from '@/lib/contracts/merge-tags';
+import { sendHostNotificationEmail } from '@/lib/email/send';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
@@ -12,7 +13,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       event: { include: { invoices: { take: 1, orderBy: { createdAt: 'desc' } } } },
       client: true,
       contractTemplate: true,
-      tenant: { include: { branding: true, contractTemplates: { where: { isDefault: true }, take: 1 } } },
+      tenant: {
+        include: {
+          branding: true,
+          contractTemplates: { where: { isDefault: true }, take: 1 },
+          memberships: { where: { role: 'HOST_ADMIN' }, include: { user: { select: { email: true } } } },
+        },
+      },
     },
   });
   if (!quote) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -55,6 +62,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       },
     });
   });
+
+  // Notify all host admins that the quote was accepted
+  const hostEmails = quote.tenant.memberships.map((m: any) => m.user.email).filter(Boolean);
+  if (hostEmails.length > 0) {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
+    const companyName = quote.tenant.branding?.companyName ?? quote.tenant.name;
+    sendHostNotificationEmail({
+      to: hostEmails,
+      subject: `Quote accepted — ${quote.event.title}`,
+      heading: `${quote.client.firstName} ${quote.client.lastName} accepted the quote`,
+      body: `<strong>${quote.client.firstName} ${quote.client.lastName}</strong> has accepted quote <strong>${quote.quoteNumber}</strong> for <strong>${quote.event.title}</strong> and signed with the name "${clientName}". A contract has been automatically created and is ready to review.`,
+      ctaLabel: 'View Event',
+      ctaUrl: `${appUrl}/events/${quote.eventId}`,
+      from: companyName ? `${companyName} via Booth Genius <${process.env.EMAIL_FROM ?? 'noreply@boothgen.com'}>` : undefined,
+    }).catch(e => console.error('[quote/accept] host notification error:', e));
+  }
 
   return NextResponse.json({ success: true });
 }

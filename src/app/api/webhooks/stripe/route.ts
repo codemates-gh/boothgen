@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma/client';
-import { sendPaymentConfirmationEmail } from '@/lib/email/send';
+import { sendPaymentConfirmationEmail, sendHostNotificationEmail } from '@/lib/email/send';
 import type Stripe from 'stripe';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
@@ -64,7 +64,12 @@ export async function POST(req: NextRequest) {
             where: { id: invoiceId },
             include: {
               event: { include: { client: true } },
-              tenant: { include: { branding: { select: { companyName: true, replyToEmail: true } } } },
+              tenant: {
+                include: {
+                  branding: { select: { companyName: true, replyToEmail: true } },
+                  memberships: { where: { role: 'HOST_ADMIN' }, include: { user: { select: { email: true } } } },
+                },
+              },
             },
           });
           if (inv) {
@@ -90,7 +95,20 @@ export async function POST(req: NextRequest) {
                 portalUrl: APP_URL + '/portal/' + inv.event.portalToken + '?tab=invoice',
                 replyTo: inv.tenant.branding?.replyToEmail ?? undefined,
                 from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
-              }).catch(e => console.error('[stripe-webhook] confirmation email error:', e));
+              }).catch(e => console.error('[stripe-webhook] client confirmation email error:', e));
+
+              // Notify host admins of payment received
+              const hostEmails = (inv.tenant as any).memberships?.map((m: any) => m.user.email).filter(Boolean) ?? [];
+              if (hostEmails.length > 0) {
+                sendHostNotificationEmail({
+                  to: hostEmails,
+                  subject: `Payment received — ${inv.event.title}`,
+                  heading: `Payment received for ${inv.event.title}`,
+                  body: `<strong>${inv.event.client.firstName} ${inv.event.client.lastName}</strong> has paid invoice <strong>${inv.invoiceNumber}</strong> for <strong>${fmt(inv.totalCents)}</strong>. The invoice is now marked as paid.`,
+                  ctaLabel: 'View Event',
+                  ctaUrl: `${APP_URL}/events/${inv.eventId}`,
+                }).catch(e => console.error('[stripe-webhook] host payment notification error:', e));
+              }
             }
           }
         }
