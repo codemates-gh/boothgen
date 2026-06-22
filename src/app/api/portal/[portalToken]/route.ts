@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
+import { stripe } from '@/lib/stripe';
 
 export async function GET(_: NextRequest, { params }: { params: { portalToken: string } }) {
   const event = await prisma.event.findFirst({
@@ -22,8 +23,25 @@ export async function GET(_: NextRequest, { params }: { params: { portalToken: s
     await prisma.quote.update({ where: { id: event.Quote[0].id }, data: { status: 'VIEWED', viewedAt: new Date() } });
   }
 
+  // Reconcile invoice against Stripe if webhook hasn't fired yet
+  let rawInvoice = event.invoices[0] || null;
+  if (rawInvoice && rawInvoice.status !== 'PAID' && rawInvoice.stripePaymentIntentId) {
+    try {
+      const pi = await stripe.paymentIntents.retrieve(rawInvoice.stripePaymentIntentId);
+      if (pi.status === 'succeeded') {
+        rawInvoice = await prisma.invoice.update({
+          where: { id: rawInvoice.id },
+          data: {
+            status: 'PAID', paidAt: new Date(),
+            amountPaidCents: rawInvoice.totalCents, balanceDueCents: 0,
+          },
+          include: { lineItems: { orderBy: { sortOrder: 'asc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } },
+        });
+      }
+    } catch { /* Stripe unavailable — return DB state as-is */ }
+  }
+
   // Normalize invoice: rename PaymentMilestone → milestones for frontend
-  const rawInvoice = event.invoices[0] || null;
   const invoice = rawInvoice
     ? { ...rawInvoice, milestones: (rawInvoice as any).PaymentMilestone ?? [], PaymentMilestone: undefined }
     : null;
