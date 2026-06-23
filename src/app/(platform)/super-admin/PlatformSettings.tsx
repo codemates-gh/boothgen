@@ -10,6 +10,8 @@ interface InitialSettings {
   gallery_delete_days: string;
   stripe_price_monthly_id: string;
   stripe_price_annual_id: string;
+  price_display_monthly: string;
+  price_display_annual: string;
 }
 
 export default function PlatformSettings({ initial }: { initial: InitialSettings }) {
@@ -18,6 +20,8 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
   const [deleteDays, setDeleteDays] = useState(initial.gallery_delete_days);
   const [monthlyPriceId, setMonthlyPriceId] = useState(initial.stripe_price_monthly_id);
   const [annualPriceId, setAnnualPriceId]   = useState(initial.stripe_price_annual_id);
+  const [monthlyDisplay, setMonthlyDisplay] = useState(initial.price_display_monthly);
+  const [annualDisplay, setAnnualDisplay]   = useState(initial.price_display_annual);
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
 
@@ -33,6 +37,8 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
         gallery_delete_days: deleteDays,
         stripe_price_monthly_id: monthlyPriceId,
         stripe_price_annual_id: annualPriceId,
+        price_display_monthly: monthlyDisplay,
+        price_display_annual: annualDisplay,
       }),
     });
     setSaving(false);
@@ -146,6 +152,34 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
                 placeholder="price_..."
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand"
               />
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-3">Display Prices <span className="font-normal text-gray-400">(shown on marketing/pricing page)</span></p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Price</label>
+                <p className="text-xs text-gray-400 mb-2">e.g. $49/mo</p>
+                <input
+                  type="text"
+                  value={monthlyDisplay}
+                  onChange={e => setMonthlyDisplay(e.target.value)}
+                  placeholder="$49/mo"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Annual Price</label>
+                <p className="text-xs text-gray-400 mb-2">e.g. $399/yr</p>
+                <input
+                  type="text"
+                  value={annualDisplay}
+                  onChange={e => setAnnualDisplay(e.target.value)}
+                  placeholder="$399/yr"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                />
+              </div>
             </div>
           </div>
         </CardContent>

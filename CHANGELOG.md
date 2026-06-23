@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.3.1] — 2026-06-22
+
+### Added
+- **Sign out button on super admin** — "Sign Out" button now appears in the top-right of the super admin header bar; extracted as a `SuperAdminSignOut` client component that calls `signOut({ callbackUrl: '/sign-in' })`
+- **Display price inputs in super admin** — Stripe Billing card in Platform Settings now has "Monthly Price" and "Annual Price" text inputs (e.g. `$49/mo`, `$399/yr`) stored as `price_display_monthly` / `price_display_annual` in `SystemSetting`; values are surfaced via a new unauthenticated `GET /api/public/pricing` endpoint so the marketing page can fetch them without auth
+
+---
+
 ## [1.3.0] — 2026-06-22
 
 ### Added
