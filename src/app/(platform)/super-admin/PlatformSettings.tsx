@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, Image, CreditCard } from 'lucide-react';
+import { Settings, Image, CreditCard, Mail } from 'lucide-react';
 
 interface InitialSettings {
   message_retention_months: string;
@@ -13,6 +13,7 @@ interface InitialSettings {
   price_display_monthly: string;
   price_display_annual: string;
   commission_percentage: string;
+  support_email: string;
 }
 
 export default function PlatformSettings({ initial }: { initial: InitialSettings }) {
@@ -24,6 +25,7 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
   const [monthlyDisplay, setMonthlyDisplay] = useState(initial.price_display_monthly);
   const [annualDisplay, setAnnualDisplay]   = useState(initial.price_display_annual);
   const [commissionPct, setCommissionPct]   = useState(initial.commission_percentage);
+  const [supportEmail, setSupportEmail]     = useState(initial.support_email);
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
 
@@ -42,6 +44,7 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
         price_display_monthly: monthlyDisplay,
         price_display_annual: annualDisplay,
         commission_percentage: commissionPct,
+        support_email: supportEmail,
       }),
     });
     setSaving(false);
@@ -199,6 +202,30 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
                 />
               </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Mail className="w-4 h-4" /> Support Contact
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-gray-500">
+            Operators and visitors who click &ldquo;Contact support&rdquo; on the support page will send an email to this address.
+          </p>
+          <div className="max-w-sm">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Support email address</label>
+            <p className="text-xs text-gray-400 mb-2">e.g. support@boothgen.com</p>
+            <input
+              type="email"
+              value={supportEmail}
+              onChange={e => setSupportEmail(e.target.value)}
+              placeholder="support@yourdomain.com"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+            />
           </div>
         </CardContent>
       </Card>

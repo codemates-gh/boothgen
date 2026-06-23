@@ -1,4 +1,4 @@
-import { createAnthropic } from '@ai-sdk/anthropic';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText, convertToModelMessages } from 'ai';
 import type { UIMessage } from 'ai';
 
@@ -158,21 +158,21 @@ If you cannot find an answer, suggest the user contact support at support@boothg
 `;
 
 export async function POST(req: Request) {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.GEMINI_API_KEY) {
     return new Response(
-      JSON.stringify({ error: 'AI chat is not configured. Please contact support@boothgen.com.' }),
+      JSON.stringify({ error: 'AI chat is not configured.' }),
       { status: 503, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
   const { messages }: { messages: UIMessage[] } = await req.json();
 
-  const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
 
   const modelMessages = await convertToModelMessages(messages);
 
   const result = streamText({
-    model: anthropic('claude-haiku-4-5-20251001'),
+    model: google('gemini-2.0-flash'),
     system: SYSTEM_PROMPT,
     messages: modelMessages,
     maxOutputTokens: 600,

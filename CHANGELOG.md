@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.5.8] — 2026-06-23
+
+### Changed
+- **Support AI chat — switched from Anthropic to Google Gemini** (`gemini-2.0-flash`); env var is now `GEMINI_API_KEY` instead of `ANTHROPIC_API_KEY`; `@ai-sdk/google` installed; `@ai-sdk/anthropic` no longer used for support chat
+
+### Added
+- **"Contact support" panel in AI chat widget** — a "Still need help? Send a message to our team →" footer link in the chat opens a contact form panel with question textarea and optional reply-to email field; submits to `POST /api/support/contact`; shows success confirmation with expected reply info; pre-fills question from last user message in chat if any
+- **`POST /api/support/contact`** — public API route that sends an email via Resend to the platform `support_email` address (from SystemSetting); falls back to `EMAIL_FROM` env var if not configured; reply-to set to submitter's email if provided
+- **Super admin: Support email setting** — new "Support Contact" card in Platform Settings to configure the email address that receives contact form submissions; saved as `support_email` in `SystemSetting` table; field added to `ALLOWED_KEYS` and loaded in super admin page
+
+---
+
 ## [1.5.7] — 2026-06-23
 
 ### Added
