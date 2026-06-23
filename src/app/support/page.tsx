@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { BoothGeniusLogo } from '@/components/brand/BoothGeniusLogo';
 import { SupportSearch } from './SupportSearch';
 import { SupportChat } from './SupportChat';
+import { prisma } from '@/lib/prisma/client';
 
 export const metadata: Metadata = {
   title: 'Support Center — Booth Genius',
@@ -602,7 +603,10 @@ const CATEGORIES = [
   { label: 'FAQ', icon: '❓', color: 'bg-rose-50 border-rose-200 text-rose-700', desc: 'Quick answers to common questions' },
 ];
 
-export default function SupportPage() {
+export default async function SupportPage() {
+  const setting = await prisma.systemSetting.findUnique({ where: { key: 'chatbot_enabled' } });
+  const chatbotEnabled = setting?.value !== 'false';
+
   return (
     <div className="min-h-screen bg-white">
       {/* Nav */}
@@ -707,7 +711,7 @@ export default function SupportPage() {
       </footer>
 
       {/* AI Chat Widget */}
-      <SupportChat />
+      {chatbotEnabled && <SupportChat />}
     </div>
   );
 }

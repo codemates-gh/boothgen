@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, Image, CreditCard, Mail } from 'lucide-react';
+import { Settings, Image, CreditCard, Mail, MessageCircle } from 'lucide-react';
 
 interface InitialSettings {
   message_retention_months: string;
@@ -14,6 +14,7 @@ interface InitialSettings {
   price_display_annual: string;
   commission_percentage: string;
   support_email: string;
+  chatbot_enabled: boolean;
 }
 
 export default function PlatformSettings({ initial }: { initial: InitialSettings }) {
@@ -26,6 +27,7 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
   const [annualDisplay, setAnnualDisplay]   = useState(initial.price_display_annual);
   const [commissionPct, setCommissionPct]   = useState(initial.commission_percentage);
   const [supportEmail, setSupportEmail]     = useState(initial.support_email);
+  const [chatbotEnabled, setChatbotEnabled] = useState(initial.chatbot_enabled);
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
 
@@ -45,6 +47,7 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
         price_display_annual: annualDisplay,
         commission_percentage: commissionPct,
         support_email: supportEmail,
+        chatbot_enabled: chatbotEnabled ? 'true' : 'false',
       }),
     });
     setSaving(false);
@@ -226,6 +229,33 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
               placeholder="support@yourdomain.com"
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <MessageCircle className="w-4 h-4" /> AI Support Chatbot
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-gray-500">
+            Controls the floating AI chat widget on the public support page. Disable it to stop Gemini API usage while you evaluate costs.
+          </p>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setChatbotEnabled(v => !v)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 ${chatbotEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
+              role="switch"
+              aria-checked={chatbotEnabled}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${chatbotEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+            <span className="text-sm font-medium text-gray-700">
+              {chatbotEnabled ? 'Chatbot enabled — visible on /support' : 'Chatbot disabled — chat widget hidden'}
+            </span>
           </div>
         </CardContent>
       </Card>

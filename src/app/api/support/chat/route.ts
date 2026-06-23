@@ -1,3 +1,5 @@
+import { prisma } from '@/lib/prisma/client';
+
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
@@ -159,6 +161,11 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 export async function POST(req: Request) {
+  const chatSetting = await prisma.systemSetting.findUnique({ where: { key: 'chatbot_enabled' } });
+  if (chatSetting?.value === 'false') {
+    return Response.json({ error: 'Chatbot is currently disabled.' }, { status: 503 });
+  }
+
   if (!process.env.GEMINI_API_KEY) {
     return Response.json({ error: 'AI chat is not configured.' }, { status: 503 });
   }
