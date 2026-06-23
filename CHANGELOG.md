@@ -7,6 +7,7 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 ## [1.4.2] — 2026-06-23
 
 ### Added
+- **Gallery share reminder banner** — prominent blue info box in the client portal gallery tab reminding clients to use "Share Gallery Link" with guests instead of sharing the portal URL directly, which would expose their quote, contract, and payment details.
 - **Secure gallery share link** — "Share Gallery Link" button on both the host gallery page and the client portal gallery tab now copies a dedicated `/g/[clientToken]` URL. This route is fully separate from the portal: it only returns gallery photos and branding, never any quote, contract, invoice, or design data. The client token is a random cuid — unguessable from the portal token. Guests who receive this link cannot strip parameters to reach private financial information.
 - **Gallery expiry notice in client portal** — when the gallery is published and not yet expired, an amber banner appears below the photo grid stating the exact date photos will be removed, with a prompt to download before then.
 

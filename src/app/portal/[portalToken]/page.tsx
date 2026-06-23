@@ -894,6 +894,14 @@ export default function ClientPortalPage() {
                   )}
                   </div>
                 </div>
+                {/* Share reminder */}
+                <div className="flex items-start gap-3 px-4 py-3 rounded-xl border bg-blue-50 border-blue-200 text-blue-800 text-sm">
+                  <span className="text-base mt-0.5 flex-shrink-0">💡</span>
+                  <p>
+                    <strong>Want to share your photos with guests?</strong> Use the <strong>Share Gallery Link</strong> button above — it creates a separate, guest-safe link that shows only the photos. Do not share this portal page directly, as it contains your quote, contract, and payment details.
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {data.assets.map((a: any, i: number) => (
                     <div
