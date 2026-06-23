@@ -41,7 +41,8 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json(coupon, { status: 201 });
   } catch (err) {
-    console.error('[coupons POST]', err);
-    return NextResponse.json({ error: 'Failed to create coupon. Please try again.' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[coupons POST]', msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
