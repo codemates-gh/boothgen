@@ -12,6 +12,7 @@ interface InitialSettings {
   stripe_price_annual_id: string;
   price_display_monthly: string;
   price_display_annual: string;
+  commission_percentage: string;
 }
 
 export default function PlatformSettings({ initial }: { initial: InitialSettings }) {
@@ -22,6 +23,7 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
   const [annualPriceId, setAnnualPriceId]   = useState(initial.stripe_price_annual_id);
   const [monthlyDisplay, setMonthlyDisplay] = useState(initial.price_display_monthly);
   const [annualDisplay, setAnnualDisplay]   = useState(initial.price_display_annual);
+  const [commissionPct, setCommissionPct]   = useState(initial.commission_percentage);
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
 
@@ -39,6 +41,7 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
         stripe_price_annual_id: annualPriceId,
         price_display_monthly: monthlyDisplay,
         price_display_annual: annualDisplay,
+        commission_percentage: commissionPct,
       }),
     });
     setSaving(false);
@@ -151,6 +154,21 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
                 onChange={e => setAnnualPriceId(e.target.value)}
                 placeholder="price_..."
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand"
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-3">Commission Plan <span className="font-normal text-gray-400">(shown on marketing page)</span></p>
+            <div className="max-w-xs">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Commission %</label>
+              <p className="text-xs text-gray-400 mb-2">Platform fee taken from each booking (e.g. 5 = 5%)</p>
+              <input
+                type="number" min={0} max={100} step={0.1}
+                value={commissionPct}
+                onChange={e => setCommissionPct(e.target.value)}
+                placeholder="5"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
               />
             </div>
           </div>

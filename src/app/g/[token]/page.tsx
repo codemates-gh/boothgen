@@ -169,6 +169,22 @@ export default function GallerySharePage() {
               ))}
             </div>
 
+            {/* Expiry notice */}
+            {event?.eventDate && gallery.expireDays && (() => {
+              const expireDate = new Date(event.eventDate);
+              expireDate.setDate(expireDate.getDate() + gallery.expireDays);
+              if (expireDate <= new Date()) return null;
+              const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+              return (
+                <div className="flex items-start gap-3 px-4 py-3 rounded-xl border bg-amber-50 border-amber-200 text-amber-800 text-sm">
+                  <span className="text-base mt-0.5 flex-shrink-0">⏰</span>
+                  <p>
+                    Photos available until <strong>{fmt(expireDate)}</strong>. Download before then using the <strong>Download All</strong> button above.
+                  </p>
+                </div>
+              );
+            })()}
+
             {assets.length === 0 && (
               <div className="text-center py-16 text-gray-400">
                 <Image className="w-10 h-10 mx-auto mb-3 opacity-30"/>

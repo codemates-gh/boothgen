@@ -4,11 +4,12 @@ import { prisma } from '@/lib/prisma/client';
 
 export async function GET() {
   const settings = await prisma.systemSetting.findMany({
-    where: { key: { in: ['price_display_monthly', 'price_display_annual'] } },
+    where: { key: { in: ['price_display_monthly', 'price_display_annual', 'commission_percentage'] } },
   });
   const map = Object.fromEntries(settings.map(s => [s.key, s.value]));
   return NextResponse.json({
     monthly: map.price_display_monthly ?? '',
     annual: map.price_display_annual ?? '',
+    commissionPct: map.commission_percentage ?? '5',
   });
 }

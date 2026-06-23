@@ -4,6 +4,22 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.5.0] — 2026-06-23
+
+### Added
+- **Marketing homepage** — full SEO- and mobile-optimized marketing page at `/` for unauthenticated visitors; highlights all CRM features, commission-based "you don't make money, we don't make money" pricing model, Pro subscription plan, client portal preview, and a 3-step "how it works" section; pricing (monthly, annual, commission %) pulled live from super admin settings
+- **Commission % setting** — super admin can now define the platform commission percentage shown on the marketing page (via Platform Settings → Stripe Billing → Commission Plan); exposed via `/api/public/pricing`
+- **Guest gallery expiry notice** — the public `/g/[token]` gallery share page now shows an amber banner with the exact date photos will be removed, matching the client portal behavior
+- **Leads module** verified complete — list view, lead detail with email reply/thread, status management, internal notes, venue details, and one-click convert-to-event all working; linked in sidebar as "Leads & Messages"
+- **Team invite flow** verified complete — invite form on Settings → Team page sends email with tokenized link; `/invite/[token]` accept page handles new-user password creation and existing-user join; fully end-to-end
+
+### Fixed
+- **`/invite` routes now public** — added `/invite` and `/api/invite` to middleware PUBLIC list so unauthenticated recipients can accept team invitations without being redirected to sign-in
+- **`/leads` added to middleware TENANT routes** — ensures users without a tenantId are redirected to onboarding instead of reaching leads pages
+- **Marketing page accessible without auth** — added `/` to middleware PUBLIC list
+
+---
+
 ## [1.4.2] — 2026-06-23
 
 ### Added
