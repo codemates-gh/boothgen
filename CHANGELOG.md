@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.0.8] — 2026-06-22
+
+### Fixed
+- **Forgot password page accessible without login** — `/forgot-password` and `/reset-password` were missing from the public route list in middleware; authenticated redirect prevented unauthenticated users from ever reaching the form
+
+### Added
+- **Welcome email on signup** — new users receive a welcome email immediately after creating their account; uses the platform template if customized, otherwise a built-in default
+- **Platform email templates in super admin** — new "Platform Email Templates" card in the super admin console; edit subject and HTML body for Welcome Email and Forgot Password emails; click variable chips (`{{user_name}}`, `{{reset_url}}`, etc.) to insert at cursor; toggle Preview to see rendered output with highlighted variables; templates saved to `SystemSetting` and picked up automatically by the respective routes
+
+---
+
 ## [1.0.7] — 2026-06-22
 
 ### Added
