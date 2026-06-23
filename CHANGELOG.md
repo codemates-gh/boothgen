@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.6.8] — 2026-06-23
+
+### Fixed
+- **Email template editor — preview leaking raw HTML styles** — the preview was rendering the span element's opening tag (including all inline styles) as visible text; fixed by replacing the full `<span data-tag="...">...</span>` element before doing plain `{{token}}` replacement, so sample values render cleanly as highlighted text
+
+---
+
 ## [1.6.7] — 2026-06-23
 
 ### Added

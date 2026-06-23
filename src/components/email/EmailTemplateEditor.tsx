@@ -144,9 +144,14 @@ export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeT
       '{{host.phone}}': '(555) 123-4567',
       '{{host.website}}': 'https://yourbusiness.com',
       '{{host.signature}}': 'Warm regards,\nYour Name\nYour Company',
-      // Platform template samples (injected via previewSamples prop)
       ...(previewSamplesProp ?? {}),
     };
+    // Replace full <span data-tag="{{...}}">...</span> elements inserted by the visual editor
+    html = html.replace(/<span[^>]+data-tag="([^"]+)"[^>]*>[^<]*<\/span>/g, (_, tag) => {
+      const sample = defaultSamples[tag] ?? tag;
+      return `<strong style="color:#ea6100">${sample}</strong>`;
+    });
+    // Also replace any plain {{...}} tokens (e.g. typed manually or from HTML mode)
     mergeTags.forEach(t => {
       html = html.replaceAll(t.value, `<strong style="color:#ea6100">${defaultSamples[t.value] ?? t.label}</strong>`);
     });
