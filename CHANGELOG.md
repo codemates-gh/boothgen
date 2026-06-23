@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.6.3] — 2026-06-23
+
+### Fixed
+- **Support AI chat — all messages erroring** — the local welcome bubble (an assistant message) was being sent to Gemini as the first message in the conversation; Gemini rejects conversations that don't start with a user turn; fix: server now slices messages from the first user message before calling `convertToModelMessages`; added try/catch around the route so any future errors return a clean JSON response instead of an unhandled exception
+
+---
+
 ## [1.6.2] — 2026-06-23
 
 ### Fixed

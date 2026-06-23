@@ -165,18 +165,35 @@ export async function POST(req: Request) {
     );
   }
 
-  const { messages }: { messages: UIMessage[] } = await req.json();
+  try {
+    const { messages }: { messages: UIMessage[] } = await req.json();
 
-  const google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
+    // Gemini requires the conversation to start with a user message.
+    // Drop any leading assistant messages (e.g. the local welcome bubble).
+    const firstUserIdx = messages.findIndex(m => m.role === 'user');
+    const conversation = firstUserIdx >= 0 ? messages.slice(firstUserIdx) : [];
 
-  const modelMessages = await convertToModelMessages(messages);
+    if (conversation.length === 0) {
+      return new Response(JSON.stringify({ error: 'No user message found.' }), {
+        status: 400, headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
-  const result = streamText({
-    model: google('gemini-2.0-flash'),
-    system: SYSTEM_PROMPT,
-    messages: modelMessages,
-    maxOutputTokens: 600,
-  });
+    const google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
+    const modelMessages = await convertToModelMessages(conversation);
 
-  return result.toUIMessageStreamResponse();
+    const result = streamText({
+      model: google('gemini-2.0-flash'),
+      system: SYSTEM_PROMPT,
+      messages: modelMessages,
+      maxOutputTokens: 600,
+    });
+
+    return result.toUIMessageStreamResponse();
+  } catch (err) {
+    console.error('[support/chat]', err);
+    return new Response(JSON.stringify({ error: 'Internal server error.' }), {
+      status: 500, headers: { 'Content-Type': 'application/json' },
+    });
+  }
 }
