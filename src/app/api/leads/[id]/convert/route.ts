@@ -41,6 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       venuePostalCode: lead.venuePostalCode ?? null,
       guestCount: lead.guestCount ?? null,
       internalNotes: lead.notes ?? null,
+      gallery: { create: { tenantId: session.tenantId, title: eventTitle + ' Gallery' } },
     },
   });
 

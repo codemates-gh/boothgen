@@ -38,6 +38,17 @@ export default async function GalleryPage() {
     );
   }
 
+  // Auto-create missing gallery records for any events that don't have one
+  const eventsWithoutGallery = await prisma.event.findMany({
+    where: { tenantId: session.tenantId, gallery: null },
+    select: { id: true, title: true },
+  });
+  if (eventsWithoutGallery.length > 0) {
+    await prisma.gallery.createMany({
+      data: eventsWithoutGallery.map(e => ({ tenantId: session.tenantId, eventId: e.id, title: e.title + ' Gallery' })),
+    });
+  }
+
   const galleries = await prisma.gallery.findMany({
     where: { tenantId: session.tenantId },
     include: { event: { select: { title: true, eventDate: true } }, _count: { select: { assets: true } } },

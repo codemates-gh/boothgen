@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.7.1] — 2026-06-23
+
+### Fixed
+- **Gallery missing for converted leads** — the lead-to-event convert route was not creating a `Gallery` record; added `gallery: { create: ... }` to match the normal event creation flow; future conversions will always have a gallery
+- **Gallery backfill on page load** — the `/gallery` page now auto-creates missing gallery records for any existing events that don't have one; no manual action needed — Ronnette Nolasco's event gallery will appear immediately on next load
+
+---
+
 ## [1.7.0] — 2026-06-23
 
 ### Fixed
