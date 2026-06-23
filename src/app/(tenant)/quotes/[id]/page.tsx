@@ -5,7 +5,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Send, Trash2, ArrowLeft, ExternalLink, Edit2, RotateCcw, FilePlus, Eye, X } from 'lucide-react';
+import { Send, Trash2, ArrowLeft, ExternalLink, Edit2, RotateCcw, FilePlus, Eye, X, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 
@@ -179,6 +179,9 @@ export default function QuoteDetailPage() {
                 {generating ? 'Generating...' : 'Generate Contract'}
               </Button>
             )}
+            <a href={`/api/quotes/${id}/pdf`} target="_blank" rel="noopener noreferrer">
+              <Button variant="outline"><Download className="w-4 h-4 mr-1.5"/>Download PDF</Button>
+            </a>
             {quote.event?.portalToken && (
               <a href={portalUrl} target="_blank" rel="noreferrer">
                 <Button variant="outline">

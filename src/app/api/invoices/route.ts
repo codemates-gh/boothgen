@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma/client';
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json([], { status: 200 });
-  const invoices = await prisma.invoice.findMany({ where: { tenantId: session.tenantId }, include: { client: true, event: true }, orderBy: { createdAt: 'desc' } });
+  const invoices = await prisma.invoice.findMany({ where: { tenantId: session.tenantId }, include: { client: true, event: true, PaymentMilestone: { orderBy: { dueDate: 'asc' } } }, orderBy: { createdAt: 'desc' } });
   return NextResponse.json(invoices);
 }
 

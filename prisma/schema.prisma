@@ -259,6 +259,7 @@ model TenantBranding {
   replyToEmail      String?
   supportPhone      String?
   websiteUrl        String?
+  leadFormConfig    Json?
   // Payment terms
   defaultDepositPercent     Int @default(50)
   balanceDueDaysBeforeEvent Int @default(30)

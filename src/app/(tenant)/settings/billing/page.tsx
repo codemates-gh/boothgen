@@ -6,8 +6,9 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CreditCard, Link2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { CreditCard, Link2, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
 import { PaymentTermsCard } from './PaymentTermsCard';
+import { UpgradeButton } from './UpgradeButton';
 
 const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['embed','Lead Capture']];
 
@@ -26,8 +27,11 @@ export default async function BillingSettingsPage() {
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5"/>Subscription</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-3"><div><p className="font-semibold">{sub?.plan ?? 'Free Trial'}</p><p className="text-sm text-gray-500">{sub ? 'Status: ' + sub.status : 'Trial — upgrade to accept payments'}</p></div><Badge variant={sub?.status === 'ACTIVE' ? 'success' : 'warning'}>{sub?.status ?? 'TRIALING'}</Badge></div>
-            {!sub && <Button>Upgrade to Pro</Button>}
+            <div className="flex items-center justify-between flex-wrap gap-3"><div><p className="font-semibold">{sub?.plan === 'MONTHLY' ? 'Pro Monthly' : sub?.plan === 'ANNUAL' ? 'Pro Annual' : 'Free Trial'}</p><p className="text-sm text-gray-500">{sub ? 'Status: ' + sub.status : 'Trial — upgrade to unlock all features'}</p>{sub?.currentPeriodEnd && <p className="text-xs text-gray-400 mt-0.5">Renews {new Date(sub.currentPeriodEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}</div><Badge variant={sub?.status === 'ACTIVE' ? 'success' : 'warning'}>{sub?.status ?? 'TRIALING'}</Badge></div>
+            {!sub && <UpgradeButton />}
+            {sub && sub.status === 'ACTIVE' && (
+              <a href="/api/stripe/billing/portal"><Button variant="outline" className="flex items-center gap-2"><ExternalLink className="w-4 h-4"/>Manage Subscription</Button></a>
+            )}
           </CardContent>
         </Card>
         <Card>

@@ -28,7 +28,7 @@ export default function NewEventPage() {
     firstName: '', lastName: '', email: '', phone: '',
     title: '', eventDate: '', startTime: '', endTime: '',
     venueName: '', venueAddress: '', venueCity: '', venueState: '', venuePostalCode: '',
-    packageName: '', guestCount: '', internalNotes: '', status: 'LEAD',
+    packageName: '', guestCount: '', internalNotes: '', status: 'LEAD', estimatedValueCents: '',
   });
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
@@ -223,6 +223,11 @@ export default function NewEventPage() {
             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {F('packageName', 'Package', 'text', 'Deluxe 4-Hour Package')}
               {F('guestCount', 'Guest Count', 'number', '150')}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Value ($)</label>
+                <Input type="number" min="0" step="0.01" placeholder="0.00" value={form.estimatedValueCents} onChange={e => set('estimatedValueCents', e.target.value)} />
+              </div>
+              <div />
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Internal Notes</label>
                 <Textarea value={form.internalNotes} onChange={e => set('internalNotes', e.target.value)} placeholder="Notes visible only to your team…" />

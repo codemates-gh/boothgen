@@ -3,15 +3,61 @@ import { useState, useEffect } from 'react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, Check, Code, ExternalLink, Globe } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Copy, Check, ExternalLink, Globe, Save } from 'lucide-react';
+
+interface FormConfig {
+  heading: string;
+  buttonText: string;
+  successHeading: string;
+  successMessage: string;
+  showPhone: boolean;
+  showEventDate: boolean;
+  showEventType: boolean;
+  showTimes: boolean;
+  showGuestCount: boolean;
+  showVenue: boolean;
+  showMessage: boolean;
+  requirePhone: boolean;
+  requireEventDate: boolean;
+}
+
+const DEFAULT_CONFIG: FormConfig = {
+  heading: 'Book with {{company}}',
+  buttonText: 'Send My Inquiry',
+  successHeading: 'We received your inquiry!',
+  successMessage: "We'll be in touch within 1-2 business days.",
+  showPhone: true, showEventDate: true, showEventType: true, showTimes: true,
+  showGuestCount: true, showVenue: true, showMessage: true,
+  requirePhone: false, requireEventDate: true,
+};
 
 export default function EmbedPage() {
   const [tenant, setTenant] = useState<any>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [formConfig, setFormConfig] = useState<FormConfig>(DEFAULT_CONFIG);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    fetch('/api/settings/branding').then(r => r.json()).then(d => setTenant(d));
+    fetch('/api/settings/branding').then(r => r.json()).then(d => {
+      setTenant(d);
+      if (d.leadFormConfig) setFormConfig({ ...DEFAULT_CONFIG, ...d.leadFormConfig });
+    });
   }, []);
+
+  const setFc = (k: keyof FormConfig, v: any) => setFormConfig(f => ({ ...f, [k]: v }));
+
+  async function saveConfig() {
+    setSaving(true);
+    await fetch('/api/settings/branding', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leadFormConfig: formConfig }),
+    });
+    setSaving(false); setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://boothgen.vercel.app';
   const slug = tenant?.tenantSlug ?? tenant?.slug ?? 'your-slug';
@@ -136,6 +182,72 @@ export default function EmbedPage() {
           <CardContent className="space-y-2">
             <pre className="bg-gray-900 text-green-400 rounded-xl p-4 text-xs overflow-x-auto whitespace-pre-wrap">{basicEmbed}</pre>
             <p className="text-xs text-gray-500">In WordPress editor: Add Block → Custom HTML → paste the code</p>
+          </CardContent>
+        </Card>
+
+        {/* Form Customization */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Form Customization</CardTitle>
+              <Button size="sm" onClick={saveConfig} disabled={saving} className="flex items-center gap-1.5">
+                {saved ? <><Check className="w-3.5 h-3.5"/>Saved</> : saving ? 'Saving…' : <><Save className="w-3.5 h-3.5"/>Save</>}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Form Heading</label>
+                <Input value={formConfig.heading} onChange={e => setFc('heading', e.target.value)} placeholder="Book with {{company}}" />
+                <p className="text-xs text-gray-400 mt-1">Use {'{{company}}'} for your company name</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Submit Button Text</label>
+                <Input value={formConfig.buttonText} onChange={e => setFc('buttonText', e.target.value)} placeholder="Send My Inquiry" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Success Heading</label>
+                <Input value={formConfig.successHeading} onChange={e => setFc('successHeading', e.target.value)} placeholder="We received your inquiry!" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Success Message</label>
+                <Input value={formConfig.successMessage} onChange={e => setFc('successMessage', e.target.value)} placeholder="We'll be in touch within 1-2 business days." />
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-3">Fields to show</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {([
+                  ['showPhone', 'Phone Number'],
+                  ['showEventDate', 'Event Date'],
+                  ['showEventType', 'Event Type'],
+                  ['showTimes', 'Start / End Time'],
+                  ['showGuestCount', 'Guest Count'],
+                  ['showVenue', 'Venue Details'],
+                  ['showMessage', 'Additional Notes'],
+                ] as [keyof FormConfig, string][]).map(([k, label]) => (
+                  <label key={k} className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                    <input type="checkbox" checked={formConfig[k] as boolean} onChange={e => setFc(k, e.target.checked)} className="w-4 h-4 rounded" />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-3">Required fields</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {([
+                  ['requirePhone', 'Phone Number'],
+                  ['requireEventDate', 'Event Date'],
+                ] as [keyof FormConfig, string][]).map(([k, label]) => (
+                  <label key={k} className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                    <input type="checkbox" checked={formConfig[k] as boolean} onChange={e => setFc(k, e.target.checked)} className="w-4 h-4 rounded" />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
           </CardContent>
         </Card>
 

@@ -4,12 +4,13 @@ import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, ChevronRight, Mail, Menu, X, Inbox } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, ChevronRight, Mail, Menu, X, Inbox, BarChart2, CalendarDays } from 'lucide-react';
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 import { APP_VERSION } from '@/lib/version';
 
 const adminNav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/events', label: 'Events', icon: Calendar },
   { href: '/clients', label: 'Clients', icon: Users },
   { href: '/leads', label: 'Leads & Messages', icon: Inbox },
@@ -17,6 +18,7 @@ const adminNav = [
   { href: '/invoices', label: 'Invoices', icon: Receipt },
   { href: '/contracts', label: 'Contracts', icon: FileText },
   { href: '/gallery', label: 'Gallery', icon: Camera },
+  { href: '/analytics', label: 'Analytics', icon: BarChart2 },
   { href: '/automation', label: 'Automation', icon: Zap },
   { href: '/automation/email-templates', label: 'Email Templates', icon: Mail },
   { href: '/settings', label: 'Settings', icon: Settings },

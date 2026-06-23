@@ -11,11 +11,13 @@ import { format } from 'date-fns';
 const QC: Record<string, any> = { DRAFT: 'default', SENT: 'info', VIEWED: 'warning', ACCEPTED: 'success', DECLINED: 'danger', EXPIRED: 'default' };
 const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
 const EDITABLE = ['DRAFT', 'SENT', 'VIEWED', 'DECLINED', 'EXPIRED'];
+const STATUSES = ['ALL', 'DRAFT', 'SENT', 'VIEWED', 'ACCEPTED', 'DECLINED', 'EXPIRED'];
 
 export default function QuotesPage() {
   const [quotes, setQuotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [filter, setFilter] = useState('ALL');
 
   useEffect(() => {
     fetch('/api/quotes').then(r => r.json()).then(d => {
@@ -33,21 +35,32 @@ export default function QuotesPage() {
     setDeleting(null);
   }
 
+  const visible = filter === 'ALL' ? quotes : quotes.filter(q => q.status === filter);
+
   return (
     <>
       <TopBar title="Quotes" />
       <div className="p-8">
-        <div className="flex justify-end mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div className="flex flex-wrap gap-1">
+            {STATUSES.map(s => (
+              <button key={s} onClick={() => setFilter(s)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === s ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                {s === 'ALL' ? 'All' : s.charAt(0) + s.slice(1).toLowerCase()}
+                {s !== 'ALL' && <span className="ml-1 opacity-70">({quotes.filter(q => q.status === s).length})</span>}
+              </button>
+            ))}
+          </div>
           <Link href="/quotes/new"><Button><Plus className="w-4 h-4 mr-2" />New Quote</Button></Link>
         </div>
         <Card><CardContent className="p-0">
           {loading ? (
             <div className="text-center py-16 text-gray-400">Loading...</div>
-          ) : quotes.length === 0 ? (
+          ) : visible.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
               <FileText className="w-12 h-12 mx-auto mb-4 opacity-30" />
-              <p className="font-medium mb-2">No quotes yet</p>
-              <Link href="/quotes/new"><Button className="mt-2">Create First Quote</Button></Link>
+              <p className="font-medium mb-2">{filter === 'ALL' ? 'No quotes yet' : `No ${filter.toLowerCase()} quotes`}</p>
+              {filter === 'ALL' && <Link href="/quotes/new"><Button className="mt-2">Create First Quote</Button></Link>}
             </div>
           ) : (
             <table className="w-full">
@@ -61,7 +74,7 @@ export default function QuotesPage() {
                 <th className="px-6 py-3"></th>
               </tr></thead>
               <tbody>
-                {quotes.map(q => (
+                {visible.map(q => (
                   <tr key={q.id} className="border-b last:border-0 hover:bg-gray-50">
                     <td className="px-6 py-4 font-semibold text-sm">{q.quoteNumber}</td>
                     <td className="px-6 py-4 text-sm">{q.client?.firstName} {q.client?.lastName}</td>

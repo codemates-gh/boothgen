@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Printer, Layers, AlertCircle } from 'lucide-react';
+import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Printer, Layers, AlertCircle, Download } from 'lucide-react';
 import { InvoicePaymentForm } from '@/components/stripe/PaymentForm';
 
 type Tab = 'quote' | 'contract' | 'invoice' | 'design' | 'gallery';
@@ -33,6 +33,9 @@ export default function ClientPortalPage() {
   const [showPayment, setShowPayment] = useState<string | null>(null);
   const [revisionNote, setRevisionNote] = useState('');
   const [showRevisionForm, setShowRevisionForm] = useState(false);
+  const [galleryCode, setGalleryCode] = useState('');
+  const [galleryCodeError, setGalleryCodeError] = useState('');
+  const [unlockingGallery, setUnlockingGallery] = useState(false);
 
   useEffect(() => { load(); }, [portalToken]);
 
@@ -65,6 +68,22 @@ export default function ClientPortalPage() {
     const r = await fetch('/api/portal/' + portalToken);
     if (r.ok) { setData(await r.json()); }
     setLoading(false);
+  }
+
+  async function unlockGallery() {
+    if (!galleryCode.trim()) return;
+    setUnlockingGallery(true);
+    setGalleryCodeError('');
+    const r = await fetch('/api/portal/' + portalToken + '?galleryCode=' + encodeURIComponent(galleryCode));
+    if (r.ok) {
+      const d = await r.json();
+      if (d.gallery?.galleryUnlocked) {
+        setData(d);
+      } else {
+        setGalleryCodeError('Incorrect access code. Please try again.');
+      }
+    }
+    setUnlockingGallery(false);
   }
 
   const pc = data?.tenant?.branding?.primaryColor || '#F97316';
@@ -770,18 +789,85 @@ export default function ClientPortalPage() {
                 <Image className="w-12 h-12 mx-auto mb-4 opacity-30"/>
                 <p>Your gallery will appear here after your event.</p>
               </div>
+            ) : data.gallery?.requiresAccessCode && !data.gallery?.galleryUnlocked ? (
+              <div className="flex flex-col items-center justify-center py-16 space-y-4">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-2" style={{ backgroundColor: (data.tenant?.branding?.primaryColor ?? '#F97316') + '20' }}>
+                  <Lock className="w-8 h-8" style={{ color: data.tenant?.branding?.primaryColor ?? '#F97316' }}/>
+                </div>
+                <p className="text-lg font-bold text-gray-900">Gallery is Password Protected</p>
+                <p className="text-sm text-gray-500">Enter the access code provided by your host to view your photos.</p>
+                <div className="w-full max-w-xs space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Enter access code"
+                    value={galleryCode}
+                    onChange={e => setGalleryCode(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && unlockGallery()}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 text-center text-lg tracking-widest font-mono focus:outline-none focus:ring-2"
+                    style={{ focusRingColor: data.tenant?.branding?.primaryColor ?? '#F97316' } as any}
+                  />
+                  {galleryCodeError && <p className="text-sm text-red-600 text-center">{galleryCodeError}</p>}
+                  <button
+                    onClick={unlockGallery}
+                    disabled={unlockingGallery || !galleryCode.trim()}
+                    className="w-full py-3 rounded-xl text-white font-bold text-sm disabled:opacity-50 transition-opacity"
+                    style={{ backgroundColor: data.tenant?.branding?.primaryColor ?? '#F97316' }}
+                  >
+                    {unlockingGallery ? 'Verifying…' : 'Unlock Gallery'}
+                  </button>
+                </div>
+              </div>
             ) : (
               <>
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-gray-900 text-lg">{data.gallery.title}</h3>
-                  <p className="text-sm text-gray-500">{data.assets.length} photos</p>
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-lg">{data.gallery.title}</h3>
+                    <p className="text-sm text-gray-500">{data.assets.length} photos</p>
+                  </div>
+                  {data.assets.length > 0 && (
+                    <button
+                      onClick={async () => {
+                        const JSZip = (await import('jszip')).default;
+                        const zip = new JSZip();
+                        const folder = zip.folder('gallery') as any;
+                        await Promise.all(data.assets.map(async (a: any, i: number) => {
+                          try {
+                            const res = await fetch(a.url);
+                            const blob = await res.blob();
+                            const ext = a.url.split('.').pop()?.split('?')[0] || 'jpg';
+                            folder.file(`photo-${i + 1}.${ext}`, blob);
+                          } catch {}
+                        }));
+                        const content = await zip.generateAsync({ type: 'blob' });
+                        const url = URL.createObjectURL(content);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = 'gallery.zip';
+                        link.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />Download All
+                    </button>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {data.assets.map((a: any) => (
-                    <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer"
-                      className="aspect-square rounded-xl overflow-hidden block hover:opacity-90 transition-opacity">
+                  {data.assets.map((a: any, i: number) => (
+                    <div key={a.id} className="relative group aspect-square rounded-xl overflow-hidden">
                       <img src={a.url} alt="" className="w-full h-full object-cover"/>
-                    </a>
+                      <a
+                        href={a.url}
+                        download={`photo-${i + 1}.jpg`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
+                      >
+                        <div className="bg-white/90 rounded-full p-2">
+                          <Download className="w-4 h-4 text-gray-800"/>
+                        </div>
+                      </a>
+                    </div>
                   ))}
                 </div>
               </>

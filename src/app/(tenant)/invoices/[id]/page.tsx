@@ -7,7 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import MilestonesCard from './MilestonesCard';
 
@@ -31,7 +31,10 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
         <Link href="/invoices" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Invoices</Link>
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <div className="flex items-center gap-3"><h2 className="text-xl sm:text-2xl font-bold">{inv.invoiceNumber}</h2><Badge variant={IC[inv.status]}>{inv.status}</Badge></div>
-          {inv.status === 'DRAFT' && <form action={'/api/invoices/' + inv.id + '/send'} method="POST"><Button>Send to Client</Button></form>}
+          <div className="flex gap-2 flex-wrap">
+            <a href={'/api/invoices/' + inv.id + '/pdf'} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><Download className="w-4 h-4 mr-1.5"/>Download PDF</Button></a>
+            {inv.status === 'DRAFT' && <form action={'/api/invoices/' + inv.id + '/send'} method="POST"><Button>Send to Client</Button></form>}
+          </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <Card><CardContent className="pt-6 text-sm"><p className="font-bold text-base mb-1">{tenant?.branding?.companyName ?? tenant?.name}</p>{tenant?.branding?.replyToEmail && <p className="text-gray-600">{tenant.branding.replyToEmail}</p>}</CardContent></Card>

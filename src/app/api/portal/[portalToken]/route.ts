@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma/client';
 import { stripe } from '@/lib/stripe';
 import { sendPaymentConfirmationEmail } from '@/lib/email/send';
 
-export async function GET(_: NextRequest, { params }: { params: { portalToken: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { portalToken: string } }) {
   const event = await prisma.event.findFirst({
     where: { portalToken: params.portalToken },
     include: {
@@ -118,6 +118,10 @@ export async function GET(_: NextRequest, { params }: { params: { portalToken: s
     ? { ...rawInvoice, milestones: (rawInvoice as any).PaymentMilestone ?? [], PaymentMilestone: undefined }
     : null;
 
+  const galleryCode = req.nextUrl.searchParams.get('galleryCode');
+  const requiresAccessCode = !!(event.gallery?.accessCode);
+  const galleryUnlocked = !requiresAccessCode || (galleryCode !== null && galleryCode === event.gallery?.accessCode);
+
   return NextResponse.json({
     event: { ...event, Quote: undefined, invoices: undefined, contracts: undefined, gallery: undefined, templateDesigns: undefined },
     client: event.client,
@@ -125,8 +129,8 @@ export async function GET(_: NextRequest, { params }: { params: { portalToken: s
     quote: event.Quote[0] || null,
     contract: event.contracts[0] || null,
     invoice,
-    gallery: event.gallery ? { ...event.gallery, assets: undefined } : null,
-    assets: event.gallery?.assets || [],
+    gallery: event.gallery ? { ...event.gallery, assets: undefined, accessCode: undefined, requiresAccessCode, galleryUnlocked } : null,
+    assets: galleryUnlocked ? (event.gallery?.assets || []) : [],
     templateDesigns: event.templateDesigns || [],
   });
 }

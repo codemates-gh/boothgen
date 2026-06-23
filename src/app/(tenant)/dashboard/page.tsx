@@ -17,20 +17,28 @@ export default async function DashboardPage() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [upcomingEvents, totalClients, newLeads, tenant, revenue] = await Promise.all([
+  const [upcomingEvents, totalClients, newLeads, tenant, revenue, bookedPipeline, outstanding, totalLeads, totalBooked] = await Promise.all([
     prisma.event.findMany({ where: { tenantId, eventDate: { gte: now }, status: { not: 'CANCELLED' } }, include: { client: true }, orderBy: { eventDate: 'asc' }, take: 8 }),
     prisma.client.count({ where: { tenantId } }),
     prisma.leadSubmission.count({ where: { tenantId, createdAt: { gte: monthStart } } }),
     prisma.tenant.findUnique({ where: { id: tenantId }, include: { branding: true } }),
     prisma.payment.aggregate({ where: { tenantId, paidAt: { gte: monthStart } }, _sum: { amountCents: true } }),
+    prisma.event.aggregate({ where: { tenantId, status: { in: ['BOOKED', 'IN_PROGRESS'] } }, _sum: { estimatedValueCents: true } }),
+    prisma.invoice.aggregate({ where: { tenantId, status: { notIn: ['PAID', 'CANCELLED'] }, balanceDueCents: { gt: 0 } }, _sum: { balanceDueCents: true } }),
+    prisma.event.count({ where: { tenantId, status: { not: 'CANCELLED' } } }),
+    prisma.event.count({ where: { tenantId, status: { in: ['BOOKED', 'IN_PROGRESS', 'COMPLETED'] } } }),
   ]);
 
   const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+  const conversionRate = totalLeads > 0 ? Math.round((totalBooked / totalLeads) * 100) : 0;
   const stats = [
     { label: 'Upcoming Events', value: upcomingEvents.length, icon: Calendar, color: 'text-brand', href: '/events' },
     { label: 'Total Clients', value: totalClients, icon: Users, color: 'text-blue-500', href: '/clients' },
     { label: 'New Leads (Month)', value: newLeads, icon: TrendingUp, color: 'text-purple-500', href: '/leads' },
     { label: 'Revenue (Month)', value: fmt(revenue._sum.amountCents ?? 0), icon: DollarSign, color: 'text-green-500', href: '/invoices' },
+    { label: 'Booked Pipeline', value: fmt(bookedPipeline._sum.estimatedValueCents ?? 0), icon: TrendingUp, color: 'text-orange-500', href: '/events' },
+    { label: 'Outstanding Balance', value: fmt(outstanding._sum.balanceDueCents ?? 0), icon: DollarSign, color: 'text-red-500', href: '/invoices' },
+    { label: 'Conversion Rate', value: conversionRate + '%', icon: TrendingUp, color: 'text-teal-500', href: '/events' },
   ];
 
   return (
@@ -43,7 +51,7 @@ export default async function DashboardPage() {
             <Link href="/settings/billing"><Button size="sm">Upgrade Plan</Button></Link>
           </div>
         )}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
           {stats.map(s => (
             <Link key={s.label} href={s.href}>
               <Card className="hover:shadow-md transition-shadow cursor-pointer"><CardContent className="pt-6"><div className="flex items-center justify-between mb-2"><p className="text-sm font-medium text-gray-500">{s.label}</p><s.icon className={'w-5 h-5 ' + s.color} /></div><p className="text-2xl font-bold">{s.value}</p></CardContent></Card>

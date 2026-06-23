@@ -57,7 +57,7 @@ export default function ContractDetailPage() {
           <div className="flex flex-wrap items-center gap-3"><h2 className="text-xl sm:text-2xl font-bold">{contract.title}</h2><Badge variant={CC[contract.status]}>{(contract.status ?? '').replace(/_/g,' ')}</Badge></div>
           <div className="flex flex-wrap gap-2">
             {canSend && <Button variant="outline" onClick={sendToClient} disabled={sending}><Send className="w-4 h-4 mr-1"/>{sending ? 'Sending...' : 'Send to Client'}</Button>}
-            {contract.pdfUrl && <a href={contract.pdfUrl} target="_blank" rel="noopener noreferrer"><Button variant="outline"><Download className="w-4 h-4 mr-1"/>Download PDF</Button></a>}
+            <a href={contract.pdfUrl ?? `/api/contracts/${contract.id}/pdf`} target="_blank" rel="noopener noreferrer"><Button variant="outline"><Download className="w-4 h-4 mr-1"/>Download PDF</Button></a>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">

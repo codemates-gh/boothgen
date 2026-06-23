@@ -5,7 +5,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Image, Trash2, Globe, EyeOff, X, CheckCircle2 } from 'lucide-react';
+import { Upload, Image, Trash2, Globe, EyeOff, X, CheckCircle2, Lock, LockOpen } from 'lucide-react';
 import Link from 'next/link';
 
 export default function GalleryDetailPage({ params }: { params: { id: string } }) {
@@ -14,6 +14,9 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [dragOver, setDragOver] = useState(false);
+  const [accessCode, setAccessCode] = useState('');
+  const [savingCode, setSavingCode] = useState(false);
+  const [codeSaved, setCodeSaved] = useState(false);
 
   useEffect(() => { load(); }, [params.id]);
 
@@ -23,6 +26,7 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
       fetch('/api/gallery/' + params.id + '/assets').then(r => r.json()),
     ]);
     setGallery(gr); setAssets(ar);
+    setAccessCode(gr.accessCode ?? '');
   }
 
   async function uploadFiles(files: FileList | null) {
@@ -67,6 +71,17 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
     load();
   }
 
+  async function saveAccessCode() {
+    setSavingCode(true);
+    await fetch('/api/gallery/' + params.id, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessCode: accessCode.trim() || null }),
+    });
+    setSavingCode(false); setCodeSaved(true);
+    setTimeout(() => setCodeSaved(false), 2000);
+    load();
+  }
+
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setDragOver(false);
     uploadFiles(e.dataTransfer.files);
@@ -89,8 +104,46 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
           <div className="flex items-center gap-4">
             <div><h2 className="text-xl font-bold">{gallery.title}</h2><p className="text-sm text-gray-500">{assets.length} photos</p></div>
             <Badge variant={gallery.isPublished ? 'success' : 'default'}>{gallery.isPublished ? 'Published' : 'Draft'}</Badge>
+            {gallery.accessCode && <Badge variant="warning" className="flex items-center gap-1"><Lock className="w-3 h-3"/>Protected</Badge>}
           </div>
         )}
+
+        {/* Access code */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              {gallery?.accessCode ? <Lock className="w-4 h-4 text-orange-500"/> : <LockOpen className="w-4 h-4 text-gray-400"/>}
+              Password Protection
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-gray-500">Set an access code that clients must enter before viewing gallery photos. Leave blank for public access.</p>
+            <div className="flex gap-3 max-w-sm">
+              <input
+                type="text"
+                placeholder="e.g. SMITH2025"
+                value={accessCode}
+                onChange={e => setAccessCode(e.target.value.toUpperCase())}
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-brand"
+              />
+              <Button size="sm" onClick={saveAccessCode} disabled={savingCode}>
+                {codeSaved ? <><CheckCircle2 className="w-3.5 h-3.5 mr-1 text-green-500"/>Saved</> : savingCode ? 'Saving…' : 'Save'}
+              </Button>
+            </div>
+            {gallery?.accessCode && (
+              <button
+                onClick={async () => {
+                  setAccessCode('');
+                  await fetch('/api/gallery/' + params.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accessCode: null }) });
+                  load();
+                }}
+                className="text-xs text-red-500 hover:underline"
+              >
+                Remove access code
+              </button>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Upload zone */}
         <div

@@ -4,6 +4,36 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.3.0] — 2026-06-22
+
+### Added
+- **Calendar view** (`/calendar`) — month grid showing all events color-coded by status (Lead=blue, Quoted=yellow, Booked=orange, In Progress=brand, Completed=green); prev/next month navigation + Today button; clicking a date pre-fills the new event form with that date; clicking an event opens the detail page; legend at bottom; added to sidebar as "Calendar" between Dashboard and Events
+- **PDF export** — "Download PDF" button on invoice, quote, and contract detail pages; server-side generation via `@react-pdf/renderer` with no browser dependency; PDFs include company branding (name, email, website), client info, line items table, and totals; contract PDFs strip HTML from `renderedContent` and include signature blocks with timestamps; routes: `GET /api/invoices/[id]/pdf`, `GET /api/quotes/[id]/pdf`, `GET /api/contracts/[id]/pdf`
+- **Analytics page** (`/analytics`) — four KPI tiles (Revenue 12mo, Total Clients, Total Booked, Avg Booking Value); Revenue by Month bar chart (last 12 months from paid milestones); Bookings & Leads by Month line chart; Conversion Funnel showing Leads→Quoted→Booked→Completed with percentage conversion; Event Status Distribution donut chart; data served from `GET /api/analytics`; added to sidebar as "Analytics" above Automation
+
+---
+
+## [1.2.1] — 2026-06-22
+
+### Added
+- **Gallery password protection** — hosts can set an access code on any gallery from the gallery detail page (Gallery → [event] → Password Protection card); when set, the client portal gallery tab shows a branded code-entry screen instead of photos; correct code re-fetches the full asset list; code can be cleared with "Remove access code"; `Gallery.accessCode` field was already in the schema; portal API strips the actual code from the response and returns `requiresAccessCode` / `galleryUnlocked` flags only
+- **Stripe price IDs in super admin** — `stripe_price_monthly_id` and `stripe_price_annual_id` are now editable in Super Admin → Platform Settings (Stripe Billing card) and stored in `SystemSetting`; the billing checkout and platform webhook both read from DB first, falling back to env vars; no redeploy needed to change pricing
+
+---
+
+## [1.2.0] — 2026-06-22
+
+### Added
+- **Billing / Upgrade to Pro flow** — "Upgrade to Pro" button on Settings → Billing now creates a real Stripe Checkout Session and redirects there; existing subscribers see a "Manage Subscription" button that opens the Stripe Customer Portal; `POST /api/stripe/billing/checkout` and `GET /api/stripe/billing/portal` routes created; platform webhook now handles `checkout.session.completed` to correctly set `tenantId` and `plan` on `StripeSubscription`; also handles `customer.subscription.deleted`
+- **Estimated value on new event form** — "Estimated Value ($)" field added to the new event form (was previously only on the edit form); API already accepted the field
+- **Dashboard KPIs** — three new metric tiles added: Booked Pipeline (sum of `estimatedValueCents` for BOOKED/IN_PROGRESS events), Outstanding Balance (sum of `balanceDueCents` on unpaid invoices), Conversion Rate (booked ÷ total non-cancelled events); grid now supports 7 tiles across XL screens
+- **Quotes status filtering** — filter pill buttons above the quotes table let users show All / Draft / Sent / Viewed / Accepted / Declined / Expired; pill shows count for each status; client-side, no API change
+- **Invoices status filtering** — same filter pattern applied to invoices list; page converted from server component to client component to support client-side filtering; invoices API GET now includes `PaymentMilestone` so next-due-date logic works correctly
+- **Gallery download** — client portal gallery tab now shows a "Download All" button (creates a zip via JSZip, fetches all photos, downloads as `gallery.zip`); each photo grid cell shows a hover download icon for individual downloads; installed `jszip`
+- **Lead form embed customization** — tenants can now control the embeddable inquiry form from Settings → Lead Capture: form heading, submit button text, success heading/message, which optional fields to show (phone, event date, event type, times, guest count, venue, notes), and which to require; config saved as `leadFormConfig` JSON in `TenantBranding` (schema pushed); embed route reads config and applies it; `{{company}}` placeholder in heading is replaced with company name at render time
+
+---
+
 ## [1.1.0] — 2026-06-22
 
 ### Added

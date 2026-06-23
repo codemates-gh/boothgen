@@ -2,18 +2,22 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, Image } from 'lucide-react';
+import { Settings, Image, CreditCard } from 'lucide-react';
 
 interface InitialSettings {
   message_retention_months: string;
   gallery_expire_days: string;
   gallery_delete_days: string;
+  stripe_price_monthly_id: string;
+  stripe_price_annual_id: string;
 }
 
 export default function PlatformSettings({ initial }: { initial: InitialSettings }) {
   const [months, setMonths]   = useState(initial.message_retention_months);
   const [expireDays, setExpireDays] = useState(initial.gallery_expire_days);
   const [deleteDays, setDeleteDays] = useState(initial.gallery_delete_days);
+  const [monthlyPriceId, setMonthlyPriceId] = useState(initial.stripe_price_monthly_id);
+  const [annualPriceId, setAnnualPriceId]   = useState(initial.stripe_price_annual_id);
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
 
@@ -27,6 +31,8 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
         message_retention_months: months,
         gallery_expire_days: expireDays,
         gallery_delete_days: deleteDays,
+        stripe_price_monthly_id: monthlyPriceId,
+        stripe_price_annual_id: annualPriceId,
       }),
     });
     setSaving(false);
@@ -104,6 +110,43 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
             <p className="font-medium text-gray-800 mb-1">Current schedule</p>
             <p>Galleries expire <strong>{expireDays} days</strong> after the event date.</p>
             <p>Photos are permanently deleted <strong>{parseInt(expireDays) + parseInt(deleteDays || '0')} days</strong> after the event date ({deleteDays} days after expiry).</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CreditCard className="w-4 h-4" /> Stripe Billing
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-gray-500">
+            Stripe Price IDs for platform subscriptions. Find these in your Stripe Dashboard under Products.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Price ID</label>
+              <p className="text-xs text-gray-400 mb-2">e.g. price_1ABC…</p>
+              <input
+                type="text"
+                value={monthlyPriceId}
+                onChange={e => setMonthlyPriceId(e.target.value)}
+                placeholder="price_..."
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Annual Price ID</label>
+              <p className="text-xs text-gray-400 mb-2">e.g. price_1XYZ…</p>
+              <input
+                type="text"
+                value={annualPriceId}
+                onChange={e => setAnnualPriceId(e.target.value)}
+                placeholder="price_..."
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
