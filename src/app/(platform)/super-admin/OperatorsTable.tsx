@@ -225,7 +225,10 @@ export function OperatorsTable({ operators }: { operators: Operator[] }) {
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-sm text-gray-400">
-                    No operators match &ldquo;{query}&rdquo;
+                    {query
+                      ? <>No operators match &ldquo;{query}&rdquo;</>
+                      : <span>No operators found. <button onClick={() => window.location.reload()} className="text-brand underline">Refresh page</button></span>
+                    }
                   </td>
                 </tr>
               ) : (

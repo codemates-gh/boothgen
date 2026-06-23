@@ -11,9 +11,10 @@ import SuperAdminSignOut from './SuperAdminSignOut';
 export default async function SuperAdminPage() {
   await requireSuperAdminSession();
   const [tenants, totalUsers, totalEvents, allSettings] = await Promise.all([
-    prisma.tenant.findMany({ take: 100, orderBy: { createdAt: 'desc' }, include: { stripeSubscription: { select: { plan: true, status: true } }, stripeConnect: { select: { onboardingStatus: true, chargesEnabled: true } }, _count: { select: { events: true } }, branding: { select: { companyName: true } } } }),
-    prisma.user.count(), prisma.event.count(),
-    prisma.systemSetting.findMany({ where: { key: { in: ['message_retention_months', 'gallery_expire_days', 'gallery_delete_days', 'email_template_welcome', 'email_template_forgot_password', 'stripe_price_monthly_id', 'stripe_price_annual_id', 'price_display_monthly', 'price_display_annual', 'commission_percentage', 'support_email', 'chatbot_enabled'] } } }),
+    prisma.tenant.findMany({ take: 100, orderBy: { createdAt: 'desc' }, include: { stripeSubscription: { select: { plan: true, status: true } }, stripeConnect: { select: { onboardingStatus: true, chargesEnabled: true } }, _count: { select: { events: true } }, branding: { select: { companyName: true } } } }).catch(e => { console.error('[super-admin] tenants query failed:', e); return []; }),
+    prisma.user.count().catch(() => 0),
+    prisma.event.count().catch(() => 0),
+    prisma.systemSetting.findMany({ where: { key: { in: ['message_retention_months', 'gallery_expire_days', 'gallery_delete_days', 'email_template_welcome', 'email_template_forgot_password', 'stripe_price_monthly_id', 'stripe_price_annual_id', 'price_display_monthly', 'price_display_annual', 'commission_percentage', 'support_email', 'chatbot_enabled'] } } }).catch(() => []),
   ]);
   const settingsMap = Object.fromEntries(allSettings.map(s => [s.key, s.value]));
   const ov = { total: tenants.length, active: tenants.filter(t => t.status==='ACTIVE').length, trial: tenants.filter(t => t.status==='TRIAL').length, suspended: tenants.filter(t => t.status==='SUSPENDED').length };
