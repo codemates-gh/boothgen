@@ -10,7 +10,7 @@ import { CreditCard, Link2, CheckCircle2, AlertCircle, ExternalLink } from 'luci
 import { PaymentTermsCard } from './PaymentTermsCard';
 import { UpgradeButton } from './UpgradeButton';
 
-const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture']];
+const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['profile','Profile']];
 
 export default async function BillingSettingsPage() {
   const session = await requireTenantSession();

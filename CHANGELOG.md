@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.6.6] — 2026-06-23
+
+### Added
+- **Profile settings page** (`/settings/profile`) — users can now update their display name from the sidebar; name updates immediately without requiring a sign-out thanks to `useSession().update()` + JWT refresh; email is shown read-only; "Profile" tab added to all Settings sub-pages
+
+---
+
 ## [1.6.5] — 2026-06-23
 
 ### Fixed

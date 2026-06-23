@@ -50,7 +50,13 @@ export const authOptions: NextAuthOptions = {
           await refreshTenant(token);
         }
       }
-      if (trigger === 'update') await refreshTenant(token);
+      if (trigger === 'update') {
+        await refreshTenant(token);
+        if (token.userId) {
+          const u = await prisma.user.findUnique({ where: { id: token.userId as string }, select: { name: true } });
+          if (u) token.name = u.name;
+        }
+      }
       return token;
     },
     async session({ session, token }) {
