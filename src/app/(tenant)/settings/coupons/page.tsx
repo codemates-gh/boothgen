@@ -35,18 +35,25 @@ export default function CouponsPage() {
   async function createCoupon(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true); setError('');
-    const res = await fetch('/api/settings/coupons', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, description, type, value: parseFloat(value), maxUses: maxUses || null, expiresAt: expiresAt || null }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setCoupons(prev => [{ ...data, _count: { quotes: 0 } }, ...prev]);
-      setCode(''); setDescription(''); setType('PERCENTAGE'); setValue(''); setMaxUses(''); setExpiresAt('');
-      setShowForm(false);
-    } else { setError(data.error || 'Failed to create coupon'); }
-    setSaving(false);
+    try {
+      const res = await fetch('/api/settings/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, description, type, value: parseFloat(value), maxUses: maxUses || null, expiresAt: expiresAt || null }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCoupons(prev => [{ ...data, usedCount: 0, _count: { quotes: 0 } }, ...prev]);
+        setCode(''); setDescription(''); setType('PERCENTAGE'); setValue(''); setMaxUses(''); setExpiresAt('');
+        setShowForm(false);
+      } else {
+        setError(data.error || 'Failed to create coupon');
+      }
+    } catch {
+      setError('Network error — please try again.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function toggleActive(id: string, current: boolean) {
