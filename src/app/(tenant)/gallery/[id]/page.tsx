@@ -12,7 +12,7 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
   const [gallery, setGallery] = useState<any>(null);
   const [assets, setAssets] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [uploadCount, setUploadCount] = useState({ done: 0, total: 0, failed: 0 });
   const [dragOver, setDragOver] = useState(false);
   const [accessCode, setAccessCode] = useState('');
   const [savingCode, setSavingCode] = useState(false);
@@ -31,30 +31,44 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
 
   async function uploadFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) return;
+
     setUploading(true);
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith('image/')) continue;
-      const id = file.name + Date.now();
-      setUploadProgress(p => ({ ...p, [id]: 0 }));
+    setUploadCount({ done: 0, total: imageFiles.length, failed: 0 });
+
+    const saved: Array<{ url: string; fileName: string; fileSize: number; mimeType: string }> = [];
+
+    async function uploadOne(file: File) {
       try {
-        // Get presigned URL
-        const { uploadUrl, key, publicUrl } = await fetch('/api/gallery/' + params.id + '/upload', {
+        const { uploadUrl, publicUrl } = await fetch('/api/gallery/' + params.id + '/upload', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fileName: file.name, contentType: file.type }),
         }).then(r => r.json());
-        // Upload to R2
         await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-        setUploadProgress(p => ({ ...p, [id]: 80 }));
-        // Save asset record
-        await fetch('/api/gallery/' + params.id + '/assets', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: publicUrl, fileName: file.name, fileSize: file.size, mimeType: file.type }),
-        });
-        setUploadProgress(p => ({ ...p, [id]: 100 }));
-        setTimeout(() => setUploadProgress(p => { const n = {...p}; delete n[id]; return n; }), 1500);
-      } catch (err) { console.error('Upload failed:', err); }
+        saved.push({ url: publicUrl, fileName: file.name, fileSize: file.size, mimeType: file.type });
+        setUploadCount(c => ({ ...c, done: c.done + 1 }));
+      } catch (err) {
+        console.error('Upload failed:', file.name, err);
+        setUploadCount(c => ({ ...c, done: c.done + 1, failed: c.failed + 1 }));
+      }
     }
-    setUploading(false); load();
+
+    const CONCURRENCY = 5;
+    for (let i = 0; i < imageFiles.length; i += CONCURRENCY) {
+      await Promise.all(imageFiles.slice(i, i + CONCURRENCY).map(uploadOne));
+    }
+
+    // Save all successful asset records in one batch call
+    if (saved.length > 0) {
+      await fetch('/api/gallery/' + params.id + '/assets/batch', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assets: saved }),
+      });
+    }
+
+    setUploading(false);
+    load();
   }
 
   async function togglePublish() {
@@ -160,15 +174,28 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
         </div>
 
         {/* Upload progress */}
-        {Object.entries(uploadProgress).length > 0 && (
+        {uploading && (
           <Card><CardContent className="p-4 space-y-2">
-            {Object.entries(uploadProgress).map(([id, progress]) => (
-              <div key={id} className="flex items-center gap-3">
-                <div className="flex-1 bg-gray-200 rounded-full h-2"><div className="bg-brand h-2 rounded-full transition-all" style={{ width: progress + '%' }}/></div>
-                {progress === 100 && <CheckCircle2 className="w-4 h-4 text-green-500"/>}
-                <span className="text-xs text-gray-500">{progress}%</span>
-              </div>
-            ))}
+            <div className="flex items-center justify-between text-sm mb-1">
+              <span className="font-medium text-gray-700">Uploading photos…</span>
+              <span className="text-gray-500">{uploadCount.done} / {uploadCount.total}</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div
+                className="bg-brand h-2.5 rounded-full transition-all"
+                style={{ width: uploadCount.total ? (uploadCount.done / uploadCount.total * 100) + '%' : '0%' }}
+              />
+            </div>
+            {uploadCount.failed > 0 && (
+              <p className="text-xs text-red-500">{uploadCount.failed} photo{uploadCount.failed > 1 ? 's' : ''} failed — others uploaded successfully.</p>
+            )}
+          </CardContent></Card>
+        )}
+        {!uploading && uploadCount.total > 0 && (
+          <Card><CardContent className="p-4 flex items-center gap-2 text-sm text-green-700">
+            <CheckCircle2 className="w-4 h-4"/>
+            {uploadCount.done - uploadCount.failed} of {uploadCount.total} photos uploaded
+            {uploadCount.failed > 0 && <span className="text-red-500 ml-1">({uploadCount.failed} failed)</span>}
           </CardContent></Card>
         )}
 

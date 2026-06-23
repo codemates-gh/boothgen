@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.3.2] — 2026-06-22
+
+### Fixed
+- **Gallery bulk upload stuck on large sets** — uploading 250+ photos was sequential (one at a time), causing the page to hang and render 250+ individual progress bars. Now uploads 5 photos concurrently and shows a single aggregate progress bar (e.g. "47 / 250"). A new `POST /api/gallery/[id]/assets/batch` endpoint saves all successful records in one `createMany` call instead of 250 individual DB round-trips. Errors on individual files are counted and reported without stopping the rest.
+
+---
+
 ## [1.3.1] — 2026-06-22
 
 ### Added
