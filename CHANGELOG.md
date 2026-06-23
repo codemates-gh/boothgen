@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.6.5] — 2026-06-23
+
+### Fixed
+- **Support AI chat — final fix** — replaced `@ai-sdk/google` + `streamText` with a direct `fetch` to the Google AI REST API using Gemini's native content schema (`contents[].parts`, `role: model/user`, `system_instruction`); surfaces the actual Gemini error message in the chat rather than a generic "something went wrong" so issues are visible
+
+---
+
 ## [1.6.4] — 2026-06-23
 
 ### Fixed

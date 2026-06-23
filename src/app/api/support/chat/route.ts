@@ -1,6 +1,3 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { streamText } from 'ai';
-
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
@@ -158,12 +155,12 @@ If you cannot find an answer, suggest the user contact support at support@boothg
 
 type SimpleMessage = { role: 'user' | 'assistant'; content: string };
 
+const GEMINI_URL =
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
+
 export async function POST(req: Request) {
   if (!process.env.GEMINI_API_KEY) {
-    return new Response(
-      JSON.stringify({ error: 'AI chat is not configured.' }),
-      { status: 503, headers: { 'Content-Type': 'application/json' } }
-    );
+    return Response.json({ error: 'AI chat is not configured.' }, { status: 503 });
   }
 
   try {
@@ -174,26 +171,38 @@ export async function POST(req: Request) {
     const conversation = firstUserIdx >= 0 ? messages.slice(firstUserIdx) : [];
 
     if (conversation.length === 0) {
-      return new Response(JSON.stringify({ error: 'No user message found.' }), {
-        status: 400, headers: { 'Content-Type': 'application/json' },
-      });
+      return Response.json({ error: 'No user message found.' }, { status: 400 });
     }
 
-    const google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
+    // Map to Gemini's content schema: assistant → model
+    const contents = conversation.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
 
-    const result = streamText({
-      model: google('gemini-2.0-flash-lite'),
-      system: SYSTEM_PROMPT,
-      messages: conversation,
-      maxOutputTokens: 600,
+    const res = await fetch(`${GEMINI_URL}?key=${process.env.GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents,
+        generationConfig: { maxOutputTokens: 600 },
+      }),
     });
 
-    const text = await result.text;
+    const data = await res.json();
+
+    if (!res.ok) {
+      const errMsg = data?.error?.message ?? `Gemini ${res.status}`;
+      console.error('[support/chat] Gemini error:', errMsg);
+      return Response.json({ error: errMsg }, { status: 502 });
+    }
+
+    const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     return Response.json({ text });
   } catch (err) {
-    console.error('[support/chat]', err);
-    return new Response(JSON.stringify({ error: 'Internal server error.' }), {
-      status: 500, headers: { 'Content-Type': 'application/json' },
-    });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[support/chat]', msg);
+    return Response.json({ error: msg }, { status: 500 });
   }
 }

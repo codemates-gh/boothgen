@@ -18,7 +18,7 @@ export function SupportChat() {
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [contactQ, setContactQ] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactState, setContactState] = useState<ContactState>('idle');
@@ -41,7 +41,7 @@ export function SupportChat() {
     if (!text || loading) return;
 
     setInput('');
-    setError(false);
+    setError(null);
 
     const userMsg: Message = { id: `u-${Date.now()}`, role: 'user', content: text };
     const assistantId = `a-${Date.now() + 1}`;
@@ -58,13 +58,16 @@ export function SupportChat() {
         body: JSON.stringify({ messages: history }),
       });
 
-      if (!res.ok) throw new Error('Bad response');
-      const { text } = await res.json();
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error ?? 'Request failed');
+      }
       setMessages(prev =>
-        prev.map(m => m.id === assistantId ? { ...m, content: text } : m)
+        prev.map(m => m.id === assistantId ? { ...m, content: data.text ?? '' } : m)
       );
-    } catch {
-      setError(true);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Something went wrong.';
+      setError(msg);
       setMessages(prev => prev.filter(m => m.id !== assistantId));
     } finally {
       setLoading(false);
@@ -148,7 +151,7 @@ export function SupportChat() {
                 ))}
                 {error && (
                   <div className="bg-red-50 border border-red-100 rounded-xl px-3 py-2 text-xs text-red-600">
-                    Something went wrong. Try again or contact support below.
+                    {error}
                   </div>
                 )}
                 <div ref={bottomRef} />
