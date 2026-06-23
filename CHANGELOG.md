@@ -4,6 +4,19 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.6.2] — 2026-06-23
+
+### Fixed
+- **Marketing page — mobile hamburger menu** — nav links were hidden on mobile with no way to access them; extracted header into `MarketingNav` client component with a hamburger (☰ / ✕) toggle that opens a full dropdown panel listing all nav links; closes on link tap
+
+### Added
+- **Marketing page — Contact Us section** (`#contact`) — quick contact form embedded above the footer; name, email, topic dropdown, message; submits to existing `/api/support/contact`; shows success confirmation
+- **"Contact" link** added to marketing page desktop nav and footer nav
+- **`/contact` page** — full standalone contact page with: two-column layout (info sidebar + form), email link, response time notice, Support Center callout, topic guide cards (General / Technical / Billing / Feature / Partnership / Other); uses the shared `MarketingContactForm`
+- **`/contact` added to public middleware routes** (no auth required)
+
+---
+
 ## [1.6.0] — 2026-06-23
 
 ### Changed

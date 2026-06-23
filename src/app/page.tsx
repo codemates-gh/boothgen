@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma/client';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { BoothGeniusLogo } from '@/components/brand/BoothGeniusLogo';
+import { MarketingContactForm } from './MarketingContactForm';
+import { MarketingNav } from './MarketingNav';
 
 export const metadata: Metadata = {
   title: 'Booth Genius — 6 Tools. 1 Platform. Free to Start.',
@@ -303,22 +305,7 @@ export default async function HomePage() {
     <div className="min-h-screen bg-white text-gray-900">
 
       {/* ── NAV ──────────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <BoothGeniusLogo size="sm" showTagline={false} />
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
-            <a href="#savings" className="hover:text-gray-900 transition-colors">Why Genius?</a>
-            <a href="#features" className="hover:text-gray-900 transition-colors">Features</a>
-            <a href="#pricing" className="hover:text-gray-900 transition-colors">Pricing</a>
-            <a href="#our-story" className="hover:text-gray-900 transition-colors">Our Story</a>
-            <Link href="/support" className="hover:text-gray-900 transition-colors">Support</Link>
-          </nav>
-          <div className="flex items-center gap-3">
-            <Link href="/sign-in" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">Sign in</Link>
-            <Link href="/sign-in" className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl transition-colors">Get Started Free</Link>
-          </div>
-        </div>
-      </header>
+      <MarketingNav />
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-gradient-to-br from-[#1e1247] via-[#2D1B69] to-[#1e1247] pt-16 pb-20 px-4 sm:px-6">
@@ -721,6 +708,21 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── CONTACT US ───────────────────────────────────────────────────────── */}
+      <section id="contact" className="py-20 px-4 sm:px-6 bg-gray-50">
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="text-orange-500 text-xs font-bold uppercase tracking-widest mb-2">Get in Touch</p>
+            <h2 className="text-3xl font-extrabold text-gray-900 mb-3">Contact Us</h2>
+            <p className="text-gray-500">Have a question, technical issue, or just want to say hi? Send us a message and we&apos;ll get back to you quickly.</p>
+            <p className="text-sm text-gray-400 mt-2">
+              Need more details? Visit our <Link href="/contact" className="text-orange-500 hover:underline font-medium">full contact page →</Link>
+            </p>
+          </div>
+          <MarketingContactForm />
+        </div>
+      </section>
+
       {/* ── FOOTER ───────────────────────────────────────────────────────────── */}
       <footer className="border-t border-gray-100 py-10 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-400">
@@ -734,6 +736,7 @@ export default async function HomePage() {
             <a href="#pricing" className="hover:text-gray-600 transition-colors">Pricing</a>
             <a href="#our-story" className="hover:text-gray-600 transition-colors">Our Story</a>
             <Link href="/support" className="hover:text-gray-600 transition-colors">Support</Link>
+            <Link href="/contact" className="hover:text-gray-600 transition-colors">Contact</Link>
             <Link href="/sign-in" className="hover:text-gray-600 transition-colors">Sign In</Link>
           </nav>
           <p>© {new Date().getFullYear()} Booth Genius. All rights reserved.</p>
