@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Calendar, Users, DollarSign, TrendingUp, Plus, ArrowRight } from 'lucide-react';
+import { Calendar, Users, DollarSign, TrendingUp, Plus, ArrowRight, Inbox } from 'lucide-react';
 import { format } from 'date-fns';
 
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', CANCELLED:'danger' };
@@ -17,7 +17,7 @@ export default async function DashboardPage() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [upcomingEvents, totalClients, newLeads, tenant, revenue, bookedPipeline, outstanding, totalLeads, totalBooked] = await Promise.all([
+  const [upcomingEvents, totalClients, newLeads, tenant, revenue, bookedPipeline, outstanding, totalLeads, totalBooked, recentLeads] = await Promise.all([
     prisma.event.findMany({ where: { tenantId, eventDate: { gte: now }, status: { not: 'CANCELLED' } }, include: { client: true }, orderBy: { eventDate: 'asc' }, take: 8 }),
     prisma.client.count({ where: { tenantId } }),
     prisma.leadSubmission.count({ where: { tenantId, createdAt: { gte: monthStart } } }),
@@ -27,6 +27,7 @@ export default async function DashboardPage() {
     prisma.invoice.aggregate({ where: { tenantId, status: { notIn: ['PAID', 'CANCELLED'] }, balanceDueCents: { gt: 0 } }, _sum: { balanceDueCents: true } }),
     prisma.event.count({ where: { tenantId, status: { not: 'CANCELLED' } } }),
     prisma.event.count({ where: { tenantId, status: { in: ['BOOKED', 'IN_PROGRESS', 'COMPLETED'] } } }),
+    prisma.leadSubmission.findMany({ where: { tenantId }, orderBy: { createdAt: 'desc' }, take: 8, select: { id: true, firstName: true, lastName: true, email: true, eventDate: true, eventType: true, status: true, createdAt: true } }),
   ]);
 
   const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
@@ -75,6 +76,31 @@ export default async function DashboardPage() {
                         <td className="px-6 py-4 text-sm text-gray-700">{format(ev.eventDate, 'MMM d, yyyy')}</td>
                         <td className="px-6 py-4"><Badge variant={SC[ev.status]}>{ev.status}</Badge></td>
                         <td className="px-6 py-4 text-right"><Link href={'/events/' + ev.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><div className="flex items-center justify-between"><CardTitle>Recent Leads</CardTitle><Link href="/leads"><Button variant="outline" size="sm">View All <ArrowRight className="w-3.5 h-3.5 ml-1"/></Button></Link></div></CardHeader>
+          <CardContent className="p-0">
+            {recentLeads.length === 0 ? (
+              <div className="text-center py-12 text-gray-400"><Inbox className="w-10 h-10 mx-auto mb-3 opacity-40"/><p>No leads yet. Share your inquiry form to start collecting leads.</p></div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[500px]">
+                  <thead><tr className="border-b"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Name</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Event Date</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Type</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="px-6 py-3"></th></tr></thead>
+                  <tbody>
+                    {recentLeads.map(lead => (
+                      <tr key={lead.id} className="border-b last:border-0 hover:bg-gray-50">
+                        <td className="px-6 py-4"><p className="font-medium">{lead.firstName} {lead.lastName}</p><p className="text-xs text-gray-400">{lead.email}</p></td>
+                        <td className="px-6 py-4 text-sm text-gray-700">{lead.eventDate ? format(new Date(lead.eventDate), 'MMM d, yyyy') : '—'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{lead.eventType ?? '—'}</td>
+                        <td className="px-6 py-4"><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${{ NEW: 'bg-blue-50 text-blue-700', CONTACTED: 'bg-yellow-50 text-yellow-700', QUOTED: 'bg-purple-50 text-purple-700', CONVERTED: 'bg-green-50 text-green-700', CLOSED_LOST: 'bg-gray-100 text-gray-500' }[lead.status] ?? 'bg-gray-100 text-gray-500'}`}>{lead.status.replace('_', ' ')}</span></td>
+                        <td className="px-6 py-4 text-right"><Link href={'/leads/' + lead.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
                       </tr>
                     ))}
                   </tbody>

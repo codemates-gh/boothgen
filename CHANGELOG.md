@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.7.0] — 2026-06-23
+
+### Fixed
+- **Lead compose — template line breaks** — switched `htmlToPlainText` from a regex-based approach to a proper DOM tree walk (`document.createElement('div')` + recursive node extraction); block elements (`P`, `DIV`, `H1`–`H6`, `LI`) now emit `\n\n`, `BR` emits `\n`, and inline elements like `<span>` pass through their text content; correctly handles any editor output structure
+
+### Added
+- **Calendar — lead inquiries** — leads with an event date now appear on the calendar as purple "✦ First Last" chips, linking directly to the lead detail page; "Lead Inquiry" added to the calendar legend; fetches leads via new `GET /api/leads` route
+- **Dashboard — Recent Leads table** — added a "Recent Leads" card below Upcoming Events showing the 8 most recent leads with name, email, event date, type, and status; "View All" links to `/leads`
+
+---
+
 ## [1.6.9] — 2026-06-23
 
 ### Fixed

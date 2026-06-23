@@ -11,15 +11,23 @@ import { Badge } from '@/components/ui/badge';
 type EmailTemplate = { id: string; name: string; subject: string; bodyHtml: string };
 type Branding = { companyName?: string; replyToEmail?: string; supportPhone?: string; websiteUrl?: string; emailHeaderHtml?: string };
 
+const BLOCK_TAGS = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE', 'TR']);
+
+function extractText(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return (node.textContent ?? '').replace(/ /g, ' ');
+  }
+  if (node.nodeType !== Node.ELEMENT_NODE) return '';
+  const el = node as Element;
+  if (el.tagName === 'BR') return '\n';
+  const inner = Array.from(el.childNodes).map(extractText).join('');
+  return BLOCK_TAGS.has(el.tagName) ? inner + '\n\n' : inner;
+}
+
 function htmlToPlainText(html: string): string {
-  return html
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n\n')
-    .replace(/<\/div>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return extractText(div).replace(/\n{3,}/g, '\n\n').trim();
 }
 
 function formatTime(t: string | null): string {

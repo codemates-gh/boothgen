@@ -29,13 +29,18 @@ const LEGEND = [
 export default function CalendarPage() {
   const [current, setCurrent] = useState(() => new Date());
   const [events, setEvents]   = useState<any[]>([]);
+  const [leads, setLeads]     = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/events').then(r => r.json()).then(d => {
-      setEvents(Array.isArray(d) ? d : []);
+    Promise.all([
+      fetch('/api/events').then(r => r.json()).catch(() => []),
+      fetch('/api/leads').then(r => r.json()).catch(() => []),
+    ]).then(([evts, lds]) => {
+      setEvents(Array.isArray(evts) ? evts : []);
+      setLeads(Array.isArray(lds) ? lds : []);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    });
   }, []);
 
   const monthStart  = startOfMonth(current);
@@ -53,7 +58,13 @@ export default function CalendarPage() {
     if (!ev.eventDate) continue;
     const key = format(new Date(ev.eventDate), 'yyyy-MM-dd');
     if (!byDate.has(key)) byDate.set(key, []);
-    byDate.get(key)!.push(ev);
+    byDate.get(key)!.push({ ...ev, _type: 'event' });
+  }
+  for (const lead of leads) {
+    if (!lead.eventDate) continue;
+    const key = format(new Date(lead.eventDate), 'yyyy-MM-dd');
+    if (!byDate.has(key)) byDate.set(key, []);
+    byDate.get(key)!.push({ ...lead, _type: 'lead' });
   }
 
   return (
@@ -132,17 +143,28 @@ export default function CalendarPage() {
                     </span>
                   </Link>
 
-                  {/* Events */}
+                  {/* Events + Leads */}
                   <div className="space-y-0.5">
                     {dayEvents.slice(0, 3).map((ev: any) => (
-                      <Link key={ev.id} href={`/events/${ev.id}`}>
-                        <div
-                          className={`text-xs px-1.5 py-0.5 rounded truncate font-medium hover:opacity-80 transition-opacity ${STATUS_COLORS[ev.status] ?? 'bg-gray-100 text-gray-600'}`}
-                          title={ev.title}
-                        >
-                          {ev.title}
-                        </div>
-                      </Link>
+                      ev._type === 'lead' ? (
+                        <Link key={'lead-' + ev.id} href={`/leads/${ev.id}`}>
+                          <div
+                            className="text-xs px-1.5 py-0.5 rounded truncate font-medium hover:opacity-80 transition-opacity bg-purple-100 text-purple-800"
+                            title={`${ev.firstName} ${ev.lastName} (Lead)`}
+                          >
+                            ✦ {ev.firstName} {ev.lastName}
+                          </div>
+                        </Link>
+                      ) : (
+                        <Link key={ev.id} href={`/events/${ev.id}`}>
+                          <div
+                            className={`text-xs px-1.5 py-0.5 rounded truncate font-medium hover:opacity-80 transition-opacity ${STATUS_COLORS[ev.status] ?? 'bg-gray-100 text-gray-600'}`}
+                            title={ev.title}
+                          >
+                            {ev.title}
+                          </div>
+                        </Link>
+                      )
                     ))}
                     {dayEvents.length > 3 && (
                       <div className="text-xs text-gray-400 pl-1.5">+{dayEvents.length - 3} more</div>
@@ -162,7 +184,11 @@ export default function CalendarPage() {
               {label}
             </div>
           ))}
-          {loading && <span className="text-xs text-gray-400 ml-auto">Loading events…</span>}
+          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <span className="w-2.5 h-2.5 rounded-sm bg-purple-100" />
+            Lead Inquiry
+          </div>
+          {loading && <span className="text-xs text-gray-400 ml-auto">Loading…</span>}
         </div>
       </div>
     </>
