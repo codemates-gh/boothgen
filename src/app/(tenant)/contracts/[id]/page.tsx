@@ -63,7 +63,7 @@ export default function ContractDetailPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
           <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-400 mb-1">Client</p><p className="font-medium">{contract.client?.firstName} {contract.client?.lastName}</p></div>
           <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-400 mb-1">Client Signed</p><p className="font-medium">{contract.clientSignedAt ? new Date(contract.clientSignedAt).toLocaleDateString() : 'Pending'}</p></div>
-          <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-400 mb-1">Host Signed</p><p className="font-medium">{contract.hostSignedAt ? new Date(contract.hostSignedAt).toLocaleDateString() : 'Pending'}</p></div>
+          <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-400 mb-1">Operator Signed</p><p className="font-medium">{contract.hostSignedAt ? new Date(contract.hostSignedAt).toLocaleDateString() : 'Pending'}</p></div>
         </div>
         <Card>
           <CardHeader><CardTitle>Contract Content</CardTitle></CardHeader>

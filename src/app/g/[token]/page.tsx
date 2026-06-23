@@ -101,7 +101,7 @@ export default function GallerySharePage() {
               <Lock className="w-8 h-8" style={{ color: pc }}/>
             </div>
             <p className="text-lg font-bold text-gray-900">Gallery is Password Protected</p>
-            <p className="text-sm text-gray-500">Enter the access code provided by your host.</p>
+            <p className="text-sm text-gray-500">Enter the access code provided by your operator.</p>
             <div className="w-full max-w-xs space-y-3">
               <input
                 type="text"

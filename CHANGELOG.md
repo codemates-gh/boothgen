@@ -4,6 +4,28 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.6.0] — 2026-06-23
+
+### Changed
+- **"Host" → "Operator" rename throughout all UI-facing text** — super admin labels, client portal messages, guest gallery, contract detail page, contract PDF, support page; internal DB fields/enums/API routes unchanged
+  - Super admin: "Total Hosts" → "Total Operators", "All Hosts" → "All Operators"
+  - Client portal: "The host will be notified" → "The operator will be notified", "The host will send your quote" → "Your operator will send your quote", gallery expired/protected messages updated
+  - Guest gallery: access code prompt updated
+  - Contract detail: "Host Signed" label → "Operator Signed"
+  - Contract PDF: "Host / Provider" → "Operator / Provider", "Host Signature" → "Operator Signature"
+  - Support page: "Host Admin Roles" → "Operator Admin Roles"
+
+### Added
+- **Operator search in super admin** — search bar in "All Operators" table filters by company name, slug, status, or plan in real time; shows match count
+- **Manual plan upgrade/downgrade from super admin** — each operator row now has three action icons:
+  - ↑ **Change plan** (purple) — set Commission (FREE_TRIAL), Pro Monthly, or Pro Annual; creates or updates the StripeSubscription record; also sets tenant status to ACTIVE on upgrade
+  - ↓ **Change status** (blue) — set account status to Active / Trial / Suspended / Cancelled without affecting plan
+  - 🗑 **Delete** (red) — existing delete with confirmation prompt
+- **`PATCH /api/super-admin/tenants/[id]`** — extended to handle `{ plan }` in addition to existing `{ status }`; upserts StripeSubscription for manual upgrades (uses `manual_{tenantId}` as stripeCustomerId when no Stripe account exists)
+- **`OperatorsTable` client component** — replaces the old static server-rendered table; handles search, plan change, status change, and delete actions with inline confirmation flows
+
+---
+
 ## [1.5.9] — 2026-06-23
 
 ### Changed

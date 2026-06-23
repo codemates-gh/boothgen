@@ -306,8 +306,8 @@ The gallery tab in the portal shows the total photo count and a photo grid with 
 **Inviting a Team Member**
 Go to Settings → Team → Invite Team Member. Enter their name and email address. They'll receive an invitation email with a link to set up their account (create a password and log in). The invite link expires after 48 hours — resend from the Team page if needed.
 
-**Team Member vs. Host Admin Roles**
-- **Host Admin** — Full access to all features, settings, billing, and financial data
+**Team Member vs. Operator Admin Roles**
+- **Operator Admin** — Full access to all features, settings, billing, and financial data
 - **Team Member** — Limited access controlled by you; cannot see Settings, Billing, or other sensitive areas unless explicitly allowed
 
 **Controlling What Team Members Can See**

@@ -52,7 +52,7 @@ export function ContractPDF({ contract, branding }: { contract: any; branding: a
 
         <View style={S.parties}>
           <View style={S.party}>
-            <Text style={S.partyLabel}>Host / Provider</Text>
+            <Text style={S.partyLabel}>Operator / Provider</Text>
             <Text style={S.partyName}>{branding?.companyName ?? 'Provider'}</Text>
             {branding?.replyToEmail && <Text style={{ fontSize: 9, color: '#6b7280', marginTop: 2 }}>{branding.replyToEmail}</Text>}
           </View>
@@ -86,11 +86,11 @@ export function ContractPDF({ contract, branding }: { contract: any; branding: a
             )}
           </View>
           <View style={S.sig}>
-            <Text style={S.sigLabel}>Host Signature</Text>
+            <Text style={S.sigLabel}>Operator Signature</Text>
             {contract.hostSignedAt ? (
               <>
                 <View style={S.sigLine} />
-                <Text style={S.sigName}>{branding?.companyName ?? 'Host'}</Text>
+                <Text style={S.sigName}>{branding?.companyName ?? 'Operator'}</Text>
                 <Text style={S.sigDate}>Signed {fmtDateTime(contract.hostSignedAt)}</Text>
               </>
             ) : (

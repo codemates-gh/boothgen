@@ -133,7 +133,7 @@ export default function ClientPortalPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: declineReason, portalToken }),
       });
-      setMessage('Quote declined. The host will be notified.'); await load();
+      setMessage('Quote declined. The operator will be notified.'); await load();
     } catch { setMessage('Network error. Please try again.'); }
     setProcessing(false);
   }
@@ -176,7 +176,7 @@ export default function ClientPortalPage() {
         body: JSON.stringify({ portalToken, revisionNote }),
       });
       if (r.ok) {
-        setMessage('Revision requested. The host has been notified and will upload a new version.');
+        setMessage('Revision requested. The operator has been notified and will upload a new version.');
         setRevisionNote(''); setShowRevisionForm(false);
         await load();
       } else { const d = await r.json().catch(() => ({})); setMessage(d.error || 'Something went wrong. Please try again.'); }
@@ -297,7 +297,7 @@ export default function ClientPortalPage() {
             {!data.quote ? (
               <div className="text-center py-16 text-gray-400">
                 <FileText className="w-12 h-12 mx-auto mb-4 opacity-30"/>
-                <p>No quote has been sent yet. The host will send your quote shortly.</p>
+                <p>No quote has been sent yet. Your operator will send your quote shortly.</p>
               </div>
             ) : (
               <>
@@ -762,7 +762,7 @@ export default function ClientPortalPage() {
                   <div>
                     <p className="font-semibold text-amber-800">Revision in Progress</p>
                     <p className="text-sm text-amber-700 mt-1">
-                      Your feedback has been sent. The host is working on a new version and will notify you when it's ready.
+                      Your feedback has been sent. The operator is working on a new version and will notify you when it's ready.
                     </p>
                     {latestDesign.revisionNote && (
                       <div className="mt-3 p-3 bg-white border border-amber-200 rounded-lg">
@@ -789,7 +789,7 @@ export default function ClientPortalPage() {
               <div className="text-center py-16">
                 <Image className="w-12 h-12 mx-auto mb-4 opacity-20 text-gray-400"/>
                 <p className="text-lg font-semibold text-gray-700 mb-2">Gallery Expired</p>
-                <p className="text-sm text-gray-400 max-w-xs mx-auto">The access period for this gallery has ended. Please contact your host if you need assistance.</p>
+                <p className="text-sm text-gray-400 max-w-xs mx-auto">The access period for this gallery has ended. Please contact your operator if you need assistance.</p>
               </div>
             ) : !data.gallery?.isPublished ? (
               <div className="text-center py-16 text-gray-400">
@@ -802,7 +802,7 @@ export default function ClientPortalPage() {
                   <Lock className="w-8 h-8" style={{ color: data.tenant?.branding?.primaryColor ?? '#F97316' }}/>
                 </div>
                 <p className="text-lg font-bold text-gray-900">Gallery is Password Protected</p>
-                <p className="text-sm text-gray-500">Enter the access code provided by your host to view your photos.</p>
+                <p className="text-sm text-gray-500">Enter the access code provided by your operator to view your photos.</p>
                 <div className="w-full max-w-xs space-y-3">
                   <input
                     type="text"
