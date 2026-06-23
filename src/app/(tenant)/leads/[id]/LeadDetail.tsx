@@ -14,7 +14,7 @@ type Branding = { companyName?: string; replyToEmail?: string; supportPhone?: st
 function htmlToPlainText(html: string): string {
   return html
     .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
     .replace(/<\/div>/gi, '\n')
     .replace(/<[^>]+>/g, '')
     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
@@ -22,12 +22,32 @@ function htmlToPlainText(html: string): string {
     .trim();
 }
 
+function formatTime(t: string | null): string {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
 function resolvePlaceholders(text: string, lead: Lead, branding: Branding): string {
   const sig = branding.emailHeaderHtml ? htmlToPlainText(branding.emailHeaderHtml) : '';
+  const eventDate = lead.eventDate
+    ? format(new Date(lead.eventDate), 'EEEE, MMMM d, yyyy')
+    : '';
   return text
     .replace(/\{\{client\.first_name\}\}/g, lead.firstName)
     .replace(/\{\{client\.email\}\}/g, lead.email)
     .replace(/\{\{client\.full_name\}\}/g, `${lead.firstName} ${lead.lastName}`)
+    .replace(/\{\{event\.date\}\}/g, eventDate)
+    .replace(/\{\{event\.start_time\}\}/g, formatTime(lead.startTime))
+    .replace(/\{\{event\.end_time\}\}/g, formatTime(lead.endTime))
+    .replace(/\{\{event\.venue_name\}\}/g, lead.venueName ?? '')
+    .replace(/\{\{event\.venue_address\}\}/g, lead.venueAddress ?? '')
+    .replace(/\{\{event\.venue_city\}\}/g, lead.venueCity ?? '')
+    .replace(/\{\{event\.venue_state\}\}/g, lead.venueState ?? '')
+    .replace(/\{\{event\.venue_zip\}\}/g, lead.venuePostalCode ?? '')
+    .replace(/\{\{event\.guest_count\}\}/g, lead.guestCount?.toString() ?? '')
     .replace(/\{\{host\.company_name\}\}/g, branding.companyName ?? '')
     .replace(/\{\{host\.email\}\}/g, branding.replyToEmail ?? '')
     .replace(/\{\{host\.phone\}\}/g, branding.supportPhone ?? '')

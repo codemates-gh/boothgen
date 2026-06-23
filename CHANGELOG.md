@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.6.9] — 2026-06-23
+
+### Fixed
+- **Lead compose — template load missing line breaks** — `</p>` now converts to `\n\n` instead of `\n` so paragraph spacing is preserved when stripping HTML to plain text
+- **Lead compose — `{{event.*}}` placeholders not resolved** — added full event variable resolution from lead data: `{{event.date}}` (formatted as "Wednesday, July 19, 2025"), `{{event.start_time}}`, `{{event.end_time}}` (12-hour format), `{{event.venue_name}}`, `{{event.venue_address}}`, `{{event.venue_city}}`, `{{event.venue_state}}`, `{{event.venue_zip}}`, `{{event.guest_count}}`
+
+---
+
 ## [1.6.8] — 2026-06-23
 
 ### Fixed
