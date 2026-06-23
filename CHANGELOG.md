@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.5.1] — 2026-06-23
+
+### Added
+- **Gallery deletion reminder email to host** — daily cron at 10 AM UTC finds galleries whose permanent deletion date is exactly 2 days away (based on `eventDate + expireDays + deleteDays`) and sends a warning email to all HOST_ADMIN members of that tenant. Email shows gallery title, event name, photo count, and exact deletion date with a direct "Download Photos Now" link to the admin gallery page.
+
+---
+
 ## [1.5.0] — 2026-06-23
 
 ### Added

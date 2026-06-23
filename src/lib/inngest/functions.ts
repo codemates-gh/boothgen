@@ -1,7 +1,7 @@
 
 import { inngest } from './client';
 import { prisma } from '@/lib/prisma/client';
-import { sendDesignReadyEmail, sendDesignDecisionEmail, sendPaymentReminderEmail } from '@/lib/email/send';
+import { sendDesignReadyEmail, sendDesignDecisionEmail, sendPaymentReminderEmail, sendGalleryDeletionReminderEmail } from '@/lib/email/send';
 import { triggerAutomation, scheduleEventDateAutomations, executeAutomation } from './trigger';
 import { deleteFromR2, r2KeyFromUrl } from '@/lib/storage/r2';
 
@@ -248,6 +248,84 @@ export const deleteExpiredGalleries = inngest.createFunction(
 
     console.log(`[GALLERY_DELETE] Deleted ${toDelete.length} galleries, ${filesDeleted} R2 files (cutoff: ${cutoff.toISOString()})`);
     return { deleted: toDelete.length, filesDeleted, expireDays, deleteDays };
+  }
+);
+
+// Send gallery deletion reminders to host admins 2 days before permanent deletion
+export const sendGalleryDeletionReminders = inngest.createFunction(
+  { id: 'send-gallery-deletion-reminders' },
+  { cron: '0 10 * * *' }, // 10 AM UTC daily
+  async () => {
+    const [expireSetting, deleteSetting] = await Promise.all([
+      prisma.systemSetting.findUnique({ where: { key: 'gallery_expire_days' } }),
+      prisma.systemSetting.findUnique({ where: { key: 'gallery_delete_days' } }),
+    ]);
+    const expireDays = parseInt(expireSetting?.value ?? '30', 10);
+    const deleteDays = parseInt(deleteSetting?.value ?? '30', 10);
+    const totalDays  = expireDays + deleteDays;
+
+    // Deletion date is eventDate + totalDays. We want galleries deleting in exactly 2 days.
+    // So eventDate + totalDays = today + 2  →  eventDate = today + 2 - totalDays
+    const windowStart = new Date();
+    windowStart.setDate(windowStart.getDate() + 2 - totalDays);
+    windowStart.setHours(0, 0, 0, 0);
+    const windowEnd = new Date(windowStart);
+    windowEnd.setDate(windowEnd.getDate() + 1);
+
+    const galleries = await prisma.gallery.findMany({
+      where: {
+        isExpired: true,
+        event: { eventDate: { gte: windowStart, lt: windowEnd } },
+      },
+      include: {
+        event: { select: { title: true, eventDate: true } },
+        tenant: {
+          include: {
+            branding: { select: { companyName: true } },
+            memberships: {
+              where: { role: 'HOST_ADMIN', status: 'ACTIVE' },
+              include: { user: { select: { email: true } } },
+            },
+          },
+        },
+        _count: { select: { assets: true } },
+      },
+    });
+
+    if (galleries.length === 0) return { reminded: 0 };
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
+    let reminded = 0;
+
+    for (const gallery of galleries) {
+      const adminEmails = gallery.tenant.memberships
+        .map(m => m.user?.email)
+        .filter((e): e is string => Boolean(e));
+      if (adminEmails.length === 0) continue;
+
+      const deletionDate = new Date(gallery.event.eventDate!);
+      deletionDate.setDate(deletionDate.getDate() + totalDays);
+      const formattedDate = deletionDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      const companyName = gallery.tenant.branding?.companyName ?? gallery.tenant.name;
+
+      try {
+        await sendGalleryDeletionReminderEmail({
+          to: adminEmails,
+          companyName,
+          galleryTitle: gallery.title,
+          eventTitle: gallery.event.title,
+          photoCount: gallery._count.assets,
+          deletionDate: formattedDate,
+          galleryUrl: `${appUrl}/gallery/${gallery.id}`,
+        });
+        reminded++;
+      } catch (e) {
+        console.error('[GALLERY_DELETION_REMINDER] email error:', e);
+      }
+    }
+
+    console.log(`[GALLERY_DELETION_REMINDER] Sent ${reminded} of ${galleries.length} reminders`);
+    return { reminded, total: galleries.length, expireDays, deleteDays };
   }
 );
 

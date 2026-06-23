@@ -175,6 +175,29 @@ export async function sendPaymentReminderEmail(params: {
   );
 }
 
+export async function sendGalleryDeletionReminderEmail(params: {
+  to: string | string[]; companyName: string; galleryTitle: string;
+  eventTitle: string; photoCount: number; deletionDate: string; galleryUrl: string;
+}) {
+  const { to, companyName, galleryTitle, eventTitle, photoCount, deletionDate, galleryUrl } = params;
+  const recipients = Array.isArray(to) ? to : [to];
+  const html =
+    `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">` +
+    `<h2 style="font-size:20px;color:#111827;margin:0 0 8px">⚠️ Gallery deletion in 2 days</h2>` +
+    `<p style="color:#374151;margin:0 0 20px">This is a reminder that the following gallery is scheduled for permanent deletion on <strong>${deletionDate}</strong>.</p>` +
+    `<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:12px;padding:20px;margin:0 0 24px">` +
+    `<p style="margin:0 0 6px;font-weight:700;color:#111827;font-size:16px">${galleryTitle}</p>` +
+    `<p style="margin:0 0 4px;color:#78350f;font-size:14px;">Event: ${eventTitle}</p>` +
+    `<p style="margin:0 0 4px;color:#78350f;font-size:14px;">${photoCount} photo${photoCount !== 1 ? 's' : ''}</p>` +
+    `<p style="margin:8px 0 0;color:#92400e;font-size:14px;font-weight:600">Deletes permanently on ${deletionDate}</p>` +
+    `</div>` +
+    `<p style="color:#374151;margin:0 0 24px">If you want to keep a copy, download all photos from the gallery admin page before this date. After deletion, photos cannot be recovered.</p>` +
+    `<p style="margin:0 0 24px"><a href="${galleryUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Download Photos Now</a></p>` +
+    `<p style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">This automated reminder was sent by Booth Genius. You can adjust gallery retention settings in the super admin console.</p>` +
+    `</div>`;
+  await Promise.all(recipients.map(addr => sendEmail(addr, `Gallery deletion in 2 days — ${galleryTitle}`, html)));
+}
+
 export async function sendDesignReadyEmail(params: {
   to: string; firstName: string; companyName: string; version: number; portalUrl: string;
 }) {

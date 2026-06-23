@@ -16,6 +16,7 @@ import {
   expireGalleries,
   deleteExpiredGalleries,
   sendOverduePaymentReminders,
+  sendGalleryDeletionReminders,
 } from '@/lib/inngest/functions';
 
 const handler = serve({
@@ -35,6 +36,7 @@ const handler = serve({
     expireGalleries,
     deleteExpiredGalleries,
     sendOverduePaymentReminders,
+    sendGalleryDeletionReminders,
   ],
   signingKey: process.env.INNGEST_SIGNING_KEY,
 });
