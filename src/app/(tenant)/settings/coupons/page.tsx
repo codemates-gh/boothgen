@@ -111,7 +111,7 @@ export default function CouponsPage() {
                     <label className="block text-xs font-medium text-gray-700 mb-1">
                       {type === 'PERCENTAGE' ? 'Percentage (1–100)' : 'Amount ($)'} *
                     </label>
-                    <Input type="number" min="0.01" max={type === 'PERCENTAGE' ? '100' : undefined} step={type === 'PERCENTAGE' ? '1' : '0.01'} value={value} onChange={e => setValue(e.target.value)} placeholder={type === 'PERCENTAGE' ? '20' : '50.00'} required />
+                    <Input type="number" min={type === 'PERCENTAGE' ? '1' : '0.01'} max={type === 'PERCENTAGE' ? '100' : undefined} step={type === 'PERCENTAGE' ? '1' : '0.01'} value={value} onChange={e => setValue(e.target.value)} placeholder={type === 'PERCENTAGE' ? '20' : '50.00'} required />
                   </div>
                 </div>
 
