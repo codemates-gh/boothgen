@@ -36,6 +36,8 @@ export default function ClientPortalPage() {
   const [galleryCode, setGalleryCode] = useState('');
   const [galleryCodeError, setGalleryCodeError] = useState('');
   const [unlockingGallery, setUnlockingGallery] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const galleryOnly = searchParams.get('galleryOnly') === '1';
 
   useEffect(() => { load(); }, [portalToken]);
 
@@ -88,6 +90,9 @@ export default function ClientPortalPage() {
 
   const pc = data?.tenant?.branding?.primaryColor || '#F97316';
 
+  const invoiceOverdue = !!(data?.invoice && data.invoice.balanceDueCents > 0 &&
+    data.invoice.milestones?.some((m: any) => m.status !== 'PAID' && new Date(m.dueDate) < new Date()));
+
   const quoteAccepted  = data?.quote?.status === 'ACCEPTED';
   const contractSigned = data?.contract?.status === 'FULLY_EXECUTED' ||
                          data?.contract?.status === 'CLIENT_SIGNED';
@@ -97,13 +102,14 @@ export default function ClientPortalPage() {
   const latestDesign   = data?.templateDesigns?.[0] ?? null;
   const designDone     = latestDesign?.status === 'APPROVED';
 
-  const tabs: { id: Tab; label: string; icon: any; locked: boolean; done: boolean }[] = [
+  const allTabs: { id: Tab; label: string; icon: any; locked: boolean; done: boolean }[] = [
     { id: 'quote',    label: 'Quote',    icon: FileText, locked: false,              done: quoteAccepted  },
     { id: 'contract', label: 'Contract', icon: FileText, locked: !quoteAccepted,    done: contractSigned },
     { id: 'invoice',  label: 'Invoice',  icon: Receipt,  locked: !contractSigned,   done: invoicePaid    },
     { id: 'design',   label: 'Design',   icon: Layers,   locked: !designUnlocked,   done: designDone     },
     { id: 'gallery',  label: 'Gallery',  icon: Image,    locked: !data?.gallery?.isPublished, done: false },
   ];
+  const tabs = galleryOnly ? allTabs.filter(t => t.id === 'gallery') : allTabs;
 
   async function acceptQuote() {
     if (!sigName.trim()) { setMessage('Please enter your name to sign'); return; }
@@ -817,6 +823,23 @@ export default function ClientPortalPage() {
                   </button>
                 </div>
               </div>
+            ) : invoiceOverdue ? (
+              <div className="text-center py-16 space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto">
+                  <AlertCircle className="w-8 h-8 text-red-500"/>
+                </div>
+                <p className="text-lg font-bold text-gray-900">Payment Required</p>
+                <p className="text-sm text-gray-500 max-w-xs mx-auto">
+                  Your gallery is ready, but there is an outstanding balance due. Please complete your payment to access your photos.
+                </p>
+                <button
+                  onClick={() => setTab('invoice')}
+                  className="inline-block px-6 py-3 rounded-xl text-white font-bold text-sm"
+                  style={{ backgroundColor: pc }}
+                >
+                  View Invoice & Pay
+                </button>
+              </div>
             ) : (
               <>
                 <div className="flex items-center justify-between flex-wrap gap-3">
@@ -854,22 +877,65 @@ export default function ClientPortalPage() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {data.assets.map((a: any, i: number) => (
-                    <div key={a.id} className="relative group aspect-square rounded-xl overflow-hidden">
+                    <div
+                      key={a.id}
+                      className="relative group aspect-square rounded-xl overflow-hidden cursor-pointer"
+                      onClick={() => setLightboxIndex(i)}
+                    >
                       <img src={a.url} alt="" className="w-full h-full object-cover"/>
-                      <a
-                        href={a.url}
-                        download={`photo-${i + 1}.jpg`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
-                      >
-                        <div className="bg-white/90 rounded-full p-2">
-                          <Download className="w-4 h-4 text-gray-800"/>
-                        </div>
-                      </a>
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"/>
                     </div>
                   ))}
                 </div>
+
+                {/* Lightbox */}
+                {lightboxIndex !== null && (
+                  <div
+                    className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+                    onClick={() => setLightboxIndex(null)}
+                  >
+                    {/* Close */}
+                    <button className="absolute top-4 right-4 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10" onClick={() => setLightboxIndex(null)}>
+                      <X className="w-6 h-6"/>
+                    </button>
+                    {/* Counter */}
+                    <span className="absolute top-5 left-1/2 -translate-x-1/2 text-white/60 text-sm">{lightboxIndex + 1} / {data.assets.length}</span>
+                    {/* Prev */}
+                    {lightboxIndex > 0 && (
+                      <button
+                        className="absolute left-4 text-white/70 hover:text-white p-3 rounded-full hover:bg-white/10"
+                        onClick={e => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }}
+                      >
+                        <ChevronRight className="w-8 h-8 rotate-180"/>
+                      </button>
+                    )}
+                    {/* Photo */}
+                    <img
+                      src={data.assets[lightboxIndex].url}
+                      alt=""
+                      className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
+                      onClick={e => e.stopPropagation()}
+                    />
+                    {/* Next */}
+                    {lightboxIndex < data.assets.length - 1 && (
+                      <button
+                        className="absolute right-4 text-white/70 hover:text-white p-3 rounded-full hover:bg-white/10"
+                        onClick={e => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }}
+                      >
+                        <ChevronRight className="w-8 h-8"/>
+                      </button>
+                    )}
+                    {/* Download */}
+                    <a
+                      href={data.assets[lightboxIndex].url}
+                      download={`photo-${lightboxIndex + 1}.jpg`}
+                      className="absolute bottom-5 right-1/2 translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <Download className="w-4 h-4"/> Download
+                    </a>
+                  </div>
+                )}
               </>
             )}
           </div>

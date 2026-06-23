@@ -5,7 +5,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Image, Trash2, Globe, EyeOff, X, CheckCircle2, Lock, LockOpen } from 'lucide-react';
+import { Upload, Image, Trash2, Globe, EyeOff, X, CheckCircle2, Lock, LockOpen, Share2, Link } from 'lucide-react';
 import Link from 'next/link';
 
 export default function GalleryDetailPage({ params }: { params: { id: string } }) {
@@ -18,6 +18,8 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
   const [accessCode, setAccessCode] = useState('');
   const [savingCode, setSavingCode] = useState(false);
   const [codeSaved, setCodeSaved] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   useEffect(() => { load(); }, [params.id]);
 
@@ -115,6 +117,24 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
     load();
   }
 
+  function copyGalleryLink() {
+    const portalToken = gallery?.event?.portalToken;
+    if (!portalToken) return;
+    const url = window.location.origin + '/portal/' + portalToken + '?tab=gallery&galleryOnly=1';
+    navigator.clipboard.writeText(url).then(() => {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    });
+  }
+
+  async function deleteAllPhotos() {
+    if (!confirm(`Delete all ${assets.length} photos? This cannot be undone.`)) return;
+    setDeletingAll(true);
+    await fetch('/api/gallery/' + params.id + '/assets', { method: 'DELETE' });
+    setDeletingAll(false);
+    load();
+  }
+
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setDragOver(false);
     uploadFiles(e.dataTransfer.files);
@@ -127,6 +147,11 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
         <div className="flex items-center justify-between">
           <Link href="/gallery" className="text-sm text-gray-500 hover:text-gray-700">← Gallery</Link>
           <div className="flex gap-3">
+            {gallery?.isPublished && (
+              <Button variant="outline" size="sm" onClick={copyGalleryLink}>
+                {linkCopied ? <><CheckCircle2 className="w-4 h-4 mr-2 text-green-500"/>Copied!</> : <><Link className="w-4 h-4 mr-2"/>Share Gallery Link</>}
+              </Button>
+            )}
             <Button variant="outline" onClick={togglePublish}>
               {gallery?.isPublished ? <><EyeOff className="w-4 h-4 mr-2"/>Unpublish</> : <><Globe className="w-4 h-4 mr-2"/>Publish to Client</>}
             </Button>
@@ -225,18 +250,26 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
 
         {/* Photo grid */}
         {assets.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {assets.map(a => (
-              <div key={a.id} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100">
-                <img src={a.url} alt={a.filename} className="w-full h-full object-cover"/>
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <button onClick={() => deleteAsset(a.id)} className="p-2 bg-red-500 rounded-lg text-white hover:bg-red-600">
-                    <Trash2 className="w-4 h-4"/>
-                  </button>
+          <>
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={deleteAllPhotos} disabled={deletingAll} className="text-red-600 border-red-200 hover:bg-red-50">
+                <Trash2 className="w-4 h-4 mr-2"/>
+                {deletingAll ? 'Deleting…' : `Delete All ${assets.length} Photos`}
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {assets.map(a => (
+                <div key={a.id} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100">
+                  <img src={a.url} alt={a.filename} className="w-full h-full object-cover"/>
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <button onClick={() => deleteAsset(a.id)} className="p-2 bg-red-500 rounded-lg text-white hover:bg-red-600">
+                      <Trash2 className="w-4 h-4"/>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
 
         {assets.length === 0 && !uploading && (

@@ -1,7 +1,7 @@
 
 import { inngest } from './client';
 import { prisma } from '@/lib/prisma/client';
-import { sendDesignReadyEmail, sendDesignDecisionEmail } from '@/lib/email/send';
+import { sendDesignReadyEmail, sendDesignDecisionEmail, sendPaymentReminderEmail } from '@/lib/email/send';
 import { triggerAutomation, scheduleEventDateAutomations, executeAutomation } from './trigger';
 import { deleteFromR2, r2KeyFromUrl } from '@/lib/storage/r2';
 
@@ -248,5 +248,65 @@ export const deleteExpiredGalleries = inngest.createFunction(
 
     console.log(`[GALLERY_DELETE] Deleted ${toDelete.length} galleries, ${filesDeleted} R2 files (cutoff: ${cutoff.toISOString()})`);
     return { deleted: toDelete.length, filesDeleted, expireDays, deleteDays };
+  }
+);
+
+// Send overdue payment reminders daily at 2 PM UTC
+export const sendOverduePaymentReminders = inngest.createFunction(
+  { id: 'send-overdue-payment-reminders' },
+  { cron: '0 14 * * *' },
+  async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const overdue = await prisma.paymentMilestone.findMany({
+      where: {
+        dueDate: { lt: today },
+        status: { notIn: ['PAID', 'REFUNDED'] },
+        invoice: { status: { notIn: ['PAID', 'CANCELLED'] } },
+      },
+      include: {
+        invoice: {
+          include: {
+            event: {
+              include: {
+                client: true,
+                tenant: { include: { branding: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
+    const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
+    const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+
+    let sent = 0;
+    for (const ms of overdue) {
+      const event = ms.invoice.event;
+      const branding = event.tenant.branding;
+      const companyName = branding?.companyName ?? event.tenant.name;
+      try {
+        await sendPaymentReminderEmail({
+          to: event.client.email,
+          firstName: event.client.firstName,
+          companyName,
+          invoiceNumber: ms.invoice.invoiceNumber,
+          amountDueFormatted: fmt(ms.amountCents),
+          dueDate: new Date(ms.dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+          portalUrl: `${appUrl}/portal/${event.portalToken}?tab=invoice`,
+          replyTo: branding?.replyToEmail ?? undefined,
+          from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
+        });
+        sent++;
+      } catch (e) {
+        console.error('[OVERDUE_REMINDER] email error:', e);
+      }
+    }
+
+    console.log(`[OVERDUE_REMINDER] Sent ${sent} of ${overdue.length} reminder emails`);
+    return { sent, total: overdue.length };
   }
 );

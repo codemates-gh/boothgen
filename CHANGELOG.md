@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.4.0] — 2026-06-23
+
+### Added
+- **Gallery publish notification** — client receives an email with a "View Your Gallery" button the moment the operator clicks "Publish to Client"
+- **Gallery-only share link** — "Share Gallery Link" button appears on the gallery detail page (after publishing); copies a portal URL with `?galleryOnly=1` that hides all other tabs (Quote, Contract, Invoice, Design) — safe to share with guests who shouldn't see billing details
+- **Photo lightbox** — clicking any photo in the client portal opens a full-screen modal with the photo, prev/next arrows, a photo counter, and a Download button; tap outside or the × to close
+- **Gallery payment gate** — if any invoice milestone is overdue and balance > 0, the gallery tab shows a "Payment Required" screen with a link to the invoice instead of the photos
+- **Overdue payment reminder emails** — daily cron at 2 PM UTC sends reminder emails to clients with overdue payment milestones (past due date, not yet paid); shows amount due, original due date, and direct Pay Now link to the portal invoice tab
+- **Delete All Photos** — "Delete All N Photos" button on the gallery admin page (with confirmation) removes all assets from both R2 storage and the database in one action; accessible via `DELETE /api/gallery/[id]/assets`
+
+---
+
 ## [1.3.3] — 2026-06-23
 
 ### Fixed

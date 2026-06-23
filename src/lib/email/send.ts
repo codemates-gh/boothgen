@@ -131,6 +131,50 @@ export async function sendPaymentConfirmationEmail(params: {
   );
 }
 
+export async function sendGalleryPublishedEmail(params: {
+  to: string; firstName: string; companyName: string; galleryTitle: string; portalUrl: string; replyTo?: string; from?: string;
+}) {
+  const { to, firstName, companyName, galleryTitle, portalUrl, replyTo, from } = params;
+  return sendEmail(
+    to,
+    `Your photos are ready — ${companyName}`,
+    `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
+<h2 style="font-size:20px;color:#111827">Hi ${firstName}, your photos are ready! 🎉</h2>
+<p style="color:#374151"><strong>${companyName}</strong> has published your online gallery: <strong>${galleryTitle}</strong>.</p>
+<p style="color:#374151">You can view, download, and share your photos from your client portal.</p>
+<p style="margin:28px 0"><a href="${portalUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View Your Gallery</a></p>
+<p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">Questions? Reply to this email — we're happy to help.</p>
+<p>Warm regards,<br/><strong>${companyName}</strong></p>
+</div>`,
+    replyTo,
+    from,
+  );
+}
+
+export async function sendPaymentReminderEmail(params: {
+  to: string; firstName: string; companyName: string; invoiceNumber: string;
+  amountDueFormatted: string; dueDate: string; portalUrl: string; replyTo?: string; from?: string;
+}) {
+  const { to, firstName, companyName, invoiceNumber, amountDueFormatted, dueDate, portalUrl, replyTo, from } = params;
+  return sendEmail(
+    to,
+    `Payment overdue — ${invoiceNumber} — ${companyName}`,
+    `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
+<h2 style="font-size:20px;color:#111827">Hi ${firstName},</h2>
+<p style="color:#374151">This is a friendly reminder that a payment for your event with <strong>${companyName}</strong> is overdue.</p>
+<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:20px;margin:24px 0">
+  <p style="margin:0;color:#991b1b;font-weight:600;font-size:16px;">${amountDueFormatted} overdue</p>
+  <p style="margin:4px 0 0;color:#b91c1c;font-size:14px;">Invoice ${invoiceNumber} · Was due ${dueDate}</p>
+</div>
+<p style="margin:24px 0"><a href="${portalUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Pay Now</a></p>
+<p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">If you've already made this payment, please disregard this notice.</p>
+<p>Warm regards,<br/><strong>${companyName}</strong></p>
+</div>`,
+    replyTo,
+    from,
+  );
+}
+
 export async function sendDesignReadyEmail(params: {
   to: string; firstName: string; companyName: string; version: number; portalUrl: string;
 }) {
