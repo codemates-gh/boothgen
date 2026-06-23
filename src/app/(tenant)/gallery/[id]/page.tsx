@@ -56,8 +56,9 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
         const { uploadUrl, publicUrl } = await presignRes.json();
 
         // Step 2: PUT directly to R2
-        const r2Res = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-        if (!r2Res.ok) throw new Error('R2 upload failed (' + r2Res.status + ')');
+        const r2Res = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+          .catch((e: any) => { throw new Error('R2 PUT failed → ' + uploadUrl.split('?')[0] + ' — ' + (e?.message ?? e)); });
+        if (!r2Res.ok) throw new Error('R2 upload failed (' + r2Res.status + ') → ' + uploadUrl.split('?')[0]);
 
         saved.push({ url: publicUrl, fileName: file.name, fileSize: file.size, mimeType: file.type });
         setUploadCount(c => ({ ...c, done: c.done + 1 }));
