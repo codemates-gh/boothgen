@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.3.3] — 2026-06-23
+
+### Fixed
+- **Gallery photo uploads now work** — resolved a multi-layer CORS issue with direct browser-to-R2 presigned uploads: (1) added `forcePathStyle: true` to the R2 S3 client so presigned URLs use path-style (correct endpoint), (2) applied CORS via `PutBucketCorsCommand` (S3 API level) — the Cloudflare Dashboard CORS policy applies to the public `r2.dev` URL only, not the `cloudflarestorage.com` S3 API endpoint used by presigned PUTs, (3) added `https://www.boothgen.com` to allowed origins (app is served on `www`). Added `POST /api/super-admin/r2-cors` to apply the CORS policy programmatically.
+
+---
+
 ## [1.3.2] — 2026-06-22
 
 ### Fixed
