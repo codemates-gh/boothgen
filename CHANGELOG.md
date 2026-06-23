@@ -4,6 +4,19 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.1.0] — 2026-06-22
+
+### Added
+- **Mark as paid externally** — admin can mark any unpaid milestone as received outside Stripe (cash, check, Venmo, etc.) via the $ icon on the Payment Schedule card; triggers a confirm step before saving; automatically recomputes invoice `amountPaidCents`, `balanceDueCents`, `status` (PARTIALLY_PAID → PAID), and advances event to BOOKED. Gated to paid plan subscribers (MONTHLY/ANNUAL) — trial accounts see a lock icon with an upgrade prompt
+- **Stripe Connect guard on quote send** — sending a quote now requires the tenant's Stripe account to have `chargesEnabled`; returns a clear error with a link to Settings → Billing; prevents clients from receiving a quote with a broken payment page
+- **Event estimated value** — new optional "Estimated Value ($)" field on event create and edit forms; displayed on the event detail page; stored as `estimatedValueCents` on the Event model (schema pushed)
+
+### Changed
+- `MilestonesCard` now accepts `isAdmin` and `isPro` props to conditionally show the date-edit pencil and external mark-paid button
+- `REFUNDED` milestone status now displays with a warning badge color
+
+---
+
 ## [1.0.9] — 2026-06-22
 
 ### Changed

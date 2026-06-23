@@ -10,6 +10,15 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  // Guard: require Stripe Connect with charges enabled before sending quotes
+  const stripeConnect = await prisma.stripeConnectAccount.findUnique({ where: { tenantId: session.tenantId } });
+  if (!stripeConnect?.chargesEnabled) {
+    return NextResponse.json({
+      error: 'You must connect your Stripe account and complete onboarding before sending quotes. Go to Settings → Billing to connect.',
+      stripeRequired: true,
+    }, { status: 400 });
+  }
+
   const q = await prisma.quote.findFirst({
     where: { id: params.id, tenantId: session.tenantId },
     include: { client: true, event: true, tenant: { include: { branding: true } } },

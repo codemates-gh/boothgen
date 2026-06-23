@@ -21,7 +21,7 @@ export default function EditEventPage() {
   const [form, setForm] = useState({
     title:'', status:'LEAD', eventDate:'', startTime:'', endTime:'',
     venueName:'', venueAddress:'', venueCity:'', venueState:'', venuePostalCode:'',
-    packageName:'', guestCount:'', internalNotes:'',
+    packageName:'', guestCount:'', internalNotes:'', estimatedValueCents:'',
     firstName:'', lastName:'', email:'', phone:'',
   });
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
@@ -40,6 +40,7 @@ export default function EditEventPage() {
         venuePostalCode: ev.venuePostalCode ?? '',
         packageName: ev.packageName ?? '', guestCount: ev.guestCount?.toString() ?? '',
         internalNotes: ev.internalNotes ?? '',
+        estimatedValueCents: ev.estimatedValueCents != null ? (ev.estimatedValueCents / 100).toFixed(2) : '',
         firstName: cl.firstName ?? '', lastName: cl.lastName ?? '',
         email: cl.email ?? '', phone: cl.phone ?? '',
       });
@@ -100,6 +101,11 @@ export default function EditEventPage() {
           <CardHeader><CardTitle>Package & Notes</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {F('packageName','Package')} {F('guestCount','Guest Count','number')}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Value ($)</label>
+              <Input type="number" min="0" step="0.01" placeholder="0.00" value={form.estimatedValueCents} onChange={e => set('estimatedValueCents', e.target.value)} />
+            </div>
+            <div/>
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Internal Notes</label>
               <Textarea value={form.internalNotes} onChange={e => set('internalNotes',e.target.value)} className="resize-none h-24"/>

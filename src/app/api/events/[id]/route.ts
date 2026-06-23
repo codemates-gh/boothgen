@@ -18,7 +18,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const event = await prisma.event.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const body = await req.json();
-  const { title, status, eventDate, startTime, endTime, venueName, venueAddress, venueCity, venueState, venuePostalCode, packageName, guestCount, internalNotes, firstName, lastName, email, phone } = body;
+  const { title, status, eventDate, startTime, endTime, venueName, venueAddress, venueCity, venueState, venuePostalCode, packageName, guestCount, internalNotes, firstName, lastName, email, phone, estimatedValueCents } = body;
   const updated = await prisma.event.update({
     where: { id: params.id },
     data: {
@@ -31,6 +31,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       packageName: packageName || null,
       guestCount: guestCount ? parseInt(guestCount) : null,
       internalNotes: internalNotes || null,
+      estimatedValueCents: estimatedValueCents != null ? Math.round(parseFloat(estimatedValueCents) * 100) : null,
     },
   });
   if (email) {

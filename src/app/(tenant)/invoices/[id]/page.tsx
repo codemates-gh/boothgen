@@ -15,7 +15,12 @@ const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'w
 
 export default async function InvoiceDetailPage({ params }: { params: { id: string } }) {
   const session = await requireTenantSession();
-  const tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId }, include: { branding: true } });
+  const isAdmin = session.tenantRole === 'HOST_ADMIN';
+  const [tenant, subscription] = await Promise.all([
+    prisma.tenant.findUnique({ where: { id: session.tenantId }, include: { branding: true } }),
+    prisma.stripeSubscription.findUnique({ where: { tenantId: session.tenantId } }),
+  ]);
+  const isPro = subscription?.plan === 'MONTHLY' || subscription?.plan === 'ANNUAL';
   const inv = await prisma.invoice.findFirst({ where: { id: params.id, tenantId: session.tenantId }, include: { client: true, event: true, lineItems: { orderBy: { sortOrder: 'asc' } }, payments: { orderBy: { paidAt: 'desc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } } });
   if (!inv) notFound();
   const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
@@ -55,6 +60,8 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
           <MilestonesCard
             invoiceId={inv.id}
             milestones={(inv as any).PaymentMilestone}
+            isAdmin={isAdmin}
+            isPro={isPro}
           />
         )}
       </div>

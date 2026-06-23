@@ -96,6 +96,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
               {event.venueName && <div className="flex items-start gap-2"><MapPin className="w-4 h-4 mt-0.5 text-gray-400"/><div><p className="text-xs text-gray-500">Venue</p><p className="font-medium">{event.venueName}</p><p className="text-sm text-gray-500">{[event.venueAddress,event.venueCity,event.venueState,(event as any).venuePostalCode].filter(Boolean).join(', ')}</p></div></div>}
               {event.guestCount && <div className="flex items-start gap-2"><Users className="w-4 h-4 mt-0.5 text-gray-400"/><div><p className="text-xs text-gray-500">Guests</p><p className="font-medium">{event.guestCount}</p></div></div>}
               {event.packageName && <div className="flex items-start gap-2"><Package className="w-4 h-4 mt-0.5 text-gray-400"/><div><p className="text-xs text-gray-500">Package</p><p className="font-medium">{event.packageName}</p></div></div>}
+              {(event as any).estimatedValueCents != null && <div className="flex items-start gap-2"><Receipt className="w-4 h-4 mt-0.5 text-gray-400"/><div><p className="text-xs text-gray-500">Estimated Value</p><p className="font-medium">{fmt((event as any).estimatedValueCents)}</p></div></div>}
               {event.internalNotes && <div className="sm:col-span-2"><p className="text-xs text-gray-500 mb-1">Notes</p><p className="text-sm bg-gray-50 rounded-lg p-3">{event.internalNotes}</p></div>}
             </CardContent>
           </Card>

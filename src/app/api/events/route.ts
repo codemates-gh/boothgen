@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { firstName, lastName, email, phone, clientId, title, eventDate, startTime, endTime,
     venueName, venueAddress, venueCity, venueState, venuePostalCode,
-    packageName, guestCount, internalNotes, status } = body;
+    packageName, guestCount, internalNotes, status, estimatedValueCents } = body;
   if (!title || !eventDate) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
 
   let client;
@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
       packageName: packageName || null,
       guestCount: guestCount ? parseInt(guestCount) : null,
       internalNotes: internalNotes || null,
+      estimatedValueCents: estimatedValueCents != null ? Math.round(parseFloat(estimatedValueCents) * 100) : null,
       gallery: { create: { tenantId: session.tenantId, title: title + ' Gallery' } },
     },
   });

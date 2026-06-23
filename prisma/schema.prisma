@@ -338,8 +338,9 @@ model Event {
   packageName     String?
   packageNotes    String?     @db.Text
   internalNotes   String?     @db.Text
-  guestCount      Int?
-  hearAboutUs     String?
+  guestCount           Int?
+  hearAboutUs          String?
+  estimatedValueCents  Int?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 

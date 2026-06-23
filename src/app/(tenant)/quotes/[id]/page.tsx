@@ -20,6 +20,7 @@ export default function QuoteDetailPage() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -47,10 +48,14 @@ export default function QuoteDetailPage() {
 
   async function sendQuote() {
     setSending(true);
+    setSendError('');
     const res = await fetch(`/api/quotes/${id}/send`, { method: 'POST' });
     if (res.ok) {
       const updated = await res.json();
       setQuote((q: any) => ({ ...q, status: updated.status, sentAt: updated.sentAt }));
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setSendError(d.error || 'Failed to send quote');
     }
     setSending(false);
   }
@@ -188,6 +193,15 @@ export default function QuoteDetailPage() {
             )}
           </div>
         </div>
+
+        {sendError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
+            {sendError}
+            {sendError.includes('Stripe') && (
+              <a href="/settings/billing" className="ml-2 underline font-medium">Go to Settings → Billing</a>
+            )}
+          </div>
+        )}
 
         <Card>
           <CardHeader>
