@@ -4,6 +4,21 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.5.7] — 2026-06-23
+
+### Added
+- **Support Center** (`/support`) — comprehensive public help page with client-side search and AI chat
+  - 13 topic categories covering the full product: Getting Started, Leads, Quotes & Proposals, Contracts & Signatures, Invoicing & Payments, Client Portal, Photo Gallery (Pro), Team Management, Automation & Emails, Discounts & Coupons, Workflows, Settings, FAQ
+  - 15 detailed help articles covering every major feature with step-by-step instructions
+  - Complete end-to-end workflow article: Lead submission → Quote → Contract signing → Deposit → Gallery → Balance → Automated review request
+  - Client-side search (`SupportSearch`) — searches article titles, categories, and content with highlighted snippet previews; debounced, no server round-trip
+  - AI chat widget (`SupportChat`) — floating orange button (bottom-right); opens a 400px chat panel with the Booth Genius AI assistant powered by Claude Haiku; uses AI SDK v6 (`useChat` + `DefaultChatTransport`); context-aware system prompt covering all product features, plans, and common Q&A
+  - **`POST /api/support/chat`** — streaming chat API using `streamText` + Anthropic Claude Haiku 4.5; requires `ANTHROPIC_API_KEY` env var; returns 503 gracefully if not configured
+  - `/support` and `/api/support` added to public middleware routes (no auth required)
+  - Installed packages: `ai` (v6), `@ai-sdk/anthropic`, `@ai-sdk/react`
+
+---
+
 ## [1.5.6] — 2026-06-23
 
 ### Added

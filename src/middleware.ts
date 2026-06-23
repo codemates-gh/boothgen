@@ -1,7 +1,7 @@
 import { getToken } from 'next-auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 
-const PUBLIC = ['/', '/sign-in', '/sign-up', '/portal', '/embed', '/api/public', '/api/portal', '/api/webhooks', '/api/auth', '/onboarding', '/_next', '/favicon', '/forgot-password', '/reset-password', '/g', '/api/g', '/invite', '/api/invite'];
+const PUBLIC = ['/', '/sign-in', '/sign-up', '/portal', '/embed', '/api/public', '/api/portal', '/api/webhooks', '/api/auth', '/onboarding', '/_next', '/favicon', '/forgot-password', '/reset-password', '/g', '/api/g', '/invite', '/api/invite', '/support', '/api/support'];
 // Portal client-facing routes — authenticated via portalToken in body, no session required
 const PORTAL_CLIENT = [
   /^\/api\/quotes\/[^/]+\/(accept|decline)$/,
