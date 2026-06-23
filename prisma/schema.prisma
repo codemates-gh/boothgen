@@ -171,10 +171,11 @@ model Tenant {
   clerkOrgId  String?      @unique
   name        String
   slug        String       @unique
-  status      TenantStatus @default(TRIAL)
-  trialEndsAt DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  status             TenantStatus @default(TRIAL)
+  trialEndsAt        DateTime?
+  teamMemberAccess   String       @default("[\"events\"]")
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   memberships          TenantMembership[]
   branding             TenantBranding?

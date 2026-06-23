@@ -8,7 +8,9 @@ import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Cam
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 import { APP_VERSION } from '@/lib/version';
 
-const adminNav: { href: string; label: string; icon: any; pro?: boolean }[] = [
+type NavItem = { href: string; label: string; icon: any; pro?: boolean };
+
+const adminNav: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/events', label: 'Events', icon: Calendar },
@@ -24,15 +26,23 @@ const adminNav: { href: string; label: string; icon: any; pro?: boolean }[] = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
-const teamMemberNav: { href: string; label: string; icon: any; pro?: boolean }[] = [
-  { href: '/events', label: 'Events', icon: Calendar },
-];
+// All possible team member nav items keyed by module ID
+const TEAM_NAV_MAP: Record<string, NavItem> = {
+  events:   { href: '/events',  label: 'Events',          icon: Calendar },
+  calendar: { href: '/calendar',label: 'Calendar',        icon: CalendarDays },
+  leads:    { href: '/leads',   label: 'Leads & Messages',icon: Inbox },
+  quotes:   { href: '/quotes',  label: 'Quotes',          icon: FileText },
+  invoices: { href: '/invoices',label: 'Invoices',        icon: Receipt },
+  clients:  { href: '/clients', label: 'Clients',         icon: Users },
+  gallery:  { href: '/gallery', label: 'Gallery',         icon: Camera, pro: true },
+};
 
 export function Sidebar() {
   const path = usePathname();
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [companyName, setCompanyName] = useState<string>('');
+  const [teamMemberAccess, setTeamMemberAccess] = useState<string[]>(['events']);
   const close = () => setIsOpen(false);
 
   useEffect(() => {
@@ -41,13 +51,21 @@ export function Sidebar() {
       .then(d => {
         if (d && !d.error) {
           setCompanyName(d.companyName ?? '');
+          if (d.teamMemberAccess) {
+            try { setTeamMemberAccess(JSON.parse(d.teamMemberAccess)); } catch { /* keep default */ }
+          }
         }
       });
   }, []);
 
   const displayName = companyName || session?.tenant?.name || 'Loading...';
   const isTeamMember = session?.tenantRole === 'TEAM_MEMBER';
-  const nav = isTeamMember ? teamMemberNav : adminNav;
+
+  const teamNav: NavItem[] = teamMemberAccess
+    .map(id => TEAM_NAV_MAP[id])
+    .filter(Boolean);
+
+  const nav = isTeamMember ? teamNav : adminNav;
 
   return (
     <>

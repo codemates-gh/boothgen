@@ -4,6 +4,35 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.5.5] — 2026-06-23
+
+### Added
+- **Team member access permissions** — operators can now control which sidebar sections team members can see, from Settings → Team → "Team Member Access"
+  - 7 toggleable modules: Events, Calendar, Leads & Messages, Quotes, Invoices, Clients, Gallery (Pro)
+  - Applies to all team members on the account (not per-individual)
+  - Default access: Events only (existing behavior preserved)
+  - `teamMemberAccess String` column added to `tenants` table via Prisma migration
+- **`PATCH /api/settings/team/access`** — new route to save the JSON array of enabled modules; HOST_ADMIN only; validates against allowed module list; requires at least one module
+- **`TeamAccessForm` client component** — checkbox grid in Settings → Team for toggling module access; shows save confirmation; applies immediately on next team member login
+
+### Changed
+- **Sidebar (`Sidebar.tsx`)** — team member nav now built dynamically from `teamMemberAccess` (fetched via `/api/settings/branding`); `TEAM_NAV_MAP` maps module IDs to nav items so order follows operator selection
+- **`GET /api/settings/branding`** — now includes `teamMemberAccess` string from the `Tenant` record
+
+---
+
+## [1.5.4] — 2026-06-23
+
+### Changed
+- **Marketing page — "Genius" branding throughout** — page rewritten around the "Genius" concept; hero headline changed to "6 tools. 1 platform. That's the Genius of it."; hero background now matches brand purple (`#1e1247 → #2D1B69` gradient) to tie into app identity; final CTA section uses matching dark gradient
+- **Marketing page — Genius Pillars row** — new 6-column row below hero listing Booking Genius, Billing Genius, Contract Genius, Gallery Genius, Portal Genius, Automation Genius as named value props
+- **Marketing page — savings comparison section** (`#savings`) — side-by-side "The Old Way vs The Genius Way" showing all 7 tools operators typically pay for à la carte (~$141+/month) vs Booth Genius at $0/month to start; includes visual table with ✗ old-way costs and ✓ Genius "Included" checkmarks; nav link renamed "Why Genius?"
+- **Marketing page — feature section labels** — showcase sections now use Genius sub-brand labels (Portal Genius, Contract Genius, Gallery Genius)
+- **Marketing page — quote copy sharpened** — gallery section copy updated to "without a second subscription"; contract section updated to remove DocuSign name; founder story ending updated to use "That's the Genius of it" phrasing
+- **Marketing page — footer tagline** — added "The Genius way to run your photo booth business." under the logo
+
+---
+
 ## [1.5.3] — 2026-06-23
 
 ### Added

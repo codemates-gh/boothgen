@@ -7,12 +7,12 @@ import type { Metadata } from 'next';
 import { BoothGeniusLogo } from '@/components/brand/BoothGeniusLogo';
 
 export const metadata: Metadata = {
-  title: 'Booth Genius — Photo Booth Business Software | Free to Start',
+  title: 'Booth Genius — 6 Tools. 1 Platform. Free to Start.',
   description:
-    'The all-in-one CRM for photo booth operators. Quotes, contracts, e-signatures, invoices, and client gallery — built by a real photo booth operator. Start free with no monthly fees.',
+    'Replace your CRM, e-signature tool, invoicing platform, photo gallery, email automation, and client portal with one Genius platform. Built by a real photo booth operator. Start free — no monthly fees.',
   openGraph: {
-    title: 'Booth Genius — Photo Booth Business Software',
-    description: 'Built by an operator who ran two photo booth businesses for 10+ years. Free to start — pay only when you book events.',
+    title: 'Booth Genius — 6 Tools. 1 Platform. Free to Start.',
+    description: 'Stop paying $100+/month for tools that don\'t talk to each other. Booth Genius replaces all of them — built by an operator who ran 2 photo booth businesses for 10+ years.',
     type: 'website',
   },
 };
@@ -61,7 +61,6 @@ function DashboardMockup() {
   return (
     <BrowserFrame url="boothgen.com/dashboard">
       <div className="flex h-72">
-        {/* Sidebar */}
         <div className="w-44 flex-shrink-0 bg-[#1e1247] flex flex-col py-4 px-3 gap-1">
           <div className="mb-3 px-2">
             <div className="text-white text-xs font-bold tracking-wide">My Booth Co.</div>
@@ -72,7 +71,6 @@ function DashboardMockup() {
             </div>
           ))}
         </div>
-        {/* Main */}
         <div className="flex-1 bg-gray-50 p-4 overflow-hidden">
           <p className="text-gray-900 font-bold text-sm mb-3">Good morning 👋</p>
           <div className="grid grid-cols-3 gap-2 mb-4">
@@ -85,7 +83,7 @@ function DashboardMockup() {
             ))}
           </div>
           <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-            <div className="px-3 py-2 border-b border-gray-50 flex justify-between items-center">
+            <div className="px-3 py-2 border-b border-gray-50">
               <p className="text-[10px] font-semibold text-gray-700">Upcoming Events</p>
             </div>
             {[['Johnson Wedding','Jun 28','BOOKED'],['Martinez Corp Event','Jul 5','BOOKED'],['Rivera Quinceañera','Jul 12','QUOTED']].map(([name, date, status]) => (
@@ -108,7 +106,6 @@ function PortalMockup() {
   return (
     <BrowserFrame url="boothgen.com/portal/abc123">
       <div className="bg-white">
-        {/* Portal header */}
         <div className="border-b border-gray-100 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-orange-500 flex items-center justify-center text-white text-xs font-bold">M</div>
@@ -122,7 +119,6 @@ function PortalMockup() {
             <p className="text-[9px] text-gray-400">June 28, 2026</p>
           </div>
         </div>
-        {/* Tabs */}
         <div className="flex border-b border-gray-100 px-2">
           {[['✅','Quote'],['✅','Contract'],['💳','Invoice'],['🎨','Design'],['📸','Gallery']].map(([icon, label], i) => (
             <div key={label} className={`flex items-center gap-1 px-3 py-2.5 text-[10px] font-medium border-b-2 ${i === 2 ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-400'}`}>
@@ -130,7 +126,6 @@ function PortalMockup() {
             </div>
           ))}
         </div>
-        {/* Invoice content */}
         <div className="p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div>
@@ -263,15 +258,34 @@ function QuoteMockup() {
 }
 
 const FEATURES = [
-  { icon: '📥', title: 'Embeddable Lead Capture', desc: 'One snippet on your website captures every inquiry automatically into your dashboard.', pro: false },
-  { icon: '📄', title: 'Quotes & E-Signatures', desc: 'Send professional quotes clients can review, accept, and sign digitally — no DocuSign needed.', pro: false },
-  { icon: '💳', title: 'Invoicing & Payments', desc: 'Milestone payment schedules, deposit tracking, and Stripe-powered card payments that go straight to you.', pro: false },
-  { icon: '🖼️', title: 'Branded Client Portal', desc: 'One link gives clients access to their quote, contract, invoice, and gallery — all in your brand.', pro: false },
-  { icon: '📸', title: 'Private Photo Gallery', desc: 'Deliver event photos to clients privately. Guests get a separate link that never exposes billing details.', pro: true },
-  { icon: '🎨', title: 'Template Design Approval', desc: 'Share booth template designs for review. Track approvals and revision requests in one place.', pro: false },
-  { icon: '⚡', title: 'Automated Follow-Ups', desc: 'Email sequences triggered by lead submission, signing, and payment — run on autopilot.', pro: false },
-  { icon: '👥', title: 'Team Management', desc: 'Invite staff with role-based access. They see their events; your financials stay private.', pro: false },
-  { icon: '📊', title: 'Business Analytics', desc: 'Revenue, conversion rates, and monthly booking trends at a glance.', pro: false },
+  { icon: '📥', title: 'Embeddable Lead Capture', desc: 'One snippet on your website captures every inquiry automatically into your dashboard. No missed leads.', pro: false },
+  { icon: '📄', title: 'Quotes & E-Signatures', desc: 'Send professional quotes clients can review, accept, and sign digitally — no separate e-signature subscription needed.', pro: false },
+  { icon: '💳', title: 'Invoicing & Payments', desc: 'Milestone payment schedules, deposit tracking, and Stripe-powered card payments that go straight to your account.', pro: false },
+  { icon: '🖼️', title: 'Branded Client Portal', desc: 'One link gives clients access to their quote, contract, invoice, and gallery — all in your brand colors.', pro: false },
+  { icon: '📸', title: 'Private Photo Gallery', desc: 'Deliver event photos to clients privately. Guests get a separate share link that never exposes billing details.', pro: true },
+  { icon: '🎨', title: 'Design Approval Workflow', desc: 'Share booth template designs for review before the event. Track client approvals and revision requests.', pro: false },
+  { icon: '⚡', title: 'Automated Email Follow-Ups', desc: 'Email sequences triggered by inquiry, signing, and payment — your business runs follow-ups on autopilot.', pro: false },
+  { icon: '👥', title: 'Team Management', desc: 'Invite staff with role-based access. They see their events; your financials and client data stay private.', pro: false },
+  { icon: '📊', title: 'Business Analytics', desc: 'Revenue, conversion rates, and monthly booking trends at a glance — no spreadsheet required.', pro: false },
+];
+
+const SAVINGS_TOOLS = [
+  { label: 'Event CRM — leads, events & client management', cost: '~$29/mo' },
+  { label: 'Digital contract & e-signature platform', cost: '~$20/mo' },
+  { label: 'Online invoicing & payment links', cost: '~$20/mo' },
+  { label: 'Photo delivery & gallery platform', cost: '~$20/mo' },
+  { label: 'Email automation & drip sequences', cost: '~$15/mo' },
+  { label: 'Embeddable lead capture forms', cost: '~$12/mo' },
+  { label: 'Branded client communication portal', cost: '~$25/mo' },
+];
+
+const GENIUS_PILLARS = [
+  { label: 'Booking Genius', icon: '📥', desc: 'Lead capture → Quote → E-signature — close bookings in minutes, not days' },
+  { label: 'Billing Genius', icon: '💳', desc: 'Deposits, milestone payments, and automatic reminders handled for you' },
+  { label: 'Contract Genius', icon: '📄', desc: 'Professional contracts with typed digital signatures — no third-party tool needed' },
+  { label: 'Gallery Genius', icon: '📸', desc: 'Private photo delivery with guest-safe sharing that keeps your invoices hidden' },
+  { label: 'Portal Genius', icon: '🖼️', desc: 'One branded link where clients manage everything — no account creation needed' },
+  { label: 'Automation Genius', icon: '⚡', desc: 'Email sequences that follow up, remind, and nurture — while you run events' },
 ];
 
 export default async function HomePage() {
@@ -283,6 +297,7 @@ export default async function HomePage() {
   }
 
   const pricing = await getPricing();
+  const totalSavings = 141;
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -292,8 +307,8 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <BoothGeniusLogo size="sm" showTagline={false} />
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
+            <a href="#savings" className="hover:text-gray-900 transition-colors">Why Genius?</a>
             <a href="#features" className="hover:text-gray-900 transition-colors">Features</a>
-            <a href="#how-it-works" className="hover:text-gray-900 transition-colors">How It Works</a>
             <a href="#pricing" className="hover:text-gray-900 transition-colors">Pricing</a>
             <a href="#our-story" className="hover:text-gray-900 transition-colors">Our Story</a>
           </nav>
@@ -305,31 +320,35 @@ export default async function HomePage() {
       </header>
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-white to-amber-50 pt-16 pb-20 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#1e1247] via-[#2D1B69] to-[#1e1247] pt-16 pb-20 px-4 sm:px-6">
+        {/* Decorative glow */}
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"/>
+        <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"/>
+        <div className="max-w-6xl mx-auto relative">
           <div className="flex flex-col lg:flex-row items-center gap-12">
             {/* Text */}
             <div className="flex-1 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 text-orange-700 text-xs font-bold uppercase tracking-wide mb-6">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse inline-block"/>
-                Made for new &amp; small photo booth operators
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-500/20 text-orange-300 text-xs font-bold uppercase tracking-wide mb-6 border border-orange-500/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse inline-block"/>
+                The Genius way to run a photo booth business
               </div>
-              <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight mb-5">
-                Look professional<br/>
-                <span className="text-orange-500">from your very first booking</span>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-5">
+                6 tools.<br/>
+                1 platform.<br/>
+                <span className="text-orange-400">That&apos;s the Genius of it.</span>
               </h1>
-              <p className="text-lg text-gray-500 mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
-                Quotes, contracts, invoices, and a branded client portal — all in one place. Built by a real photo booth operator who spent 10+ years running two successful businesses.
+              <p className="text-lg text-purple-200 mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
+                Stop paying $100+/month for tools that don&apos;t talk to each other. Booth Genius replaces your CRM, e-signatures, invoicing, photo gallery, email automation, and client portal — in one place.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link href="/sign-in" className="px-7 py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl text-base transition-all shadow-lg shadow-orange-200 hover:-translate-y-0.5">
+                <Link href="/sign-in" className="px-7 py-3.5 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-2xl text-base transition-all shadow-lg shadow-orange-500/30 hover:-translate-y-0.5">
                   Start free — no credit card
                 </Link>
-                <a href="#our-story" className="px-7 py-3.5 bg-white border border-gray-200 hover:border-gray-300 text-gray-700 font-semibold rounded-2xl text-base transition-all hover:bg-gray-50">
-                  Our story →
+                <a href="#savings" className="px-7 py-3.5 bg-white/10 border border-white/20 hover:bg-white/15 text-white font-semibold rounded-2xl text-base transition-all">
+                  See how much you save →
                 </a>
               </div>
-              <p className="mt-4 text-xs text-gray-400">Commission-based — we only earn when you do.</p>
+              <p className="mt-4 text-xs text-purple-300">Commission-based — we only earn when you do.</p>
             </div>
             {/* Dashboard mockup */}
             <div className="flex-1 w-full max-w-lg lg:max-w-none">
@@ -339,16 +358,104 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── TRUST BAR ────────────────────────────────────────────────────────── */}
-      <section className="border-y border-gray-100 bg-gray-50 py-5 px-4">
-        <div className="max-w-5xl mx-auto flex flex-wrap justify-center gap-6 sm:gap-10 text-sm font-medium text-gray-500">
-          {['Free to start — no card required','Pay only when you collect','E-signatures included','Branded client portal','Automated emails','Team access'].map(item => (
-            <span key={item} className="flex items-center gap-2"><span className="text-orange-500">✓</span>{item}</span>
-          ))}
+      {/* ── GENIUS PILLARS ───────────────────────────────────────────────────── */}
+      <section className="border-b border-gray-100 bg-white py-10 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {GENIUS_PILLARS.map(p => (
+              <div key={p.label} className="text-center group">
+                <div className="text-2xl mb-2">{p.icon}</div>
+                <p className="text-xs font-bold text-gray-900 mb-1 group-hover:text-orange-600 transition-colors">{p.label}</p>
+                <p className="text-[10px] text-gray-400 leading-snug hidden lg:block">{p.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── CLIENT PORTAL SHOWCASE ────────────────────────────────────────────── */}
+      {/* ── SAVINGS COMPARISON ───────────────────────────────────────────────── */}
+      <section id="savings" className="py-24 px-4 sm:px-6 bg-gray-50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3">Why Genius?</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">
+              Most operators are paying<br/><span className="text-red-500">${totalSales(totalSavings)}+/month</span> for tools that barely talk to each other.
+            </h2>
+            <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+              To run a photo booth business you need a CRM, digital contracts, invoicing, photo delivery, email automation, and a client portal. Here&apos;s what that costs when you buy them separately — and what Genius operators pay instead.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* Old way */}
+            <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden">
+              <div className="bg-red-50 px-6 py-4 border-b border-red-100 flex items-center gap-3">
+                <span className="text-2xl">😤</span>
+                <div>
+                  <p className="font-extrabold text-gray-900">The Old Way</p>
+                  <p className="text-xs text-gray-500">Patching together 6+ separate subscriptions</p>
+                </div>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {SAVINGS_TOOLS.map(t => (
+                  <div key={t.label} className="flex items-center justify-between px-6 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-red-400 flex-shrink-0 text-sm font-bold">✗</span>
+                      <span className="text-sm text-gray-600">{t.label}</span>
+                    </div>
+                    <span className="text-sm font-bold text-red-500 flex-shrink-0 ml-4">{t.cost}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="px-6 py-4 bg-red-50 border-t border-red-100 flex items-center justify-between">
+                <p className="font-bold text-gray-900">Total monthly spend</p>
+                <p className="text-2xl font-extrabold text-red-500">${totalSavings}+<span className="text-sm font-medium text-red-400">/mo</span></p>
+              </div>
+            </div>
+
+            {/* Genius way */}
+            <div className="bg-gradient-to-br from-[#1e1247] to-[#2D1B69] rounded-3xl overflow-hidden border border-purple-900/50">
+              <div className="px-6 py-4 border-b border-white/10 flex items-center gap-3">
+                <span className="text-2xl">🧠</span>
+                <div>
+                  <p className="font-extrabold text-white">The Genius Way</p>
+                  <p className="text-xs text-purple-300">One platform. Every tool. Built-in.</p>
+                </div>
+              </div>
+              <div className="divide-y divide-white/5">
+                {SAVINGS_TOOLS.map(t => (
+                  <div key={t.label} className="flex items-center justify-between px-6 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-orange-400 flex-shrink-0 text-sm font-bold">✓</span>
+                      <span className="text-sm text-purple-100">{t.label}</span>
+                    </div>
+                    <span className="text-sm font-bold text-green-400 flex-shrink-0 ml-4">Included</span>
+                  </div>
+                ))}
+              </div>
+              <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-white">Commission Plan</p>
+                  <p className="text-xs text-purple-300">Pay only when you collect</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-extrabold text-orange-400">$0<span className="text-sm font-medium text-orange-300">/mo</span></p>
+                  <p className="text-[10px] text-purple-300">to start</p>
+                </div>
+              </div>
+              <div className="px-6 pb-6">
+                <Link href="/sign-in" className="block w-full py-3 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-xl text-sm text-center transition-colors">
+                  Start saving today — free →
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-center text-xs text-gray-400 mt-8">Estimates based on typical individual tool pricing. Actual savings vary. Commission plan collects a small % per booking — no monthly fee.</p>
+        </div>
+      </section>
+
+      {/* ── CLIENT PORTAL SHOWCASE ───────────────────────────────────────────── */}
       <section className="py-24 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col lg:flex-row items-center gap-12">
@@ -356,12 +463,12 @@ export default async function HomePage() {
               <PortalMockup />
             </div>
             <div className="flex-1 lg:pl-8">
-              <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3">Client Portal</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3">Portal Genius</p>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 leading-tight">
                 One link.<br/>Everything your client needs.
               </h2>
               <p className="text-gray-500 mb-6 leading-relaxed">
-                Your clients get a single, mobile-friendly portal link where they can review and accept their quote, sign the contract, pay their invoice, and download their gallery — no app download, no account required.
+                Your clients get a single, mobile-friendly portal — branded with your logo — where they can review their quote, sign the contract, pay their invoice, and download their gallery. No app download. No account required.
               </p>
               <ul className="space-y-3 text-sm text-gray-700">
                 {['Digital quote acceptance with typed e-signature','Contract signing on any device','Milestone payment schedule powered by Stripe','Photo gallery with secure guest sharing link','Overdue balance gate — gallery unlocks only when paid'].map(item => (
@@ -384,12 +491,12 @@ export default async function HomePage() {
               <QuoteMockup />
             </div>
             <div className="flex-1 lg:pr-8">
-              <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3">Quotes & Contracts</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3">Contract Genius</p>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 leading-tight">
                 Send a proposal.<br/>Get a signature. Get paid.
               </h2>
               <p className="text-gray-500 mb-6 leading-relaxed">
-                Build quotes from your saved packages, send them in seconds, and let clients accept and sign digitally — all without leaving your dashboard or paying for DocuSign.
+                Build quotes from your saved packages, send them in seconds, and let clients accept and sign digitally — all without leaving your dashboard, and without paying for a separate e-signature subscription.
               </p>
               <ul className="space-y-3 text-sm text-gray-700">
                 {['Quote builder with saved packages & pricing','Client accepts with typed digital signature','Contract auto-generated and ready to sign','PDF export for your records','Automated status tracking — New → Quoted → Booked'].map(item => (
@@ -413,17 +520,17 @@ export default async function HomePage() {
             </div>
             <div className="flex-1 lg:pl-8">
               <div className="flex items-center gap-2 mb-3">
-                <p className="text-xs font-bold uppercase tracking-widest text-orange-500">Photo Gallery</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-orange-500">Gallery Genius</p>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 uppercase tracking-wide">Pro</span>
               </div>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 leading-tight">
-                Deliver photos<br/>the professional way.
+                Deliver photos<br/>without a second subscription.
               </h2>
               <p className="text-gray-500 mb-6 leading-relaxed">
-                Upload event photos directly from your dashboard. Clients view and download privately. Guests get a completely separate share link — your client&apos;s billing details stay hidden from everyone else.
+                Skip the standalone photo delivery platform. Upload event photos directly from your Booth Genius dashboard. Clients view and download privately. Guests get a completely separate link — your client&apos;s billing details stay hidden.
               </p>
               <ul className="space-y-3 text-sm text-gray-700">
-                {['Bulk upload hundreds of photos at once','Password-protected galleries','Guest-safe share link — never exposes invoice or quote','Lightbox viewer with download on any device','Auto-deletion reminders so you stay on top of storage'].map(item => (
+                {['Bulk upload hundreds of photos at once','Password-protected access code option','Guest-safe share link — never exposes invoice or quote','Lightbox viewer with download on any device','Auto-deletion reminders so you never lose track'].map(item => (
                   <li key={item} className="flex items-center gap-3">
                     <span className="w-5 h-5 rounded-full bg-orange-100 text-orange-600 text-xs flex items-center justify-center flex-shrink-0 font-bold">✓</span>
                     {item}
@@ -439,8 +546,8 @@ export default async function HomePage() {
       <section className="py-20 px-4 sm:px-6 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">Works perfectly on mobile</h2>
-            <p className="text-lg text-gray-500 max-w-xl mx-auto">Your clients can accept quotes, sign contracts, and pay invoices from any phone — no app download, no account creation required.</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">Works perfectly on every phone</h2>
+            <p className="text-lg text-gray-500 max-w-xl mx-auto">Your clients can accept quotes, sign contracts, pay invoices, and download galleries from any device — no app, no account, no friction.</p>
           </div>
           <div className="flex justify-center">
             <MobilePortalMockup />
@@ -463,19 +570,19 @@ export default async function HomePage() {
                     Booth Genius wasn&apos;t built in a startup incubator. It was built out of frustration — by someone who spent <strong className="text-white">over a decade running two successful photo booth businesses</strong> and got tired of juggling spreadsheets, email chains, and three different apps just to close a single booking.
                   </p>
                   <p>
-                    Every feature in Booth Genius exists because it was needed in the real world: the e-signature flow because clients couldn&apos;t figure out DocuSign, the payment milestone system because deposits need to be tracked separately from balances, the guest gallery share link because clients kept accidentally forwarding their full portal — with invoice details — to wedding guests.
+                    Every feature exists because it was needed in the real world: the e-signature flow because clients couldn&apos;t figure out a third-party signing tool, the payment milestone system because deposits and balances need to be tracked separately, the guest gallery share link because clients kept accidentally forwarding their full portal — invoice and all — to wedding guests.
                   </p>
                   <p>
-                    <strong className="text-white">This is the tool we wish we had when we started.</strong> Designed to make a one-person operation look as polished as a large event company, from the very first inquiry.
+                    When you&apos;re running events, chasing payments, and trying to deliver photos, the last thing you need is to log into four different platforms. <strong className="text-white">That&apos;s the Genius of it — everything in one place, built by someone who&apos;s been exactly where you are.</strong>
                   </p>
                 </div>
               </div>
               <div className="flex-shrink-0 w-full md:w-64 space-y-4">
                 {[
                   ['10+', 'Years in the photo booth industry'],
-                  ['2', 'Successful photo booth businesses operated'],
+                  ['2', 'Successful businesses operated'],
                   ['100s', 'Of real events that shaped every feature'],
-                  ['1', 'Simple platform to replace them all'],
+                  ['1', 'Genius platform to replace them all'],
                 ].map(([num, label]) => (
                   <div key={label} className="bg-white/10 rounded-2xl p-4 border border-white/10">
                     <p className="text-3xl font-extrabold text-orange-400 mb-1">{num}</p>
@@ -492,8 +599,9 @@ export default async function HomePage() {
       <section id="features" className="py-24 px-4 sm:px-6 bg-gray-50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">Everything in one place</h2>
-            <p className="text-lg text-gray-500 max-w-2xl mx-auto">Stop switching between apps. Booth Genius handles every step from inquiry to gallery delivery.</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3">Everything Included</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">Six tools. One Genius platform.</h2>
+            <p className="text-lg text-gray-500 max-w-2xl mx-auto">Stop app-hopping. Booth Genius handles every step from first inquiry to final photo delivery — and everything in between.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {FEATURES.map(f => (
@@ -514,14 +622,14 @@ export default async function HomePage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">Up and running in minutes</h2>
-            <p className="text-lg text-gray-500 max-w-xl mx-auto">No technical setup. No contracts. No IT team required.</p>
+            <p className="text-lg text-gray-500 max-w-xl mx-auto">No technical setup. No contracts. No IT team. Just a smarter way to run your business.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { step: '01', title: 'Set up in minutes', desc: 'Upload your logo, set your brand color, and connect your Stripe account. Add your services and packages. Your client portal is live immediately.' },
-              { step: '02', title: 'Capture and convert leads', desc: 'Embed the inquiry form on your website. Respond, send a quote, get it signed, collect a deposit — all from one dashboard, in minutes.' },
-              { step: '03', title: 'Deliver and delight', desc: 'After the event, upload photos to the gallery. Clients get a notification. Share a guest-safe gallery link. Done.' },
-            ].map((s, i) => (
+              { step: '01', title: 'Set up your Genius HQ', desc: 'Upload your logo, set your brand color, connect Stripe, and add your packages. Your client portal is live in minutes — no developer needed.' },
+              { step: '02', title: 'Capture, quote & book', desc: 'Embed the inquiry form on your website. Respond with a quote, get it signed, collect a deposit — all from one dashboard, in minutes not days.' },
+              { step: '03', title: 'Deliver & delight', desc: 'After the event, upload photos directly in Booth Genius. Clients get a notification. Share a guest-safe gallery link. You&apos;re done.' },
+            ].map((s) => (
               <div key={s.step} className="text-center md:text-left">
                 <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-orange-100 text-orange-600 font-extrabold text-sm mb-4">{s.step}</div>
                 <h3 className="font-bold text-gray-900 text-lg mb-2">{s.title}</h3>
@@ -536,8 +644,9 @@ export default async function HomePage() {
       <section id="pricing" className="py-24 px-4 sm:px-6 bg-gray-50">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">You don&apos;t make money, we don&apos;t make money</h2>
-            <p className="text-lg text-gray-500 max-w-2xl mx-auto">New operators start free with our commission plan. When your business grows, switch to flat-rate and keep more of every booking.</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3">Genius Pricing</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">You don&apos;t make money,<br/>we don&apos;t make money.</h2>
+            <p className="text-lg text-gray-500 max-w-2xl mx-auto">New operators start free with our commission plan. When your business grows and you&apos;re booking more events, switch to flat-rate and keep every dollar.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
             {/* Commission Plan */}
@@ -545,14 +654,22 @@ export default async function HomePage() {
               <div className="mb-6">
                 <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold mb-4">Perfect for new operators</div>
                 <h3 className="text-xl font-extrabold text-gray-900 mb-1">Commission Plan</h3>
-                <p className="text-gray-500 text-sm">Start booking without any upfront cost.</p>
+                <p className="text-gray-500 text-sm">Get started without spending a dollar upfront.</p>
               </div>
               <div className="mb-6">
                 <p className="text-5xl font-extrabold text-gray-900">{pricing.commissionPct}<span className="text-2xl text-gray-400">%</span></p>
-                <p className="text-sm text-gray-500 mt-1">per booking collected</p>
+                <p className="text-sm text-gray-500 mt-1">per booking collected — nothing else</p>
               </div>
               <ul className="space-y-3 text-sm text-gray-600 mb-8 flex-1">
-                {['Leads, quotes, contracts & invoices','Branded client portal & e-signatures','Stripe Connect — clients pay you directly',`Only ${pricing.commissionPct}% per booking collected`,'No monthly fee. No setup cost.','Upgrade to Pro anytime for gallery access'].map(item => (
+                {[
+                  'Full CRM — leads, events & clients',
+                  'Quotes & digital e-signatures included',
+                  'Invoicing & milestone payments',
+                  'Branded client portal',
+                  'Email automation & follow-ups',
+                  `Only ${pricing.commissionPct}% per booking — no monthly fee`,
+                  'Upgrade to Pro anytime for gallery access',
+                ].map(item => (
                   <li key={item} className="flex items-center gap-2"><span className="text-orange-500 flex-shrink-0">✓</span>{item}</li>
                 ))}
               </ul>
@@ -572,34 +689,46 @@ export default async function HomePage() {
                   : <p className="text-2xl font-bold text-gray-300">Contact us for pricing</p>}
               </div>
               <ul className="space-y-3 text-sm text-gray-300 mb-8 flex-1 relative">
-                {['Everything in Commission Plan','Zero commission on any booking','Private photo gallery & delivery','Priority support','Unlimited events & clients','White-label client portal'].map(item => (
+                {[
+                  'Everything in Commission Plan',
+                  'Zero commission on every booking',
+                  'Private photo gallery & delivery (Gallery Genius)',
+                  'Priority support',
+                  'Unlimited events & clients',
+                  'White-label client portal',
+                ].map(item => (
                   <li key={item} className="flex items-center gap-2"><span className="text-orange-400 flex-shrink-0">✓</span>{item}</li>
                 ))}
               </ul>
-              <Link href="/sign-in" className="w-full py-3 bg-white hover:bg-gray-100 text-gray-900 font-bold rounded-xl text-sm text-center transition-colors relative">Get started</Link>
+              <Link href="/sign-in" className="w-full py-3 bg-white hover:bg-gray-100 text-gray-900 font-bold rounded-xl text-sm text-center transition-colors relative">Get started with Pro</Link>
             </div>
           </div>
-          <p className="text-center text-sm text-gray-400 mt-8">All plans include Stripe-powered payments. Your clients pay you directly — we never touch the funds.</p>
+          <p className="text-center text-sm text-gray-400 mt-8">All plans include Stripe-powered payments. Your clients pay you directly — Booth Genius never touches your funds.</p>
         </div>
       </section>
 
       {/* ── FINAL CTA ────────────────────────────────────────────────────────── */}
-      <section className="py-24 px-4 sm:px-6">
+      <section className="py-24 px-4 sm:px-6 bg-gradient-to-br from-[#1e1247] via-[#2D1B69] to-[#1e1247]">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">Ready to streamline your bookings?</h2>
-          <p className="text-lg text-gray-500 mb-10">Join photo booth operators who have replaced spreadsheets, DocuSign, and manual invoicing with one simple platform built by someone who&apos;s been where you are.</p>
-          <Link href="/sign-in" className="inline-block px-10 py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl text-base transition-all shadow-lg shadow-orange-200 hover:-translate-y-0.5">
-            Create your free account →
+          <p className="text-orange-400 text-sm font-bold uppercase tracking-widest mb-4">Ready to run your business like a Genius?</p>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Replace your toolbox.<br/>Keep what matters.</h2>
+          <p className="text-lg text-purple-200 mb-10">Stop juggling subscriptions built for someone else. Booth Genius was built by an operator who knows what you actually need — and packed it into one platform you can start using today for free.</p>
+          <Link href="/sign-in" className="inline-block px-10 py-4 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-2xl text-base transition-all shadow-lg shadow-orange-500/30 hover:-translate-y-0.5">
+            Create your free Genius account →
           </Link>
-          <p className="mt-4 text-sm text-gray-400">No credit card required. Commission plan is free to start.</p>
+          <p className="mt-4 text-sm text-purple-300">No credit card required. Commission plan is free to start.</p>
         </div>
       </section>
 
       {/* ── FOOTER ───────────────────────────────────────────────────────────── */}
       <footer className="border-t border-gray-100 py-10 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-400">
-          <BoothGeniusLogo size="sm" showTagline={false} />
+          <div className="flex flex-col items-center sm:items-start gap-1">
+            <BoothGeniusLogo size="sm" showTagline={false} />
+            <p className="text-[11px] text-gray-400">The Genius way to run your photo booth business.</p>
+          </div>
           <nav className="flex flex-wrap justify-center gap-6">
+            <a href="#savings" className="hover:text-gray-600 transition-colors">Why Genius?</a>
             <a href="#features" className="hover:text-gray-600 transition-colors">Features</a>
             <a href="#pricing" className="hover:text-gray-600 transition-colors">Pricing</a>
             <a href="#our-story" className="hover:text-gray-600 transition-colors">Our Story</a>
@@ -612,3 +741,5 @@ export default async function HomePage() {
     </div>
   );
 }
+
+function totalSales(n: number) { return n; }

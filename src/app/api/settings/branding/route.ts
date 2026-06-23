@@ -9,9 +9,9 @@ export async function GET() {
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const tenant = await prisma.tenant.findUnique({
     where: { id: session.tenantId },
-    select: { slug: true, name: true, branding: true },
+    select: { slug: true, name: true, branding: true, teamMemberAccess: true },
   });
-  return NextResponse.json({ ...tenant?.branding, slug: tenant?.slug, tenantName: tenant?.name });
+  return NextResponse.json({ ...tenant?.branding, slug: tenant?.slug, tenantName: tenant?.name, teamMemberAccess: tenant?.teamMemberAccess ?? '["events"]' });
 }
 
 export async function PATCH(req: NextRequest) {
