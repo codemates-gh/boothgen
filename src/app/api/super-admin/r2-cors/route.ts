@@ -14,6 +14,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   if (body.extraOrigin) origins.push(body.extraOrigin);
 
-  await setR2CorsPolicy(origins);
-  return NextResponse.json({ ok: true, origins });
+  try {
+    await setR2CorsPolicy(origins);
+    return NextResponse.json({ ok: true, origins });
+  } catch (err: any) {
+    return NextResponse.json({ ok: false, error: err?.message ?? String(err), code: err?.Code ?? err?.code }, { status: 500 });
+  }
 }
