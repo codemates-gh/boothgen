@@ -3,10 +3,37 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { ArrowLeft, Save, Send, ArrowRight, CheckCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Save, Send, ArrowRight, CheckCircle, RefreshCw, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+
+type EmailTemplate = { id: string; name: string; subject: string; bodyHtml: string };
+type Branding = { companyName?: string; replyToEmail?: string; supportPhone?: string; websiteUrl?: string; emailHeaderHtml?: string };
+
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function resolvePlaceholders(text: string, lead: Lead, branding: Branding): string {
+  const sig = branding.emailHeaderHtml ? htmlToPlainText(branding.emailHeaderHtml) : '';
+  return text
+    .replace(/\{\{client\.first_name\}\}/g, lead.firstName)
+    .replace(/\{\{client\.email\}\}/g, lead.email)
+    .replace(/\{\{client\.full_name\}\}/g, `${lead.firstName} ${lead.lastName}`)
+    .replace(/\{\{host\.company_name\}\}/g, branding.companyName ?? '')
+    .replace(/\{\{host\.email\}\}/g, branding.replyToEmail ?? '')
+    .replace(/\{\{host\.phone\}\}/g, branding.supportPhone ?? '')
+    .replace(/\{\{host\.website\}\}/g, branding.websiteUrl ?? '')
+    .replace(/\{\{host\.signature\}\}/g, sig);
+}
 
 const STATUS_OPTIONS = [
   { value: 'NEW', label: 'New', color: 'bg-blue-100 text-blue-700 border-blue-200' },
@@ -64,11 +91,25 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
   const [messages, setMessages] = useState<LeadMessage[]>(initial.messages);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'reply' | 'thread'>('details');
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [branding, setBranding] = useState<Branding>({});
   const threadEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (activeTab === 'thread') threadEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeTab, messages]);
+
+  useEffect(() => {
+    fetch('/api/automation/email-templates').then(r => r.ok ? r.json() : []).then(setTemplates);
+    fetch('/api/settings/branding').then(r => r.ok ? r.json() : {}).then(setBranding);
+  }, []);
+
+  function applyTemplate(id: string) {
+    const t = templates.find(t => t.id === id);
+    if (!t) return;
+    setEmailSubject(resolvePlaceholders(t.subject, lead, branding));
+    setEmailBody(resolvePlaceholders(htmlToPlainText(t.bodyHtml), lead, branding));
+  }
 
   const statusOption = STATUS_OPTIONS.find(s => s.value === lead.status) ?? STATUS_OPTIONS[0];
 
@@ -311,6 +352,19 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
                 <CheckCircle className="w-4 h-4" /> Email sent successfully.
               </div>
             ) : null}
+            {templates.length > 0 && (
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <select
+                  defaultValue=""
+                  onChange={e => { applyTemplate(e.target.value); e.target.value = ''; }}
+                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand bg-white"
+                >
+                  <option value="" disabled>Load a template…</option>
+                  {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </div>
+            )}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
               <input

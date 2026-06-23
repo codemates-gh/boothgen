@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.6.7] — 2026-06-23
+
+### Added
+- **Lead compose — Load template** — "Load a template…" dropdown in the Compose tab of a lead thread; selecting a template strips HTML to plain text and resolves all placeholders (`{{client.first_name}}`, `{{host.company_name}}`, etc.) against the lead and branding before populating the subject and body fields; dropdown only appears if the tenant has templates saved
+
+---
+
 ## [1.6.6] — 2026-06-23
 
 ### Added
