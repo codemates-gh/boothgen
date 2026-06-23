@@ -286,6 +286,7 @@ export const sendOverduePaymentReminders = inngest.createFunction(
     let sent = 0;
     for (const ms of overdue) {
       const event = ms.invoice.event;
+      if (!event) continue;
       const branding = event.tenant.branding;
       const companyName = branding?.companyName ?? event.tenant.name;
       try {

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Printer, Layers, AlertCircle, Download } from 'lucide-react';
+import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Printer, Layers, AlertCircle, Download, X } from 'lucide-react';
 import { InvoicePaymentForm } from '@/components/stripe/PaymentForm';
 
 type Tab = 'quote' | 'contract' | 'invoice' | 'design' | 'gallery';

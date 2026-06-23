@@ -5,7 +5,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Image, Trash2, Globe, EyeOff, X, CheckCircle2, Lock, LockOpen, Share2, Link } from 'lucide-react';
+import { Upload, Image, Trash2, Globe, EyeOff, X, CheckCircle2, Lock, LockOpen, Link2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function GalleryDetailPage({ params }: { params: { id: string } }) {
@@ -149,7 +149,7 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
           <div className="flex gap-3">
             {gallery?.isPublished && (
               <Button variant="outline" size="sm" onClick={copyGalleryLink}>
-                {linkCopied ? <><CheckCircle2 className="w-4 h-4 mr-2 text-green-500"/>Copied!</> : <><Link className="w-4 h-4 mr-2"/>Share Gallery Link</>}
+                {linkCopied ? <><CheckCircle2 className="w-4 h-4 mr-2 text-green-500"/>Copied!</> : <><Link2 className="w-4 h-4 mr-2"/>Share Gallery Link</>}
               </Button>
             )}
             <Button variant="outline" onClick={togglePublish}>
