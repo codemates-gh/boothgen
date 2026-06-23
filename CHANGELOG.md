@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.6.4] — 2026-06-23
+
+### Fixed
+- **Support AI chat — "Something went wrong" on every message** — replaced the broken `useChat` / `DefaultChatTransport` / `toUIMessageStreamResponse()` stack with a simple manual `fetch` + `ReadableStream` implementation; server now accepts plain `{ role, content }[]` messages and returns a plain text stream via `toTextStreamResponse()`; client streams the response chunk-by-chunk into state with no AI SDK client dependency
+
+---
+
 ## [1.6.3] — 2026-06-23
 
 ### Fixed

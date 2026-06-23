@@ -1,6 +1,5 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { streamText, convertToModelMessages } from 'ai';
-import type { UIMessage } from 'ai';
+import { streamText } from 'ai';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -157,6 +156,8 @@ A: Go to Automation in the sidebar. Create a rule by choosing a trigger event (e
 If you cannot find an answer, suggest the user contact support at support@boothgen.com.
 `;
 
+type SimpleMessage = { role: 'user' | 'assistant'; content: string };
+
 export async function POST(req: Request) {
   if (!process.env.GEMINI_API_KEY) {
     return new Response(
@@ -166,10 +167,9 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { messages }: { messages: UIMessage[] } = await req.json();
+    const { messages }: { messages: SimpleMessage[] } = await req.json();
 
-    // Gemini requires the conversation to start with a user message.
-    // Drop any leading assistant messages (e.g. the local welcome bubble).
+    // Gemini requires the conversation to start with a user message
     const firstUserIdx = messages.findIndex(m => m.role === 'user');
     const conversation = firstUserIdx >= 0 ? messages.slice(firstUserIdx) : [];
 
@@ -180,16 +180,15 @@ export async function POST(req: Request) {
     }
 
     const google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
-    const modelMessages = await convertToModelMessages(conversation);
 
     const result = streamText({
       model: google('gemini-2.0-flash-lite'),
       system: SYSTEM_PROMPT,
-      messages: modelMessages,
+      messages: conversation,
       maxOutputTokens: 600,
     });
 
-    return result.toUIMessageStreamResponse();
+    return result.toTextStreamResponse();
   } catch (err) {
     console.error('[support/chat]', err);
     return new Response(JSON.stringify({ error: 'Internal server error.' }), {
