@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.0.9] — 2026-06-22
+
+### Changed
+- **Platform email template editor is now WYSIWYG** — replaced the raw HTML textarea with the full visual editor (bold, italic, underline, align, lists, link, image, HTML toggle, preview); "Insert Variable" dropdown shows only the platform-relevant variables (`{{user_name}}`, `{{app_url}}`, `{{reset_url}}`); preview mode substitutes sample values highlighted in orange
+- `EmailTemplateEditor` now accepts optional `mergeTags` and `previewSamples` props so it can be reused with any variable set
+
+---
+
 ## [1.0.8] — 2026-06-22
 
 ### Fixed

@@ -1,15 +1,23 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Save, Eye, EyeOff, Mail } from 'lucide-react';
+import { Save, Mail } from 'lucide-react';
+import EmailTemplateEditor from '@/components/email/EmailTemplateEditor';
 
 const TEMPLATES = [
   {
     key: 'email_template_welcome',
     label: 'Welcome Email',
     description: 'Sent when a new user signs up',
-    vars: ['user_name', 'app_url'],
+    mergeTags: [
+      { label: 'User Name', value: '{{user_name}}' },
+      { label: 'App URL', value: '{{app_url}}' },
+    ],
+    previewSamples: {
+      '{{user_name}}': 'Jane Smith',
+      '{{app_url}}': 'https://boothgen.com',
+    } as Record<string, string>,
     defaultSubject: 'Welcome to Booth Genius!',
     defaultBody: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
   <h2 style="font-size:22px;color:#111827">Welcome to Booth Genius, {{user_name}}!</h2>
@@ -25,7 +33,16 @@ const TEMPLATES = [
     key: 'email_template_forgot_password',
     label: 'Forgot Password',
     description: 'Sent when a user requests a password reset',
-    vars: ['user_name', 'reset_url', 'app_url'],
+    mergeTags: [
+      { label: 'User Name', value: '{{user_name}}' },
+      { label: 'Reset Link', value: '{{reset_url}}' },
+      { label: 'App URL', value: '{{app_url}}' },
+    ],
+    previewSamples: {
+      '{{user_name}}': 'Jane Smith',
+      '{{reset_url}}': 'https://boothgen.com/reset-password?token=preview',
+      '{{app_url}}': 'https://boothgen.com',
+    },
     defaultSubject: 'Reset your Booth Genius password',
     defaultBody: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
   <h2 style="font-size:20px;color:#111827">Hi {{user_name}},</h2>
@@ -39,21 +56,7 @@ const TEMPLATES = [
 ];
 
 interface TemplateValue { subject: string; bodyHtml: string }
-
-interface Props {
-  initial: Record<string, string>;
-}
-
-function renderPreview(html: string, vars: string[]) {
-  let out = html;
-  const samples: Record<string, string> = {
-    user_name: 'Jane Smith',
-    app_url: 'https://boothgen.com',
-    reset_url: 'https://boothgen.com/reset-password?token=preview',
-  };
-  vars.forEach(v => { out = out.replaceAll(`{{${v}}}`, `<mark style="background:#FEF9C3;padding:0 2px;border-radius:2px">${samples[v] ?? `{{${v}}}`}</mark>`); });
-  return out;
-}
+interface Props { initial: Record<string, string> }
 
 export default function PlatformEmailTemplates({ initial }: Props) {
   const [activeKey, setActiveKey] = useState(TEMPLATES[0].key);
@@ -71,28 +74,12 @@ export default function PlatformEmailTemplates({ initial }: Props) {
   });
   const [saving, setSaving] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
-  const [preview, setPreview] = useState(false);
-  const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   const activeTpl = TEMPLATES.find(t => t.key === activeKey)!;
   const current = values[activeKey];
 
   function updateCurrent(patch: Partial<TemplateValue>) {
     setValues(v => ({ ...v, [activeKey]: { ...v[activeKey], ...patch } }));
-  }
-
-  function insertVar(v: string) {
-    const el = bodyRef.current;
-    if (!el) return;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const tag = `{{${v}}}`;
-    const newVal = current.bodyHtml.slice(0, start) + tag + current.bodyHtml.slice(end);
-    updateCurrent({ bodyHtml: newVal });
-    requestAnimationFrame(() => {
-      el.selectionStart = el.selectionEnd = start + tag.length;
-      el.focus();
-    });
   }
 
   async function save() {
@@ -111,7 +98,7 @@ export default function PlatformEmailTemplates({ initial }: Props) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><Mail className="w-4 h-4" />Platform Email Templates</CardTitle>
-        <p className="text-sm text-gray-500">Customize system emails sent by Booth Genius. Use variables to personalize content.</p>
+        <p className="text-sm text-gray-500">Customize system emails sent by Booth Genius. Use the "Insert Variable" button to add dynamic content.</p>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Template tabs */}
@@ -119,7 +106,7 @@ export default function PlatformEmailTemplates({ initial }: Props) {
           {TEMPLATES.map(t => (
             <button
               key={t.key}
-              onClick={() => { setActiveKey(t.key); setPreview(false); }}
+              onClick={() => setActiveKey(t.key)}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${activeKey === t.key ? 'border-brand text-brand' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
             >
               {t.label}
@@ -140,50 +127,15 @@ export default function PlatformEmailTemplates({ initial }: Props) {
           />
         </div>
 
-        {/* Variable chips */}
+        {/* WYSIWYG body editor */}
         <div>
-          <p className="text-xs font-medium text-gray-500 mb-1.5">Available variables — click to insert into body:</p>
-          <div className="flex flex-wrap gap-1.5">
-            {activeTpl.vars.map(v => (
-              <button
-                key={v}
-                onClick={() => insertVar(v)}
-                className="text-xs bg-orange-50 text-orange-700 border border-orange-200 rounded-full px-2.5 py-0.5 hover:bg-orange-100 font-mono transition-colors"
-              >
-                {`{{${v}}}`}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Body editor / preview toggle */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="block text-sm font-medium text-gray-700">Body (HTML)</label>
-            <button onClick={() => setPreview(p => !p)} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800">
-              {preview ? <><EyeOff className="w-3.5 h-3.5" />Edit</> : <><Eye className="w-3.5 h-3.5" />Preview</>}
-            </button>
-          </div>
-          {preview ? (
-            <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-              <div className="bg-gray-50 border-b px-3 py-1.5 text-xs text-gray-400">Preview (variables highlighted)</div>
-              <iframe
-                srcDoc={renderPreview(current.bodyHtml, activeTpl.vars)}
-                className="w-full min-h-[280px]"
-                sandbox="allow-same-origin"
-                title="Email preview"
-              />
-            </div>
-          ) : (
-            <textarea
-              ref={bodyRef}
-              value={current.bodyHtml}
-              onChange={e => updateCurrent({ bodyHtml: e.target.value })}
-              rows={12}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand resize-y"
-              placeholder="Enter HTML email body..."
-            />
-          )}
+          <label className="block text-sm font-medium text-gray-700 mb-1">Body</label>
+          <EmailTemplateEditor
+            value={current.bodyHtml}
+            onChange={v => updateCurrent({ bodyHtml: v })}
+            mergeTags={activeTpl.mergeTags}
+            previewSamples={activeTpl.previewSamples}
+          />
         </div>
 
         <Button onClick={save} disabled={saving === activeKey} size="sm">

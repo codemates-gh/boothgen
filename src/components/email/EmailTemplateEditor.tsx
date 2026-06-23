@@ -34,12 +34,17 @@ const MERGE_TAGS = [
   { label: 'Email Signature', value: '{{host.signature}}' },
 ];
 
+interface MergeTag { label: string; value: string }
+
 interface Props {
   value: string;
   onChange: (v: string) => void;
+  mergeTags?: MergeTag[];
+  previewSamples?: Record<string, string>;
 }
 
-export default function EmailTemplateEditor({ value, onChange }: Props) {
+export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeTagsProp, previewSamples: previewSamplesProp }: Props) {
+  const mergeTags = mergeTagsProp ?? MERGE_TAGS;
   const [mode, setMode] = useState<'visual' | 'html'>('visual');
   const [showPreview, setShowPreview] = useState(false);
   const [showVars, setShowVars] = useState(false);
@@ -115,33 +120,35 @@ export default function EmailTemplateEditor({ value, onChange }: Props) {
 
   function getPreviewHtml() {
     let html = value;
-    MERGE_TAGS.forEach(t => {
-      const ex: Record<string,string> = {
-        '{{client.first_name}}': 'Jane',
-        '{{client.full_name}}': 'Jane Smith',
-        '{{client.email}}': 'jane@example.com',
-        '{{event.title}}': 'Smith Wedding',
-        '{{event.date}}': 'Saturday, July 19, 2025',
-        '{{event.start_time}}': '6:00 PM',
-        '{{event.end_time}}': '10:00 PM',
-        '{{event.venue_name}}': 'The Grand Ballroom',
-        '{{event.venue_address}}': '123 Main St',
-        '{{event.venue_city}}': 'Austin',
-        '{{event.venue_state}}': 'TX',
-        '{{event.package_name}}': 'Deluxe 4-Hour Package',
-        '{{event.guest_count}}': '150',
-        '{{invoice.total}}': '$1,200.00',
-        '{{invoice.balance_due}}': '$600.00',
-        '{{invoice.due_date}}': 'June 1, 2025',
-        '{{contract.link}}': '#',
-        '{{portal.link}}': '#',
-        '{{host.company_name}}': 'Your Photo Booth Co.',
-        '{{host.email}}': 'hello@yourbusiness.com',
-        '{{host.phone}}': '(555) 123-4567',
-        '{{host.website}}': 'https://yourbusiness.com',
-        '{{host.signature}}': 'Warm regards,\nYour Name\nYour Company',
-      };
-      html = html.replaceAll(t.value, `<strong style="color:#ea6100">${ex[t.value] ?? t.value}</strong>`);
+    const defaultSamples: Record<string, string> = {
+      '{{client.first_name}}': 'Jane',
+      '{{client.full_name}}': 'Jane Smith',
+      '{{client.email}}': 'jane@example.com',
+      '{{event.title}}': 'Smith Wedding',
+      '{{event.date}}': 'Saturday, July 19, 2025',
+      '{{event.start_time}}': '6:00 PM',
+      '{{event.end_time}}': '10:00 PM',
+      '{{event.venue_name}}': 'The Grand Ballroom',
+      '{{event.venue_address}}': '123 Main St',
+      '{{event.venue_city}}': 'Austin',
+      '{{event.venue_state}}': 'TX',
+      '{{event.package_name}}': 'Deluxe 4-Hour Package',
+      '{{event.guest_count}}': '150',
+      '{{invoice.total}}': '$1,200.00',
+      '{{invoice.balance_due}}': '$600.00',
+      '{{invoice.due_date}}': 'June 1, 2025',
+      '{{contract.link}}': '#',
+      '{{portal.link}}': '#',
+      '{{host.company_name}}': 'Your Photo Booth Co.',
+      '{{host.email}}': 'hello@yourbusiness.com',
+      '{{host.phone}}': '(555) 123-4567',
+      '{{host.website}}': 'https://yourbusiness.com',
+      '{{host.signature}}': 'Warm regards,\nYour Name\nYour Company',
+      // Platform template samples (injected via previewSamples prop)
+      ...(previewSamplesProp ?? {}),
+    };
+    mergeTags.forEach(t => {
+      html = html.replaceAll(t.value, `<strong style="color:#ea6100">${defaultSamples[t.value] ?? t.label}</strong>`);
     });
     return html;
   }
@@ -180,7 +187,7 @@ export default function EmailTemplateEditor({ value, onChange }: Props) {
           </button>
           {showVars && (
             <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 max-h-64 overflow-y-auto">
-              {MERGE_TAGS.map(t => (
+              {mergeTags.map(t => (
                 <button key={t.value} type="button" onClick={() => insertVar(t.value)}
                   className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">
                   <p className="font-medium text-gray-700">{t.label}</p>
