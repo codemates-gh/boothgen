@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, PutBucketCorsCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const r2 = new S3Client({
@@ -29,4 +29,20 @@ export async function getPresignedUploadUrl(key: string, contentType: string): P
 
 export function r2KeyFromUrl(url: string): string {
   return url.replace(PUBLIC_URL + '/', '');
+}
+
+export async function setR2CorsPolicy(allowedOrigins: string[]): Promise<void> {
+  await r2.send(new PutBucketCorsCommand({
+    Bucket: BUCKET,
+    CORSConfiguration: {
+      CORSRules: [
+        {
+          AllowedOrigins: allowedOrigins,
+          AllowedMethods: ['GET', 'PUT', 'HEAD'],
+          AllowedHeaders: ['*'],
+          MaxAgeSeconds: 3600,
+        },
+      ],
+    },
+  }));
 }
