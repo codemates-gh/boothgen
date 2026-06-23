@@ -11,13 +11,45 @@ function darken(hex: string, pct: number): string {
   return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
+interface LeadFormConfig {
+  heading?: string;
+  buttonText?: string;
+  successHeading?: string;
+  successMessage?: string;
+  showPhone?: boolean;
+  showEventDate?: boolean;
+  showEventType?: boolean;
+  showTimes?: boolean;
+  showGuestCount?: boolean;
+  showVenue?: boolean;
+  showMessage?: boolean;
+  requirePhone?: boolean;
+  requireEventDate?: boolean;
+}
+
+const DEFAULTS: Required<LeadFormConfig> = {
+  heading: 'Book with {{company}}',
+  buttonText: 'Send My Inquiry',
+  successHeading: 'We received your inquiry!',
+  successMessage: "We'll be in touch within 1-2 business days.",
+  showPhone: true,
+  showEventDate: true,
+  showEventType: true,
+  showTimes: true,
+  showGuestCount: true,
+  showVenue: true,
+  showMessage: true,
+  requirePhone: false,
+  requireEventDate: true,
+};
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { tenantSlug: string } }
 ) {
   const tenant = await prisma.tenant.findUnique({
     where: { slug: params.tenantSlug },
-    include: { branding: { select: { companyName: true, logoUrl: true, primaryColor: true } } },
+    include: { branding: { select: { companyName: true, logoUrl: true, primaryColor: true, leadFormConfig: true } } },
   });
 
   if (!tenant || tenant.status === 'SUSPENDED') {
@@ -31,6 +63,9 @@ export async function GET(
   const logo = tenant.branding?.logoUrl
     ? '<img src="' + tenant.branding.logoUrl + '" alt="' + co + '" style="height:40px;object-fit:contain"/>'
     : '';
+
+  const cfg: Required<LeadFormConfig> = { ...DEFAULTS, ...((tenant.branding?.leadFormConfig ?? {}) as LeadFormConfig) };
+  const heading = cfg.heading.replace('{{company}}', co);
 
   const css = [
     '*{box-sizing:border-box;margin:0;padding:0}',
@@ -57,56 +92,61 @@ export async function GET(
     '@media(max-width:480px){.grid{grid-template-columns:1fr}}',
   ].join('');
 
+  const req2fields: string[] = ['firstName', 'lastName', 'email'];
+  if (cfg.requirePhone) req2fields.push('phone');
+  if (cfg.requireEventDate) req2fields.push('eventDate');
+
   const html = '<!DOCTYPE html>' +
     '<html lang="en">' +
     '<head>' +
     '<meta charset="UTF-8"/>' +
     '<meta name="viewport" content="width=device-width,initial-scale=1.0"/>' +
-    '<title>Book with ' + co + '</title>' +
+    '<title>' + heading + '</title>' +
     '<style>' + css + '</style>' +
     '</head>' +
     '<body>' +
-    '<div class="hdr">' + logo + '<h1>Book with ' + co + '</h1></div>' +
+    '<div class="hdr">' + logo + '<h1>' + heading + '</h1></div>' +
     '<form id="f" novalidate>' +
     '<input class="honey" type="text" name="website" tabindex="-1" autocomplete="off"/>' +
     '<div class="grid">' +
     '<div><label>First Name <span class="req">*</span></label><input type="text" name="firstName" autocomplete="given-name" required/></div>' +
     '<div><label>Last Name <span class="req">*</span></label><input type="text" name="lastName" autocomplete="family-name" required/></div>' +
     '<div><label>Email <span class="req">*</span></label><input type="email" name="email" autocomplete="email" required/></div>' +
-    '<div><label>Phone</label><input type="tel" name="phone" autocomplete="tel"/></div>' +
-    '<div><label>Event Date <span class="req">*</span></label><input type="date" name="eventDate" required/></div>' +
-    '<div><label>Event Type</label><select name="eventType"><option value="">-- Select --</option><option>Wedding</option><option>Corporate Event</option><option>Birthday Party</option><option>Quincea\xf1era / Sweet 16</option><option>Graduation</option><option>Holiday Party</option><option>Other</option></select></div>' +
-    '<div><label>Start Time</label><input type="time" name="startTime"/></div>' +
-    '<div><label>End Time</label><input type="time" name="endTime"/></div>' +
-    '<div><label>Est. Guest Count</label><input type="number" name="guestCount" min="1" max="5000" placeholder="150"/></div>' +
-    '<div class="full"><label>Venue Name</label><input type="text" name="venueName" placeholder="Ballroom, backyard, event hall..."/></div>' +
-    '<div class="full"><label>Venue Address</label><input type="text" name="venueAddress" autocomplete="street-address" placeholder="123 Main St"/></div>' +
-    '<div><label>City</label><input type="text" name="venueCity" autocomplete="address-level2"/></div>' +
-    '<div><label>State</label><input type="text" name="venueState" autocomplete="address-level1" placeholder="MD"/></div>' +
-    '<div><label>Zip Code</label><input type="text" name="venuePostalCode" autocomplete="postal-code" placeholder="20001"/></div>' +
-    '<div class="full"><label>Additional Notes</label><textarea name="message" placeholder="Special requests, theme, anything else we should know..."></textarea></div>' +
+    (cfg.showPhone ? '<div><label>Phone' + (cfg.requirePhone ? ' <span class="req">*</span>' : '') + '</label><input type="tel" name="phone" autocomplete="tel"/></div>' : '') +
+    (cfg.showEventDate ? '<div><label>Event Date' + (cfg.requireEventDate ? ' <span class="req">*</span>' : '') + '</label><input type="date" name="eventDate"/></div>' : '') +
+    (cfg.showEventType ? '<div><label>Event Type</label><select name="eventType"><option value="">-- Select --</option><option>Wedding</option><option>Corporate Event</option><option>Birthday Party</option><option>Quincea\xf1era / Sweet 16</option><option>Graduation</option><option>Holiday Party</option><option>Other</option></select></div>' : '') +
+    (cfg.showTimes ? '<div><label>Start Time</label><input type="time" name="startTime"/></div>' : '') +
+    (cfg.showTimes ? '<div><label>End Time</label><input type="time" name="endTime"/></div>' : '') +
+    (cfg.showGuestCount ? '<div><label>Est. Guest Count</label><input type="number" name="guestCount" min="1" max="5000" placeholder="150"/></div>' : '') +
+    (cfg.showVenue ? '<div class="full"><label>Venue Name</label><input type="text" name="venueName" placeholder="Ballroom, backyard, event hall..."/></div>' : '') +
+    (cfg.showVenue ? '<div class="full"><label>Venue Address</label><input type="text" name="venueAddress" autocomplete="street-address" placeholder="123 Main St"/></div>' : '') +
+    (cfg.showVenue ? '<div><label>City</label><input type="text" name="venueCity" autocomplete="address-level2"/></div>' : '') +
+    (cfg.showVenue ? '<div><label>State</label><input type="text" name="venueState" autocomplete="address-level1" placeholder="MD"/></div>' : '') +
+    (cfg.showVenue ? '<div><label>Zip Code</label><input type="text" name="venuePostalCode" autocomplete="postal-code" placeholder="20001"/></div>' : '') +
+    (cfg.showMessage ? '<div class="full"><label>Additional Notes</label><textarea name="message" placeholder="Special requests, theme, anything else we should know..."></textarea></div>' : '') +
     '</div>' +
     '<div class="errbox" id="eb"></div>' +
-    '<button type="submit" class="btn" id="sb">Send My Inquiry</button>' +
+    '<button type="submit" class="btn" id="sb">' + cfg.buttonText + '</button>' +
     '</form>' +
     '<div class="succ" id="succ">' +
     '<div class="succ-icon"><svg viewBox="0 0 24 24" width="30" height="30" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>' +
-    '<h2>We received your inquiry!</h2>' +
-    '<p>We\'ll be in touch within 1-2 business days.</p>' +
+    '<h2>' + cfg.successHeading + '</h2>' +
+    '<p>' + cfg.successMessage + '</p>' +
     '</div>' +
     '<script>(function(){' +
     'function sh(){window.parent.postMessage({type:"pbcrm:resize",height:document.body.scrollHeight},"*")}' +
     'sh();' +
     'new ResizeObserver(sh).observe(document.body);' +
+    'var REQ=' + JSON.stringify(req2fields) + ';' +
     'document.getElementById("f").addEventListener("submit",async function(e){' +
     'e.preventDefault();' +
     'var eb=document.getElementById("eb"),sb=document.getElementById("sb");' +
     'eb.style.display="none";' +
-    'if(this.elements["website"].value)return;' +
-    'var req=["firstName","lastName","email","eventDate"],ok=true;' +
-    'req.forEach(function(n){var el=this.elements[n];el.style.borderColor=el.value.trim()?"":"#ef4444";if(!el.value.trim())ok=false;},this);' +
+    'if(this.elements["website"]&&this.elements["website"].value)return;' +
+    'var ok=true;' +
+    'REQ.forEach(function(n){var el=this.elements[n];if(!el)return;el.style.borderColor=el.value.trim()?"":"#ef4444";if(!el.value.trim())ok=false;},this);' +
     'if(!ok){eb.textContent="Please fill in all required fields.";eb.style.display="block";sh();return;}' +
-    'sb.disabled=true;sb.textContent="Sending\u2026";' +
+    'sb.disabled=true;sb.textContent="Sending…";' +
     'var data={};' +
     'new FormData(this).forEach(function(v,k){if(k!=="website")data[k]=v;});' +
     'data.referrerUrl=document.referrer||window.location.href;' +
@@ -121,7 +161,7 @@ export async function GET(
     '}catch(err){' +
     'eb.textContent=err.message||"Something went wrong. Please try again.";' +
     'eb.style.display="block";' +
-    'sb.disabled=false;sb.textContent="Send My Inquiry";' +
+    'sb.disabled=false;sb.textContent="' + cfg.buttonText.replace(/'/g, "\\'") + '";' +
     'sh();' +
     '}' +
     '});' +

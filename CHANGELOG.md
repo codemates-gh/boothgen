@@ -4,6 +4,19 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.5.3] — 2026-06-23
+
+### Added
+- **Marketing page — "Built by an operator" story section** — new dark-background section with narrative copy about the founder running 2 photo booth businesses for 10+ years; no names or business names mentioned; includes four stat callouts (10+ years, 2 businesses, 100s of events, 1 platform)
+- **Marketing page — split-panel hero with dashboard mockup** — hero rewritten to a two-column layout; left column has headline + CTAs, right column shows a detailed HTML/CSS dashboard UI mockup (stats cards, event list, sidebar)
+- **Marketing page — client portal UI mockup** — new "One link. Everything your client needs." section with a portal mockup showing the Invoice tab (line items, balance due, pay button), navigation tabs with completion indicators, and client/event header
+- **Marketing page — quote/e-signature UI mockup** — alternating-layout feature section showing the quote line-item table and typed digital signature acceptance flow
+- **Marketing page — guest gallery UI mockup** — feature section showing the `/g/[token]` gallery page with photo grid, download-all button, and amber expiry notice
+- **Marketing page — mobile portal phone frame mockup** — new "Works perfectly on mobile" section with a phone-frame mockup showing the gallery tab on a mobile viewport
+- **Marketing page — nav anchor links** — nav now links to `#features`, `#how-it-works`, `#pricing`, and `#our-story` for single-page scroll navigation; "Our Story" added as a nav item
+
+---
+
 ## [1.5.2] — 2026-06-23
 
 ### Added
