@@ -3,11 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
+import { hasProAccess } from '@/lib/auth/session';
 import { sendGalleryPublishedEmail } from '@/lib/email/send';
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!await hasProAccess(session.tenantId)) return NextResponse.json({ error: 'Pro subscription required', upgrade: true }, { status: 403 });
   const [gallery, retentionSettings] = await Promise.all([
     prisma.gallery.findFirst({
       where: { id: params.id, tenantId: session.tenantId },
@@ -25,6 +27,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!await hasProAccess(session.tenantId)) return NextResponse.json({ error: 'Pro subscription required', upgrade: true }, { status: 403 });
   const gallery = await prisma.gallery.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
   if (!gallery) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const body = await req.json();

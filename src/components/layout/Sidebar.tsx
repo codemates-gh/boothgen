@@ -8,7 +8,7 @@ import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Cam
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 import { APP_VERSION } from '@/lib/version';
 
-const adminNav = [
+const adminNav: { href: string; label: string; icon: any; pro?: boolean }[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/events', label: 'Events', icon: Calendar },
@@ -17,14 +17,14 @@ const adminNav = [
   { href: '/quotes', label: 'Quotes', icon: FileText },
   { href: '/invoices', label: 'Invoices', icon: Receipt },
   { href: '/contracts', label: 'Contracts', icon: FileText },
-  { href: '/gallery', label: 'Gallery', icon: Camera },
+  { href: '/gallery', label: 'Gallery', icon: Camera, pro: true },
   { href: '/analytics', label: 'Analytics', icon: BarChart2 },
   { href: '/automation', label: 'Automation', icon: Zap },
   { href: '/automation/email-templates', label: 'Email Templates', icon: Mail },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
-const teamMemberNav = [
+const teamMemberNav: { href: string; label: string; icon: any; pro?: boolean }[] = [
   { href: '/events', label: 'Events', icon: Calendar },
 ];
 
@@ -82,7 +82,7 @@ export function Sidebar() {
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          {nav.map(({ href, label, icon: Icon }) => {
+          {nav.map(({ href, label, icon: Icon, pro }) => {
             const active = path === href || (
               path.startsWith(href + '/') &&
               !nav.some(item => item.href !== href && (path === item.href || path.startsWith(item.href + '/')))
@@ -99,7 +99,8 @@ export function Sidebar() {
               >
                 <Icon className={cn('w-4 h-4 flex-shrink-0', active ? 'text-brand' : 'text-sidebar-text group-hover:text-brand')} />
                 {label}
-                {active && <ChevronRight className="w-3 h-3 ml-auto text-brand" />}
+                {pro && <span className="ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-yellow-400/20 text-yellow-300 tracking-wide">PRO</span>}
+                {active && !pro && <ChevronRight className="w-3 h-3 ml-auto text-brand" />}
               </Link>
             );
           })}

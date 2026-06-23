@@ -1,10 +1,10 @@
 export const dynamic = 'force-dynamic';
-import { requireTenantSession } from '@/lib/auth/session';
+import { requireTenantSession, hasProAccess } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Camera } from 'lucide-react';
+import { Camera, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 
@@ -12,7 +12,38 @@ const GC: Record<string,any> = { PENDING_UPLOAD:'default', PENDING_REVIEW:'info'
 
 export default async function GalleryPage() {
   const session = await requireTenantSession();
-  const galleries = await prisma.gallery.findMany({ where: { tenantId: session.tenantId }, include: { event: { select: { title: true, eventDate: true } }, _count: { select: { assets: true } } }, orderBy: { createdAt: 'desc' } });
+  const isPro = await hasProAccess(session.tenantId);
+
+  if (!isPro) {
+    return (
+      <>
+        <TopBar title="Gallery" />
+        <div className="p-8 max-w-xl mx-auto text-center mt-12">
+          <div className="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center mx-auto mb-5">
+            <Lock className="w-8 h-8 text-orange-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">Gallery is a Pro feature</h2>
+          <p className="text-gray-500 mb-6 leading-relaxed">
+            Upload event photos, share a private gallery with your client, and let guests download photos — all included in the Pro plan.
+          </p>
+          <Link
+            href="/settings/billing"
+            className="inline-block px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm transition-colors"
+          >
+            Upgrade to Pro →
+          </Link>
+          <p className="mt-4 text-xs text-gray-400">Your current plan is commission-based. Upgrade anytime — no long-term contract.</p>
+        </div>
+      </>
+    );
+  }
+
+  const galleries = await prisma.gallery.findMany({
+    where: { tenantId: session.tenantId },
+    include: { event: { select: { title: true, eventDate: true } }, _count: { select: { assets: true } } },
+    orderBy: { createdAt: 'desc' },
+  });
+
   return (
     <>
       <TopBar title="Gallery" />

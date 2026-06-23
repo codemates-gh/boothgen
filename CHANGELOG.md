@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.5.2] — 2026-06-23
+
+### Added
+- **Gallery Pro gating** — gallery list page and all gallery API routes (`GET /api/gallery/[id]`, `PATCH`, `POST /upload`) now require an active Pro subscription (plan `MONTHLY` or `ANNUAL`, status `ACTIVE` or `PAST_DUE`). Commission-plan users see a lock screen with an upgrade prompt. A `hasProAccess(tenantId)` helper added to `src/lib/auth/session.ts`.
+- **Pro badge in sidebar** — Gallery nav item shows a yellow "PRO" pill to communicate the plan requirement at a glance.
+- **Marketing page — real Booth Genius logo** — nav and footer now use the `BoothGeniusLogo` SVG component instead of the camera emoji.
+- **Marketing page — new/small operator focus** — hero headline and trust bar rewritten to explicitly target new and small photo booth operators; commission plan copy clarifies gallery is a Pro upgrade.
+- **Marketing page — gallery marked Pro** — Photo Gallery feature card has a yellow "Pro" badge; footnote below the grid explains which features are included in the free commission plan.
+
+---
+
 ## [1.5.1] — 2026-06-23
 
 ### Added

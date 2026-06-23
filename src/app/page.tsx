@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma/client';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { BoothGeniusLogo } from '@/components/brand/BoothGeniusLogo';
 
 export const metadata: Metadata = {
   title: 'Booth Genius — Photo Booth Business Software | Free to Start',
@@ -32,46 +33,55 @@ const FEATURES = [
     icon: '📥',
     title: 'Embeddable Lead Capture',
     desc: 'Paste one line of code on any website and start collecting inquiries automatically. Every lead lands in your dashboard, ready to follow up.',
+    pro: false,
   },
   {
     icon: '📄',
     title: 'Quotes, Contracts & E-Signatures',
     desc: 'Send professional quotes and legally binding contracts clients can review, approve, and digitally sign — without third-party services or extra fees.',
+    pro: false,
   },
   {
     icon: '💳',
     title: 'Online Invoicing & Payments',
     desc: 'Create invoices with flexible payment schedules and deposit milestones. Clients pay securely by card — funds go directly to your bank account via Stripe.',
+    pro: false,
   },
   {
     icon: '🖼️',
     title: 'Branded Client Portal',
     desc: 'Every client gets a single, mobile-friendly link to review their quote, sign the contract, pay their invoice, and view their gallery — all branded as you.',
+    pro: false,
   },
   {
     icon: '📸',
     title: 'Private Photo Gallery',
-    desc: 'Upload event photos directly to your gallery. Clients download privately; guests get a separate share-safe link that never shows booking or payment details.',
+    desc: 'Upload event photos, share a private client gallery, and let guests download photos via a separate guest-safe link — your billing details stay hidden.',
+    pro: true,
   },
   {
     icon: '🎨',
     title: 'Template Design Approval',
     desc: 'Share booth template designs for client review. Clients approve or request revisions — you get notified immediately and can track version history.',
+    pro: false,
   },
   {
     icon: '⚡',
     title: 'Automated Follow-Ups',
     desc: 'Set up email automations triggered by lead submission, quote acceptance, or contract signing. Stay in front of prospects without lifting a finger.',
+    pro: false,
   },
   {
     icon: '👥',
     title: 'Team Management',
     desc: 'Invite booth staff as team members. They see only their assigned events — your financial data stays private. Role-based access built in.',
+    pro: false,
   },
   {
     icon: '📊',
     title: 'Business Analytics',
     desc: 'Track revenue, conversion rates, event counts, and top clients. Know exactly which months are busy and where leads are coming from.',
+    pro: false,
   },
 ];
 
@@ -109,10 +119,7 @@ export default async function HomePage() {
       {/* ── NAV ───────────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">📷</span>
-            <span className="font-extrabold text-lg tracking-tight">Booth Genius</span>
-          </div>
+          <BoothGeniusLogo size="sm" showTagline={false} />
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
             <a href="#features" className="hover:text-gray-900 transition-colors">Features</a>
             <a href="#how-it-works" className="hover:text-gray-900 transition-colors">How It Works</a>
@@ -137,14 +144,14 @@ export default async function HomePage() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 text-orange-700 text-xs font-bold uppercase tracking-wide mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse inline-block"/>
-            Built for photo booth operators
+            Made for new &amp; small photo booth operators
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
-            Run your photo booth<br className="hidden sm:block"/>
-            <span className="text-orange-500"> business like a pro</span>
+            Look professional<br className="hidden sm:block"/>
+            <span className="text-orange-500"> from your very first booking</span>
           </h1>
           <p className="text-lg sm:text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
-            From the first inquiry to the final gallery — leads, quotes, contracts, invoices, and photo delivery all in one place. No upfront cost for new operators.
+            Quotes, contracts, invoices, and a branded client portal — all in one place. Start for free with no monthly fee. You only pay when you get paid.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -172,7 +179,7 @@ export default async function HomePage() {
       {/* ── TRUST BAR ─────────────────────────────────────────────────────────── */}
       <section className="border-y border-gray-100 bg-gray-50 py-5 px-4">
         <div className="max-w-5xl mx-auto flex flex-wrap justify-center gap-6 sm:gap-10 text-sm font-medium text-gray-500">
-          {['No monthly fees to start', 'Stripe-powered payouts', 'E-signatures included', 'Private client portal', 'Automated emails', 'Team access'].map(item => (
+          {['Free to start — no card required', 'Pay only when you collect', 'E-signatures included', 'Branded client portal', 'Automated emails', 'Team access'].map(item => (
             <span key={item} className="flex items-center gap-2">
               <span className="text-orange-500">✓</span> {item}
             </span>
@@ -193,13 +200,17 @@ export default async function HomePage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {FEATURES.map(f => (
-              <article key={f.title} className="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-md hover:border-orange-100 transition-all group">
+              <article key={f.title} className={`bg-white rounded-2xl border p-6 hover:shadow-md transition-all group relative ${f.pro ? 'border-yellow-200 hover:border-yellow-300' : 'border-gray-100 hover:border-orange-100'}`}>
+                {f.pro && (
+                  <span className="absolute top-4 right-4 text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 tracking-wide uppercase">Pro</span>
+                )}
                 <div className="text-3xl mb-4">{f.icon}</div>
                 <h3 className="font-bold text-gray-900 mb-2 text-base group-hover:text-orange-600 transition-colors">{f.title}</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
               </article>
             ))}
           </div>
+          <p className="text-center text-xs text-gray-400 mt-6">Features marked <span className="font-semibold text-yellow-600">Pro</span> require a paid subscription. All other features are included in the free commission plan.</p>
         </div>
       </section>
 
@@ -298,13 +309,12 @@ export default async function HomePage() {
               </div>
               <ul className="space-y-3 text-sm text-gray-600 mb-8 flex-1">
                 {[
-                  'All core CRM features included',
                   'Leads, quotes, contracts & invoices',
-                  'Client portal & e-signatures',
-                  'Photo gallery & delivery',
-                  'Stripe Connect payouts',
-                  `Only ${pricing.commissionPct}% taken when you collect payment`,
-                  'No monthly fee. Ever.',
+                  'Branded client portal & e-signatures',
+                  'Stripe Connect — clients pay you directly',
+                  `Only ${pricing.commissionPct}% per booking collected`,
+                  'No monthly fee. No setup cost.',
+                  'Upgrade to Pro anytime for gallery access',
                 ].map(item => (
                   <li key={item} className="flex items-center gap-2">
                     <span className="text-orange-500 flex-shrink-0">✓</span> {item}
@@ -392,9 +402,7 @@ export default async function HomePage() {
       {/* ── FOOTER ────────────────────────────────────────────────────────────── */}
       <footer className="border-t border-gray-100 py-10 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-400">
-          <div className="flex items-center gap-2 font-bold text-gray-700">
-            <span className="text-xl">📷</span> Booth Genius
-          </div>
+          <BoothGeniusLogo size="sm" showTagline={false} />
           <nav className="flex flex-wrap justify-center gap-6">
             <a href="#features" className="hover:text-gray-600 transition-colors">Features</a>
             <a href="#pricing" className="hover:text-gray-600 transition-colors">Pricing</a>
