@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.5.9] — 2026-06-23
+
+### Changed
+- **Marketing page** — added "Support" link to the top nav and the footer nav, pointing to `/support`
+
+---
+
 ## [1.5.8] — 2026-06-23
 
 ### Changed

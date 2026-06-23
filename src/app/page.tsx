@@ -311,6 +311,7 @@ export default async function HomePage() {
             <a href="#features" className="hover:text-gray-900 transition-colors">Features</a>
             <a href="#pricing" className="hover:text-gray-900 transition-colors">Pricing</a>
             <a href="#our-story" className="hover:text-gray-900 transition-colors">Our Story</a>
+            <Link href="/support" className="hover:text-gray-900 transition-colors">Support</Link>
           </nav>
           <div className="flex items-center gap-3">
             <Link href="/sign-in" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">Sign in</Link>
@@ -732,6 +733,7 @@ export default async function HomePage() {
             <a href="#features" className="hover:text-gray-600 transition-colors">Features</a>
             <a href="#pricing" className="hover:text-gray-600 transition-colors">Pricing</a>
             <a href="#our-story" className="hover:text-gray-600 transition-colors">Our Story</a>
+            <Link href="/support" className="hover:text-gray-600 transition-colors">Support</Link>
             <Link href="/sign-in" className="hover:text-gray-600 transition-colors">Sign In</Link>
           </nav>
           <p>© {new Date().getFullYear()} Booth Genius. All rights reserved.</p>
