@@ -13,6 +13,7 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
   const [assets, setAssets] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadCount, setUploadCount] = useState({ done: 0, total: 0, failed: 0 });
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [accessCode, setAccessCode] = useState('');
   const [savingCode, setSavingCode] = useState(false);
@@ -36,20 +37,37 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
 
     setUploading(true);
     setUploadCount({ done: 0, total: imageFiles.length, failed: 0 });
+    setUploadError(null);
 
     const saved: Array<{ url: string; fileName: string; fileSize: number; mimeType: string }> = [];
+    let firstError: string | null = null;
 
     async function uploadOne(file: File) {
       try {
-        const { uploadUrl, publicUrl } = await fetch('/api/gallery/' + params.id + '/upload', {
+        // Step 1: get presigned URL
+        const presignRes = await fetch('/api/gallery/' + params.id + '/upload', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fileName: file.name, contentType: file.type }),
-        }).then(r => r.json());
-        await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+        });
+        if (!presignRes.ok) {
+          const body = await presignRes.json().catch(() => ({}));
+          throw new Error('Presign failed (' + presignRes.status + '): ' + (body.error ?? 'unknown'));
+        }
+        const { uploadUrl, publicUrl } = await presignRes.json();
+
+        // Step 2: PUT directly to R2
+        const r2Res = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+        if (!r2Res.ok) throw new Error('R2 upload failed (' + r2Res.status + ')');
+
         saved.push({ url: publicUrl, fileName: file.name, fileSize: file.size, mimeType: file.type });
         setUploadCount(c => ({ ...c, done: c.done + 1 }));
-      } catch (err) {
-        console.error('Upload failed:', file.name, err);
+      } catch (err: any) {
+        const msg = err?.message ?? String(err);
+        console.error('Upload failed:', file.name, msg);
+        if (!firstError) {
+          firstError = msg;
+          setUploadError(msg);
+        }
         setUploadCount(c => ({ ...c, done: c.done + 1, failed: c.failed + 1 }));
       }
     }
@@ -186,16 +204,21 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
                 style={{ width: uploadCount.total ? (uploadCount.done / uploadCount.total * 100) + '%' : '0%' }}
               />
             </div>
-            {uploadCount.failed > 0 && (
-              <p className="text-xs text-red-500">{uploadCount.failed} photo{uploadCount.failed > 1 ? 's' : ''} failed — others uploaded successfully.</p>
+            {uploadError && (
+              <p className="text-xs text-red-500 font-mono bg-red-50 rounded p-2">{uploadError}</p>
             )}
           </CardContent></Card>
         )}
         {!uploading && uploadCount.total > 0 && (
-          <Card><CardContent className="p-4 flex items-center gap-2 text-sm text-green-700">
-            <CheckCircle2 className="w-4 h-4"/>
-            {uploadCount.done - uploadCount.failed} of {uploadCount.total} photos uploaded
-            {uploadCount.failed > 0 && <span className="text-red-500 ml-1">({uploadCount.failed} failed)</span>}
+          <Card><CardContent className="p-4 space-y-2">
+            <div className="flex items-center gap-2 text-sm text-green-700">
+              <CheckCircle2 className="w-4 h-4"/>
+              {uploadCount.done - uploadCount.failed} of {uploadCount.total} photos uploaded
+              {uploadCount.failed > 0 && <span className="text-red-500 ml-1">({uploadCount.failed} failed)</span>}
+            </div>
+            {uploadError && (
+              <p className="text-xs text-red-500 font-mono bg-red-50 rounded p-2">{uploadError}</p>
+            )}
           </CardContent></Card>
         )}
 
