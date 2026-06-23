@@ -118,9 +118,9 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
   }
 
   function copyGalleryLink() {
-    const portalToken = gallery?.event?.portalToken;
-    if (!portalToken) return;
-    const url = window.location.origin + '/portal/' + portalToken + '?tab=gallery&galleryOnly=1';
+    const shareToken = gallery?.clientToken;
+    if (!shareToken) return;
+    const url = window.location.origin + '/g/' + shareToken;
     navigator.clipboard.writeText(url).then(() => {
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);

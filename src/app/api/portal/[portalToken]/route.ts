@@ -122,6 +122,12 @@ export async function GET(req: NextRequest, { params }: { params: { portalToken:
   const requiresAccessCode = !!(event.gallery?.accessCode);
   const galleryUnlocked = !requiresAccessCode || (galleryCode !== null && galleryCode === event.gallery?.accessCode);
 
+  let expireDays = 30;
+  if (event.gallery) {
+    const retentionSetting = await prisma.systemSetting.findUnique({ where: { key: 'gallery_expire_days' } });
+    expireDays = parseInt(retentionSetting?.value ?? '30', 10);
+  }
+
   return NextResponse.json({
     event: { ...event, Quote: undefined, invoices: undefined, contracts: undefined, gallery: undefined, templateDesigns: undefined },
     client: event.client,
@@ -129,7 +135,7 @@ export async function GET(req: NextRequest, { params }: { params: { portalToken:
     quote: event.Quote[0] || null,
     contract: event.contracts[0] || null,
     invoice,
-    gallery: event.gallery ? { ...event.gallery, assets: undefined, accessCode: undefined, requiresAccessCode, galleryUnlocked } : null,
+    gallery: event.gallery ? { ...event.gallery, assets: undefined, accessCode: undefined, requiresAccessCode, galleryUnlocked, expireDays } : null,
     assets: galleryUnlocked ? (event.gallery?.assets || []) : [],
     templateDesigns: event.templateDesigns || [],
   });

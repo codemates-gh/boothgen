@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Printer, Layers, AlertCircle, Download, X } from 'lucide-react';
+import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Printer, Layers, AlertCircle, Download, X, Copy } from 'lucide-react';
 import { InvoicePaymentForm } from '@/components/stripe/PaymentForm';
 
 type Tab = 'quote' | 'contract' | 'invoice' | 'design' | 'gallery';
@@ -37,6 +37,7 @@ export default function ClientPortalPage() {
   const [galleryCodeError, setGalleryCodeError] = useState('');
   const [unlockingGallery, setUnlockingGallery] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [shareLinkCopied, setShareLinkCopied] = useState(false);
   const galleryOnly = searchParams.get('galleryOnly') === '1';
 
   useEffect(() => { load(); }, [portalToken]);
@@ -847,7 +848,24 @@ export default function ClientPortalPage() {
                     <h3 className="font-bold text-gray-900 text-lg">{data.gallery.title}</h3>
                     <p className="text-sm text-gray-500">{data.assets.length} photos</p>
                   </div>
-                  {data.assets.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {data.gallery?.clientToken && (
+                      <button
+                        onClick={() => {
+                          const url = window.location.origin + '/g/' + data.gallery.clientToken;
+                          navigator.clipboard.writeText(url).then(() => {
+                            setShareLinkCopied(true);
+                            setTimeout(() => setShareLinkCopied(false), 2000);
+                          });
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        {shareLinkCopied
+                          ? <><CheckCircle2 className="w-4 h-4 text-green-500"/>Copied!</>
+                          : <><Copy className="w-4 h-4"/>Share Gallery Link</>}
+                      </button>
+                    )}
+                    {data.assets.length > 0 && (
                     <button
                       onClick={async () => {
                         const JSZip = (await import('jszip')).default;
@@ -874,6 +892,7 @@ export default function ClientPortalPage() {
                       <Download className="w-4 h-4" />Download All
                     </button>
                   )}
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {data.assets.map((a: any, i: number) => (
@@ -887,6 +906,24 @@ export default function ClientPortalPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Expiry notice */}
+                {data.event?.eventDate && data.gallery?.expireDays && (() => {
+                  const expireDate = new Date(data.event.eventDate);
+                  expireDate.setDate(expireDate.getDate() + data.gallery.expireDays);
+                  const now = new Date();
+                  if (expireDate <= now) return null;
+                  const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                  return (
+                    <div className="flex items-start gap-3 px-4 py-3 rounded-xl border bg-amber-50 border-amber-200 text-amber-800 text-sm">
+                      <span className="text-base mt-0.5">⏰</span>
+                      <p>
+                        Your photos are available until <strong>{fmt(expireDate)}</strong>.
+                        {' '}Please download them before then — use the <strong>Download All</strong> button above to save your entire gallery.
+                      </p>
+                    </div>
+                  );
+                })()}
 
                 {/* Lightbox */}
                 {lightboxIndex !== null && (
