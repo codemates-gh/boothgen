@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { Plus, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, Tag, X } from 'lucide-react';
 import { Suspense } from 'react';
 
 interface LineItem { description: string; quantity: number; unitPrice: string; }
+
+type DiscountMode = 'none' | 'percentage' | 'fixed' | 'coupon';
 
 function QuoteNewForm() {
   const router = useRouter();
@@ -18,6 +20,7 @@ function QuoteNewForm() {
   const [events, setEvents] = useState<any[]>([]);
   const [packages, setPackages] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
+  const [coupons, setCoupons] = useState<any[]>([]);
   const [selectedEvent, setSelectedEvent] = useState(eventId || '');
   const [contractTemplateId, setContractTemplateId] = useState('');
   const [paymentType, setPaymentType] = useState<'full' | 'deposit'>('deposit');
@@ -31,6 +34,13 @@ function QuoteNewForm() {
   const [validUntil, setValidUntil] = useState('');
   const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState('');
+
+  // Discount state
+  const [discountMode, setDiscountMode] = useState<DiscountMode>('none');
+  const [discountPct, setDiscountPct] = useState('');
+  const [discountFixed, setDiscountFixed] = useState('');
+  const [selectedCouponId, setSelectedCouponId] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -38,6 +48,7 @@ function QuoteNewForm() {
     fetch('/api/events').then(r => r.json()).then(setEvents);
     fetch('/api/settings/packages').then(r => r.json()).then(setPackages);
     fetch('/api/contracts/templates').then(r => r.json()).then(d => setTemplates(Array.isArray(d) ? d : []));
+    fetch('/api/settings/coupons').then(r => r.json()).then(d => setCoupons(Array.isArray(d) ? d.filter((c: any) => c.isActive) : []));
     fetch('/api/settings/branding').then(r => r.json()).then(d => {
       if (d.defaultDepositPercent != null) setDepositPercent(d.defaultDepositPercent);
       if (d.fullPaymentIfWithinDays != null) setFullPaymentDays(d.fullPaymentIfWithinDays);
@@ -45,16 +56,13 @@ function QuoteNewForm() {
     });
   }, []);
 
-  // Enforce full payment if event is within the configured window
   useEffect(() => {
     if (!selectedEvent) { setForceFullPayment(false); return; }
     const ev = events.find(e => e.id === selectedEvent);
     if (!ev?.eventDate) { setForceFullPayment(false); return; }
     const daysUntil = Math.floor((new Date(ev.eventDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     if (daysUntil <= fullPaymentDays) {
-      setForceFullPayment(true);
-      setPaymentType('full');
-      setBalanceDueDate(null);
+      setForceFullPayment(true); setPaymentType('full'); setBalanceDueDate(null);
     } else {
       setForceFullPayment(false);
       const bd = new Date(ev.eventDate);
@@ -66,11 +74,9 @@ function QuoteNewForm() {
   function addFromPackage(pkg: any) {
     setItems(prev => [...prev.filter(i => i.description.trim() || i.unitPrice), {
       description: pkg.name + (pkg.description ? ' — ' + pkg.description : ''),
-      quantity: 1,
-      unitPrice: (pkg.priceCents / 100).toFixed(2),
+      quantity: 1, unitPrice: (pkg.priceCents / 100).toFixed(2),
     }]);
   }
-
   function addItem() { setItems(i => [...i, { description: '', quantity: 1, unitPrice: '' }]); }
   function removeItem(idx: number) { setItems(i => i.filter((_, j) => j !== idx)); }
   function updateItem(idx: number, field: keyof LineItem, val: string | number) {
@@ -79,7 +85,26 @@ function QuoteNewForm() {
 
   const subtotal = items.reduce((s, i) => s + (i.quantity * (parseFloat(i.unitPrice) || 0)), 0);
   const taxAmt = subtotal * (parseFloat(taxRate) / 100);
-  const total = subtotal + taxAmt;
+
+  // Discount calculation
+  const activeCoupon = coupons.find(c => c.id === selectedCouponId);
+  let discountAmt = 0;
+  let discountLabel = '';
+  if (discountMode === 'percentage' && discountPct) {
+    discountAmt = subtotal * (parseFloat(discountPct) / 100);
+    discountLabel = `${discountPct}% discount`;
+  } else if (discountMode === 'fixed' && discountFixed) {
+    discountAmt = parseFloat(discountFixed) || 0;
+    discountLabel = `$${discountFixed} discount`;
+  } else if (discountMode === 'coupon' && activeCoupon) {
+    discountAmt = activeCoupon.type === 'PERCENTAGE'
+      ? subtotal * (activeCoupon.value / 100)
+      : activeCoupon.value;
+    discountLabel = `${activeCoupon.code} (${activeCoupon.type === 'PERCENTAGE' ? `${activeCoupon.value}% off` : `$${activeCoupon.value} off`})`;
+  }
+  discountAmt = Math.min(discountAmt, subtotal);
+
+  const total = subtotal + taxAmt - discountAmt;
   const fmt = (n: number) => '$' + n.toFixed(2);
 
   async function submit(e: React.FormEvent) {
@@ -87,8 +112,7 @@ function QuoteNewForm() {
     if (!selectedEvent) { setError('Please select an event'); return; }
     setLoading(true); setError('');
     const lineItems = items.filter(i => i.description.trim()).map(i => ({
-      description: i.description,
-      quantity: i.quantity,
+      description: i.description, quantity: i.quantity,
       unitCents: Math.round((parseFloat(i.unitPrice) || 0) * 100),
       totalCents: Math.round(i.quantity * (parseFloat(i.unitPrice) || 0) * 100),
     }));
@@ -96,15 +120,13 @@ function QuoteNewForm() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        eventId: selectedEvent,
-        lineItems,
+        eventId: selectedEvent, lineItems,
         taxRatePercent: parseFloat(taxRate) || 0,
-        validUntil: validUntil || null,
-        notes: notes || null,
-        terms: terms || null,
-        contractTemplateId: contractTemplateId || null,
-        paymentType,
-        depositPercent,
+        discountCents: Math.round(discountAmt * 100),
+        discountLabel: discountLabel || null,
+        couponId: discountMode === 'coupon' ? (selectedCouponId || null) : null,
+        validUntil: validUntil || null, notes: notes || null, terms: terms || null,
+        contractTemplateId: contractTemplateId || null, paymentType, depositPercent,
       }),
     });
     const data = await res.json();
@@ -123,9 +145,7 @@ function QuoteNewForm() {
               <Select value={selectedEvent} onChange={e => setSelectedEvent(e.target.value)}>
                 <option value="">— Select Event —</option>
                 {events.map(ev => (
-                  <option key={ev.id} value={ev.id}>
-                    {ev.title} — {ev.client?.firstName} {ev.client?.lastName}
-                  </option>
+                  <option key={ev.id} value={ev.id}>{ev.title} — {ev.client?.firstName} {ev.client?.lastName}</option>
                 ))}
               </Select>
             </CardContent>
@@ -146,12 +166,8 @@ function QuoteNewForm() {
                   <p className="text-xs font-medium text-gray-500 uppercase">Add from Packages</p>
                   <div className="flex flex-wrap gap-2">
                     {packages.map((pkg: any) => (
-                      <button
-                        key={pkg.id}
-                        type="button"
-                        onClick={() => addFromPackage(pkg)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-sm hover:border-brand hover:text-brand transition-colors text-left"
-                      >
+                      <button key={pkg.id} type="button" onClick={() => addFromPackage(pkg)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-sm hover:border-brand hover:text-brand transition-colors text-left">
                         <Plus className="w-3 h-3 flex-shrink-0" />
                         <span className="font-medium">{pkg.name}</span>
                         <span className="text-gray-400">${(pkg.priceCents / 100).toFixed(2)}</span>
@@ -161,31 +177,78 @@ function QuoteNewForm() {
                 </div>
               )}
               <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-500 uppercase px-1">
-                <div className="col-span-6">Description</div>
-                <div className="col-span-2">Qty</div>
-                <div className="col-span-3">Unit Price</div>
-                <div className="col-span-1"></div>
+                <div className="col-span-6">Description</div><div className="col-span-2">Qty</div>
+                <div className="col-span-3">Unit Price</div><div className="col-span-1"></div>
               </div>
               {items.map((item, i) => (
                 <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                  <div className="col-span-6">
-                    <Input value={item.description} onChange={e => updateItem(i, 'description', e.target.value)} placeholder="Description" />
-                  </div>
-                  <div className="col-span-2">
-                    <Input type="number" min="1" value={item.quantity} onChange={e => updateItem(i, 'quantity', parseFloat(e.target.value) || 1)} />
-                  </div>
-                  <div className="col-span-3">
-                    <Input type="number" step="0.01" min="0" value={item.unitPrice} onChange={e => updateItem(i, 'unitPrice', e.target.value)} placeholder="0.00" />
-                  </div>
+                  <div className="col-span-6"><Input value={item.description} onChange={e => updateItem(i, 'description', e.target.value)} placeholder="Description" /></div>
+                  <div className="col-span-2"><Input type="number" min="1" value={item.quantity} onChange={e => updateItem(i, 'quantity', parseFloat(e.target.value) || 1)} /></div>
+                  <div className="col-span-3"><Input type="number" step="0.01" min="0" value={item.unitPrice} onChange={e => updateItem(i, 'unitPrice', e.target.value)} placeholder="0.00" /></div>
                   <div className="col-span-1">
-                    {items.length > 1 && (
-                      <button type="button" onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                    {items.length > 1 && <button type="button" onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>}
                   </div>
                 </div>
               ))}
+
+              {/* Discount Section */}
+              <div className="border-t pt-4">
+                {discountMode === 'none' ? (
+                  <button type="button" onClick={() => setDiscountMode('percentage')}
+                    className="flex items-center gap-2 text-sm text-brand hover:text-brand/80 font-medium transition-colors">
+                    <Tag className="w-4 h-4" />Add discount or coupon
+                  </button>
+                ) : (
+                  <div className="bg-green-50 border border-green-100 rounded-xl p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-green-800 flex items-center gap-2"><Tag className="w-4 h-4" />Discount</p>
+                      <button type="button" onClick={() => { setDiscountMode('none'); setDiscountPct(''); setDiscountFixed(''); setSelectedCouponId(''); }} className="text-green-600 hover:text-green-800">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      {(['percentage', 'fixed', ...(coupons.length > 0 ? ['coupon'] : [])] as DiscountMode[]).map(m => (
+                        <button key={m} type="button" onClick={() => setDiscountMode(m)}
+                          className={'px-3 py-1 rounded-lg text-xs font-medium border transition-colors ' + (discountMode === m ? 'bg-green-600 text-white border-green-600' : 'border-green-300 text-green-700 hover:bg-green-100')}>
+                          {m === 'percentage' ? '% Percent' : m === 'fixed' ? '$ Fixed' : '🏷 Coupon Code'}
+                        </button>
+                      ))}
+                    </div>
+                    {discountMode === 'percentage' && (
+                      <div className="flex items-center gap-2">
+                        <Input type="number" min="1" max="100" step="1" value={discountPct} onChange={e => setDiscountPct(e.target.value)} placeholder="e.g. 10" className="w-24" />
+                        <span className="text-sm text-green-700 font-medium">% off</span>
+                        {discountPct && subtotal > 0 && <span className="text-sm text-green-600 ml-2">= -{fmt(subtotal * parseFloat(discountPct) / 100)}</span>}
+                      </div>
+                    )}
+                    {discountMode === 'fixed' && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-green-700 font-medium">$</span>
+                        <Input type="number" min="0.01" step="0.01" value={discountFixed} onChange={e => setDiscountFixed(e.target.value)} placeholder="e.g. 50.00" className="w-32" />
+                        <span className="text-sm text-green-700 font-medium">off</span>
+                      </div>
+                    )}
+                    {discountMode === 'coupon' && (
+                      <div className="space-y-2">
+                        <select value={selectedCouponId} onChange={e => setSelectedCouponId(e.target.value)}
+                          className="w-full border border-green-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400/30 bg-white">
+                          <option value="">— Select a coupon —</option>
+                          {coupons.map(c => (
+                            <option key={c.id} value={c.id}>
+                              {c.code} — {c.type === 'PERCENTAGE' ? `${c.value}% off` : `$${c.value} off`}{c.description ? ` (${c.description})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                        {activeCoupon && subtotal > 0 && (
+                          <p className="text-sm text-green-600 font-medium">Saves {fmt(discountAmt)}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Totals */}
               <div className="border-t pt-4 space-y-1 text-right text-sm">
                 <p className="text-gray-500">Subtotal: {fmt(subtotal)}</p>
                 <div className="flex items-center justify-end gap-2">
@@ -194,6 +257,11 @@ function QuoteNewForm() {
                   <span className="text-gray-400 text-xs">%</span>
                   <span className="text-gray-500 w-20 text-right">{fmt(taxAmt)}</span>
                 </div>
+                {discountAmt > 0 && (
+                  <p className="text-green-600 font-medium">
+                    {discountLabel ? `Discount (${discountLabel})` : 'Discount'}: -{fmt(discountAmt)}
+                  </p>
+                )}
                 <p className="text-xl font-bold">Total: {fmt(total)}</p>
               </div>
             </CardContent>

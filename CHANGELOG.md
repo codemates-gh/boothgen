@@ -4,6 +4,24 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.5.6] — 2026-06-23
+
+### Added
+- **Coupon / discount system** — operators can create reusable discount codes and apply discounts to quotes
+  - `Coupon` model with code, type (PERCENTAGE / FIXED_AMOUNT), value, max uses, expiry, active toggle, and usage count
+  - `DiscountType` enum added to schema; `couponId` and `discountLabel` fields added to `Quote`
+- **Settings → Coupons** page — create, activate/deactivate, and delete coupon codes; table shows code, discount value, usage count, expiry, and status; used coupons can be deactivated but not deleted
+- **`GET/POST /api/settings/coupons`** — list and create tenant coupons
+- **`PATCH/DELETE /api/settings/coupons/[id]`** — toggle active, update, or delete (only unused coupons)
+- **Discount section in quote builder (new & edit)** — "Add discount or coupon" toggle below line items; supports % percent, $ fixed, or saved coupon code; live discount preview shows amount saved; discount line appears in totals; coupon usage count incremented on quote create, adjusted on edit
+- **"Coupons" tab** added to all settings page navigation (Branding, Packages, Billing, Team, Coupons, Lead Capture)
+
+### Changed
+- **`POST /api/quotes`** and **`PATCH /api/quotes/[id]`** — now accept `discountCents`, `discountLabel`, and `couponId`; validate coupon is active, not expired, and within max uses; adjust `usedCount` on create/edit
+- **Portal already shows discount** — the portal quote view renders `discountCents` as a green discount line (was already in place)
+
+---
+
 ## [1.5.5] — 2026-06-23
 
 ### Added

@@ -5,11 +5,12 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Tag, X } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
 interface LineItem { description: string; quantity: number; unitPrice: string; }
+type DiscountMode = 'none' | 'percentage' | 'fixed' | 'coupon';
 
 function QuoteEditForm() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,7 @@ function QuoteEditForm() {
   const [error, setError] = useState('');
   const [packages, setPackages] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
+  const [coupons, setCoupons] = useState<any[]>([]);
   const [items, setItems] = useState<LineItem[]>([{ description: '', quantity: 1, unitPrice: '' }]);
   const [taxRate, setTaxRate] = useState('0');
   const [validUntil, setValidUntil] = useState('');
@@ -28,12 +30,20 @@ function QuoteEditForm() {
   const [paymentType, setPaymentType] = useState<'full' | 'deposit'>('full');
   const [depositPercent, setDepositPercent] = useState(50);
 
+  // Discount state
+  const [discountMode, setDiscountMode] = useState<DiscountMode>('none');
+  const [discountPct, setDiscountPct] = useState('');
+  const [discountFixed, setDiscountFixed] = useState('');
+  const [selectedCouponId, setSelectedCouponId] = useState('');
+  const [originalCouponId, setOriginalCouponId] = useState<string | null>(null);
+
   useEffect(() => {
     Promise.all([
       fetch(`/api/quotes/${id}`).then(r => r.json()),
       fetch('/api/settings/packages').then(r => r.json()),
       fetch('/api/contracts/templates').then(r => r.json()),
-    ]).then(([q, pkgs, tmpl]) => {
+      fetch('/api/settings/coupons').then(r => r.json()),
+    ]).then(([q, pkgs, tmpl, cpns]) => {
       if (q.status === 'ACCEPTED') { router.push(`/quotes/${id}`); return; }
       setItems(q.lineItems?.map((li: any) => ({ description: li.description, quantity: li.quantity, unitPrice: (li.unitCents / 100).toFixed(2) })) || [{ description: '', quantity: 1, unitPrice: '' }]);
       setTaxRate(String(q.taxRatePercent || 0));
@@ -45,6 +55,24 @@ function QuoteEditForm() {
       setDepositPercent(q.depositPercent || 50);
       setPackages(Array.isArray(pkgs) ? pkgs : []);
       setTemplates(Array.isArray(tmpl) ? tmpl : []);
+      const activeCoupons = Array.isArray(cpns) ? cpns.filter((c: any) => c.isActive) : [];
+      setCoupons(activeCoupons);
+
+      // Restore discount state from existing quote
+      if (q.discountCents > 0) {
+        if (q.couponId) {
+          setDiscountMode('coupon');
+          setSelectedCouponId(q.couponId);
+          setOriginalCouponId(q.couponId);
+        } else if (q.discountLabel?.includes('%')) {
+          setDiscountMode('percentage');
+          const pct = parseFloat(q.discountLabel);
+          if (!isNaN(pct)) setDiscountPct(String(pct));
+        } else {
+          setDiscountMode('fixed');
+          setDiscountFixed((q.discountCents / 100).toFixed(2));
+        }
+      }
       setLoading(false);
     });
   }, [id]);
@@ -52,11 +80,9 @@ function QuoteEditForm() {
   function addFromPackage(pkg: any) {
     setItems(prev => [...prev.filter(i => i.description.trim() || i.unitPrice), {
       description: pkg.name + (pkg.description ? ' — ' + pkg.description : ''),
-      quantity: 1,
-      unitPrice: (pkg.priceCents / 100).toFixed(2),
+      quantity: 1, unitPrice: (pkg.priceCents / 100).toFixed(2),
     }]);
   }
-
   function addItem() { setItems(i => [...i, { description: '', quantity: 1, unitPrice: '' }]); }
   function removeItem(idx: number) { setItems(i => i.filter((_, j) => j !== idx)); }
   function updateItem(idx: number, field: keyof LineItem, val: string | number) {
@@ -65,15 +91,31 @@ function QuoteEditForm() {
 
   const subtotal = items.reduce((s, i) => s + (i.quantity * (parseFloat(i.unitPrice) || 0)), 0);
   const taxAmt = subtotal * (parseFloat(taxRate) / 100);
-  const total = subtotal + taxAmt;
+
+  const activeCoupon = coupons.find(c => c.id === selectedCouponId);
+  let discountAmt = 0;
+  let discountLabel = '';
+  if (discountMode === 'percentage' && discountPct) {
+    discountAmt = subtotal * (parseFloat(discountPct) / 100);
+    discountLabel = `${discountPct}% discount`;
+  } else if (discountMode === 'fixed' && discountFixed) {
+    discountAmt = parseFloat(discountFixed) || 0;
+    discountLabel = `$${discountFixed} discount`;
+  } else if (discountMode === 'coupon' && activeCoupon) {
+    discountAmt = activeCoupon.type === 'PERCENTAGE'
+      ? subtotal * (activeCoupon.value / 100)
+      : activeCoupon.value;
+    discountLabel = `${activeCoupon.code} (${activeCoupon.type === 'PERCENTAGE' ? `${activeCoupon.value}% off` : `$${activeCoupon.value} off`})`;
+  }
+  discountAmt = Math.min(discountAmt, subtotal);
+  const total = subtotal + taxAmt - discountAmt;
   const fmtNum = (n: number) => '$' + n.toFixed(2);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true); setError('');
     const lineItems = items.filter(i => i.description.trim()).map(i => ({
-      description: i.description,
-      quantity: i.quantity,
+      description: i.description, quantity: i.quantity,
       unitCents: Math.round((parseFloat(i.unitPrice) || 0) * 100),
       totalCents: Math.round(i.quantity * (parseFloat(i.unitPrice) || 0) * 100),
     }));
@@ -83,10 +125,12 @@ function QuoteEditForm() {
       body: JSON.stringify({
         lineItems, notes: notes || null, terms: terms || null,
         taxRatePercent: parseFloat(taxRate) || 0,
+        discountCents: Math.round(discountAmt * 100),
+        discountLabel: discountLabel || null,
+        couponId: discountMode === 'coupon' ? (selectedCouponId || null) : null,
         validUntil: validUntil || null,
         contractTemplateId: contractTemplateId || null,
-        paymentType,
-        depositPercent,
+        paymentType, depositPercent,
       }),
     });
     const data = await res.json();
@@ -133,31 +177,76 @@ function QuoteEditForm() {
                 </div>
               )}
               <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-500 uppercase px-1">
-                <div className="col-span-6">Description</div>
-                <div className="col-span-2">Qty</div>
-                <div className="col-span-3">Unit Price</div>
-                <div className="col-span-1"></div>
+                <div className="col-span-6">Description</div><div className="col-span-2">Qty</div>
+                <div className="col-span-3">Unit Price</div><div className="col-span-1"></div>
               </div>
               {items.map((item, i) => (
                 <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                  <div className="col-span-6">
-                    <Input value={item.description} onChange={e => updateItem(i, 'description', e.target.value)} placeholder="Description" />
-                  </div>
-                  <div className="col-span-2">
-                    <Input type="number" min="1" value={item.quantity} onChange={e => updateItem(i, 'quantity', parseFloat(e.target.value) || 1)} />
-                  </div>
-                  <div className="col-span-3">
-                    <Input type="number" step="0.01" min="0" value={item.unitPrice} onChange={e => updateItem(i, 'unitPrice', e.target.value)} placeholder="0.00" />
-                  </div>
+                  <div className="col-span-6"><Input value={item.description} onChange={e => updateItem(i, 'description', e.target.value)} placeholder="Description" /></div>
+                  <div className="col-span-2"><Input type="number" min="1" value={item.quantity} onChange={e => updateItem(i, 'quantity', parseFloat(e.target.value) || 1)} /></div>
+                  <div className="col-span-3"><Input type="number" step="0.01" min="0" value={item.unitPrice} onChange={e => updateItem(i, 'unitPrice', e.target.value)} placeholder="0.00" /></div>
                   <div className="col-span-1">
-                    {items.length > 1 && (
-                      <button type="button" onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                    {items.length > 1 && <button type="button" onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>}
                   </div>
                 </div>
               ))}
+
+              {/* Discount Section */}
+              <div className="border-t pt-4">
+                {discountMode === 'none' ? (
+                  <button type="button" onClick={() => setDiscountMode('percentage')}
+                    className="flex items-center gap-2 text-sm text-brand hover:text-brand/80 font-medium transition-colors">
+                    <Tag className="w-4 h-4" />Add discount or coupon
+                  </button>
+                ) : (
+                  <div className="bg-green-50 border border-green-100 rounded-xl p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-green-800 flex items-center gap-2"><Tag className="w-4 h-4" />Discount</p>
+                      <button type="button" onClick={() => { setDiscountMode('none'); setDiscountPct(''); setDiscountFixed(''); setSelectedCouponId(''); }} className="text-green-600 hover:text-green-800">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      {(['percentage', 'fixed', ...(coupons.length > 0 ? ['coupon'] : [])] as DiscountMode[]).map(m => (
+                        <button key={m} type="button" onClick={() => setDiscountMode(m)}
+                          className={'px-3 py-1 rounded-lg text-xs font-medium border transition-colors ' + (discountMode === m ? 'bg-green-600 text-white border-green-600' : 'border-green-300 text-green-700 hover:bg-green-100')}>
+                          {m === 'percentage' ? '% Percent' : m === 'fixed' ? '$ Fixed' : '🏷 Coupon Code'}
+                        </button>
+                      ))}
+                    </div>
+                    {discountMode === 'percentage' && (
+                      <div className="flex items-center gap-2">
+                        <Input type="number" min="1" max="100" step="1" value={discountPct} onChange={e => setDiscountPct(e.target.value)} placeholder="e.g. 10" className="w-24" />
+                        <span className="text-sm text-green-700 font-medium">% off</span>
+                        {discountPct && subtotal > 0 && <span className="text-sm text-green-600 ml-2">= -{fmtNum(subtotal * parseFloat(discountPct) / 100)}</span>}
+                      </div>
+                    )}
+                    {discountMode === 'fixed' && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-green-700 font-medium">$</span>
+                        <Input type="number" min="0.01" step="0.01" value={discountFixed} onChange={e => setDiscountFixed(e.target.value)} placeholder="e.g. 50.00" className="w-32" />
+                        <span className="text-sm text-green-700 font-medium">off</span>
+                      </div>
+                    )}
+                    {discountMode === 'coupon' && (
+                      <div className="space-y-2">
+                        <select value={selectedCouponId} onChange={e => setSelectedCouponId(e.target.value)}
+                          className="w-full border border-green-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400/30 bg-white">
+                          <option value="">— Select a coupon —</option>
+                          {coupons.map(c => (
+                            <option key={c.id} value={c.id}>
+                              {c.code} — {c.type === 'PERCENTAGE' ? `${c.value}% off` : `$${c.value} off`}{c.description ? ` (${c.description})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                        {activeCoupon && subtotal > 0 && <p className="text-sm text-green-600 font-medium">Saves {fmtNum(discountAmt)}</p>}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Totals */}
               <div className="border-t pt-4 space-y-1 text-right text-sm">
                 <p className="text-gray-500">Subtotal: {fmtNum(subtotal)}</p>
                 <div className="flex items-center justify-end gap-2">
@@ -166,6 +255,11 @@ function QuoteEditForm() {
                   <span className="text-gray-400 text-xs">%</span>
                   <span className="text-gray-500 w-20 text-right">{fmtNum(taxAmt)}</span>
                 </div>
+                {discountAmt > 0 && (
+                  <p className="text-green-600 font-medium">
+                    {discountLabel ? `Discount (${discountLabel})` : 'Discount'}: -{fmtNum(discountAmt)}
+                  </p>
+                )}
                 <p className="text-xl font-bold">Total: {fmtNum(total)}</p>
               </div>
             </CardContent>
@@ -202,7 +296,7 @@ function QuoteEditForm() {
                   <div className="flex items-center gap-3">
                     <label className="text-sm text-gray-600 whitespace-nowrap">Deposit %</label>
                     <Input type="number" min="1" max="99" value={depositPercent} onChange={e => setDepositPercent(parseInt(e.target.value) || 50)} className="w-24" />
-                    <span className="text-sm text-gray-500">= {'$' + (total * depositPercent / 100).toFixed(2)} due now, {'$' + (total * (1 - depositPercent / 100)).toFixed(2)} balance</span>
+                    <span className="text-sm text-gray-500">= {fmtNum(total * depositPercent / 100)} due now, {fmtNum(total * (1 - depositPercent / 100))} balance</span>
                   </div>
                 )}
               </div>

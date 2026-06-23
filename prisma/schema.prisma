@@ -12,6 +12,11 @@ enum GlobalRole {
   USER
 }
 
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
 enum LeadStatus {
   NEW
   CONTACTED
@@ -198,6 +203,7 @@ model Tenant {
   quotes               Quote[]
   paymentMilestones    PaymentMilestone[]
   eventNotes           EventNote[]
+  coupons              Coupon[]
 
   @@map("tenants")
 }
@@ -791,6 +797,8 @@ model Quote {
   taxRatePercent      Float           @default(0)
   taxAmountCents      Int             @default(0)
   discountCents       Int             @default(0)
+  discountLabel       String?
+  couponId            String?
   totalCents          Int             @default(0)
   notes               String?
   terms               String?
@@ -814,6 +822,7 @@ model Quote {
   event                   Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
   client                  Client          @relation(fields: [clientId], references: [id])
   contractTemplate        ContractTemplate? @relation(fields: [contractTemplateId], references: [id], onDelete: SetNull)
+  coupon                  Coupon?           @relation(fields: [couponId], references: [id], onDelete: SetNull)
   lineItems               QuoteLineItem[]
 
   @@index([tenantId])
@@ -832,6 +841,26 @@ model QuoteLineItem {
   quote       Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 
   @@map("quote_line_items")
+}
+
+model Coupon {
+  id          String       @id @default(cuid())
+  tenantId    String
+  code        String
+  description String?
+  type        DiscountType @default(PERCENTAGE)
+  value       Float
+  maxUses     Int?
+  usedCount   Int          @default(0)
+  expiresAt   DateTime?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quotes      Quote[]
+
+  @@unique([tenantId, code])
+  @@map("coupons")
 }
 
 model PaymentMilestone {
