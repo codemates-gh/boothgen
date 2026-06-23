@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.4.1] — 2026-06-23
+
+### Added
+- **Gallery retention reminder** — host gallery detail page shows an amber banner with the exact dates photos will be hidden from the portal and permanently deleted from storage, calculated from the event date using the super admin gallery retention settings (Days until expiry + Additional days until deletion); turns red if the gallery has already expired
+
+---
+
 ## [1.4.0] — 2026-06-23
 
 ### Added

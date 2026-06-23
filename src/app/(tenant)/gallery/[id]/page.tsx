@@ -203,6 +203,37 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
           </CardContent>
         </Card>
 
+        {/* Retention reminder */}
+        {gallery && gallery.event?.eventDate && (
+          (() => {
+            const eventDate   = new Date(gallery.event.eventDate);
+            const expireDays  = gallery.expireDays  ?? 30;
+            const deleteDays  = gallery.deleteDays  ?? 30;
+            const expireDate  = new Date(eventDate); expireDate.setDate(expireDate.getDate() + expireDays);
+            const deleteDate  = new Date(expireDate); deleteDate.setDate(deleteDate.getDate() + deleteDays);
+            const now         = new Date();
+            const isExpired   = gallery.isExpired;
+            const willExpire  = !isExpired && expireDate > now;
+            const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            return (
+              <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-sm ${isExpired ? 'bg-red-50 border-red-200 text-red-700' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+                <span className="text-base mt-0.5">{isExpired ? '🔒' : '⏰'}</span>
+                <div>
+                  {isExpired ? (
+                    <p><strong>Gallery expired</strong> — photos are hidden from the client portal but still stored until <strong>{fmt(deleteDate)}</strong>, then permanently deleted from storage.</p>
+                  ) : (
+                    <p>
+                      Photos will be <strong>hidden from the client portal on {fmt(expireDate)}</strong> ({expireDays} days after the event)
+                      {' '}and <strong>permanently deleted on {fmt(deleteDate)}</strong> ({expireDays + deleteDays} days after the event).
+                      {' '}<span className="text-amber-600">Download or back up photos before then.</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })()
+        )}
+
         {/* Upload zone */}
         <div
           onDrop={onDrop} onDragOver={e => { e.preventDefault(); setDragOver(true); }}

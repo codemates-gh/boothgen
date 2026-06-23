@@ -8,12 +8,18 @@ import { sendGalleryPublishedEmail } from '@/lib/email/send';
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const gallery = await prisma.gallery.findFirst({
-    where: { id: params.id, tenantId: session.tenantId },
-    include: { event: { select: { title: true, eventDate: true, portalToken: true } }, _count: { select: { assets: true } } },
-  });
+  const [gallery, retentionSettings] = await Promise.all([
+    prisma.gallery.findFirst({
+      where: { id: params.id, tenantId: session.tenantId },
+      include: { event: { select: { title: true, eventDate: true, portalToken: true } }, _count: { select: { assets: true } } },
+    }),
+    prisma.systemSetting.findMany({ where: { key: { in: ['gallery_expire_days', 'gallery_delete_days'] } } }),
+  ]);
   if (!gallery) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  return NextResponse.json(gallery);
+  const retentionMap = Object.fromEntries(retentionSettings.map(s => [s.key, s.value]));
+  const expireDays  = parseInt(retentionMap.gallery_expire_days  ?? '30', 10);
+  const deleteDays  = parseInt(retentionMap.gallery_delete_days  ?? '30', 10);
+  return NextResponse.json({ ...gallery, expireDays, deleteDays });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
