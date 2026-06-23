@@ -58,19 +58,11 @@ export function SupportChat() {
         body: JSON.stringify({ messages: history }),
       });
 
-      if (!res.ok || !res.body) throw new Error('Bad response');
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        setMessages(prev =>
-          prev.map(m => m.id === assistantId ? { ...m, content: m.content + chunk } : m)
-        );
-      }
+      if (!res.ok) throw new Error('Bad response');
+      const { text } = await res.json();
+      setMessages(prev =>
+        prev.map(m => m.id === assistantId ? { ...m, content: text } : m)
+      );
     } catch {
       setError(true);
       setMessages(prev => prev.filter(m => m.id !== assistantId));

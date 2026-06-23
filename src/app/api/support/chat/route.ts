@@ -188,7 +188,8 @@ export async function POST(req: Request) {
       maxOutputTokens: 600,
     });
 
-    return result.toTextStreamResponse();
+    const text = await result.text;
+    return Response.json({ text });
   } catch (err) {
     console.error('[support/chat]', err);
     return new Response(JSON.stringify({ error: 'Internal server error.' }), {
