@@ -155,8 +155,8 @@ If you cannot find an answer, suggest the user contact support at support@boothg
 
 type SimpleMessage = { role: 'user' | 'assistant'; content: string };
 
-const GEMINI_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 export async function POST(req: Request) {
   if (!process.env.GEMINI_API_KEY) {
