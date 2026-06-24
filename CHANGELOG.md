@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.9.5] — 2026-06-24
+
+### Fixed
+- **Duplicate inquiry confirmation email** — clients were receiving two "Thank you for your inquiry" emails: one at form submission (correct) and one ~6 minutes later when the operator clicked "Convert to Event". The convert route was firing `inngest.send('lead/created')` which re-triggered the LEAD_CREATED automation with the newly created Event record. Removed the redundant Inngest send from the convert route — the confirmation email belongs to the submission step only
+
+---
+
 ## [1.9.4] — 2026-06-24
 
 ### Fixed

@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
-import { inngest } from '@/lib/inngest/client';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -49,8 +48,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     where: { id: params.id },
     data: { convertedToEventId: event.id, convertedAt: new Date(), status: 'CONVERTED' },
   });
-
-  inngest.send({ name: 'lead/created', data: { tenantId: session.tenantId, eventId: event.id } }).catch(() => {});
 
   return NextResponse.json({ eventId: event.id }, { status: 201 });
 }
