@@ -16,7 +16,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const expiresAt = new Date(Date.now() + expiryDays * 86400000);
   await prisma.contract.update({ where: { id: contract.id }, data: { status: 'SENT_TO_CLIENT', expiresAt } });
   const portalToken = (contract.event as any)?.portalToken ?? '';
-  await sendContractLink({ to: contract.client.email, firstName: contract.client.firstName, companyName: contract.tenant.branding?.companyName ?? contract.tenant.name, contractTitle: contract.title, portalUrl: APP + '/portal/' + portalToken, expiresAt });
+  // Skip hardcoded email if an active automation rule covers CONTRACT_SENT
+  const hasContractRule = contract.eventId
+    ? await prisma.automationRule.count({ where: { tenantId: contract.tenantId, trigger: 'CONTRACT_SENT', isActive: true, actionType: 'EMAIL' } }) > 0
+    : false;
+  if (!hasContractRule) {
+    await sendContractLink({ to: contract.client.email, firstName: contract.client.firstName, companyName: contract.tenant.branding?.companyName ?? contract.tenant.name, contractTitle: contract.title, portalUrl: APP + '/portal/' + portalToken, expiresAt });
+  }
   if (contract.eventId) {
     triggerAutomation({ tenantId: contract.tenantId, eventId: contract.eventId, trigger: 'CONTRACT_SENT' }).catch(e =>
       console.error('[contract/send] CONTRACT_SENT automation error:', e)

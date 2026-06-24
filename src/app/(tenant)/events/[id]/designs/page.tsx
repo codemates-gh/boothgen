@@ -5,7 +5,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Upload, FileImage, ArrowLeft, CheckCircle2, Clock, MessageSquare } from 'lucide-react';
+import { Upload, FileImage, ArrowLeft, CheckCircle2, Clock, MessageSquare, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 const STATUS_VARIANT: Record<string, string> = {
@@ -27,6 +27,17 @@ export default function TemplateDesignsPage() {
   async function load() {
     const r = await fetch('/api/events/' + eventId + '/template-designs');
     if (r.ok) setDesigns(await r.json());
+  }
+
+  async function deleteDesign(id: string) {
+    if (!confirm('Delete this design version? This cannot be undone.')) return;
+    const res = await fetch('/api/template-designs/' + id, { method: 'DELETE' });
+    if (res.ok) {
+      setDesigns(prev => prev.filter(d => d.id !== id));
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error || 'Failed to delete design.');
+    }
   }
 
   async function uploadFile(file: File) {
@@ -189,6 +200,15 @@ export default function TemplateDesignsPage() {
                         <span className="text-xs text-green-600 flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" />Approved
                         </span>
+                      )}
+                      {d.status !== 'APPROVED' && (
+                        <button
+                          onClick={() => deleteDesign(d.id)}
+                          title="Delete this version"
+                          className="text-gray-300 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       )}
                     </div>
                   </div>

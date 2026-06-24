@@ -16,7 +16,13 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
   if (!inv) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
   const portalUrl = inv.event ? APP + '/portal/' + (inv.event as any).portalToken : APP;
   const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
-  await sendInvoiceLink({ to: inv.client.email, firstName: inv.client.firstName, companyName: tenant.branding?.companyName ?? tenant.name, invoiceNumber: inv.invoiceNumber, totalFormatted: fmt(inv.totalCents), portalUrl });
+  // Skip hardcoded email if an active automation rule covers INVOICE_SENT
+  const hasInvoiceRule = inv.eventId
+    ? await prisma.automationRule.count({ where: { tenantId: session.tenantId, trigger: 'INVOICE_SENT', isActive: true, actionType: 'EMAIL' } }) > 0
+    : false;
+  if (!hasInvoiceRule) {
+    await sendInvoiceLink({ to: inv.client.email, firstName: inv.client.firstName, companyName: tenant.branding?.companyName ?? tenant.name, invoiceNumber: inv.invoiceNumber, totalFormatted: fmt(inv.totalCents), portalUrl });
+  }
   await prisma.invoice.update({ where: { id: inv.id }, data: { status: 'SENT' } });
   if (inv.eventId) {
     triggerAutomation({ tenantId: session.tenantId, eventId: inv.eventId, trigger: 'INVOICE_SENT' }).catch(e =>

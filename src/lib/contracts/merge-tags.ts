@@ -6,6 +6,7 @@ export type MergeCtx = {
   contract: { link?: string; expiry?: string; title?: string };
   quote: { link?: string; number?: string; total?: string };
   host: { company_name: string; email?: string; phone?: string; website?: string; signature?: string };
+  portal: { link: string };
 };
 /** Strip editor merge-tag span wrappers, keeping only the inner text or resolved tag value. */
 export function stripMergeTagSpans(html: string): string {
@@ -45,5 +46,6 @@ export function buildCtx(params: {
     contract: contract ? { link: appUrl + '/portal/' + contract.clientToken, expiry: contract.expiresAt ? format(contract.expiresAt, 'MMMM d, yyyy') : undefined, title: contract.title } : {},
     quote: quote ? { link: appUrl + '/portal/' + (event.portalToken ?? '') + '?tab=quote', number: quote.quoteNumber, total: fmt(quote.totalCents, quote.currency) } : {},
     host: { company_name: branding.companyName ?? 'Your Company', email: branding.replyToEmail ?? undefined, phone: branding.supportPhone ?? undefined, website: branding.websiteUrl ?? undefined, signature: branding.emailHeaderHtml ? branding.emailHeaderHtml.replace(/\n/g, '<br>') : undefined },
+    portal: { link: appUrl + '/portal/' + (event.portalToken ?? '') },
   };
 }

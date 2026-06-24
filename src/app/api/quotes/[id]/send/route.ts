@@ -40,21 +40,25 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
   const portalUrl = appUrl + '/portal/' + q.event.portalToken + '?tab=quote';
   const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
 
-  // Always send the transactional quote email directly
-  const emailResult = await sendQuoteLink({
-    to: q.client.email,
-    firstName: q.client.firstName,
-    companyName,
-    quoteNumber: q.quoteNumber,
-    totalFormatted: fmt(q.totalCents),
-    portalUrl,
-    replyTo: branding?.replyToEmail ?? undefined,
-    from: fromAddress,
-  });
+  // Skip hardcoded email if an active automation rule covers QUOTE_SENT
+  const hasQuoteRule = await prisma.automationRule.count({
+    where: { tenantId: session.tenantId, trigger: 'QUOTE_SENT', isActive: true, actionType: 'EMAIL' },
+  }) > 0;
+  let emailResult: any = null;
+  if (!hasQuoteRule) {
+    emailResult = await sendQuoteLink({
+      to: q.client.email,
+      firstName: q.client.firstName,
+      companyName,
+      quoteNumber: q.quoteNumber,
+      totalFormatted: fmt(q.totalCents),
+      portalUrl,
+      replyTo: branding?.replyToEmail ?? undefined,
+      from: fromAddress,
+    });
+    console.log('[QUOTE_SEND] to:', q.client.email, 'from:', fromAddress, 'result:', JSON.stringify(emailResult));
+  }
 
-  console.log('[QUOTE_SEND] to:', q.client.email, 'from:', fromAddress, 'result:', JSON.stringify(emailResult));
-
-  // Fire QUOTE_SENT automation rules directly — bypass Inngest for reliability
   triggerAutomation({ tenantId: session.tenantId, eventId: q.eventId, trigger: 'QUOTE_SENT' }).catch(e =>
     console.error('[QUOTE_SEND] automation error:', e)
   );

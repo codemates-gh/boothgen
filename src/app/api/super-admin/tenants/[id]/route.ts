@@ -3,10 +3,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
+import { deleteFromR2, r2KeyFromUrl } from '@/lib/storage/r2';
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (session?.globalRole !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  // Collect all R2 keys to delete before removing DB records
+  const [branding, galleryAssets, templateDesigns] = await Promise.all([
+    prisma.tenantBranding.findUnique({ where: { tenantId: params.id }, select: { logoUrl: true, faviconUrl: true } }),
+    prisma.galleryAsset.findMany({ where: { gallery: { tenantId: params.id } }, select: { url: true } }),
+    prisma.templateDesign.findMany({ where: { tenantId: params.id }, select: { fileUrl: true } }),
+  ]);
+
+  const r2Keys: string[] = [
+    ...(branding?.logoUrl ? [r2KeyFromUrl(branding.logoUrl)] : []),
+    ...(branding?.faviconUrl ? [r2KeyFromUrl(branding.faviconUrl)] : []),
+    ...galleryAssets.map(a => r2KeyFromUrl(a.url)),
+    ...templateDesigns.map(d => r2KeyFromUrl(d.fileUrl)),
+  ];
+
+  await Promise.allSettled(r2Keys.map(key => deleteFromR2(key)));
+
   await prisma.tenant.delete({ where: { id: params.id } });
   return NextResponse.json({ success: true });
 }

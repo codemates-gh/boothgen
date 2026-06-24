@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
+import { seedTenantEmailDefaults } from '@/lib/tenant/seed-email-defaults';
 
 function slugify(s: string) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36); }
 
@@ -20,5 +21,8 @@ export async function POST(req: NextRequest) {
       memberships: { create: { userId: session.userId, role: 'HOST_ADMIN', status: 'ACTIVE', joinedAt: new Date() } },
     },
   });
+  // Seed default email templates and automation rules (non-blocking)
+  seedTenantEmailDefaults(tenant.id).catch(e => console.error('[seed-email-defaults]', e));
+
   return NextResponse.json({ success: true, tenantId: tenant.id });
 }

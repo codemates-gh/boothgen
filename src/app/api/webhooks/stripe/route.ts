@@ -106,19 +106,25 @@ export async function POST(req: NextRequest) {
               const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
               const companyName = inv.tenant.branding?.companyName ?? inv.tenant.name;
               const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
-              sendPaymentConfirmationEmail({
-                to: inv.event.client.email,
-                firstName: inv.event.client.firstName,
-                companyName,
-                invoiceNumber: inv.invoiceNumber,
-                amountPaidFormatted: fmt(inv.totalCents),
-                eventTitle: inv.event.title,
-                portalUrl: APP_URL + '/portal/' + inv.event.portalToken + '?tab=invoice',
-                replyTo: inv.tenant.branding?.replyToEmail ?? undefined,
-                from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
-              }).catch(e => console.error('[stripe-webhook] client confirmation email error:', e));
+              // Skip hardcoded confirmation if an active automation rule covers PAYMENT_RECEIVED
+              const hasPaymentRule = inv.eventId
+                ? await prisma.automationRule.count({ where: { tenantId: inv.tenantId, trigger: 'PAYMENT_RECEIVED', isActive: true, actionType: 'EMAIL' } }) > 0
+                : false;
+              if (!hasPaymentRule) {
+                sendPaymentConfirmationEmail({
+                  to: inv.event.client.email,
+                  firstName: inv.event.client.firstName,
+                  companyName,
+                  invoiceNumber: inv.invoiceNumber,
+                  amountPaidFormatted: fmt(inv.totalCents),
+                  eventTitle: inv.event.title,
+                  portalUrl: APP_URL + '/portal/' + inv.event.portalToken + '?tab=invoice',
+                  replyTo: inv.tenant.branding?.replyToEmail ?? undefined,
+                  from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
+                }).catch(e => console.error('[stripe-webhook] client confirmation email error:', e));
+              }
 
-              // Notify host admins of payment received
+              // Host notification always fires regardless of automation rules
               const hostEmails = (inv.tenant as any).memberships?.map((m: any) => m.user.email).filter(Boolean) ?? [];
               if (hostEmails.length > 0) {
                 sendHostNotificationEmail({

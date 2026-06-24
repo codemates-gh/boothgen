@@ -4,6 +4,20 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.8.9] — 2026-06-24
+
+### Added
+- **Email automation — automation-first architecture** — operators can now fully replace every client-facing transactional email with their own custom template; when an active automation rule covers a trigger (`QUOTE_SENT`, `CONTRACT_SENT`, `INVOICE_SENT`, `PAYMENT_RECEIVED`, `GALLERY_PUBLISHED`), the hardcoded email is suppressed and only the automation email fires; hardcoded emails fall back silently when no rule exists; operator/host notification emails are unaffected and always fire
+- **Email automation — pre-seeded default templates + rules for new tenants** — each new tenant is automatically provisioned with 6 ready-to-send email templates and matching automation rules at signup: New Inquiry Auto-Reply, Your Quote is Ready, Contract Ready to Sign, Invoice Ready for Payment, You're Booked! (What Happens Next), and Your Photo Gallery is Ready; operators can edit these at any time in Email Templates / Automation
+- **Email automation — seed defaults for existing tenants** — super-admin endpoint `POST /api/super-admin/seed-email-defaults` backfills the 6 default templates and rules for all existing tenants, skipping any that already have a template with the same name; pass `{ tenantId }` in the body to target a single tenant
+- **"You're Booked!" confirmation email** — fires on `PAYMENT_RECEIVED` (not contract signing); includes a green payment-confirmed banner, full "What Happens Next" table (🎨 Custom Template Design, ✅ Design Approval, 📸 Event Day, 🖼️ Online Gallery), and a client portal CTA; operators can customize this in their Email Templates
+- **Merge tags — `{{portal.link}}`** — added `portal.link` to `MergeCtx` type and `buildCtx()` so templates can link directly to the client portal; was already in the editor dropdown but was previously unresolved
+
+### Fixed
+- **Email templates — `{{portal.link}}` unresolved in sent emails** — the editor offered `portal.link` as a merge tag but it was not in the `MergeCtx` type or `buildCtx()` return value; tags resolved to an empty string; now correctly resolves to `https://boothgen.com/portal/<token>`
+
+---
+
 ## [1.8.8] — 2026-06-24
 
 ### Fixed
