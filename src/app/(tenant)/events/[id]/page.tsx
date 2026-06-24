@@ -81,8 +81,8 @@ export default async function EventDetailPage({ params }: { params: { id: string
             <div className="flex flex-wrap gap-2">
               <Link href={'/events/' + event.id + '/edit'}><Button variant="outline" size="sm"><Edit2 className="w-4 h-4 mr-1"/>Edit Event</Button></Link>
               <a href={portalUrl} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><ExternalLink className="w-4 h-4 mr-1"/>Client Portal</Button></a>
-              <Link href={'/quotes/new?eventId=' + event.id}><Button variant="outline" size="sm"><ClipboardList className="w-4 h-4 mr-1"/>Create Quote</Button></Link>
-              <Link href={'/invoices/new?eventId=' + event.id}><Button size="sm"><Receipt className="w-4 h-4 mr-1"/>Create Invoice</Button></Link>
+              <Link href={'/quotes/new?eventId=' + event.id}><Button size="sm"><ClipboardList className="w-4 h-4 mr-1"/>Create Quote</Button></Link>
+              <Link href={'/invoices/new?eventId=' + event.id}><Button variant="outline" size="sm"><Receipt className="w-4 h-4 mr-1"/>Create Invoice</Button></Link>
               <CancelEventButton eventId={event.id} status={event.status} depositPaidCents={depositPaidCents} totalPaidCents={totalPaidCents} />
               <DeleteEventButton eventId={event.id} hasInvoices={event.invoices.length > 0} hasContracts={event.contracts.length > 0} />
             </div>
