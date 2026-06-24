@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.8.2] — 2026-06-23
+
+### Added
+- **Dashboard — design revision alerts** — template designs where a client requested a revision now appear in the "Needs Attention" section (orange row) with the client name, version number, event title, and the client's revision note; clicking links directly to the event's design page so a new version can be uploaded immediately
+
+---
+
 ## [1.8.1] — 2026-06-23
 
 ### Fixed

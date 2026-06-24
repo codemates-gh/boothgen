@@ -9,7 +9,7 @@ import WeatherWidget from '@/components/dashboard/WeatherWidget';
 import Link from 'next/link';
 import {
   Calendar, Users, DollarSign, TrendingUp, Plus, ArrowRight, Inbox,
-  AlertTriangle, Clock, FileText, Camera, CheckCircle,
+  AlertTriangle, Clock, FileText, Camera, CheckCircle, Layers,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
@@ -34,6 +34,7 @@ export default async function DashboardPage() {
     staleLeads,
     atRiskGalleries,
     todayEvents,
+    revisionRequested,
   ] = await Promise.all([
     prisma.event.findMany({ where: { tenantId, eventDate: { gte: now }, status: { not: 'CANCELLED' } }, include: { client: true }, orderBy: { eventDate: 'asc' }, take: 8 }),
     prisma.client.count({ where: { tenantId } }),
@@ -57,6 +58,8 @@ export default async function DashboardPage() {
     prisma.gallery.findMany({ where: { tenantId, isExpired: true, assets: { some: {} } }, include: { event: { select: { title: true } }, _count: { select: { assets: true } } }, take: 10 }),
     // Events happening today
     prisma.event.findMany({ where: { tenantId, eventDate: { gte: todayStart, lte: todayEnd }, status: { not: 'CANCELLED' } }, include: { client: true }, orderBy: { startTime: 'asc' } }),
+    // Template designs where client requested a revision (operator needs to upload new version)
+    prisma.templateDesign.findMany({ where: { tenantId, status: 'REVISION_REQUESTED' }, include: { event: { select: { id: true, title: true, client: { select: { firstName: true, lastName: true } } } } }, orderBy: { updatedAt: 'desc' }, take: 10 }),
   ]);
 
   const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
@@ -90,6 +93,14 @@ export default async function DashboardPage() {
       title: `Gallery photos scheduled for deletion — ${g.event.title}`,
       detail: `${g._count.assets} photo${g._count.assets !== 1 ? 's' : ''} will be permanently deleted soon`,
       href: `/gallery/${g.id}`,
+    })),
+    ...revisionRequested.map(d => ({
+      key: 'rev-' + d.id,
+      icon: Layers, iconCls: 'text-orange-500',
+      rowCls: 'border-l-4 border-orange-400 bg-orange-50',
+      title: `Design revision requested — ${d.event.client.firstName} ${d.event.client.lastName}`,
+      detail: `Version ${d.version} · ${d.event.title}${d.revisionNote ? ' — "' + d.revisionNote + '"' : ''}`,
+      href: `/events/${d.event.id}/designs`,
     })),
     ...pendingContracts.map(c => ({
       key: 'con-' + c.id,
