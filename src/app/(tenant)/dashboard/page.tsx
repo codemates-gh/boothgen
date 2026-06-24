@@ -21,6 +21,7 @@ export default async function DashboardPage() {
   const now = new Date();
   const monthStart   = new Date(now.getFullYear(), now.getMonth(), 1);
   const sevenDaysOut = new Date(now.getTime() + 7  * 86400_000);
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400_000);
   const threeDaysAgo = new Date(now.getTime() - 3  * 86400_000);
   const todayStart   = new Date(now); todayStart.setHours(0, 0, 0, 0);
   const todayEnd     = new Date(now); todayEnd.setHours(23, 59, 59, 999);
@@ -34,7 +35,10 @@ export default async function DashboardPage() {
     staleLeads,
     atRiskGalleries,
     todayEvents,
-    revisionRequested,
+    // Events where ANY design is REVISION_REQUESTED (we post-filter to latest version)
+    eventsWithRevision,
+    // Designs approved in the last 30 days
+    recentlyApproved,
   ] = await Promise.all([
     prisma.event.findMany({ where: { tenantId, eventDate: { gte: now }, status: { not: 'CANCELLED' } }, include: { client: true }, orderBy: { eventDate: 'asc' }, take: 8 }),
     prisma.client.count({ where: { tenantId } }),
@@ -58,9 +62,28 @@ export default async function DashboardPage() {
     prisma.gallery.findMany({ where: { tenantId, isExpired: true, assets: { some: {} } }, include: { event: { select: { title: true } }, _count: { select: { assets: true } } }, take: 10 }),
     // Events happening today
     prisma.event.findMany({ where: { tenantId, eventDate: { gte: todayStart, lte: todayEnd }, status: { not: 'CANCELLED' } }, include: { client: true }, orderBy: { startTime: 'asc' } }),
-    // Template designs where client requested a revision (operator needs to upload new version)
-    prisma.templateDesign.findMany({ where: { tenantId, status: 'REVISION_REQUESTED' }, include: { event: { select: { id: true, title: true, client: { select: { firstName: true, lastName: true } } } } }, orderBy: { updatedAt: 'desc' }, take: 10 }),
+    // Events that have at least one REVISION_REQUESTED design — we'll post-filter to latest version only
+    prisma.event.findMany({
+      where: { tenantId, templateDesigns: { some: { status: 'REVISION_REQUESTED' } } },
+      include: {
+        client: { select: { firstName: true, lastName: true } },
+        templateDesigns: { orderBy: { version: 'desc' }, take: 1 },
+      },
+      take: 10,
+    }),
+    // Designs approved in the last 30 days
+    prisma.templateDesign.findMany({
+      where: { tenantId, status: 'APPROVED', approvedAt: { gte: thirtyDaysAgo } },
+      include: { event: { select: { id: true, title: true, client: { select: { firstName: true, lastName: true } } } } },
+      orderBy: { approvedAt: 'desc' },
+      take: 10,
+    }),
   ]);
+
+  // Only alert on events where the LATEST design version is still REVISION_REQUESTED
+  const revisionRequested = eventsWithRevision.filter(
+    e => e.templateDesigns[0]?.status === 'REVISION_REQUESTED'
+  );
 
   const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
   const conversionRate = totalLeads > 0 ? Math.round((totalBooked / totalLeads) * 100) : 0;
@@ -75,7 +98,6 @@ export default async function DashboardPage() {
     { label: 'Conversion Rate', value: conversionRate + '%', icon: TrendingUp, color: 'text-teal-500', href: '/events' },
   ];
 
-  // Build attention items
   type AttentionItem = { key: string; icon: any; iconCls: string; rowCls: string; title: string; detail: string; href: string };
   const attention: AttentionItem[] = [
     ...overdueInvoices.map(inv => ({
@@ -94,14 +116,17 @@ export default async function DashboardPage() {
       detail: `${g._count.assets} photo${g._count.assets !== 1 ? 's' : ''} will be permanently deleted soon`,
       href: `/gallery/${g.id}`,
     })),
-    ...revisionRequested.map(d => ({
-      key: 'rev-' + d.id,
-      icon: Layers, iconCls: 'text-orange-500',
-      rowCls: 'border-l-4 border-orange-400 bg-orange-50',
-      title: `Design revision requested — ${d.event.client.firstName} ${d.event.client.lastName}`,
-      detail: `Version ${d.version} · ${d.event.title}${d.revisionNote ? ' — "' + d.revisionNote + '"' : ''}`,
-      href: `/events/${d.event.id}/designs`,
-    })),
+    ...revisionRequested.map(e => {
+      const d = e.templateDesigns[0];
+      return {
+        key: 'rev-' + e.id,
+        icon: Layers, iconCls: 'text-orange-500',
+        rowCls: 'border-l-4 border-orange-400 bg-orange-50',
+        title: `Design revision requested — ${e.client.firstName} ${e.client.lastName}`,
+        detail: `Version ${d.version} · ${e.title}${d.revisionNote ? ' — "' + d.revisionNote + '"' : ''}`,
+        href: `/events/${e.id}/designs`,
+      };
+    }),
     ...pendingContracts.map(c => ({
       key: 'con-' + c.id,
       icon: FileText, iconCls: 'text-orange-500',
@@ -188,13 +213,13 @@ export default async function DashboardPage() {
           </Card>
         )}
 
-        {/* Needs Attention */}
+        {/* Requires Attention */}
         {attention.length > 0 && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <AlertTriangle className="w-4 h-4 text-red-500" />
-                Needs Attention
+                Requires Attention
                 <span className="ml-auto text-xs font-normal text-gray-400">{attention.length} item{attention.length !== 1 ? 's' : ''}</span>
               </CardTitle>
             </CardHeader>
@@ -219,8 +244,35 @@ export default async function DashboardPage() {
         {attention.length === 0 && (
           <div className="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
             <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-            Everything is on track — no overdue payments, unsigned contracts, or stale leads.
+            You're all caught up — no overdue payments, unsigned contracts, or pending actions.
           </div>
+        )}
+
+        {/* Recent Activity */}
+        {recentlyApproved.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                Recent Activity
+                <span className="ml-auto text-xs font-normal text-gray-400">last 30 days</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {recentlyApproved.map((d, i) => (
+                <Link key={d.id} href={`/events/${d.event.id}/designs`}>
+                  <div className={`flex items-center gap-4 px-6 py-3.5 border-l-4 border-green-400 bg-green-50 hover:brightness-95 transition-all cursor-pointer ${i < recentlyApproved.length - 1 ? 'border-b border-white/60' : ''}`}>
+                    <CheckCircle className="w-4 h-4 flex-shrink-0 text-green-500" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">Design approved — {d.event.client.firstName} {d.event.client.lastName}</p>
+                      <p className="text-xs text-gray-500">Version {d.version} · {d.event.title} · approved {d.approvedAt ? formatDistanceToNow(d.approvedAt) + ' ago' : ''}</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  </div>
+                </Link>
+              ))}
+            </CardContent>
+          </Card>
         )}
 
         {/* Upcoming Events */}

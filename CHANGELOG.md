@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.8.4] — 2026-06-23
+
+### Fixed
+- **Dashboard — stale revision alert persisting after approval** — the previous query fetched ALL designs with `REVISION_REQUESTED` status including older versions; now queries events where any design is pending revision, then post-filters to only those where the **latest version** is still `REVISION_REQUESTED`; approved newer versions correctly clear the alert
+
+### Changed
+- **Dashboard — "Needs Attention" renamed to "Requires Attention"**
+- **Dashboard — "Recent Activity" section added** — approved designs from the last 30 days appear as green rows below "Requires Attention", showing client name, version, event title, and time since approval; gives operators a full picture of what's done vs. what needs action
+
+---
+
 ## [1.8.3] — 2026-06-23
 
 ### Fixed
