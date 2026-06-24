@@ -7,7 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Package, ArrowLeft, ExternalLink, FileText, Receipt, Edit2, ClipboardList, Layers } from 'lucide-react';
+import { Calendar, MapPin, Users, Package, ArrowLeft, ExternalLink, FileText, Receipt, Edit2, ClipboardList, Layers, PenLine } from 'lucide-react';
 import { format } from 'date-fns';
 import DeleteEventButton from './DeleteEventButton';
 import CancelEventButton from './CancelEventButton';
@@ -161,7 +161,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[400px]"><thead><tr className="border-b"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Title</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="px-6 py-3"></th></tr></thead>
-                <tbody>{event.contracts.map(c => (<tr key={c.id} className="border-b last:border-0"><td className="px-6 py-3 text-sm font-medium"><FileText className="inline w-4 h-4 mr-2 text-gray-400"/>{c.title}</td><td className="px-6 py-3"><Badge variant={CC[c.status]}>{c.status.replace(/_/g,' ')}</Badge></td><td className="px-6 py-3 text-right"><Link href={'/contracts/' + c.id}><Button variant="ghost" size="sm">View</Button></Link></td></tr>))}</tbody></table>
+                <tbody>{event.contracts.map(c => (<tr key={c.id} className={`border-b last:border-0 ${c.status === 'CLIENT_SIGNED' ? 'bg-amber-50/60' : ''}`}><td className="px-6 py-3 text-sm font-medium"><FileText className="inline w-4 h-4 mr-2 text-gray-400"/>{c.title}</td><td className="px-6 py-3"><div className="flex items-center gap-2"><Badge variant={CC[c.status]}>{c.status.replace(/_/g,' ')}</Badge>{c.status === 'CLIENT_SIGNED' && <PenLine className="w-3.5 h-3.5 text-amber-500" />}</div></td><td className="px-6 py-3 text-right"><Link href={'/contracts/' + c.id}><Button variant={c.status === 'CLIENT_SIGNED' ? 'default' : 'ghost'} size="sm">{c.status === 'CLIENT_SIGNED' ? 'Sign Now' : 'View'}</Button></Link></td></tr>))}</tbody></table>
               </div>
             </CardContent>
           </Card>

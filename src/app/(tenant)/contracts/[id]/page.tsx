@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SignatureCanvas } from '@/components/contracts/SignatureCanvas';
-import { ArrowLeft, Send, Lock, Download } from 'lucide-react';
+import { ArrowLeft, Send, Lock, Download, PenLine } from 'lucide-react';
 import Link from 'next/link';
 import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
 
@@ -61,6 +61,15 @@ export default function ContractDetailPage() {
             <a href={contract.pdfUrl ?? `/api/contracts/${contract.id}/pdf`} target="_blank" rel="noopener noreferrer"><Button variant="outline"><Download className="w-4 h-4 mr-1"/>Download PDF</Button></a>
           </div>
         </div>
+        {contract.status === 'CLIENT_SIGNED' && (
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl p-4">
+            <PenLine className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-800">Your countersignature is required</p>
+              <p className="text-sm text-amber-700 mt-0.5">Your client has signed this contract. Scroll down to add your signature and fully execute the agreement.</p>
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
           <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-400 mb-1">Client</p><p className="font-medium">{contract.client?.firstName} {contract.client?.lastName}</p></div>
           <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-400 mb-1">Client Signed</p><p className="font-medium">{contract.clientSignedAt ? new Date(contract.clientSignedAt).toLocaleDateString() : 'Pending'}</p></div>
