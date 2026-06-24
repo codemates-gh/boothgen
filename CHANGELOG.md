@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.8.0] — 2026-06-23
+
+### Added
+- **Dashboard — Needs Attention section** — color-coded alert rows for overdue invoices (red), at-risk galleries with photos pending deletion (red), contracts awaiting signature (orange), invoices due within 7 days (yellow), and new leads with no response in 3+ days (purple); each row links directly to the relevant record; shows an "all clear" message when nothing requires action
+- **Dashboard — Today's Events** — highlighted card showing all events scheduled for today with client name, venue, status badge, and direct link; only appears when events exist today
+- **Dashboard — Weather widget** — 5-day forecast strip (Today + 4 days) using IP geolocation (ipapi.co) and Open-Meteo; shows weather icon, condition label, high/low temps in Fahrenheit, and rain probability when > 20%; loads client-side so it never blocks server rendering
+
+---
+
 ## [1.7.1] — 2026-06-23
 
 ### Fixed
