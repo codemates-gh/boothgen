@@ -13,6 +13,7 @@ const CONTRACT_TAGS = [
   { label: 'Client First Name', value: '{{client.first_name}}' },
   { label: 'Client Full Name', value: '{{client.full_name}}' },
   { label: 'Client Email', value: '{{client.email}}' },
+  { label: 'Client Phone', value: '{{client.phone}}' },
   { label: 'Event Title', value: '{{event.title}}' },
   { label: 'Event Date', value: '{{event.date}}' },
   { label: 'Event Start Time', value: '{{event.start_time}}' },
