@@ -8,7 +8,9 @@ export type MergeCtx = {
   host: { company_name: string; email?: string; phone?: string; website?: string; signature?: string };
 };
 export function parseMergeTags(tpl: string, ctx: MergeCtx, showMissing = false): string {
-  return tpl.replace(/{{([^}]+)}}/g, (match, raw: string) => {
+  // Strip styled span wrappers inserted by the visual email editor, leaving just the raw {{tag}}
+  const cleaned = tpl.replace(/<span[^>]+data-tag="({{[^"]+}})"[^>]*>.*?<\/span>/gs, '$1');
+  return cleaned.replace(/{{([^}]+)}}/g, (match, raw: string) => {
     const keys = raw.trim().split('.');
     let v: any = ctx;
     for (const k of keys) { if (v == null) return showMissing ? match : ''; v = v[k as keyof typeof v]; }
@@ -33,6 +35,6 @@ export function buildCtx(params: {
     invoice: invoice ? { number: invoice.invoiceNumber, total: fmt(invoice.totalCents, invoice.currency), balance_due: fmt(invoice.balanceDueCents, invoice.currency), retainer_amount: invoice.retainerAmountCents ? fmt(invoice.retainerAmountCents, invoice.currency) : undefined, due_date: invoice.dueDate ? format(invoice.dueDate, 'MMMM d, yyyy') : undefined, payment_link: appUrl + '/portal/' + (event.portalToken ?? '') } : {},
     contract: contract ? { link: appUrl + '/portal/' + contract.clientToken, expiry: contract.expiresAt ? format(contract.expiresAt, 'MMMM d, yyyy') : undefined, title: contract.title } : {},
     quote: quote ? { link: appUrl + '/portal/' + (event.portalToken ?? '') + '?tab=quote', number: quote.quoteNumber, total: fmt(quote.totalCents, quote.currency) } : {},
-    host: { company_name: branding.companyName ?? 'Your Company', email: branding.replyToEmail ?? undefined, phone: branding.supportPhone ?? undefined, website: branding.websiteUrl ?? undefined, signature: branding.emailHeaderHtml ?? undefined },
+    host: { company_name: branding.companyName ?? 'Your Company', email: branding.replyToEmail ?? undefined, phone: branding.supportPhone ?? undefined, website: branding.websiteUrl ?? undefined, signature: branding.emailHeaderHtml ? branding.emailHeaderHtml.replace(/\n/g, '<br>') : undefined },
   };
 }

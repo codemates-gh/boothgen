@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
-import { Zap, Mail, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Zap, Mail, Plus, Trash2, ToggleLeft, ToggleRight, Pencil } from 'lucide-react';
 
 const TRIGGERS: [string, string][] = [
   ['LEAD_CREATED','Lead Created'],['QUOTE_SENT','Quote Sent'],['BOOKING_CONFIRMED','Booking Confirmed'],
@@ -23,6 +23,7 @@ export default function AutomationPage() {
   const [rules, setRules] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [editingRule, setEditingRule] = useState<any | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name:'', trigger:'LEAD_CREATED', emailTemplateId:'', triggerOffsetHours:'0' });
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
@@ -37,12 +38,29 @@ export default function AutomationPage() {
     if (et.ok) setTemplates(await et.json());
   }
 
-  async function create() {
+  function openCreate() {
+    setEditingRule(null);
+    setForm({ name:'', trigger:'LEAD_CREATED', emailTemplateId:'', triggerOffsetHours:'0' });
+    setShowModal(true);
+  }
+
+  function openEdit(rule: any) {
+    setEditingRule(rule);
+    setForm({ name: rule.name, trigger: rule.trigger, emailTemplateId: rule.emailTemplateId ?? '', triggerOffsetHours: String(rule.triggerOffsetHours ?? 0) });
+    setShowModal(true);
+  }
+
+  async function save() {
     if (!form.name.trim()) return;
     setSaving(true);
-    await fetch('/api/automation/rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, actionType: 'EMAIL', triggerOffsetHours: parseInt(form.triggerOffsetHours) || 0 }) });
+    if (editingRule) {
+      await fetch('/api/automation/rules/' + editingRule.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name, trigger: form.trigger, emailTemplateId: form.emailTemplateId, triggerOffsetHours: parseInt(form.triggerOffsetHours) || 0 }) });
+    } else {
+      await fetch('/api/automation/rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, actionType: 'EMAIL', triggerOffsetHours: parseInt(form.triggerOffsetHours) || 0 }) });
+    }
     await load(); setShowModal(false); setSaving(false);
     setForm({ name:'', trigger:'LEAD_CREATED', emailTemplateId:'', triggerOffsetHours:'0' });
+    setEditingRule(null);
   }
 
   async function toggleActive(rule: any) {
@@ -70,7 +88,7 @@ export default function AutomationPage() {
               <p className="text-sm text-gray-600 mt-1">Rules trigger automated emails at key points in your client journey. Create email templates in <a href="/contracts/templates" className="text-brand underline">Settings → Templates</a> first.</p>
             </div>
           </div>
-          <Button onClick={() => setShowModal(true)} className="flex-shrink-0"><Plus className="w-4 h-4 mr-2"/>New Rule</Button>
+          <Button onClick={openCreate} className="flex-shrink-0"><Plus className="w-4 h-4 mr-2"/>New Rule</Button>
         </div>
 
         <Card>
@@ -81,7 +99,7 @@ export default function AutomationPage() {
                 <Zap className="w-10 h-10 mx-auto mb-3 opacity-30"/>
                 <p className="font-medium mb-1">No automation rules yet</p>
                 <p className="text-sm mb-4">Create rules to automatically email clients at key moments</p>
-                <Button onClick={() => setShowModal(true)}>Create First Rule</Button>
+                <Button onClick={openCreate}>Create First Rule</Button>
               </div>
             ) : (
               <div className="overflow-x-auto"><table className="w-full min-w-[560px]">
@@ -98,7 +116,10 @@ export default function AutomationPage() {
                           <Badge variant={r.isActive ? 'success' : 'default'}>{r.isActive ? 'Active' : 'Paused'}</Badge>
                         </button>
                       </td>
-                      <td className="px-6 py-4 text-right"><Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600" onClick={() => deleteRule(r.id)}><Trash2 className="w-4 h-4"/></Button></td>
+                      <td className="px-6 py-4 text-right flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-700" onClick={() => openEdit(r)}><Pencil className="w-4 h-4"/></Button>
+                        <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600" onClick={() => deleteRule(r.id)}><Trash2 className="w-4 h-4"/></Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -108,7 +129,7 @@ export default function AutomationPage() {
         </Card>
       </div>
 
-      <Modal open={showModal} onClose={() => setShowModal(false)} title="New Automation Rule">
+      <Modal open={showModal} onClose={() => { setShowModal(false); setEditingRule(null); }} title={editingRule ? 'Edit Automation Rule' : 'New Automation Rule'}>
         <div className="space-y-4">
           <div><label className="block text-sm font-medium text-gray-700 mb-1">Rule Name *</label>
             <Input value={form.name} onChange={e => set('name',e.target.value)} placeholder="e.g. New Lead Auto-Reply"/></div>
@@ -124,8 +145,8 @@ export default function AutomationPage() {
             {templates.length === 0 && <p className="text-xs text-amber-600 mt-1">⚠️ No email templates found. <a href="/automation/email-templates" className="underline">Create one first</a>.</p>}
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
-            <Button onClick={create} disabled={saving || !form.name.trim() || !form.emailTemplateId}>{saving ? 'Creating...' : 'Create Rule'}</Button>
+            <Button variant="outline" onClick={() => { setShowModal(false); setEditingRule(null); }}>Cancel</Button>
+            <Button onClick={save} disabled={saving || !form.name.trim() || !form.emailTemplateId}>{saving ? 'Saving...' : (editingRule ? 'Save Changes' : 'Create Rule')}</Button>
           </div>
         </div>
       </Modal>

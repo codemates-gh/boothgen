@@ -25,7 +25,7 @@ export default function NewEventPage() {
   const [selectedClient, setSelectedClient] = useState<any>(null);
 
   const [form, setForm] = useState({
-    firstName: '', lastName: '', email: '', phone: '',
+    firstName: '', lastName: '', email: '', phone: '', company: '',
     title: '', eventDate: '', startTime: '', endTime: '',
     venueName: '', venueAddress: '', venueCity: '', venueState: '', venuePostalCode: '',
     packageName: '', guestCount: '', internalNotes: '', status: 'LEAD', estimatedValueCents: '',
@@ -124,6 +124,7 @@ export default function NewEventPage() {
                   {F('lastName', 'Last Name', 'text', 'Smith', true)}
                   {F('email', 'Email', 'email', 'jane@example.com', true)}
                   {F('phone', 'Phone', 'tel', '(555) 123-4567')}
+                  {F('company', 'Company / Organization', 'text', 'Acme Corp')}
                 </div>
               ) : (
                 <div className="space-y-3">

@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 import { hasProAccess } from '@/lib/auth/session';
 import { sendGalleryPublishedEmail } from '@/lib/email/send';
+import { triggerAutomation } from '@/lib/inngest/trigger';
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -48,7 +49,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const companyName = branding?.companyName ?? event?.tenant?.name ?? 'Your host';
     const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
-    sendGalleryPublishedEmail({
+    await sendGalleryPublishedEmail({
       to: event.client.email,
       firstName: event.client.firstName,
       companyName,
@@ -57,6 +58,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       replyTo: branding?.replyToEmail ?? undefined,
       from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
     }).catch(e => console.error('[gallery-publish] email error:', e));
+    if (updated.eventId) {
+      triggerAutomation({ tenantId: session.tenantId, eventId: updated.eventId, trigger: 'GALLERY_PUBLISHED' }).catch(e =>
+        console.error('[gallery-publish] GALLERY_PUBLISHED automation error:', e)
+      );
+    }
   }
 
   return NextResponse.json(updated);

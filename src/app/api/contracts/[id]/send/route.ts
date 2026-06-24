@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 import { sendContractLink } from '@/lib/email/send';
+import { triggerAutomation } from '@/lib/inngest/trigger';
 const APP = process.env.NEXT_PUBLIC_APP_URL!;
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
@@ -16,5 +17,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   await prisma.contract.update({ where: { id: contract.id }, data: { status: 'SENT_TO_CLIENT', expiresAt } });
   const portalToken = (contract.event as any)?.portalToken ?? '';
   await sendContractLink({ to: contract.client.email, firstName: contract.client.firstName, companyName: contract.tenant.branding?.companyName ?? contract.tenant.name, contractTitle: contract.title, portalUrl: APP + '/portal/' + portalToken, expiresAt });
+  if (contract.eventId) {
+    triggerAutomation({ tenantId: contract.tenantId, eventId: contract.eventId, trigger: 'CONTRACT_SENT' }).catch(e =>
+      console.error('[contract/send] CONTRACT_SENT automation error:', e)
+    );
+  }
   return NextResponse.json({ success: true, expiresAt });
 }

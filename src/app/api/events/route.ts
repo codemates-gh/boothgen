@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await req.json();
-  const { firstName, lastName, email, phone, clientId, title, eventDate, startTime, endTime,
+  const { firstName, lastName, email, phone, company, clientId, title, eventDate, startTime, endTime,
     venueName, venueAddress, venueCity, venueState, venuePostalCode,
     packageName, guestCount, internalNotes, status, estimatedValueCents } = body;
   if (!title || !eventDate) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -23,8 +23,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     client = await prisma.client.upsert({
       where: { tenantId_email: { tenantId: session.tenantId, email } },
-      update: { firstName, lastName, phone: phone || null },
-      create: { tenantId: session.tenantId, firstName, lastName, email, phone: phone || null },
+      update: { firstName, lastName, phone: phone || null, company: company || null },
+      create: { tenantId: session.tenantId, firstName, lastName, email, phone: phone || null, company: company || null },
     });
   }
   const eventStatus = status || 'LEAD';

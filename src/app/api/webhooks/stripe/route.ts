@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma/client';
 import { sendPaymentConfirmationEmail, sendHostNotificationEmail } from '@/lib/email/send';
+import { triggerAutomation } from '@/lib/inngest/trigger';
 import type Stripe from 'stripe';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
@@ -65,6 +66,9 @@ export async function POST(req: NextRequest) {
               where: { id: (milestone.invoice as any).eventId, status: { in: ['LEAD', 'QUOTED'] } },
               data: { status: 'BOOKED' },
             });
+            triggerAutomation({ tenantId: milestone.invoice.tenantId, eventId: (milestone.invoice as any).eventId, trigger: 'PAYMENT_RECEIVED' }).catch(e =>
+              console.error('[stripe-webhook] PAYMENT_RECEIVED automation error:', e)
+            );
           }
         } else if (invoiceId) {
           const inv = await prisma.invoice.findUnique({
@@ -94,6 +98,9 @@ export async function POST(req: NextRequest) {
                 where: { id: inv.eventId, status: { in: ['LEAD', 'QUOTED'] } },
                 data: { status: 'BOOKED' },
               });
+              triggerAutomation({ tenantId: inv.tenantId, eventId: inv.eventId, trigger: 'PAYMENT_RECEIVED' }).catch(e =>
+                console.error('[stripe-webhook] PAYMENT_RECEIVED automation error:', e)
+              );
             }
             if (inv.event?.client) {
               const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);

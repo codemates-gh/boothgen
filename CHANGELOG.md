@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.8.6] — 2026-06-24
+
+### Added
+- **Automation — wire 5 missing triggers** — `CONTRACT_SENT`, `CONTRACT_EXECUTED`, `INVOICE_SENT`, `PAYMENT_RECEIVED`, and `GALLERY_PUBLISHED` were never wired to the automation system; each relevant route now calls `triggerAutomation()` after the action completes so all 13 triggers are functional; event-date triggers (14/7/1 day before, 1/3 days after) still rely on Inngest for scheduling
+- **Automation rules — Edit button** — each rule now has a pencil edit button that opens a pre-populated modal to change the rule name, trigger, or email template without deleting and recreating
+- **New Event form — Company/Organization field** — operators can now enter a company or organization name when creating a new client through the Add Event form; saved to the client record and shown in the clients list
+
+### Fixed
+- **Email templates — merge tag variables rendering in amber color** — the visual editor wraps inserted variables in styled `<span>` elements with orange/amber borders; these spans were being preserved in sent emails, making merge-tag values appear styled; `parseMergeTags` now strips the span wrappers before substituting values so recipients see plain-styled text
+- **Email signature — displaying as one line** — the `{{host.signature}}` value was stored as plain text with `\n` newlines; HTML email ignores newlines so the multi-line signature collapsed to one line; newlines are now converted to `<br>` tags before insertion
+
 ## [1.8.5] — 2026-06-24
 
 ### Fixed
