@@ -36,7 +36,7 @@ Go to Settings → Packages. Create packages for your common booth rental option
 Go to Settings → Contracts → Templates. Create at least one contract template using merge tags like {{client_name}}, {{event_date}}, {{total_amount}}, {{venue_name}}. This template auto-populates when a client accepts a quote and signs digitally.
 
 **Step 6 — Set Up Lead Capture**
-Go to Settings → Lead Capture (Embed tab). Copy the JavaScript snippet and paste it into your website's HTML — typically in the footer or on a Contact/Book Now page. When a visitor submits the form, a lead will appear automatically in your Booth Genius dashboard.
+Go to Settings → Lead Capture (Embed tab). Copy the JavaScript snippet and paste it into your website's HTML — typically in the footer or on a Contact/Book Now page. When a visitor submits the form, a lead will appear automatically in your Booth Genius dashboard. To prevent leads from requesting dates you can't cover, use Calendar → Block Dates to mark unavailable days before going live.
 
 **Step 7 — Review Your Default Email Templates**
 Your account comes with six pre-built email templates and automation rules that cover every major client touchpoint — inquiry auto-reply, quote notification, contract, invoice, booking confirmation, and gallery delivery. Go to Email Templates in the sidebar to preview and customize the wording for each one. Go to Automation to see and adjust the rules that fire them.
@@ -492,7 +492,7 @@ The client returns to their portal (or clicks the Invoice tab directly from the 
 If you design custom overlays or templates, upload a mockup to the event's Design tab. The client reviews it in their portal and clicks "Approve" or "Request Revision."
 
 **Step 10 — Day of Event**
-Run your event. Booth Genius keeps all client info, venue details, and special notes accessible from the mobile-friendly dashboard.
+Run your event. Open the event detail page and work through the event's Checklist — check off tasks as you set up. Booth Genius keeps all client info, venue details, special notes, and your task list accessible from the mobile-friendly dashboard.
 
 **Step 11 — Upload Gallery Photos (Pro)**
 After the event, upload photos from the event's Gallery tab. Once you publish the gallery, the client gets an automated email notification. They can view and download photos from their portal. Share the Guest Gallery Link (not the portal link) with wedding guests or family members.
@@ -524,6 +524,7 @@ Click Calendar in the left sidebar. The calendar opens to the current month.
 Each day cell shows any events or leads whose event date falls on that day:
 - **Events** are color-coded by status — blue (Lead), yellow (Quoted), orange (Booked), brand color (In Progress), green (Completed). Cancelled events appear gray with a strikethrough.
 - **Lead Inquiries** appear in purple with a ✦ prefix, so you can distinguish unconfirmed inquiries from booked events at a glance.
+- **Unavailable dates** (blocked by you) appear with a red "Unavailable" chip.
 
 If a day has more than 3 items, a "+N more" indicator shows. Click through to the event or lead to see full details.
 
@@ -533,16 +534,81 @@ Use the left and right arrows to move between months. Click the "Today" button a
 **Creating an Event from the Calendar**
 Click any date number to open the New Event form pre-filled with that date. This is the fastest way to block a date once a client verbally confirms — you can fill in the rest of the details later.
 
-**New Event Button**
-The "New Event" button in the top-right of the calendar also creates a new event. It opens the same form without a pre-filled date.
-
 **Status Legend**
-A color legend at the bottom of the calendar shows what each color means. Lead inquiries (purple) are listed separately since they aren't confirmed bookings.
+A color legend at the bottom of the calendar shows what each color means. Lead inquiries (purple) and unavailable dates (red) are listed separately.
 
 **Tips**
 - Use the calendar to quickly spot double-bookings before sending a quote
 - Check the calendar on the morning of an event to see exactly what's happening that day
 - Leads in purple are a useful reminder of dates that are "soft holds" — follow up before confirming`,
+  },
+  {
+    id: 'calendar-blackout',
+    category: 'Calendar',
+    categoryIcon: '📅',
+    title: 'Blocking Unavailable Dates',
+    slug: 'blackout-dates',
+    content: `Block dates when you're unavailable so clients can't accidentally request a date you can't cover. Blocked dates are enforced on your embedded lead capture form in real time.
+
+**How to Block a Date**
+1. Go to Calendar in the sidebar
+2. Click the "Block Dates" button in the top-right area — the button turns red and a banner appears explaining you're in block mode
+3. Click any date on the calendar to mark it as unavailable — the date turns red immediately
+4. Click the same date again to unblock it
+5. Click "Done Blocking" to exit block mode
+
+**What Clients See**
+- On your embedded lead inquiry form, when a client picks a blocked date in the Event Date field, an inline warning appears: "Sorry, we're not available on this date. Please choose another date." The submit button is also disabled until they select a different date.
+- If a client somehow bypasses the form check, the server also rejects submissions for blocked dates — the form returns the same error message.
+- On the calendar itself (visible to you and your team), blocked dates show a red "Unavailable" chip in the day cell.
+
+**When to Use Blackout Dates**
+- Holidays or personal time off
+- Dates you're already committed to outside of Booth Genius (another job booked on another platform)
+- "Buffer" days — if you need a day of rest after a large event
+- Seasonal closures
+
+**Unblocking a Date**
+Re-enter block mode (click "Block Dates") and click the red date again. It returns to normal immediately. If a lead was already submitted for that date before you blocked it, the existing lead is unaffected — the block only prevents new submissions going forward.`,
+  },
+  {
+    id: 'calendar-ical',
+    category: 'Calendar',
+    categoryIcon: '📅',
+    title: 'Subscribing to Your Calendar in Google / Apple',
+    slug: 'ical-subscription',
+    content: `Your Booth Genius events can appear directly in Google Calendar, Apple Calendar, or any calendar app that supports iCal subscriptions — so you always have your schedule in one place without manually copying dates.
+
+**Getting Your Subscription URL**
+1. Go to Calendar in the sidebar
+2. Scroll to the bottom of the page — you'll see a "Subscribe to Your Calendar" panel
+3. Click the Copy button to copy your personal subscription URL
+
+This URL is private to your account. Anyone with this URL can read your event schedule, so treat it like a password.
+
+**Adding to Google Calendar**
+1. Open Google Calendar (calendar.google.com)
+2. Click the + icon next to "Other calendars" in the left sidebar
+3. Select "From URL"
+4. Paste your subscription URL and click "Add calendar"
+5. Your Booth Genius events appear as a new calendar (you can rename and recolor it)
+
+Google Calendar typically syncs every 12–24 hours — new events may not appear instantly.
+
+**Adding to Apple Calendar**
+1. Open Calendar on your Mac or iPhone
+2. On Mac: File → New Calendar Subscription; on iPhone: tap Calendars → Add Calendar → Add Subscription Calendar
+3. Paste the subscription URL
+4. Tap/click Subscribe and adjust sync frequency if desired
+
+**What Appears in Your External Calendar**
+- All non-cancelled events with their title, date, venue name, and venue address
+- Confirmed bookings (BOOKED / IN_PROGRESS) appear as CONFIRMED events
+- Other statuses (LEAD, QUOTED, COMPLETED) appear as TENTATIVE
+- Cancelled events are excluded entirely
+
+**Regenerating Your URL**
+If you believe your subscription URL has been shared with someone who shouldn't have it, click "Regenerate link" at the bottom of the subscription panel. This creates a new URL and immediately invalidates the old one. You'll need to re-add the subscription in your calendar app using the new URL.`,
   },
 
   // ─── DASHBOARD ──────────────────────────────────────────────────────────────
@@ -648,6 +714,82 @@ Your login email is shown but cannot be changed from this screen. If you need to
 **Note for Team Members**
 Each team member has their own profile. Team members log in with their own email and password and can update their own display name from their Settings → Profile page.`,
   },
+  {
+    id: 'settings-checklists',
+    category: 'Settings',
+    categoryIcon: '⚙️',
+    title: 'Checklist Templates',
+    slug: 'checklist-templates',
+    content: `Checklist templates are reusable task lists you build once in Settings and apply to any event with a single click — great for day-of setup routines, equipment packing lists, or post-event wrap-up steps.
+
+**Accessing Checklist Templates**
+Go to Settings → Checklists (the tab in the Settings navigation).
+
+**Creating a Template**
+1. Click "New Template"
+2. Enter a template name (e.g. "Day-Of Setup" or "Equipment Pack List")
+3. In the Items field, paste your task list — one item per line. Example:
+   - Pack photo booth equipment
+   - Charge all batteries overnight
+   - Print test photo strips
+   - Confirm venue address and parking
+4. Click "Create Template"
+
+**Editing a Template**
+Click on any template card to expand it. From the expanded view you can:
+- Add individual items using the "Add item" link at the bottom — type and press Enter or click Add
+- Delete any item by hovering over it and clicking the trash icon
+- Delete the entire template with the trash icon in the template header (this cannot be undone)
+
+**Applying a Template to an Event**
+Templates are applied from the event detail page, not from Settings. See "Event Checklists" for how to use them during actual events.
+
+**Tips**
+- Create different templates for different event types (weddings vs. corporate vs. birthday parties) if your setup process varies
+- Even a simple 5-item packing list eliminates the mental overhead of remembering everything on event day
+- Templates can be applied multiple times to the same event — useful if you want to stack a general setup list and an event-specific list`,
+  },
+
+  // ─── CHECKLISTS ─────────────────────────────────────────────────────────────
+  {
+    id: 'checklists-event',
+    category: 'Event Checklists',
+    categoryIcon: '✅',
+    title: 'Using Event Checklists',
+    slug: 'event-checklists',
+    content: `Every event in Booth Genius has a built-in checklist — a personal task list for that specific booking. Use it to track setup steps, equipment, or anything else that needs to happen before, during, or after the event.
+
+**Finding the Checklist**
+Open any event detail page and scroll to the bottom. You'll see a "Checklist" card. The card shows a progress bar (X/Y done) once you have items.
+
+**Adding a Task**
+Type a task in the "Add a task…" input at the bottom of the checklist and press Enter (or click the + button). The item appears immediately.
+
+**Applying a Reusable Template**
+If you've set up checklist templates in Settings → Checklists, a dropdown button appears in the checklist card header. Click "Apply Template" to choose a template — all of its items are added to the event's checklist below any existing items. You can apply multiple templates to the same event.
+
+**Checking Off Tasks**
+Click the checkbox icon on the left of any item to mark it complete. The item text gets a strikethrough and the progress bar updates. Click again to uncheck.
+
+**Removing a Task**
+Hover over any checklist item — a trash icon appears on the right. Click it to remove the item. This is immediate and permanent.
+
+**Who Can See the Checklist**
+The checklist is visible to all team members who have access to the event — both operators and assigned team members. Everyone can add, check, and delete items. It's a shared task list for the whole team working that event.
+
+**Progress Bar**
+The colored bar at the top of the checklist fills from left to right as items are checked off. It turns fully green at 100%. A quick visual indicator when you're reviewing the event on event day.
+
+**Example Checklist for a Wedding Booth**
+- ✅ Confirm venue address and parking
+- ✅ Pack photo booth main unit
+- ✅ Pack backdrop and stands
+- ✅ Charge ring light battery
+- ✅ Load prop basket
+- ✅ Test print with venue Wi-Fi
+- ✅ Set up by 4:00 PM
+- ✅ Break down after cocktail hour ends`,
+  },
 
   // ─── FAQS ───────────────────────────────────────────────────────────────────
   {
@@ -711,10 +853,11 @@ const CATEGORIES = [
   { label: 'Team Management', icon: '👥', color: 'bg-teal-50 border-teal-200 text-teal-700', desc: 'Invites, roles, access control' },
   { label: 'Automation & Emails', icon: '⚡', color: 'bg-amber-50 border-amber-200 text-amber-700', desc: 'Triggers, templates, merge tags' },
   { label: 'Discounts & Coupons', icon: '🏷️', color: 'bg-lime-50 border-lime-200 text-lime-700', desc: 'Promo codes, % and $ off' },
-  { label: 'Calendar', icon: '📅', color: 'bg-sky-50 border-sky-200 text-sky-700', desc: 'Monthly view, events & leads' },
+  { label: 'Calendar', icon: '📅', color: 'bg-sky-50 border-sky-200 text-sky-700', desc: 'Monthly view, availability, iCal sync' },
+  { label: 'Event Checklists', icon: '✅', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', desc: 'Day-of task lists, templates, progress' },
   { label: 'Dashboard', icon: '🏠', color: 'bg-violet-50 border-violet-200 text-violet-700', desc: 'Stats, attention alerts, activity' },
   { label: 'Workflows', icon: '🔄', color: 'bg-cyan-50 border-cyan-200 text-cyan-700', desc: 'End-to-end booking walkthroughs' },
-  { label: 'Settings', icon: '⚙️', color: 'bg-gray-50 border-gray-200 text-gray-700', desc: 'Packages, billing, profile' },
+  { label: 'Settings', icon: '⚙️', color: 'bg-gray-50 border-gray-200 text-gray-700', desc: 'Packages, billing, checklists, profile' },
   { label: 'FAQ', icon: '❓', color: 'bg-rose-50 border-rose-200 text-rose-700', desc: 'Quick answers to common questions' },
 ];
 
