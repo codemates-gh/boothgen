@@ -49,7 +49,7 @@ export async function GET(
 ) {
   const tenant = await prisma.tenant.findUnique({
     where: { slug: params.tenantSlug },
-    include: { branding: { select: { companyName: true, logoUrl: true, primaryColor: true, leadFormConfig: true } } },
+    include: { branding: { select: { companyName: true, logoUrl: true, primaryColor: true, leadFormConfig: true, supportPhone: true, replyToEmail: true, websiteUrl: true } } },
   });
 
   if (!tenant || tenant.status === 'SUSPENDED') {
@@ -62,6 +62,13 @@ export async function GET(
   const api = '/api/public/' + params.tenantSlug + '/leads';
   const logo = tenant.branding?.logoUrl
     ? '<img src="' + tenant.branding.logoUrl + '" alt="' + co + '" style="height:40px;object-fit:contain"/>'
+    : '';
+  const contactParts: string[] = [];
+  if (tenant.branding?.supportPhone) contactParts.push('<a href="tel:' + tenant.branding.supportPhone + '" style="color:inherit;text-decoration:none">📞 ' + tenant.branding.supportPhone + '</a>');
+  if (tenant.branding?.replyToEmail) contactParts.push('<a href="mailto:' + tenant.branding.replyToEmail + '" style="color:inherit;text-decoration:none">✉ ' + tenant.branding.replyToEmail + '</a>');
+  if (tenant.branding?.websiteUrl) contactParts.push('<a href="' + tenant.branding.websiteUrl + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">🌐 ' + tenant.branding.websiteUrl.replace(/^https?:\/\//, '') + '</a>');
+  const contactBar = contactParts.length > 0
+    ? '<div style="font-size:12px;color:#6b7280;margin-bottom:18px;display:flex;flex-wrap:wrap;gap:12px;">' + contactParts.join('') + '</div>'
     : '';
 
   const cfg: Required<LeadFormConfig> = { ...DEFAULTS, ...((tenant.branding?.leadFormConfig ?? {}) as LeadFormConfig) };
@@ -106,6 +113,7 @@ export async function GET(
     '</head>' +
     '<body>' +
     '<div class="hdr">' + logo + '<h1>' + heading + '</h1></div>' +
+    contactBar +
     '<form id="f" novalidate>' +
     '<input class="honey" type="text" name="website" tabindex="-1" autocomplete="off"/>' +
     '<div class="grid">' +

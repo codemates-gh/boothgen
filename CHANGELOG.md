@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.8.5] — 2026-06-24
+
+### Fixed
+- **Automation — LEAD_CREATED trigger not firing** — the lead submission route never called the automation system; added direct LEAD_CREATED rule execution after each lead is saved: fetches active rules, resolves all merge tags (`{{client.*}}`, `{{event.*}}`, `{{host.*}}`) from lead data and tenant branding, and sends the template email to the client immediately; logs success/failure to Vercel for visibility
+- **Lead capture form — company contact info missing** — the embed form only fetched `companyName` and `logoUrl`; now also fetches `supportPhone`, `replyToEmail`, and `websiteUrl` from branding and renders them as a small contact bar below the header (only shown when values are set)
+
+---
+
 ## [1.8.4] — 2026-06-23
 
 ### Fixed

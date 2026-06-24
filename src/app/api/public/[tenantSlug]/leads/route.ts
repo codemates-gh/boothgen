@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { sendEmail } from '@/lib/email/send';
+import { parseMergeTags, buildCtx } from '@/lib/contracts/merge-tags';
 
 function cors() {
   return {
@@ -16,7 +17,14 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: NextRequest, { params }: { params: { tenantSlug: string } }) {
-  const tenant = await prisma.tenant.findUnique({ where: { slug: params.tenantSlug }, include: { apiKeys: { where: { isActive: true }, take: 1 }, branding: { select: { companyName: true } } } });
+  const tenant = await prisma.tenant.findUnique({
+    where: { slug: params.tenantSlug },
+    include: {
+      apiKeys: { where: { isActive: true }, take: 1 },
+      branding: true,
+      memberships: { where: { role: 'HOST_ADMIN', status: 'ACTIVE' }, include: { user: { select: { email: true } } } },
+    },
+  });
   if (!tenant || tenant.status === 'SUSPENDED') {
     return NextResponse.json({ error: 'Not found' }, { status: 404, headers: cors() });
   }
@@ -33,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: { tenantSlug:
   if (recent) {
     return NextResponse.json({ success: true, message: 'Inquiry received.' }, { status: 200, headers: cors() });
   }
-  const lead = await prisma.leadSubmission.create({
+  await prisma.leadSubmission.create({
     data: {
       tenantId: tenant.id,
       apiKeyId,
@@ -56,6 +64,7 @@ export async function POST(req: NextRequest, { params }: { params: { tenantSlug:
       ipAddress: ip,
     },
   });
+
   try {
     await prisma.client.upsert({
       where: { tenantId_email: { tenantId: tenant.id, email: email.toLowerCase().trim() } },
@@ -64,16 +73,17 @@ export async function POST(req: NextRequest, { params }: { params: { tenantSlug:
     });
   } catch {}
 
-  // Notify tenant owners
+  const companyName = tenant.branding?.companyName || tenant.name || 'Your Company';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://boothgen.com';
+  const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
+  const fromAddress = companyName ? `${companyName} <${emailFrom}>` : emailFrom;
+  const replyTo = tenant.branding?.replyToEmail ?? undefined;
+
+  // Notify host admins of new lead
   try {
-    const owners = await prisma.tenantMembership.findMany({
-      where: { tenantId: tenant.id, role: 'HOST_ADMIN', status: 'ACTIVE' },
-      include: { user: { select: { email: true, name: true } } },
-    });
-    const companyName = tenant.branding?.companyName || tenant.name || 'Your Company';
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://boothgen.com';
-    const eventDateStr = eventDate ? new Date(eventDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Not specified';
-    for (const m of owners) {
+    const eventDateStr = new Date(eventDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    for (const m of tenant.memberships) {
+      if (!m.user?.email) continue;
       await sendEmail(
         m.user.email,
         `New inquiry from ${firstName} ${lastName}`,
@@ -91,10 +101,56 @@ export async function POST(req: NextRequest, { params }: { params: { tenantSlug:
 </table>
 <p style="margin:24px 0"><a href="${appUrl}/leads" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">View Inquiry</a></p>
 <p style="color:#6b7280;font-size:12px;">Sent by Booth Genius</p>
-</div>`
+</div>`,
+        replyTo
       );
     }
   } catch {}
+
+  // Fire LEAD_CREATED automation rules — send template email to the client
+  try {
+    const rules = await prisma.automationRule.findMany({
+      where: { tenantId: tenant.id, trigger: 'LEAD_CREATED', isActive: true, actionType: 'EMAIL' },
+      include: { emailTemplate: true },
+    });
+
+    if (rules.length > 0) {
+      // Build a merge context from lead data + branding (no event record yet)
+      const pseudoStartTime = startTime ? new Date(`1970-01-01T${startTime}`) : null;
+      const pseudoEndTime = endTime ? new Date(`1970-01-01T${endTime}`) : null;
+      const ctx = buildCtx({
+        client: { firstName: firstName.trim(), lastName: lastName.trim(), email: email.toLowerCase().trim(), phone: phone || null },
+        event: {
+          title: eventType || 'Your inquiry',
+          eventDate: new Date(eventDate),
+          startTime: pseudoStartTime,
+          endTime: pseudoEndTime,
+          venueName: venueName || null,
+          venueAddress: venueAddress || null,
+          venueCity: venueCity || null,
+          venueState: venueState || null,
+          venuePostalCode: venuePostalCode || null,
+          guestCount: guestCount ? parseInt(guestCount) : null,
+        },
+        branding: tenant.branding ?? {},
+        appUrl,
+      });
+
+      for (const rule of rules) {
+        if (!rule.emailTemplate) continue;
+        const subject = parseMergeTags(rule.emailTemplate.subject, ctx);
+        const bodyHtml = parseMergeTags(rule.emailTemplate.bodyHtml, ctx);
+        const result = await sendEmail(email.toLowerCase().trim(), subject, bodyHtml, replyTo, fromAddress);
+        if (!result.success) {
+          console.error('[LEAD_AUTOMATION] email failed for', email, result.error);
+        } else {
+          console.log('[LEAD_AUTOMATION] sent to', email, 'rule:', rule.name, 'id:', result.id);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[LEAD_AUTOMATION]', err);
+  }
 
   return NextResponse.json({ success: true, message: "Inquiry received. We'll be in touch shortly." }, { status: 201, headers: cors() });
 }
