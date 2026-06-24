@@ -6,9 +6,10 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CreditCard, Link2, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
+import { CreditCard, Link2, ExternalLink } from 'lucide-react';
 import { PaymentTermsCard } from './PaymentTermsCard';
 import { UpgradeButton } from './UpgradeButton';
+import { StripeConnectCard } from './StripeConnectCard';
 
 const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile']];
 
@@ -36,15 +37,11 @@ export default async function BillingSettingsPage() {
         </Card>
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Link2 className="w-5 h-5"/>Stripe Connect</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            {conn?.onboardingStatus === 'ACTIVE' ? (
-              <div className="flex items-center gap-3 text-green-700 bg-green-50 rounded-xl p-4"><CheckCircle2 className="w-5 h-5"/><div><p className="font-semibold">Connected</p><p className="text-sm">Charges: {conn.chargesEnabled ? 'Enabled' : 'Pending'}</p></div></div>
-            ) : conn ? (
-              <div className="flex items-center gap-3 text-yellow-700 bg-yellow-50 rounded-xl p-4"><AlertCircle className="w-5 h-5"/><div><p className="font-semibold">Onboarding Incomplete</p><p className="text-sm">Finish your Stripe account setup to accept payments.</p></div></div>
-            ) : (
-              <p className="text-sm text-gray-600 mb-4">Connect Stripe to accept credit card payments from clients.</p>
-            )}
-            <a href="/api/stripe/connect/authorize"><Button variant={conn?.onboardingStatus === 'ACTIVE' ? 'outline' : 'default'}>{conn ? 'Update Stripe' : 'Connect Stripe Account'}</Button></a>
+          <CardContent>
+            <StripeConnectCard
+              status={conn?.onboardingStatus === 'ACTIVE' ? 'active' : conn ? 'incomplete' : 'none'}
+              chargesEnabled={conn?.chargesEnabled ?? false}
+            />
           </CardContent>
         </Card>
         <PaymentTermsCard />
