@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.9.2] — 2026-06-24
+
+### Changed
+- **Support Center — updated for all recent features** — Automation article fully rewritten to cover default pre-seeded templates, automation-first email architecture, correct trigger names, full merge tag reference, and edit-rule capability; new Calendar article covering monthly grid, event/lead color coding, click-to-create, and status legend; new Dashboard article covering stats row, Requires Attention, and Recent Activity sections; new Settings → Profile article; Getting Started Step 7 updated to reflect pre-seeded defaults; two new category cards added (Calendar, Dashboard); Settings category description updated
+
+---
+
 ## [1.9.1] — 2026-06-24
 
 ### Changed

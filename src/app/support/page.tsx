@@ -38,8 +38,8 @@ Go to Settings → Contracts → Templates. Create at least one contract templat
 **Step 6 — Set Up Lead Capture**
 Go to Settings → Lead Capture (Embed tab). Copy the JavaScript snippet and paste it into your website's HTML — typically in the footer or on a Contact/Book Now page. When a visitor submits the form, a lead will appear automatically in your Booth Genius dashboard.
 
-**Step 7 — Configure Email Automation (Optional)**
-Go to Automation in the sidebar. Set up trigger-based emails: for example, a thank-you email when a quote is accepted, or a reminder when a balance payment is due. Go to Email Templates to customize the wording.
+**Step 7 — Review Your Default Email Templates**
+Your account comes with six pre-built email templates and automation rules that cover every major client touchpoint — inquiry auto-reply, quote notification, contract, invoice, booking confirmation, and gallery delivery. Go to Email Templates in the sidebar to preview and customize the wording for each one. Go to Automation to see and adjust the rules that fire them.
 
 **Step 8 — Do a Test Run**
 Create a test event manually (Events → New Event), build a quote, send it to your own email, open the portal link, accept the quote, sign the contract, and pay a $1 test invoice. This gives you the exact client experience before your first real booking.`,
@@ -345,49 +345,73 @@ From the Team Members table, click on a member and change their status to Suspen
     content: `Automation lets you send the right email at exactly the right moment — without manual follow-up for every booking.
 
 **How It Works**
-Go to Automation in the sidebar. Create a rule by selecting:
-1. **Trigger** — The event that fires the automation
-2. **Delay** — Send immediately, or wait a specified number of hours/days
-3. **Email Template** — The email content to send (create templates in Automation → Email Templates)
+Go to Automation in the sidebar. Each rule has:
+1. **Trigger** — The moment in the booking flow that fires the email
+2. **Delay** — Send immediately, or wait a set number of hours after the trigger
+3. **Email Template** — The message to send (create and edit templates in Email Templates)
+
+**Default Templates — Ready on Day One**
+Every new account comes pre-loaded with six email templates and matching automation rules so your clients start receiving professional emails from your first booking:
+- New Inquiry Auto-Reply (fires on Lead Created)
+- Your Quote is Ready (fires on Quote Sent)
+- Contract Ready to Sign (fires on Contract Sent)
+- Invoice Ready for Payment (fires on Invoice Sent)
+- You're Booked! — What Happens Next (fires after payment is received)
+- Your Photo Gallery is Ready (fires when gallery is published)
+
+These are fully editable. Customize the wording, subject line, and layout to match your brand — or delete and rebuild from scratch.
+
+**Automation-First: Your Template Takes Over**
+When an active automation rule covers a trigger, your custom template is the only email the client receives — the system's built-in fallback is automatically suppressed. If you disable or delete your rule, the built-in email returns as a fallback so no client communication is ever silently dropped.
 
 **Available Triggers**
-- Lead Created — Fire when a new inquiry comes in
-- Quote Sent — Fire when you send a quote
-- Quote Accepted — Fire when the client accepts
-- Contract Signed — Fire when the contract is fully signed
-- Invoice Sent — Fire when an invoice goes out
-- Deposit Paid — Fire when the client pays the deposit
-- Balance Paid — Fire when the invoice is fully paid
-- Event Date Approaching — Fire X days before the event date
-- Event Date Passed — Fire X days after the event date (great for review requests and gallery follow-up)
+- Lead Created — New inquiry submitted through your lead form
+- Quote Sent — You clicked "Send Quote"
+- Quote Accepted — Client accepted the quote
+- Contract Sent — You sent the contract for signature
+- Contract Signed — Client signed; waiting on your countersignature
+- Invoice Sent — Invoice was sent to the client
+- Payment Received — Client completed payment (full payment or final milestone)
+- 14 Days Before Event — Countdown reminder
+- 7 Days Before Event — Countdown reminder
+- 1 Day Before Event — Final reminder
+- 1 Day After Event — Follow-up (e.g. review request)
+- 3 Days After Event — Follow-up
+- Gallery Published — You published the client's photo gallery
 
-**Email Templates**
-Go to Automation → Email Templates (or the Email Templates item in the sidebar). Create templates using merge tags:
-- {{client_first_name}} — Client's first name
-- {{event_date}} — Date of the event
-- {{event_title}} — Event name
-- {{portal_url}} — Link to the client's portal
-- {{balance_amount}} — Outstanding balance
-- {{operator_name}} — Your business name
-- {{gallery_url}} — Link to the client's photo gallery
+**Editing a Rule**
+Click the pencil icon on any rule to edit the name, trigger, or assigned template without deleting and recreating it. Toggle the switch to pause a rule temporarily.
 
-**Example: Review Request Automation**
-1. Create an Email Template called "Post-Event Review Request"
-   - Subject: "How was your experience with {{operator_name}}?"
-   - Body: "Hi {{client_first_name}}, thank you so much for booking with us for {{event_title}}! We hope you and your guests had an amazing time. If you have a moment, we'd love a review: [Your Google/WeddingWire/Facebook link]"
+**Email Templates & the Visual Editor**
+Go to Email Templates in the sidebar. Create a new template or click any existing one to edit. The visual editor lets you type and format your message and insert merge tags using the tag picker — click a tag to insert it at the cursor. Tags appear as orange chips while editing and are replaced with real values when the email is sent.
+
+**Available Merge Tags**
+- {{client.first_name}} / {{client.last_name}} / {{client.full_name}}
+- {{client.email}} / {{client.phone}}
+- {{event.title}} / {{event.date}} / {{event.time}}
+- {{event.venue_name}} / {{event.venue_address}}
+- {{quote.total}} / {{quote.number}}
+- {{invoice.number}} / {{invoice.total}} / {{invoice.balance_due}}
+- {{invoice.due_date}} / {{invoice.retainer_amount}}
+- {{contract.link}} — Direct link to the contract signing page
+- {{portal.link}} — Link to the client's full portal
+- {{host.company_name}} / {{host.email}} / {{host.phone}}
+- {{host.signature}} — Your signature block (set in Settings → Branding → Email Header)
+
+**Example: Post-Event Review Request**
+1. Create a template called "Post-Event Review Request"
+   - Subject: "How was your experience, {{client.first_name}}?"
+   - Body: "Hi {{client.first_name}}, thank you for booking {{host.company_name}} for {{event.title}}! We'd love a quick review: [link]"
 2. Create an Automation Rule:
-   - Trigger: Event Date Passed
-   - Delay: 3 days
+   - Trigger: 3 Days After Event
+   - Delay: 0 hours (fires immediately at that point)
    - Template: "Post-Event Review Request"
-Now every client automatically receives a review request 3 days after their event — without you lifting a finger.
 
-**Example: Balance Reminder**
-- Trigger: Event Date Approaching
-- Delay: 14 days before
-- Template: "Balance Due Reminder" with {{balance_amount}} and {{portal_url}}
+Set it up once — it runs for every future booking automatically.
 
-**Disabling an Automation**
-Toggle the automation rule off from the Automation list. It can be re-enabled at any time.`,
+**Example: Balance Due Reminder**
+- Trigger: 14 Days Before Event
+- Template with {{invoice.balance_due}} and {{portal.link}}`,
   },
 
   // ─── COUPONS ────────────────────────────────────────────────────────────────
@@ -484,6 +508,74 @@ Three days after the event date (or your configured delay), an automated email f
 **Total time savings vs. manual tools: approximately 45–90 minutes per booking.**`,
   },
 
+  // ─── CALENDAR ───────────────────────────────────────────────────────────────
+  {
+    id: 'calendar-overview',
+    category: 'Calendar',
+    categoryIcon: '📅',
+    title: 'Using the Event Calendar',
+    slug: 'calendar',
+    content: `The Calendar gives you a full monthly view of everything on your schedule — booked events, leads with requested dates, and in-progress jobs — at a glance.
+
+**Accessing the Calendar**
+Click Calendar in the left sidebar. The calendar opens to the current month.
+
+**What Shows on the Calendar**
+Each day cell shows any events or leads whose event date falls on that day:
+- **Events** are color-coded by status — blue (Lead), yellow (Quoted), orange (Booked), brand color (In Progress), green (Completed). Cancelled events appear gray with a strikethrough.
+- **Lead Inquiries** appear in purple with a ✦ prefix, so you can distinguish unconfirmed inquiries from booked events at a glance.
+
+If a day has more than 3 items, a "+N more" indicator shows. Click through to the event or lead to see full details.
+
+**Navigating Months**
+Use the left and right arrows to move between months. Click the "Today" button at any time to jump back to the current month. Today's date is highlighted with an orange circle.
+
+**Creating an Event from the Calendar**
+Click any date number to open the New Event form pre-filled with that date. This is the fastest way to block a date once a client verbally confirms — you can fill in the rest of the details later.
+
+**New Event Button**
+The "New Event" button in the top-right of the calendar also creates a new event. It opens the same form without a pre-filled date.
+
+**Status Legend**
+A color legend at the bottom of the calendar shows what each color means. Lead inquiries (purple) are listed separately since they aren't confirmed bookings.
+
+**Tips**
+- Use the calendar to quickly spot double-bookings before sending a quote
+- Check the calendar on the morning of an event to see exactly what's happening that day
+- Leads in purple are a useful reminder of dates that are "soft holds" — follow up before confirming`,
+  },
+
+  // ─── DASHBOARD ──────────────────────────────────────────────────────────────
+  {
+    id: 'dashboard-overview',
+    category: 'Dashboard',
+    categoryIcon: '🏠',
+    title: 'Reading Your Dashboard',
+    slug: 'dashboard',
+    content: `The Dashboard is your home base — a real-time summary of what's happening across all your events and clients.
+
+**Stats Row**
+The top row shows four key numbers updated in real time:
+- **Total Events** — All events across all statuses
+- **Active Bookings** — Events currently in BOOKED or IN_PROGRESS status
+- **This Month Revenue** — Payments received in the current calendar month
+- **Leads This Month** — New inquiries submitted this month
+
+**Requires Attention**
+This section highlights items that need your action before they hold up a client. It currently tracks:
+- Events where the client has requested a design revision — a revision request means the client reviewed your template design and asked for changes; the alert clears automatically once you upload a new version and the client approves it
+- Only events where the **latest** design version is still pending revision appear here — if you've already uploaded a corrected version, the alert goes away even if an older version was rejected
+
+**Recent Activity**
+Below "Requires Attention" is a Recent Activity feed showing design approvals from the last 30 days. Each row shows the client name, approved version, event title, and how long ago the approval happened. This gives you a quick record of what's been signed off without digging into individual events.
+
+**Upcoming Events**
+A list of your next several events sorted by date, with their status badges. Click any event to go directly to its detail page.
+
+**Recent Leads**
+Your most recently submitted lead inquiries, with the event date and lead status. Click a lead to open it and respond.`,
+  },
+
   // ─── SETTINGS ───────────────────────────────────────────────────────────────
   {
     id: 'settings-packages',
@@ -534,6 +626,27 @@ Click "Connect Stripe" in Settings → Billing. You'll complete a Stripe onboard
 
 **Commission Rate**
 The current commission rate is displayed in Settings → Billing and on the marketing page. This rate is set by the Booth Genius platform and may change over time.`,
+  },
+
+  {
+    id: 'settings-profile',
+    category: 'Settings',
+    categoryIcon: '⚙️',
+    title: 'Managing Your Profile',
+    slug: 'profile',
+    content: `Your profile controls your personal account details — separate from your business branding.
+
+**Accessing Profile Settings**
+Go to Settings → Profile (the last tab in the Settings navigation).
+
+**Display Name**
+Your display name appears in the sidebar navigation and on your account. Update it here and click "Save Changes" — the change takes effect immediately across the dashboard.
+
+**Email Address**
+Your login email is shown but cannot be changed from this screen. If you need to change your login email, contact support@boothgen.com.
+
+**Note for Team Members**
+Each team member has their own profile. Team members log in with their own email and password and can update their own display name from their Settings → Profile page.`,
   },
 
   // ─── FAQS ───────────────────────────────────────────────────────────────────
@@ -596,10 +709,12 @@ const CATEGORIES = [
   { label: 'Client Portal', icon: '🖼️', color: 'bg-indigo-50 border-indigo-200 text-indigo-700', desc: 'What clients see and do' },
   { label: 'Photo Gallery (Pro)', icon: '📸', color: 'bg-pink-50 border-pink-200 text-pink-700', desc: 'Upload, share, expiry, guest links' },
   { label: 'Team Management', icon: '👥', color: 'bg-teal-50 border-teal-200 text-teal-700', desc: 'Invites, roles, access control' },
-  { label: 'Automation & Emails', icon: '⚡', color: 'bg-amber-50 border-amber-200 text-amber-700', desc: 'Triggers, templates, sequences' },
+  { label: 'Automation & Emails', icon: '⚡', color: 'bg-amber-50 border-amber-200 text-amber-700', desc: 'Triggers, templates, merge tags' },
   { label: 'Discounts & Coupons', icon: '🏷️', color: 'bg-lime-50 border-lime-200 text-lime-700', desc: 'Promo codes, % and $ off' },
+  { label: 'Calendar', icon: '📅', color: 'bg-sky-50 border-sky-200 text-sky-700', desc: 'Monthly view, events & leads' },
+  { label: 'Dashboard', icon: '🏠', color: 'bg-violet-50 border-violet-200 text-violet-700', desc: 'Stats, attention alerts, activity' },
   { label: 'Workflows', icon: '🔄', color: 'bg-cyan-50 border-cyan-200 text-cyan-700', desc: 'End-to-end booking walkthroughs' },
-  { label: 'Settings', icon: '⚙️', color: 'bg-gray-50 border-gray-200 text-gray-700', desc: 'Packages, billing, configuration' },
+  { label: 'Settings', icon: '⚙️', color: 'bg-gray-50 border-gray-200 text-gray-700', desc: 'Packages, billing, profile' },
   { label: 'FAQ', icon: '❓', color: 'bg-rose-50 border-rose-200 text-rose-700', desc: 'Quick answers to common questions' },
 ];
 
