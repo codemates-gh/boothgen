@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Printer, Layers, AlertCircle, Download, X, Copy } from 'lucide-react';
 import { InvoicePaymentForm } from '@/components/stripe/PaymentForm';
+import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
 
 type Tab = 'quote' | 'contract' | 'invoice' | 'design' | 'gallery';
 
@@ -454,7 +455,7 @@ export default function ClientPortalPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="p-6 prose max-w-none text-sm" dangerouslySetInnerHTML={{ __html: data.contract.renderedContent || data.contract.templateContent || '' }}/>
+                  <div className="p-6 prose max-w-none text-sm" dangerouslySetInnerHTML={{ __html: stripMergeTagSpans(data.contract.renderedContent || data.contract.templateContent || '') }}/>
                 </div>
 
                 {!contractSigned && (

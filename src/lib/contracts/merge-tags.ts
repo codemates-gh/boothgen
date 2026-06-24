@@ -7,9 +7,18 @@ export type MergeCtx = {
   quote: { link?: string; number?: string; total?: string };
   host: { company_name: string; email?: string; phone?: string; website?: string; signature?: string };
 };
+/** Strip editor merge-tag span wrappers, keeping only the inner text or resolved tag value. */
+export function stripMergeTagSpans(html: string): string {
+  // Remove spans that have a data-tag attribute (editor-inserted, may still have {{...}} or real value)
+  let out = html.replace(/<span\b[^>]*\bdata-tag="[^"]*"[^>]*>([\s\S]*?)<\/span>/g, '$1');
+  // Remove any remaining spans with class="merge-tag" (belt-and-suspenders)
+  out = out.replace(/<span\b[^>]*\bclass="[^"]*\bmerge-tag\b[^"]*"[^>]*>([\s\S]*?)<\/span>/g, '$1');
+  return out;
+}
+
 export function parseMergeTags(tpl: string, ctx: MergeCtx, showMissing = false): string {
-  // Strip styled span wrappers inserted by the visual email editor, leaving just the raw {{tag}}
-  const cleaned = tpl.replace(/<span[^>]+data-tag="({{[^"]+}})"[^>]*>.*?<\/span>/gs, '$1');
+  // Strip visual-editor span wrappers so only the raw {{tag}} remains, then substitute
+  const cleaned = stripMergeTagSpans(tpl);
   return cleaned.replace(/{{([^}]+)}}/g, (match, raw: string) => {
     const keys = raw.trim().split('.');
     let v: any = ctx;

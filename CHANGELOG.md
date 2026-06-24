@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.8.8] — 2026-06-24
+
+### Fixed
+- **Email + contract variables — amber styling in rendered output** — visual editor stores merge tags as styled `<span>` elements with amber borders; these spans were reaching sent emails and the contract viewer (both CRM and client portal); added `stripMergeTagSpans()` that removes both `data-tag`-attributed spans and `class="merge-tag"` spans before any HTML is displayed or sent; applied in `parseMergeTags` (email sending path) and both contract rendering locations; the editor still shows amber chips while composing, but rendered output is plain
+
+---
+
 ## [1.8.7] — 2026-06-24
 
 ### Added

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { SignatureCanvas } from '@/components/contracts/SignatureCanvas';
 import { ArrowLeft, Send, Lock, Download } from 'lucide-react';
 import Link from 'next/link';
+import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
 
 const CC: Record<string, any> = { DRAFT:'default', SENT_TO_CLIENT:'info', CLIENT_SIGNED:'warning', HOST_SIGNED:'warning', FULLY_EXECUTED:'success', VOIDED:'danger' };
 
@@ -68,7 +69,7 @@ export default function ContractDetailPage() {
         <Card>
           <CardHeader><CardTitle>Contract Content</CardTitle></CardHeader>
           <CardContent>
-            <div className="prose max-w-none text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: contract.renderedContent ?? '' }} />
+            <div className="prose max-w-none text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: stripMergeTagSpans(contract.renderedContent ?? '') }} />
           </CardContent>
         </Card>
         {canHostSign && (
