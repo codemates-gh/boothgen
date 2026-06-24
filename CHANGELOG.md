@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.9.1] — 2026-06-24
+
+### Changed
+- **Super admin — status/plan selectors redesigned** — replaced cramped horizontal button groups with a clean vertical list; current selection is shown with a checkmark and muted background; available options are uniform outlined rows with brand-color hover; Cancel is a plain text link below the list; no more wrapping or ambiguous button styles
+
+---
+
 ## [1.9.0] — 2026-06-24
 
 ### Added

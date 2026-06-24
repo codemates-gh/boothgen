@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { Search, Trash2, ChevronDown, ArrowUpCircle, AlertTriangle } from 'lucide-react';
+import { Search, Trash2, ChevronDown, ArrowUpCircle, AlertTriangle, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -83,48 +83,58 @@ function ActionsCell({ op }: { op: Operator }) {
 
   if (mode === 'upgrade') {
     return (
-      <div className="flex flex-wrap items-center gap-1.5 min-w-[260px]">
-        <span className="text-xs text-gray-500 font-medium mr-1">Set plan:</span>
-        {(['FREE_TRIAL', 'MONTHLY', 'ANNUAL'] as SubscriptionPlan[]).map(p => (
-          <button
-            key={p}
-            disabled={busy || p === currentPlan}
-            onClick={() => changePlan(p)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors
-              ${p === currentPlan
-                ? 'bg-gray-100 text-gray-400 cursor-default'
-                : p === 'FREE_TRIAL'
-                  ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                  : 'bg-purple-600 hover:bg-purple-700 text-white'
-              }`}
-          >
-            {busy ? '…' : PLAN_LABELS[p]}
-          </button>
-        ))}
-        <button onClick={() => setMode('idle')} className="text-xs text-gray-400 hover:text-gray-600 ml-1">Cancel</button>
+      <div className="w-44">
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Change Plan</p>
+        <div className="space-y-1">
+          {(['FREE_TRIAL', 'MONTHLY', 'ANNUAL'] as SubscriptionPlan[]).map(p => {
+            const isCurrent = p === currentPlan;
+            return (
+              <button
+                key={p}
+                disabled={busy || isCurrent}
+                onClick={() => changePlan(p)}
+                className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-sm transition-colors
+                  ${isCurrent
+                    ? 'bg-gray-100 text-gray-500 cursor-default font-medium'
+                    : 'border border-gray-200 text-gray-700 hover:border-brand hover:text-brand hover:bg-orange-50 font-medium'
+                  }`}
+              >
+                <span>{busy && !isCurrent ? '…' : PLAN_LABELS[p]}</span>
+                {isCurrent && <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+        <button onClick={() => setMode('idle')} className="text-xs text-gray-400 hover:text-gray-600 mt-2 block">Cancel</button>
       </div>
     );
   }
 
   if (mode === 'status') {
     return (
-      <div className="flex flex-wrap items-center gap-1.5 min-w-[260px]">
-        <span className="text-xs text-gray-500 font-medium mr-1">Set status:</span>
-        {STATUS_OPTIONS.map(s => (
-          <button
-            key={s.value}
-            disabled={busy || s.value === op.status}
-            onClick={() => changeStatus(s.value)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors
-              ${s.value === op.status
-                ? 'bg-gray-100 text-gray-400 cursor-default'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-          >
-            {busy ? '…' : s.label}
-          </button>
-        ))}
-        <button onClick={() => setMode('idle')} className="text-xs text-gray-400 hover:text-gray-600 ml-1">Cancel</button>
+      <div className="w-44">
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Change Status</p>
+        <div className="space-y-1">
+          {STATUS_OPTIONS.map(s => {
+            const isCurrent = s.value === op.status;
+            return (
+              <button
+                key={s.value}
+                disabled={busy || isCurrent}
+                onClick={() => changeStatus(s.value)}
+                className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-sm transition-colors
+                  ${isCurrent
+                    ? 'bg-gray-100 text-gray-500 cursor-default font-medium'
+                    : 'border border-gray-200 text-gray-700 hover:border-brand hover:text-brand hover:bg-orange-50 font-medium'
+                  }`}
+              >
+                <span>{busy && !isCurrent ? '…' : s.label}</span>
+                {isCurrent && <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+        <button onClick={() => setMode('idle')} className="text-xs text-gray-400 hover:text-gray-600 mt-2 block">Cancel</button>
       </div>
     );
   }
