@@ -47,7 +47,7 @@ export default function CalendarPage() {
       setEvents(Array.isArray(evts) ? evts : []);
       setLeads(Array.isArray(lds) ? lds : []);
       setBlackouts(new Set(Array.isArray(bds) ? bds : []));
-      if (tokenData?.url) setIcalUrl(tokenData.url);
+      if (tokenData?.token) setIcalUrl(`${window.location.origin}/api/calendar/feed/${tokenData.token}`);
       setLoading(false);
     });
   }, []);
@@ -99,7 +99,7 @@ export default function CalendarPage() {
   async function regenerateToken() {
     const res = await fetch('/api/calendar/token', { method: 'POST' });
     const data = await res.json();
-    if (data?.url) setIcalUrl(data.url);
+    if (data?.token) setIcalUrl(`${window.location.origin}/api/calendar/feed/${data.token}`);
   }
 
   function copyIcal() {
