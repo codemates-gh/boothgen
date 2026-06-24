@@ -51,19 +51,28 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     data: { tenantId: session.tenantId, eventId: params.id, fileUrl: publicUrl, filename: file.name, version, status: 'PENDING_APPROVAL' },
   });
 
-  // Notify the client — must be awaited before returning so Vercel doesn't freeze the function mid-send
+  // Notify the client — awaited so Vercel doesn't freeze the function before the email sends
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
   const companyName = (event as any).tenant?.branding?.companyName || (event as any).tenant?.name || 'Your photo booth company';
-  try {
-    await sendDesignReadyEmail({
-      to: (event as any).client.email,
-      firstName: (event as any).client.firstName,
+  const clientEmail: string | undefined = (event as any).client?.email;
+  const clientFirstName: string = (event as any).client?.firstName ?? 'there';
+
+  if (!clientEmail) {
+    console.error('[design-upload] no client email on event', params.id);
+  } else {
+    console.log('[design-upload] sending design-ready email to', clientEmail, 'version', version);
+    const result = await sendDesignReadyEmail({
+      to: clientEmail,
+      firstName: clientFirstName,
       companyName,
       version,
       portalUrl: appUrl + '/portal/' + event.portalToken + '?tab=design',
     });
-  } catch (e) {
-    console.error('[design-upload] client email error:', e);
+    if (!result.success) {
+      console.error('[design-upload] sendDesignReadyEmail failed:', result.error);
+    } else {
+      console.log('[design-upload] email sent ok, id:', result.id);
+    }
   }
 
   return NextResponse.json(design, { status: 201 });

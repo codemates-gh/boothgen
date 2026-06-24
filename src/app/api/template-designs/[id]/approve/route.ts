@@ -18,7 +18,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       tenant: {
         include: {
           branding: { select: { companyName: true, replyToEmail: true } },
-          memberships: { where: { role: 'HOST_ADMIN', status: 'ACTIVE' }, include: { user: { select: { email: true } } } },
+          memberships: {
+            where: { status: 'ACTIVE' },
+            include: { user: { select: { email: true, name: true } } },
+          },
         },
       },
     },
@@ -33,22 +36,44 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     data: { status: 'APPROVED', approvedAt: new Date() },
   });
 
-  // Notify all host admins — awaited so Vercel doesn't freeze the function before emails send
+  // Build recipient list: replyToEmail first, then HOST_ADMINs, then any active member as fallback
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
-  const adminEmails = design.tenant.memberships.map(m => m.user?.email).filter((e): e is string => Boolean(e));
-  const replyTo = design.tenant.branding?.replyToEmail;
-  const recipients = replyTo ? [replyTo, ...adminEmails.filter(e => e !== replyTo)] : adminEmails;
-  try {
-    await Promise.all(recipients.map(to =>
-      sendDesignDecisionEmail({
-        to, decision: 'approved', version: design.version,
-        clientName: design.event.client.firstName + ' ' + design.event.client.lastName,
-        eventTitle: design.event.title,
-        designUrl: appUrl + '/events/' + design.eventId + '/designs',
-      })
-    ));
-  } catch (e) {
-    console.error('[design-approve] host email error:', e);
+  const replyTo = design.tenant.branding?.replyToEmail ?? null;
+  const allMemberEmails = design.tenant.memberships
+    .map(m => m.user?.email)
+    .filter((e): e is string => Boolean(e));
+  const adminEmails = design.tenant.memberships
+    .filter(m => m.role === 'HOST_ADMIN')
+    .map(m => m.user?.email)
+    .filter((e): e is string => Boolean(e));
+
+  // Prefer HOST_ADMIN; fall back to all active members if none found
+  const baseEmails = adminEmails.length > 0 ? adminEmails : allMemberEmails;
+  const recipientSet = new Set<string>(baseEmails);
+  if (replyTo) recipientSet.add(replyTo);
+  const recipients = Array.from(recipientSet);
+
+  console.log('[design-approve] recipients:', recipients, '| adminEmails:', adminEmails, '| replyTo:', replyTo);
+
+  if (recipients.length === 0) {
+    console.error('[design-approve] no recipients found for tenant', design.tenantId);
+  } else {
+    const results = await Promise.all(
+      recipients.map(to =>
+        sendDesignDecisionEmail({
+          to,
+          decision: 'approved',
+          version: design.version,
+          clientName: design.event.client.firstName + ' ' + design.event.client.lastName,
+          eventTitle: design.event.title,
+          designUrl: appUrl + '/events/' + design.eventId + '/designs',
+        })
+      )
+    );
+    results.forEach((r, i) => {
+      if (!r.success) console.error('[design-approve] email failed for', recipients[i], r.error);
+      else console.log('[design-approve] email sent to', recipients[i], 'id:', r.id);
+    });
   }
 
   return NextResponse.json({ success: true, status: 'APPROVED' });

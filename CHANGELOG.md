@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.8.3] — 2026-06-23
+
+### Fixed
+- **Template design emails — robust recipient resolution** — the approve and request-revision routes previously queried only `HOST_ADMIN` memberships; if that query returned empty (e.g. tenant created outside the onboarding flow), `recipients` was an empty array and no emails were sent silently; now falls back to all active memberships if no HOST_ADMIN members are found, so someone always gets notified
+- **Template design emails — detailed logging** — all three routes now log the recipient list, Resend success/failure, and returned message IDs to Vercel logs for easier debugging
+
+---
+
 ## [1.8.2] — 2026-06-23
 
 ### Added
