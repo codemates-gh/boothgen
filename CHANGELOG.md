@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.8.7] — 2026-06-24
+
+### Added
+- **Lead capture form — Company / Organization field** — added optional company field to the public embed form; saved to both the `LeadSubmission` record and the client record; includes new `showCompany` toggle in lead form config (defaults to `true`)
+
+---
+
 ## [1.8.6] — 2026-06-24
 
 ### Added

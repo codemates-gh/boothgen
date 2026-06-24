@@ -29,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: { tenantSlug:
     return NextResponse.json({ error: 'Not found' }, { status: 404, headers: cors() });
   }
   const body = await req.json();
-  const { firstName, lastName, email, phone, eventDate, eventType, startTime, endTime,
+  const { firstName, lastName, email, phone, company, eventDate, eventType, startTime, endTime,
     venueName, venueAddress, venueCity, venueState, venuePostalCode,
     guestCount, message, referrerUrl } = body;
   if (!firstName || !lastName || !email || !eventDate) {
@@ -49,6 +49,7 @@ export async function POST(req: NextRequest, { params }: { params: { tenantSlug:
       lastName: lastName.trim(),
       email: email.toLowerCase().trim(),
       phone: phone || null,
+      company: company || null,
       eventDate: new Date(eventDate),
       eventType: eventType || null,
       startTime: startTime || null,
@@ -68,8 +69,8 @@ export async function POST(req: NextRequest, { params }: { params: { tenantSlug:
   try {
     await prisma.client.upsert({
       where: { tenantId_email: { tenantId: tenant.id, email: email.toLowerCase().trim() } },
-      update: { firstName: firstName.trim(), lastName: lastName.trim(), phone: phone || null },
-      create: { tenantId: tenant.id, firstName: firstName.trim(), lastName: lastName.trim(), email: email.toLowerCase().trim(), phone: phone || null },
+      update: { firstName: firstName.trim(), lastName: lastName.trim(), phone: phone || null, company: company || null },
+      create: { tenantId: tenant.id, firstName: firstName.trim(), lastName: lastName.trim(), email: email.toLowerCase().trim(), phone: phone || null, company: company || null },
     });
   } catch {}
 

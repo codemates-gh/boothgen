@@ -17,6 +17,7 @@ interface LeadFormConfig {
   successHeading?: string;
   successMessage?: string;
   showPhone?: boolean;
+  showCompany?: boolean;
   showEventDate?: boolean;
   showEventType?: boolean;
   showTimes?: boolean;
@@ -33,6 +34,7 @@ const DEFAULTS: Required<LeadFormConfig> = {
   successHeading: 'We received your inquiry!',
   successMessage: "We'll be in touch within 1-2 business days.",
   showPhone: true,
+  showCompany: true,
   showEventDate: true,
   showEventType: true,
   showTimes: true,
@@ -121,6 +123,7 @@ export async function GET(
     '<div><label>Last Name <span class="req">*</span></label><input type="text" name="lastName" autocomplete="family-name" required/></div>' +
     '<div><label>Email <span class="req">*</span></label><input type="email" name="email" autocomplete="email" required/></div>' +
     (cfg.showPhone ? '<div><label>Phone' + (cfg.requirePhone ? ' <span class="req">*</span>' : '') + '</label><input type="tel" name="phone" autocomplete="tel"/></div>' : '') +
+    (cfg.showCompany ? '<div class="full"><label>Company / Organization</label><input type="text" name="company" autocomplete="organization" placeholder="Acme Corp (optional)"/></div>' : '') +
     (cfg.showEventDate ? '<div><label>Event Date' + (cfg.requireEventDate ? ' <span class="req">*</span>' : '') + '</label><input type="date" name="eventDate"/></div>' : '') +
     (cfg.showEventType ? '<div><label>Event Type</label><select name="eventType"><option value="">-- Select --</option><option>Wedding</option><option>Corporate Event</option><option>Birthday Party</option><option>Quincea\xf1era / Sweet 16</option><option>Graduation</option><option>Holiday Party</option><option>Other</option></select></div>' : '') +
     (cfg.showTimes ? '<div><label>Start Time</label><input type="time" name="startTime"/></div>' : '') +

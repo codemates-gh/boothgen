@@ -650,6 +650,7 @@ model LeadSubmission {
   lastName           String
   email              String
   phone              String?
+  company            String?
   eventDate          DateTime?
   eventType          String?
   venueName          String?
