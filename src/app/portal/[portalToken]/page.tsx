@@ -62,8 +62,8 @@ export default function ClientPortalPage() {
     const d = await r.json();
     setData(d);
     setLoading(false);
-    // Keep polling while no payment recorded yet, up to 5 attempts (~10s total)
-    if (attempt < 5 && d.invoice && d.invoice.amountPaidCents === 0) {
+    // Poll up to 4 times (~8s) to give the webhook time to process
+    if (attempt < 4) {
       setTimeout(() => pollUntilPaid(attempt + 1), 2000);
     }
   }
@@ -629,6 +629,29 @@ export default function ClientPortalPage() {
             )}
           </div>
         )}
+
+        {/* Deposit confirmed — shown below a partially-paid invoice */}
+        {tab === 'invoice' && data?.invoice?.status === 'PARTIALLY_PAID' && (() => {
+          const nextDue = data.invoice.milestones?.find((m: any) => m.status !== 'PAID');
+          return (
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+              <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0"/>
+                <div>
+                  <p className="font-bold text-gray-900">Deposit received — you&apos;re all set for now!</p>
+                  <p className="text-sm text-gray-500 mt-0.5">Your reservation is secured. No further action is needed until your next payment is due.</p>
+                </div>
+              </div>
+              {nextDue && (
+                <div className="px-6 py-4 text-sm text-gray-600">
+                  Your remaining balance of <strong className="text-gray-900">{fmt(nextDue.amountCents)}</strong> is due by{' '}
+                  <strong className="text-gray-900">{new Date(nextDue.dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>.
+                  You can pay it anytime from the invoice above.
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* What's next — shown below the paid invoice */}
         {tab === 'invoice' && invoicePaid && (

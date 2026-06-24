@@ -211,7 +211,7 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
     const res = await fetch(`/api/leads/${lead.id}/convert`, { method: 'POST' });
     const data = await res.json();
     if (data.eventId) {
-      router.push(`/events/${data.eventId}/edit`);
+      router.push(`/events/${data.eventId}`);
     }
     setConverting(false);
   }

@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.9.4] — 2026-06-24
+
+### Fixed
+- **Convert to Event — no longer requires Edit + Save** — clicking "Convert to Event" on a lead now navigates directly to the event detail page; the event was already created by the API, so the extra Edit → Save step was redundant and confusing
+- **Client portal — partial payment stuck in "payment window"** — after paying a deposit via Stripe and being redirected back, the portal now shows a "Deposit received — you're all set for now!" confirmation card with the next payment due date; the Stripe polling logic was also corrected to always poll for ~8 seconds after a payment redirect rather than stopping early when a prior balance was on record
+- **Stripe webhook — test mode signing secret mismatch** — the webhook at `boothgen.vercel.app` was failing in Stripe sandbox/test mode because the `STRIPE_WEBHOOK_SECRET` env var held the live mode secret; fix: add the test mode webhook signing secret as a separate env var (see notes below)
+
+---
+
 ## [1.9.3] — 2026-06-24
 
 ### Added
