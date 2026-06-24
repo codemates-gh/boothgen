@@ -51,16 +51,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     data: { tenantId: session.tenantId, eventId: params.id, fileUrl: publicUrl, filename: file.name, version, status: 'PENDING_APPROVAL' },
   });
 
-  // Send client notification directly — bypasses Inngest for reliability
+  // Notify the client — must be awaited before returning so Vercel doesn't freeze the function mid-send
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
   const companyName = (event as any).tenant?.branding?.companyName || (event as any).tenant?.name || 'Your photo booth company';
-  sendDesignReadyEmail({
-    to: (event as any).client.email,
-    firstName: (event as any).client.firstName,
-    companyName,
-    version,
-    portalUrl: appUrl + '/portal/' + event.portalToken + '?tab=design',
-  }).catch(e => console.error('[design-upload] client email error:', e));
+  try {
+    await sendDesignReadyEmail({
+      to: (event as any).client.email,
+      firstName: (event as any).client.firstName,
+      companyName,
+      version,
+      portalUrl: appUrl + '/portal/' + event.portalToken + '?tab=design',
+    });
+  } catch (e) {
+    console.error('[design-upload] client email error:', e);
+  }
 
   return NextResponse.json(design, { status: 201 });
 }

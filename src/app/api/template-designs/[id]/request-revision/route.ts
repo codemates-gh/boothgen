@@ -38,20 +38,24 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     data: { status: 'REVISION_REQUESTED', revisionNote },
   });
 
-  // Notify all host admins directly
+  // Notify all host admins — awaited so Vercel doesn't freeze the function before emails send
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
   const adminEmails = design.tenant.memberships.map(m => m.user?.email).filter((e): e is string => Boolean(e));
   const replyTo = design.tenant.branding?.replyToEmail;
   const recipients = replyTo ? [replyTo, ...adminEmails.filter(e => e !== replyTo)] : adminEmails;
-  recipients.forEach(to =>
-    sendDesignDecisionEmail({
-      to, decision: 'revision_requested', version: design.version,
-      clientName: design.event.client.firstName + ' ' + design.event.client.lastName,
-      eventTitle: design.event.title,
-      revisionNote,
-      designUrl: appUrl + '/events/' + design.eventId + '/designs',
-    }).catch(e => console.error('[design-revision] host email error:', e))
-  );
+  try {
+    await Promise.all(recipients.map(to =>
+      sendDesignDecisionEmail({
+        to, decision: 'revision_requested', version: design.version,
+        clientName: design.event.client.firstName + ' ' + design.event.client.lastName,
+        eventTitle: design.event.title,
+        revisionNote,
+        designUrl: appUrl + '/events/' + design.eventId + '/designs',
+      })
+    ));
+  } catch (e) {
+    console.error('[design-revision] host email error:', e);
+  }
 
   return NextResponse.json({ success: true, status: 'REVISION_REQUESTED' });
 }

@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.8.1] — 2026-06-23
+
+### Fixed
+- **Template design — client notification email not sending** — the design upload route called `sendDesignReadyEmail` as a fire-and-forget promise; on Vercel, the serverless function is frozen the moment `NextResponse.json()` returns, killing any unresolved promises before the email could be dispatched; fixed by `await`-ing the call inside a try/catch so the response is only returned after the email is sent
+- **Template design — approve/revision host emails not sending** — same root cause: `recipients.forEach(...)` with async callbacks is never awaited; changed both the approve and request-revision routes to `await Promise.all(recipients.map(...))` so host notification emails reliably dispatch before the function returns
+
+---
+
 ## [1.8.0] — 2026-06-23
 
 ### Added
