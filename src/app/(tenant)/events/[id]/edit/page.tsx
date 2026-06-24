@@ -100,7 +100,12 @@ export default function EditEventPage() {
         <Card>
           <CardHeader><CardTitle>Package & Notes</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {F('packageName','Package')} {F('guestCount','Guest Count','number')}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Package</label>
+              <Input type="text" value={form.packageName} onChange={e => set('packageName', e.target.value)} />
+              <p className="text-xs text-gray-400 mt-1">Label only — for your reference. Not linked to Settings → Packages or invoices.</p>
+            </div>
+            {F('guestCount','Guest Count','number')}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Value ($)</label>
               <Input type="number" min="0" step="0.01" placeholder="0.00" value={form.estimatedValueCents} onChange={e => set('estimatedValueCents', e.target.value)} />
