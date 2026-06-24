@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { Search, Trash2, ChevronDown, ArrowUpCircle } from 'lucide-react';
+import { Search, Trash2, ChevronDown, ArrowUpCircle, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -171,7 +171,7 @@ function ActionsCell({ op }: { op: Operator }) {
   );
 }
 
-export function OperatorsTable({ operators }: { operators: Operator[] }) {
+export function OperatorsTable({ operators, failedMap = {} }: { operators: Operator[]; failedMap?: Record<string, number> }) {
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
@@ -237,6 +237,11 @@ export function OperatorsTable({ operators }: { operators: Operator[] }) {
                     <td className="px-6 py-4">
                       <p className="font-semibold text-sm">{op.branding?.companyName ?? op.name}</p>
                       <p className="text-xs text-gray-400">/{op.slug}</p>
+                      {failedMap[op.id] > 0 && (
+                        <span className="inline-flex items-center gap-1 text-xs text-red-600 font-medium mt-0.5">
+                          <AlertTriangle className="w-3 h-3" />{failedMap[op.id]} email {failedMap[op.id] === 1 ? 'failure' : 'failures'}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <Badge variant={SC[op.status]}>{op.status}</Badge>

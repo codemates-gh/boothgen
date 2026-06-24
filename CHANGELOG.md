@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.9.0] — 2026-06-24
+
+### Added
+- **Automation — retry on failure + super admin alert** — when an automation email fails to send, Inngest automatically retries up to 3 times with exponential backoff; after all retries are exhausted the execution is marked FAILED and an alert email is sent to the super admin with tenant name, recipient, template, trigger, event, and error details; immediate-execution failures (zero-offset rules) follow the same alert path without Inngest
+- **Super admin — Email Activity Log** — new table at the bottom of the super admin console showing every automation email attempt (SENT/FAILED/SKIPPED); filterable by status; click any FAILED row to expand the raw error message; live refresh button; paginated at 50 per page
+- **Super admin — failure count badge on operator rows** — any operator with at least one FAILED automation execution shows a red "N email failures" indicator directly on their row in the Operators table; a total failures count also appears in the Email Activity Log header
+
+### Fixed
+- **Automation — silent failures** — previously a Resend error was caught inside `executeAutomation` and the job marked FAILED with no retry and no visibility; now errors propagate so Inngest can retry and unrecoverable failures surface to super admin
+
+---
+
 ## [1.8.9] — 2026-06-24
 
 ### Added

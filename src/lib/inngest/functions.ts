@@ -2,11 +2,23 @@
 import { inngest } from './client';
 import { prisma } from '@/lib/prisma/client';
 import { sendDesignReadyEmail, sendDesignDecisionEmail, sendPaymentReminderEmail, sendGalleryDeletionReminderEmail } from '@/lib/email/send';
-import { triggerAutomation, scheduleEventDateAutomations, executeAutomation } from './trigger';
+import { triggerAutomation, scheduleEventDateAutomations, executeAutomation, notifyAdminOfFailure } from './trigger';
 import { deleteFromR2, r2KeyFromUrl } from '@/lib/storage/r2';
 
 export const processAutomation = inngest.createFunction(
-  { id: 'process-automation', retries: 3 },
+  {
+    id: 'process-automation',
+    retries: 3,
+    onFailure: async ({ event, error }) => {
+      // Fires after all retries are exhausted — mark FAILED and alert super admin
+      const executionId = (event.data as any).event?.data?.executionId as string | undefined;
+      if (executionId) {
+        await notifyAdminOfFailure(executionId, error.message).catch(e =>
+          console.error('[AUTOMATION_ON_FAILURE]', e)
+        );
+      }
+    },
+  },
   { event: 'automation/execute' },
   async ({ event: evt }) => {
     const { executionId } = evt.data;

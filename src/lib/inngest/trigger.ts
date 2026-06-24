@@ -3,6 +3,45 @@ import { prisma } from '@/lib/prisma/client';
 import { sendEmail } from '@/lib/email/send';
 import { parseMergeTags, buildCtx } from '@/lib/contracts/merge-tags';
 
+const ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL ?? 'codemates@gmail.com';
+
+export async function notifyAdminOfFailure(executionId: string, errorMessage: string) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
+  try {
+    const exec = await prisma.automationExecution.update({
+      where: { id: executionId },
+      data: { status: 'FAILED', executedAt: new Date(), errorMessage },
+      include: {
+        tenant: { select: { name: true, branding: { select: { companyName: true } } } },
+        rule: { select: { name: true, trigger: true } },
+        event: { select: { title: true } },
+      },
+    });
+    const tenantName = exec.tenant?.branding?.companyName ?? exec.tenant?.name ?? 'Unknown';
+    await sendEmail(
+      ADMIN_EMAIL,
+      `[Booth Genius] Automation email failed — ${tenantName}`,
+      `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
+<h2 style="font-size:18px;color:#dc2626;margin:0 0 16px">⚠️ Automation Email Failure</h2>
+<p style="margin:0 0 20px;color:#374151">An automated email failed to send after all retries were exhausted.</p>
+<table style="width:100%;border-collapse:collapse;margin:0 0 24px">
+  <tr><td style="padding:8px 0;color:#6b7280;font-size:13px;width:130px">Tenant</td><td style="padding:8px 0;font-size:14px;font-weight:600">${tenantName}</td></tr>
+  <tr><td style="padding:8px 0;color:#6b7280;font-size:13px">Recipient</td><td style="padding:8px 0;font-size:14px">${exec.recipientEmail ?? '—'}</td></tr>
+  <tr><td style="padding:8px 0;color:#6b7280;font-size:13px">Template</td><td style="padding:8px 0;font-size:14px">${exec.rule?.name ?? '—'}</td></tr>
+  <tr><td style="padding:8px 0;color:#6b7280;font-size:13px">Trigger</td><td style="padding:8px 0;font-size:14px">${exec.rule?.trigger ?? '—'}</td></tr>
+  <tr><td style="padding:8px 0;color:#6b7280;font-size:13px">Event</td><td style="padding:8px 0;font-size:14px">${exec.event?.title ?? '—'}</td></tr>
+  <tr><td style="padding:8px 0;color:#6b7280;font-size:13px;vertical-align:top">Error</td><td style="padding:8px 0;font-size:13px;color:#dc2626;word-break:break-all">${errorMessage}</td></tr>
+</table>
+<a href="${appUrl}/super-admin" style="background:#F97316;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">View Email Activity Log</a>
+</div>`,
+      undefined,
+      `Booth Genius <${process.env.EMAIL_FROM ?? 'noreply@boothgen.com'}>`
+    );
+  } catch (err) {
+    console.error('[AUTOMATION_FAILURE_ALERT]', err);
+  }
+}
+
 const EVENT_DATE_OFFSETS: Record<string, number> = {
   EVENT_DATE_MINUS_14_DAYS: -14 * 24,
   EVENT_DATE_MINUS_7_DAYS: -7 * 24,
@@ -41,16 +80,20 @@ export async function executeAutomation(executionId: string) {
   const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
   const fromAddress = branding?.companyName ? `${branding.companyName} <${emailFrom}>` : emailFrom;
   const replyTo = branding?.replyToEmail ?? undefined;
-  const result = await sendEmail(ev.client.email, subject, body, replyTo, fromAddress);
+  // Pre-save recipient + subject so the log is useful even if the send fails mid-retry
   await prisma.automationExecution.update({
     where: { id: executionId },
-    data: {
-      status: result.success ? 'SENT' : 'FAILED',
-      executedAt: new Date(),
-      errorMessage: result.success ? null : String(result.error),
-      recipientEmail: ev.client.email,
-      messagePreview: subject,
-    },
+    data: { recipientEmail: ev.client.email, messagePreview: subject },
+  });
+
+  const result = await sendEmail(ev.client.email, subject, body, replyTo, fromAddress);
+  if (!result.success) {
+    throw new Error(String(result.error)); // Inngest retries; onFailure marks FAILED + alerts admin
+  }
+
+  await prisma.automationExecution.update({
+    where: { id: executionId },
+    data: { status: 'SENT', executedAt: new Date() },
   });
 }
 
@@ -74,8 +117,12 @@ export async function triggerAutomation(params: {
       });
 
       if (offsetMs === 0) {
-        // Execute immediately — no Inngest needed
-        await executeAutomation(execution.id);
+        // Execute immediately — catch here since Inngest isn't in the loop for this path
+        try {
+          await executeAutomation(execution.id);
+        } catch (err) {
+          await notifyAdminOfFailure(execution.id, String(err));
+        }
       } else {
         // Future delivery — use Inngest scheduler (best-effort)
         inngest.send({
