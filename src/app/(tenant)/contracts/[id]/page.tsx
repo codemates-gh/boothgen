@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SignatureCanvas } from '@/components/contracts/SignatureCanvas';
-import { ArrowLeft, Send, Lock, Download, PenLine } from 'lucide-react';
+import { ArrowLeft, Send, Lock, Download, PenLine, Pen, Type } from 'lucide-react';
 import Link from 'next/link';
 import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
+import { useRef, useCallback } from 'react';
 
 const CC: Record<string, any> = { DRAFT:'default', SENT_TO_CLIENT:'info', CLIENT_SIGNED:'warning', HOST_SIGNED:'warning', FULLY_EXECUTED:'success', VOIDED:'danger' };
 
@@ -18,9 +19,29 @@ export default function ContractDetailPage() {
   const router = useRouter();
   const [contract, setContract] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [sigMode, setSigMode] = useState<'draw' | 'type'>('draw');
   const [sigData, setSigData] = useState('');
+  const [typedName, setTypedName] = useState('');
   const [signing, setSigning] = useState(false);
   const [sending, setSending] = useState(false);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  const renderTypedSig = useCallback((name: string) => {
+    setTypedName(name);
+    const canvas = previewCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+    canvas.width = canvas.offsetWidth * (window.devicePixelRatio || 1);
+    canvas.height = canvas.offsetHeight * (window.devicePixelRatio || 1);
+    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+    ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+    if (!name.trim()) { setSigData(''); return; }
+    ctx.font = 'italic 36px Georgia, "Times New Roman", serif';
+    ctx.fillStyle = '#111827';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(name, 24, canvas.offsetHeight / (window.devicePixelRatio || 1) / 2);
+    setSigData(canvas.toDataURL('image/png'));
+  }, []);
 
   useEffect(() => { fetch('/api/contracts/' + id).then(r => r.json()).then(d => { setContract(d); setLoading(false); }); }, [id]);
 
@@ -85,9 +106,55 @@ export default function ContractDetailPage() {
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2"><Lock className="w-4 h-4 text-brand"/>Your Signature</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600">Sign below to countersign this contract.</p>
-              <SignatureCanvas onCapture={setSigData} />
-              <Button onClick={hostSign} disabled={signing || !sigData}>{signing ? 'Signing...' : 'Sign Contract'}</Button>
+              {/* Mode toggle */}
+              <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit">
+                <button
+                  onClick={() => { setSigMode('draw'); setSigData(''); }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${sigMode === 'draw' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  <Pen className="w-3.5 h-3.5" /> Draw
+                </button>
+                <button
+                  onClick={() => { setSigMode('type'); setSigData(''); setTypedName(''); }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${sigMode === 'type' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  <Type className="w-3.5 h-3.5" /> Type Name
+                </button>
+              </div>
+
+              {sigMode === 'draw' ? (
+                <>
+                  <p className="text-sm text-gray-600">Draw your signature below.</p>
+                  <SignatureCanvas onCapture={setSigData} />
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-600">Type your full legal name — it will be rendered as your signature.</p>
+                  <input
+                    type="text"
+                    value={typedName}
+                    onChange={e => renderTypedSig(e.target.value)}
+                    placeholder="Your full name"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                  />
+                  {/* Signature preview */}
+                  <div className="relative border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 h-20 overflow-hidden">
+                    <canvas
+                      ref={previewCanvasRef}
+                      className="absolute inset-0 w-full h-full"
+                    />
+                    {!typedName && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <p className="text-gray-400 text-sm italic">Signature preview</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              <Button onClick={hostSign} disabled={signing || !sigData}>
+                {signing ? 'Signing...' : 'Sign Contract'}
+              </Button>
             </CardContent>
           </Card>
         )}
