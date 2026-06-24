@@ -52,6 +52,9 @@ export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeT
   const [showImgInput, setShowImgInput] = useState(false);
   const [imgUrl, setImgUrl] = useState('');
   const [imgAlt, setImgAlt] = useState('');
+  const [showBtnInput, setShowBtnInput] = useState(false);
+  const [btnLabel, setBtnLabel] = useState('');
+  const [btnUrl, setBtnUrl] = useState('');
   const editorRef = useRef<HTMLDivElement>(null);
   const varsRef = useRef<HTMLDivElement>(null);
 
@@ -119,6 +122,19 @@ export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeT
     setImgUrl(''); setImgAlt(''); setShowImgInput(false);
   }
 
+  function insertButton() {
+    if (!btnLabel.trim()) return;
+    const url = btnUrl.trim() || '#';
+    const html = `<div style="text-align:center;margin:24px 0"><a href="${url}" style="background:#F97316;color:#ffffff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block">${btnLabel}</a></div>`;
+    exec('insertHTML', html);
+    setBtnLabel(''); setBtnUrl(''); setShowBtnInput(false);
+  }
+
+  function insertCard() {
+    const html = `<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin:20px 0"><p style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 16px">YOUR HEADING</p><p style="margin:0 0 8px;font-size:14px;color:#111827"><strong>Label:</strong> Content here</p><p style="margin:0;font-size:14px;color:#111827"><strong>Label:</strong> Content here</p></div>`;
+    exec('insertHTML', html);
+  }
+
   function getPreviewHtml() {
     let html = value;
     const defaultSamples: Record<string, string> = {
@@ -184,6 +200,15 @@ export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeT
         }}><Link className="w-4 h-4"/></TB>
         <TB title="Insert Image" onClick={() => setShowImgInput(!showImgInput)}><Image className="w-4 h-4"/></TB>
         <div className="w-px h-5 bg-gray-300 mx-1"/>
+        <button type="button" onClick={() => { setShowBtnInput(!showBtnInput); setShowImgInput(false); }}
+          className="flex items-center gap-1 px-2.5 py-1.5 bg-orange-50 text-orange-600 border border-orange-200 rounded-lg text-xs font-semibold hover:bg-orange-100 transition-colors">
+          + Button
+        </button>
+        <button type="button" onClick={insertCard}
+          className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 text-gray-600 border border-gray-200 rounded-lg text-xs font-semibold hover:bg-gray-200 transition-colors">
+          + Card
+        </button>
+        <div className="w-px h-5 bg-gray-300 mx-1"/>
 
         {/* Variables dropdown */}
         <div className="relative" ref={varsRef}>
@@ -223,6 +248,16 @@ export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeT
           <Input className="h-8 text-sm w-40" placeholder="Alt text" value={imgAlt} onChange={e => setImgAlt(e.target.value)}/>
           <Button size="sm" onClick={insertImage} disabled={!imgUrl.trim()}>Insert</Button>
           <Button size="sm" variant="outline" onClick={() => { setShowImgInput(false); setImgUrl(''); setImgAlt(''); }}>Cancel</Button>
+        </div>
+      )}
+
+      {/* CTA Button insert panel */}
+      {showBtnInput && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border-b border-orange-100">
+          <Input className="h-8 text-sm w-48" placeholder="Button label (e.g. View Pricing)" value={btnLabel} onChange={e => setBtnLabel(e.target.value)}/>
+          <Input className="h-8 text-sm" placeholder="URL (optional)" value={btnUrl} onChange={e => setBtnUrl(e.target.value)}/>
+          <Button size="sm" onClick={insertButton} disabled={!btnLabel.trim()}>Insert</Button>
+          <Button size="sm" variant="outline" onClick={() => { setShowBtnInput(false); setBtnLabel(''); setBtnUrl(''); }}>Cancel</Button>
         </div>
       )}
 

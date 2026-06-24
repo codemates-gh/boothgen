@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.9.6] — 2026-06-24
+
+### Added
+- **Rich email composer on lead detail** — the Compose tab now uses the full `EmailTemplateEditor` instead of a plain textarea; supports bold/italic/underline, lists, links, image inserts, variable merge tags (client/event/company fields only), HTML mode, and live preview; loading a saved email template populates the rich editor so formatting and layout are preserved
+- **CTA Button insert in email editor** — new "+ Button" toolbar item in `EmailTemplateEditor` opens an inline panel to enter a label and URL, then inserts a styled orange CTA button (matching brand color) directly into the email body; available in all email template contexts (lead compose, email template editor, contract template editor)
+- **Info Card insert in email editor** — new "+ Card" toolbar item inserts a styled grey card block with a placeholder heading and two label/value rows; edit the content in HTML mode or directly in the visual editor; useful for pricing tables, event summary boxes, and package highlights
+
+### Changed
+- **Lead reply API** — now accepts `bodyHtml` (rich HTML from the editor) in addition to the existing plain `body` field; plain-text fallback preserved for backward compatibility; `bodyText` stored in the thread is the stripped plain-text version of the HTML
+
+---
+
 ## [1.9.5] — 2026-06-24
 
 ### Fixed

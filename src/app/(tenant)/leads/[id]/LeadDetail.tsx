@@ -7,9 +7,26 @@ import { ArrowLeft, Save, Send, ArrowRight, CheckCircle, RefreshCw, FileText } f
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import EmailTemplateEditor from '@/components/email/EmailTemplateEditor';
 
 type EmailTemplate = { id: string; name: string; subject: string; bodyHtml: string };
 type Branding = { companyName?: string; replyToEmail?: string; supportPhone?: string; websiteUrl?: string; emailHeaderHtml?: string };
+
+const LEAD_MERGE_TAGS = [
+  { label: 'Client First Name', value: '{{client.first_name}}' },
+  { label: 'Client Full Name', value: '{{client.full_name}}' },
+  { label: 'Client Email', value: '{{client.email}}' },
+  { label: 'Client Phone', value: '{{client.phone}}' },
+  { label: 'Event Date', value: '{{event.date}}' },
+  { label: 'Event Start Time', value: '{{event.start_time}}' },
+  { label: 'Event End Time', value: '{{event.end_time}}' },
+  { label: 'Venue Name', value: '{{event.venue_name}}' },
+  { label: 'Company Name', value: '{{host.company_name}}' },
+  { label: 'Company Email', value: '{{host.email}}' },
+  { label: 'Company Phone', value: '{{host.phone}}' },
+  { label: 'Company Website', value: '{{host.website}}' },
+  { label: 'Email Signature', value: '{{host.signature}}' },
+];
 
 const BLOCK_TAGS = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE', 'TR']);
 
@@ -45,8 +62,9 @@ function resolvePlaceholders(text: string, lead: Lead, branding: Branding): stri
     : '';
   return text
     .replace(/\{\{client\.first_name\}\}/g, lead.firstName)
-    .replace(/\{\{client\.email\}\}/g, lead.email)
     .replace(/\{\{client\.full_name\}\}/g, `${lead.firstName} ${lead.lastName}`)
+    .replace(/\{\{client\.email\}\}/g, lead.email)
+    .replace(/\{\{client\.phone\}\}/g, lead.phone ?? '')
     .replace(/\{\{event\.date\}\}/g, eventDate)
     .replace(/\{\{event\.start_time\}\}/g, formatTime(lead.startTime))
     .replace(/\{\{event\.end_time\}\}/g, formatTime(lead.endTime))
@@ -114,7 +132,8 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
   const [sending, setSending] = useState(false);
   const [converting, setConverting] = useState(false);
   const [emailSubject, setEmailSubject] = useState(`Re: Your Photo Booth Inquiry`);
-  const [emailBody, setEmailBody] = useState(`Hi ${initial.firstName},\n\nThank you for your inquiry! I'd love to learn more about your event.\n\n`);
+  const [emailBody, setEmailBody] = useState(`<p>Hi ${initial.firstName},</p><p>Thank you for your inquiry! I'd love to learn more about your event.</p><p><br/></p>`);
+  const [editorKey, setEditorKey] = useState(0);
   const [emailSent, setEmailSent] = useState(false);
   const [messages, setMessages] = useState<LeadMessage[]>(initial.messages);
   const [refreshing, setRefreshing] = useState(false);
@@ -136,7 +155,8 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
     const t = templates.find(t => t.id === id);
     if (!t) return;
     setEmailSubject(resolvePlaceholders(t.subject, lead, branding));
-    setEmailBody(resolvePlaceholders(htmlToPlainText(t.bodyHtml), lead, branding));
+    setEmailBody(t.bodyHtml); // Keep merge tags in the editor; resolve at send time
+    setEditorKey(k => k + 1); // Force editor remount so content visually updates
   }
 
   const statusOption = STATUS_OPTIONS.find(s => s.value === lead.status) ?? STATUS_OPTIONS[0];
@@ -184,10 +204,13 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
   async function sendReply() {
     if (!emailSubject.trim() || !emailBody.trim()) return;
     setSending(true);
+    // Strip editor's span wrappers around merge tags, then resolve to actual values
+    const stripped = emailBody.replace(/<span[^>]+data-tag="([^"]+)"[^>]*>[^<]*<\/span>/g, '$1');
+    const resolvedHtml = resolvePlaceholders(stripped, lead, branding);
     const res = await fetch(`/api/leads/${lead.id}/reply`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject: emailSubject, body: emailBody }),
+      body: JSON.stringify({ subject: emailSubject, bodyHtml: resolvedHtml }),
     });
     setSending(false);
     if (res.ok) {
@@ -195,7 +218,8 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
       if (lead.status === 'NEW') setLead(l => ({ ...l, status: 'CONTACTED' }));
       await refreshMessages();
       setActiveTab('thread');
-      setEmailBody(`Hi ${lead.firstName},\n\n`);
+      setEmailBody(`<p>Hi ${lead.firstName},</p><p></p>`);
+      setEditorKey(k => k + 1);
     }
   }
 
@@ -411,14 +435,14 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Message</label>
-              <textarea
+              <EmailTemplateEditor
+                key={editorKey}
                 value={emailBody}
-                onChange={e => setEmailBody(e.target.value)}
-                rows={10}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand resize-none font-mono"
+                onChange={setEmailBody}
+                mergeTags={LEAD_MERGE_TAGS}
               />
             </div>
-            <p className="text-xs text-gray-400">Replies from the client will go directly to your email address on file.</p>
+            <p className="text-xs text-gray-400">Replies from the client will go directly to your email address on file. Merge tags are resolved when sent.</p>
             <div className="flex justify-end">
               <Button onClick={sendReply} disabled={sending || !emailSubject.trim() || !emailBody.trim()} className="gap-2">
                 <Send className="w-4 h-4" /> {sending ? 'Sending…' : 'Send Email'}

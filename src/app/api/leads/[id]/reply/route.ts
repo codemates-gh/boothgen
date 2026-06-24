@@ -14,8 +14,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   });
   if (!lead) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const { subject, body } = await req.json();
-  if (!subject?.trim() || !body?.trim()) {
+  const { subject, body, bodyHtml } = await req.json();
+  if (!subject?.trim() || !(body?.trim() || bodyHtml?.trim())) {
     return NextResponse.json({ error: 'Subject and body are required' }, { status: 400 });
   }
 
@@ -33,10 +33,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const fromAddress = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
   const fromDisplay = `${companyName} <${fromAddress}>`;
 
+  // Rich HTML from editor, or fallback to plain-text-to-HTML conversion
+  const bodyContent = bodyHtml || body.replace(/\n/g, '<br/>');
+  const bodyTextContent = body || bodyHtml!.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
   const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
-${body.replace(/\n/g, '<br/>')}
-<br/><br/>
-<p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:16px">
+${bodyContent}
+<p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px">
   ${companyName}
 </p>
 </div>`;
@@ -54,7 +57,7 @@ ${body.replace(/\n/g, '<br/>')}
       fromEmail: replyTo,
       toEmail: lead.email,
       subject,
-      bodyText: body,
+      bodyText: bodyTextContent,
       bodyHtml: html,
     },
   });
