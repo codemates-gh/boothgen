@@ -182,6 +182,8 @@ model Tenant {
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
+  calendarToken        String?              @unique
+
   memberships          TenantMembership[]
   branding             TenantBranding?
   clients              Client[]
@@ -204,6 +206,9 @@ model Tenant {
   paymentMilestones    PaymentMilestone[]
   eventNotes           EventNote[]
   coupons              Coupon[]
+  blackoutDates        BlackoutDate[]
+  checklistTemplates   ChecklistTemplate[]
+  eventChecklistItems  EventChecklistItem[]
 
   @@map("tenants")
 }
@@ -364,6 +369,7 @@ model Event {
   leadSubmission       LeadSubmission?       @relation("LeadConvertedFrom")
   Quote                Quote[]
   notes                EventNote[]
+  checklistItems       EventChecklistItem[]
 
   @@index([tenantId])
   @@index([tenantId, eventDate])
@@ -909,4 +915,59 @@ model SystemSetting {
   updatedAt DateTime @updatedAt
 
   @@map("system_settings")
+}
+
+model BlackoutDate {
+  id        String   @id @default(cuid())
+  tenantId  String
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, date])
+  @@index([tenantId])
+  @@map("blackout_dates")
+}
+
+model ChecklistTemplate {
+  id        String                  @id @default(cuid())
+  tenantId  String
+  name      String
+  createdAt DateTime                @default(now())
+  updatedAt DateTime                @updatedAt
+
+  tenant Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items  ChecklistTemplateItem[]
+
+  @@index([tenantId])
+  @@map("checklist_templates")
+}
+
+model ChecklistTemplateItem {
+  id         String            @id @default(cuid())
+  templateId String
+  label      String
+  position   Int               @default(0)
+
+  template   ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@map("checklist_template_items")
+}
+
+model EventChecklistItem {
+  id          String   @id @default(cuid())
+  tenantId    String
+  eventId     String
+  label       String
+  isCompleted Boolean  @default(false)
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("event_checklist_items")
 }

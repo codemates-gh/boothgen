@@ -13,6 +13,7 @@ import DeleteEventButton from './DeleteEventButton';
 import CancelEventButton from './CancelEventButton';
 import AssignEventButton from './AssignEventButton';
 import EventNotes from './EventNotes';
+import EventChecklist from './EventChecklist';
 
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', CANCELLED:'danger' };
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
@@ -202,6 +203,9 @@ export default async function EventDetailPage({ params }: { params: { id: string
 
         {/* Notes — visible to all, editable by all */}
         <EventNotes eventId={event.id} />
+
+        {/* Checklist — visible to all */}
+        <EventChecklist eventId={event.id} />
       </div>
     </>
   );

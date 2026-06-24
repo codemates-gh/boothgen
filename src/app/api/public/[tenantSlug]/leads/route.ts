@@ -35,6 +35,21 @@ export async function POST(req: NextRequest, { params }: { params: { tenantSlug:
   if (!firstName || !lastName || !email || !eventDate) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400, headers: cors() });
   }
+
+  // Server-side blackout date check
+  if (eventDate) {
+    const dateObj = new Date(eventDate);
+    const blackout = await prisma.blackoutDate.findFirst({
+      where: { tenantId: tenant.id, date: dateObj },
+    });
+    if (blackout) {
+      return NextResponse.json(
+        { error: "Sorry, we're not available on this date. Please choose another date." },
+        { status: 409, headers: cors() }
+      );
+    }
+  }
+
   const apiKeyId = tenant.apiKeys[0]?.id ?? null;
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
   const recent = await prisma.leadSubmission.findFirst({ where: { tenantId: tenant.id, email: email.toLowerCase(), createdAt: { gte: new Date(Date.now() - 10 * 60 * 1000) } } });

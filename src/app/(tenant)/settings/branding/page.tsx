@@ -9,7 +9,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Camera, Upload } from 'lucide-react';
 
-const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['profile','Profile']];
+const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile']];
 
 export default function BrandingSettingsPage() {
   const [form, setForm] = useState({ companyName:'', primaryColor:'#F97316', secondaryColor:'#EA6100', replyToEmail:'', supportPhone:'', websiteUrl:'', invoiceFooterText:'', emailHeaderHtml:'' });

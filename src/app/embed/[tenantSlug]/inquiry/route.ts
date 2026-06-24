@@ -94,6 +94,7 @@ export async function GET(
     '.btn:hover{background:var(--pd)}',
     '.btn:disabled{opacity:.65;cursor:not-allowed}',
     '.errbox{padding:10px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#dc2626;font-size:13px;margin-top:14px;display:none}',
+    '.datewarn{padding:8px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#dc2626;font-size:12px;margin-top:6px;display:none}',
     '.succ{display:none;text-align:center;padding:40px 20px}',
     '.succ-icon{width:60px;height:60px;background:var(--p);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}',
     '.succ h2{font-size:20px;margin-bottom:8px}',
@@ -124,7 +125,7 @@ export async function GET(
     '<div><label>Email <span class="req">*</span></label><input type="email" name="email" autocomplete="email" required/></div>' +
     (cfg.showPhone ? '<div><label>Phone' + (cfg.requirePhone ? ' <span class="req">*</span>' : '') + '</label><input type="tel" name="phone" autocomplete="tel"/></div>' : '') +
     (cfg.showCompany ? '<div class="full"><label>Company / Organization</label><input type="text" name="company" autocomplete="organization" placeholder="Acme Corp (optional)"/></div>' : '') +
-    (cfg.showEventDate ? '<div><label>Event Date' + (cfg.requireEventDate ? ' <span class="req">*</span>' : '') + '</label><input type="date" name="eventDate"/></div>' : '') +
+    (cfg.showEventDate ? '<div><label>Event Date' + (cfg.requireEventDate ? ' <span class="req">*</span>' : '') + '</label><input type="date" name="eventDate" id="eventDate"/><div class="datewarn" id="dateWarn">Sorry, we\'re not available on this date. Please choose another date.</div></div>' : '') +
     (cfg.showEventType ? '<div><label>Event Type</label><select name="eventType"><option value="">-- Select --</option><option>Wedding</option><option>Corporate Event</option><option>Birthday Party</option><option>Quincea\xf1era / Sweet 16</option><option>Graduation</option><option>Holiday Party</option><option>Other</option></select></div>' : '') +
     (cfg.showTimes ? '<div><label>Start Time</label><input type="time" name="startTime"/></div>' : '') +
     (cfg.showTimes ? '<div><label>End Time</label><input type="time" name="endTime"/></div>' : '') +
@@ -148,8 +149,29 @@ export async function GET(
     'function sh(){window.parent.postMessage({type:"pbcrm:resize",height:document.body.scrollHeight},"*")}' +
     'sh();' +
     'new ResizeObserver(sh).observe(document.body);' +
+    'var AVAIL_API="/api/public/' + params.tenantSlug + '/availability";' +
+    'var dateBlocked=false;' +
+    '(function(){' +
+    'var di=document.getElementById("eventDate");' +
+    'var dw=document.getElementById("dateWarn");' +
+    'var sb=document.getElementById("sb");' +
+    'if(!di||!dw)return;' +
+    'di.addEventListener("change",async function(){' +
+    'var v=di.value;' +
+    'if(!v){dw.style.display="none";dateBlocked=false;return;}' +
+    'try{' +
+    'var r=await fetch(AVAIL_API+"?date="+v);' +
+    'var j=await r.json();' +
+    'dateBlocked=!j.available;' +
+    'dw.style.display=dateBlocked?"block":"none";' +
+    'sb.disabled=dateBlocked;' +
+    '}catch(e){dateBlocked=false;}' +
+    'sh();' +
+    '});' +
+    '})();' +
     'var REQ=' + JSON.stringify(req2fields) + ';' +
     'document.getElementById("f").addEventListener("submit",async function(e){' +
+    'if(dateBlocked){e.preventDefault();return;}' +
     'e.preventDefault();' +
     'var eb=document.getElementById("eb"),sb=document.getElementById("sb");' +
     'eb.style.display="none";' +

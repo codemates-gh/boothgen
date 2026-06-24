@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import { InviteForm } from './InviteForm';
 import { TeamAccessForm } from './TeamAccessForm';
 
-const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['profile','Profile']];
+const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile']];
 const RC: Record<string,any> = { HOST_ADMIN:'brand', TEAM_MEMBER:'default' };
 const SC: Record<string,any> = { ACTIVE:'success', INVITED:'info', SUSPENDED:'danger' };
 

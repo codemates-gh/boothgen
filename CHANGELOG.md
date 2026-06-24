@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.9.3] — 2026-06-24
+
+### Added
+- **Google Calendar / iCal subscription** — operators can now subscribe to their BoothGen events in any calendar app (Google Calendar, Apple Calendar, Outlook); Calendar page shows a subscription URL with one-click copy and step-by-step instructions for Google and Apple; URL is based on a private token that can be regenerated to invalidate old links; confirmed/booked events show as CONFIRMED, others as TENTATIVE; cancelled events excluded
+- **Availability / Blackout Dates** — new "Block Dates" toggle on the Calendar page; clicking a date in block mode marks it unavailable (red); clicking again unblocks; blocked dates show an "Unavailable" chip in normal view; lead form checks availability on date input change and shows inline error + disables submit for blocked dates; server-side check also rejects blocked dates (409) to prevent bypass
+- **Event Checklists** — new Checklist card on every event detail page; add individual tasks via text input (Enter to submit) or apply a full reusable template from the dropdown; check/uncheck items with real-time progress bar; hover to delete individual items; template management available in Settings → Checklists
+- **Settings → Checklists** — new settings tab for creating and managing reusable checklist templates; create templates by entering a name and pasting items one per line; expand any template to add, remove, or reorder individual items; apply templates to events from the event detail checklist widget
+
+---
+
 ## [1.9.2] — 2026-06-24
 
 ### Changed
