@@ -9,9 +9,7 @@ interface InitialSettings {
   gallery_expire_days: string;
   gallery_delete_days: string;
   stripe_price_monthly_id: string;
-  stripe_price_annual_id: string;
   price_display_monthly: string;
-  price_display_annual: string;
   commission_percentage: string;
   support_email: string;
   chatbot_enabled: boolean;
@@ -23,9 +21,7 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
   const [expireDays, setExpireDays] = useState(initial.gallery_expire_days);
   const [deleteDays, setDeleteDays] = useState(initial.gallery_delete_days);
   const [monthlyPriceId, setMonthlyPriceId] = useState(initial.stripe_price_monthly_id);
-  const [annualPriceId, setAnnualPriceId]   = useState(initial.stripe_price_annual_id);
   const [monthlyDisplay, setMonthlyDisplay] = useState(initial.price_display_monthly);
-  const [annualDisplay, setAnnualDisplay]   = useState(initial.price_display_annual);
   const [commissionPct, setCommissionPct]   = useState(initial.commission_percentage);
   const [supportEmail, setSupportEmail]     = useState(initial.support_email);
   const [chatbotEnabled, setChatbotEnabled] = useState(initial.chatbot_enabled);
@@ -48,9 +44,7 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
         gallery_expire_days: expireDays,
         gallery_delete_days: deleteDays,
         stripe_price_monthly_id: monthlyPriceId,
-        stripe_price_annual_id: annualPriceId,
         price_display_monthly: monthlyDisplay,
-        price_display_annual: annualDisplay,
         commission_percentage: commissionPct,
         support_email: supportEmail,
         chatbot_enabled: chatbotEnabled ? 'true' : 'false',
@@ -146,29 +140,16 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
           <p className="text-sm text-gray-500">
             Stripe Price IDs for platform subscriptions. Find these in your Stripe Dashboard under Products.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Price ID</label>
-              <p className="text-xs text-gray-400 mb-2">e.g. price_1ABC…</p>
-              <input
-                type="text"
-                value={monthlyPriceId}
-                onChange={e => setMonthlyPriceId(e.target.value)}
-                placeholder="price_..."
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Annual Price ID</label>
-              <p className="text-xs text-gray-400 mb-2">e.g. price_1XYZ…</p>
-              <input
-                type="text"
-                value={annualPriceId}
-                onChange={e => setAnnualPriceId(e.target.value)}
-                placeholder="price_..."
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand"
-              />
-            </div>
+          <div className="max-w-sm">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Pro Monthly Price ID</label>
+            <p className="text-xs text-gray-400 mb-2">e.g. price_1ABC… (from Stripe Dashboard → Products)</p>
+            <input
+              type="text"
+              value={monthlyPriceId}
+              onChange={e => setMonthlyPriceId(e.target.value)}
+              placeholder="price_..."
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand"
+            />
           </div>
 
           <div>
@@ -187,30 +168,16 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
           </div>
 
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-3">Display Prices <span className="font-normal text-gray-400">(shown on marketing/pricing page — enter the number only, e.g. 25)</span></p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Pro Monthly Price ($)</label>
-                <p className="text-xs text-gray-400 mb-2">Number only, e.g. 25</p>
-                <input
-                  type="number" min={0} step={1}
-                  value={monthlyDisplay}
-                  onChange={e => setMonthlyDisplay(e.target.value)}
-                  placeholder="25"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Annual Price ($)</label>
-                <p className="text-xs text-gray-400 mb-2">Number only, e.g. 240</p>
-                <input
-                  type="number" min={0} step={1}
-                  value={annualDisplay}
-                  onChange={e => setAnnualDisplay(e.target.value)}
-                  placeholder="240"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
-                />
-              </div>
+            <p className="text-sm font-medium text-gray-700 mb-1">Pro Monthly Display Price <span className="font-normal text-gray-400">(shown on /pricing page)</span></p>
+            <p className="text-xs text-gray-400 mb-2">Number only, e.g. 25</p>
+            <div className="max-w-xs">
+              <input
+                type="number" min={0} step={1}
+                value={monthlyDisplay}
+                onChange={e => setMonthlyDisplay(e.target.value)}
+                placeholder="25"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              />
             </div>
           </div>
         </CardContent>
