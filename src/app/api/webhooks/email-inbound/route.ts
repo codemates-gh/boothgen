@@ -59,7 +59,44 @@ export async function POST(req: NextRequest) {
     toAddresses = data.to.split(',').map((s: string) => s.trim());
   }
 
+  const inboundDomain = process.env.RESEND_INBOUND_DOMAIN ?? 'boothgen.com';
+  const forwardTo = process.env.SUPPORT_FORWARD_EMAIL ?? 'boothgeniuscrm@gmail.com';
+  const supportAddresses = [`support@${inboundDomain}`, `hello@${inboundDomain}`];
+
   for (const toAddr of toAddresses) {
+    const normalized = toAddr.toLowerCase().trim();
+
+    // ── Support / hello forwarding ───────────────────────────────────────────
+    if (supportAddresses.includes(normalized)) {
+      const { text: fetchedText, html: fetchedHtml } = await fetchEmailBody(data.email_id);
+      const bodyHtml = fetchedHtml
+        || (fetchedText ? `<pre style="font-family:sans-serif;white-space:pre-wrap">${fetchedText}</pre>` : '<p>(no body)</p>');
+      const originalFrom = data.from ?? 'Unknown sender';
+      const originalSubject = data.subject ?? '(no subject)';
+
+      const forwardHtml =
+        `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">` +
+        `<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:24px;font-size:13px;color:#6b7280">` +
+        `<p style="margin:0 0 4px"><strong style="color:#374151">To:</strong> ${toAddr}</p>` +
+        `<p style="margin:0 0 4px"><strong style="color:#374151">From:</strong> ${originalFrom}</p>` +
+        `<p style="margin:0"><strong style="color:#374151">Subject:</strong> ${originalSubject}</p>` +
+        `</div>` +
+        `<div>${bodyHtml}</div>` +
+        `</div>`;
+
+      await sendEmail(
+        forwardTo,
+        `[${toAddr}] ${originalSubject}`,
+        forwardHtml,
+        originalFrom,  // reply-to: Gmail replies go back to the original sender
+        toAddr,        // from: support@ or hello@boothgen.com
+      );
+
+      console.log(`[INBOUND_WEBHOOK] Forwarded ${toAddr} → ${forwardTo}`);
+      continue;
+    }
+
+    // ── Lead reply threading ─────────────────────────────────────────────────
     const match = toAddr.match(/lead-([a-z0-9]+)@/i);
     if (!match) continue;
     const leadId = match[1];
