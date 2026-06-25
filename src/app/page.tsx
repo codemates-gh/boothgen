@@ -20,13 +20,11 @@ export const metadata: Metadata = {
 };
 
 async function getPricing() {
-  const keys = ['price_display_monthly', 'price_display_annual', 'commission_percentage'];
-  const settings = await prisma.systemSetting.findMany({ where: { key: { in: keys } } });
+  const settings = await prisma.systemSetting.findMany({ where: { key: { in: ['price_display_monthly', 'commission_percentage'] } } });
   const map = Object.fromEntries(settings.map(s => [s.key, s.value]));
   return {
     monthly: map.price_display_monthly || '',
-    annual: map.price_display_annual || '',
-    commissionPct: map.commission_percentage || '5',
+    commissionPct: map.commission_percentage || '1.5',
   };
 }
 
@@ -673,7 +671,7 @@ export default async function HomePage() {
               </div>
               <div className="mb-6 relative">
                 {pricing.monthly
-                  ? <div><p className="text-5xl font-extrabold text-white">{pricing.monthly}</p>{pricing.annual && <p className="text-sm text-gray-400 mt-1">or {pricing.annual} billed annually</p>}</div>
+                  ? <p className="text-5xl font-extrabold text-white">{pricing.monthly}</p>
                   : <p className="text-2xl font-bold text-gray-300">Contact us for pricing</p>}
               </div>
               <ul className="space-y-3 text-sm text-gray-300 mb-8 flex-1 relative">
@@ -689,6 +687,7 @@ export default async function HomePage() {
                 ))}
               </ul>
               <Link href="/sign-in" className="w-full py-3 bg-white hover:bg-gray-100 text-gray-900 font-bold rounded-xl text-sm text-center transition-colors relative">Get started with Pro</Link>
+              <Link href="/pricing" className="block text-center text-xs text-gray-500 hover:text-orange-400 mt-3 transition-colors relative">See full pricing breakdown & savings calculator →</Link>
             </div>
           </div>
           <p className="text-center text-sm text-gray-400 mt-8">All plans include Stripe-powered payments. Your clients pay you directly — Booth Genius never touches your funds.</p>
