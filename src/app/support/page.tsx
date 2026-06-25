@@ -95,7 +95,7 @@ Set your default deposit percentage (applied automatically when building new quo
 - **CLOSED/LOST** — The lead went cold or booked elsewhere
 
 **Responding to a Lead**
-Open a lead to see the inquiry details — event date, event type, venue, guest count, hours needed, and any additional message. Use the message thread to send replies. Your reply goes to the client's email, and their response comes back into the thread.
+Open a lead to see the inquiry details — event date, event type, venue, guest count, hours needed, and any additional message. Use the message thread to send replies. Your reply goes to the client's email, and their response comes back into the thread. Message threads are retained for **[[message_retention_months]] months** and then purged automatically.
 
 **Converting to an Event**
 Click "Convert to Event" on any lead. Booth Genius creates a new Event and Client record pre-filled with the lead's information. From there you can create a quote immediately.
@@ -286,7 +286,7 @@ The client's portal link contains payment information and should NOT be shared w
 Tell clients: "Share THIS link with your guests — your private portal stays private."
 
 **Gallery Expiration**
-Galleries expire after a platform-configured number of days from the event date. Clients are reminded via email before expiration. After the expiry period, photos enter a deletion buffer before permanent removal. You and the client will both receive a warning email 2 days before permanent deletion.
+Galleries expire **[[gallery_expire_days]] days** after the event date — the gallery is hidden from the client portal after this point. Photos then enter a deletion buffer and are permanently deleted **[[gallery_delete_days]] days** after expiry. You and the client will both receive a warning email before permanent deletion.
 
 **Balance Lock**
 If the invoice has an overdue balance, the gallery tab is locked with a "Pay to unlock" message. Once the balance is paid, the gallery unlocks automatically — a great natural incentive for clients to pay the balance.
@@ -861,9 +861,22 @@ const CATEGORIES = [
   { label: 'FAQ', icon: '❓', color: 'bg-rose-50 border-rose-200 text-rose-700', desc: 'Quick answers to common questions' },
 ];
 
+function resolveArticles(settings: Record<string, string>) {
+  const replace = (text: string) =>
+    text
+      .replace(/\[\[gallery_expire_days\]\]/g, settings.gallery_expire_days ?? '2')
+      .replace(/\[\[gallery_delete_days\]\]/g, settings.gallery_delete_days ?? '5')
+      .replace(/\[\[message_retention_months\]\]/g, settings.message_retention_months ?? '12');
+  return ARTICLES.map(a => ({ ...a, content: replace(a.content) }));
+}
+
 export default async function SupportPage() {
-  const setting = await prisma.systemSetting.findUnique({ where: { key: 'chatbot_enabled' } });
-  const chatbotEnabled = setting?.value !== 'false';
+  const settings = await prisma.systemSetting.findMany({
+    where: { key: { in: ['chatbot_enabled', 'gallery_expire_days', 'gallery_delete_days', 'message_retention_months'] } },
+  });
+  const map = Object.fromEntries(settings.map(s => [s.key, s.value]));
+  const chatbotEnabled = map.chatbot_enabled !== 'false';
+  const articles = resolveArticles(map);
 
   return (
     <div className="min-h-screen bg-white">
@@ -883,7 +896,7 @@ export default async function SupportPage() {
         <p className="text-orange-400 text-xs font-bold uppercase tracking-widest mb-3">Support Center</p>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">How can we help?</h1>
         <p className="text-purple-200 text-base mb-8 max-w-xl mx-auto">Search our guides or ask the AI assistant. Everything you need to run your photo booth business like a Genius.</p>
-        <SupportSearch articles={ARTICLES} />
+        <SupportSearch articles={articles} />
       </section>
 
       {/* Category Cards */}
@@ -904,7 +917,7 @@ export default async function SupportPage() {
       {/* Articles by category */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 pb-24 space-y-16">
         {CATEGORIES.map(cat => {
-          const catArticles = ARTICLES.filter(a => a.category === cat.label);
+          const catArticles = articles.filter(a => a.category === cat.label);
           if (!catArticles.length) return null;
           return (
             <div key={cat.label} id={cat.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}>
