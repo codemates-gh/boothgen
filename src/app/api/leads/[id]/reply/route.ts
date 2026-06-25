@@ -35,7 +35,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   // Rich HTML from editor, or fallback to plain-text-to-HTML conversion
   const bodyContent = bodyHtml || body.replace(/\n/g, '<br/>');
-  const bodyTextContent = body || bodyHtml!.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  const bodyTextContent = body || bodyHtml!
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 
   const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
 ${bodyContent}
