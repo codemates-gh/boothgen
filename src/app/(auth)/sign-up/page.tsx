@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Camera, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 
 export default function SignUpPage() {
   const [form, setForm] = useState({ name:'', email:'', password:'', confirm:'' });
@@ -33,8 +34,8 @@ export default function SignUpPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 bg-brand rounded-2xl flex items-center justify-center mb-4">
-            <Camera className="w-7 h-7 text-white" />
+          <div className="mb-4">
+            <BoothGeniusIcon size={68} />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
           <p className="text-gray-500 text-sm mt-1">Start your free trial today</p>
