@@ -18,7 +18,7 @@ function sig(): string {
 
 const DEFAULTS = [
   {
-    name: 'New Inquiry Auto-Reply',
+    name: 'default_New Inquiry Auto-Reply',
     trigger: 'LEAD_CREATED',
     subject: 'Thank you for your inquiry, {{client.first_name}}!',
     bodyHtml: shell(
@@ -35,7 +35,7 @@ const DEFAULTS = [
     ),
   },
   {
-    name: 'Your Quote is Ready',
+    name: 'default_Your Quote is Ready',
     trigger: 'QUOTE_SENT',
     subject: 'Your quote for {{event.title}} is ready to review',
     bodyHtml: shell(
@@ -54,7 +54,7 @@ const DEFAULTS = [
     ),
   },
   {
-    name: 'Contract Ready to Sign',
+    name: 'default_Contract Ready to Sign',
     trigger: 'CONTRACT_SENT',
     subject: 'Your contract is ready — {{event.title}}',
     bodyHtml: shell(
@@ -73,7 +73,7 @@ const DEFAULTS = [
     ),
   },
   {
-    name: 'Invoice Ready for Payment',
+    name: 'default_Invoice Ready for Payment',
     trigger: 'INVOICE_SENT',
     subject: 'Invoice from {{host.company_name}} — {{invoice.balance_due}} due',
     bodyHtml: shell(
@@ -92,7 +92,7 @@ const DEFAULTS = [
     ),
   },
   {
-    name: "You're Booked! — What Happens Next",
+    name: "default_You're Booked! — What Happens Next",
     trigger: 'PAYMENT_RECEIVED',
     subject: "You're officially booked! 🎉 — {{event.title}}",
     bodyHtml: shell(
@@ -117,7 +117,7 @@ const DEFAULTS = [
     ),
   },
   {
-    name: 'Your Photo Gallery is Ready',
+    name: 'default_Your Photo Gallery is Ready',
     trigger: 'GALLERY_PUBLISHED',
     subject: 'Your photos from {{event.title}} are ready! 📸',
     bodyHtml: shell(
@@ -140,6 +140,20 @@ export async function seedTenantEmailDefaults(tenantId: string): Promise<{ creat
   const skipped: string[] = [];
 
   for (const tpl of DEFAULTS) {
+    // Rename old template if it exists without the default_ prefix
+    const oldName = tpl.name.replace(/^default_/, '');
+    if (oldName !== tpl.name) {
+      const oldTemplate = await prisma.emailTemplate.findFirst({
+        where: { tenantId, name: oldName },
+      });
+      if (oldTemplate) {
+        await prisma.emailTemplate.update({ where: { id: oldTemplate.id }, data: { name: tpl.name } });
+        await prisma.automationRule.updateMany({ where: { tenantId, name: oldName }, data: { name: tpl.name } });
+        skipped.push(tpl.name + ' (renamed)');
+        continue;
+      }
+    }
+
     // Skip if a template with this name already exists for the tenant
     const existingTemplate = await prisma.emailTemplate.findFirst({
       where: { tenantId, name: tpl.name },
