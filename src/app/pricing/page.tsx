@@ -120,17 +120,9 @@ export default async function PricingPage() {
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-bold text-amber-800">Rate Lock Guarantee</p>
                   <span className="text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                    {earlyAdopterCap > 0 ? `${spotsRemaining} of ${earlyAdopterCap} spots left` : 'Open enrollment'}
+                    {earlyAdopterCap > 0 ? `${spotsRemaining} spot${spotsRemaining !== 1 ? 's' : ''} left` : 'Open enrollment'}
                   </span>
                 </div>
-                {earlyAdopterCap > 0 && (
-                  <div className="h-1.5 bg-amber-100 rounded-full mb-2 overflow-hidden">
-                    <div
-                      className="h-full bg-amber-400 rounded-full"
-                      style={{ width: `${Math.min(100, ((earlyAdopterCap - spotsRemaining) / earlyAdopterCap) * 100)}%` }}
-                    />
-                  </div>
-                )}
                 <p className="text-xs text-amber-700">
                   Operators who join now keep this rate forever. When pricing changes, yours won't.
                 </p>
