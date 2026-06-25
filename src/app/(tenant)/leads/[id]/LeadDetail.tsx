@@ -47,6 +47,16 @@ function htmlToPlainText(html: string): string {
   return extractText(div).replace(/\n{3,}/g, '\n\n').trim();
 }
 
+function decodeEntities(text: string): string {
+  return text
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
 function formatTime(t: string | null): string {
   if (!t) return '';
   const [h, m] = t.split(':').map(Number);
@@ -56,7 +66,7 @@ function formatTime(t: string | null): string {
 }
 
 function resolvePlaceholders(text: string, lead: Lead, branding: Branding): string {
-  const sig = branding.emailHeaderHtml ? htmlToPlainText(branding.emailHeaderHtml) : '';
+  const sig = branding.emailHeaderHtml ? htmlToPlainText(branding.emailHeaderHtml).replace(/\n/g, '<br>') : '';
   const eventDate = lead.eventDate
     ? format(new Date(lead.eventDate), 'EEEE, MMMM d, yyyy')
     : '';
@@ -381,7 +391,7 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
                     {m.direction === 'OUTBOUND' ? 'You' : lead.firstName} · {format(new Date(m.sentAt), 'MMM d, h:mm a')}
                   </p>
                   <p className="font-semibold text-xs mb-1 opacity-80">{m.subject}</p>
-                  <div className="whitespace-pre-wrap leading-relaxed">{m.bodyText || m.subject}</div>
+                  <div className="whitespace-pre-wrap leading-relaxed">{decodeEntities(m.bodyText || m.subject)}</div>
                 </div>
               </div>
             ))
