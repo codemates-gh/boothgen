@@ -88,7 +88,7 @@ export default async function PricingPage() {
             </ul>
 
             <Link
-              href="/sign-in"
+              href="/sign-up"
               className="block w-full text-center py-3.5 rounded-xl border-2 border-orange-500 text-orange-600 font-bold hover:bg-orange-50 transition-colors"
             >
               Start Free — No Credit Card
@@ -149,7 +149,7 @@ export default async function PricingPage() {
 
             {subscriptionsOpen ? (
               <Link
-                href="/sign-in"
+                href="/sign-up"
                 className="block w-full text-center py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold transition-colors"
               >
                 Lock In My Rate →

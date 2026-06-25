@@ -327,7 +327,7 @@ export default async function HomePage() {
                 Stop paying $100+/month for tools that don&apos;t talk to each other. Booth Genius replaces your CRM, e-signatures, invoicing, photo gallery, email automation, and client portal — in one place.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link href="/sign-in" className="px-7 py-3.5 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-2xl text-base transition-all shadow-lg shadow-orange-500/30 hover:-translate-y-0.5">
+                <Link href="/sign-up" className="px-7 py-3.5 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-2xl text-base transition-all shadow-lg shadow-orange-500/30 hover:-translate-y-0.5">
                   Start free — no credit card
                 </Link>
                 <a href="#savings" className="px-7 py-3.5 bg-white/10 border border-white/20 hover:bg-white/15 text-white font-semibold rounded-2xl text-base transition-all">
@@ -430,7 +430,7 @@ export default async function HomePage() {
                 </div>
               </div>
               <div className="px-6 pb-6">
-                <Link href="/sign-in" className="block w-full py-3 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-xl text-sm text-center transition-colors">
+                <Link href="/sign-up" className="block w-full py-3 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-xl text-sm text-center transition-colors">
                   Start saving today — free →
                 </Link>
               </div>
@@ -659,7 +659,7 @@ export default async function HomePage() {
                   <li key={item} className="flex items-center gap-2"><span className="text-orange-500 flex-shrink-0">✓</span>{item}</li>
                 ))}
               </ul>
-              <Link href="/sign-in" className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm text-center transition-colors">Start free — no card required</Link>
+              <Link href="/sign-up" className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm text-center transition-colors">Start free — no card required</Link>
             </div>
             {/* Pro Plan */}
             <div className="bg-gray-900 rounded-3xl border border-gray-800 p-8 flex flex-col relative overflow-hidden">
@@ -686,7 +686,7 @@ export default async function HomePage() {
                   <li key={item} className="flex items-center gap-2"><span className="text-orange-400 flex-shrink-0">✓</span>{item}</li>
                 ))}
               </ul>
-              <Link href="/sign-in" className="w-full py-3 bg-white hover:bg-gray-100 text-gray-900 font-bold rounded-xl text-sm text-center transition-colors relative">Get started with Pro</Link>
+              <Link href="/sign-up" className="w-full py-3 bg-white hover:bg-gray-100 text-gray-900 font-bold rounded-xl text-sm text-center transition-colors relative">Get started with Pro</Link>
               <Link href="/pricing" className="block text-center text-xs text-gray-500 hover:text-orange-400 mt-3 transition-colors relative">See full pricing breakdown & savings calculator →</Link>
             </div>
           </div>
@@ -700,7 +700,7 @@ export default async function HomePage() {
           <p className="text-orange-400 text-sm font-bold uppercase tracking-widest mb-4">Ready to run your business like a Genius?</p>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Replace your toolbox.<br/>Keep what matters.</h2>
           <p className="text-lg text-purple-200 mb-10">Stop juggling subscriptions built for someone else. Booth Genius was built by an operator who knows what you actually need — and packed it into one platform you can start using today for free.</p>
-          <Link href="/sign-in" className="inline-block px-10 py-4 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-2xl text-base transition-all shadow-lg shadow-orange-500/30 hover:-translate-y-0.5">
+          <Link href="/sign-up" className="inline-block px-10 py-4 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-2xl text-base transition-all shadow-lg shadow-orange-500/30 hover:-translate-y-0.5">
             Create your free Genius account →
           </Link>
           <p className="mt-4 text-sm text-purple-300">No credit card required. Commission plan is free to start.</p>

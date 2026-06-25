@@ -34,7 +34,7 @@ export function MarketingNav() {
 
         <div className="flex items-center gap-3">
           <Link href="/sign-in" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">Sign in</Link>
-          <Link href="/sign-in" className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl transition-colors">Get Started Free</Link>
+          <Link href="/sign-up" className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl transition-colors">Get Started Free</Link>
           {/* Hamburger — mobile only */}
           <button
             className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
