@@ -7,7 +7,7 @@ import { BoothGeniusLogo } from '@/components/brand/BoothGeniusLogo';
 const NAV_LINKS = [
   { label: 'Why Genius?', href: '#savings' },
   { label: 'Features',    href: '#features' },
-  { label: 'Pricing',     href: '#pricing' },
+  { label: 'Pricing',     href: '/pricing' },
   { label: 'Our Story',   href: '#our-story' },
   { label: 'Support',     href: '/support', external: false },
   { label: 'Contact',     href: '#contact' },

@@ -4,6 +4,21 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.9.7] — 2026-06-24
+
+### Added
+- **`/pricing` marketing page** — dedicated public pricing page with two-tier cards (Free + Pro), live breakeven calculator slider (adjustable avg booking $200–$2,000 and events/month 1–20), early adopter spot counter with FOMO indicator, Rate Lock Guarantee copy, and Stripe fee disclosure footer; data fetches directly from super admin settings with 60-second ISR revalidation
+- **Early adopter cap in super admin** — new "Early Adopter Cap" card in Platform Settings shows live Pro subscriber count vs. cap, a progress bar, and an input to set the limit; when cap is reached, the pricing page CTA switches to "Join the Waitlist" automatically
+- **"Powered by Booth Genius" on all client-facing pages** — badge added to the client payment portal footer, photo gallery footer, and embedded inquiry form; every client interaction becomes a passive brand impression
+- **Dynamic pricing API** — `/api/public/pricing` now returns `commissionPct`, `proMonthlyPrice`, `earlyAdopterCap`, `proSubscriberCount`, `spotsRemaining`, and `subscriptionsOpen`; the Pro subscriber count is read live from the database
+
+### Changed
+- **Marketing nav Pricing link** — changed from `#pricing` (homepage anchor) to `/pricing` (dedicated page)
+- **Super admin commission default** — updated from `5%` to `1.5%` to reflect the agreed introductory rate
+- **`price_display_monthly` field** — now expects a numeric value (e.g. `25`) rather than display text (e.g. `$49/mo`); the pricing page formats it automatically
+
+---
+
 ## [1.9.6] — 2026-06-24
 
 ### Added

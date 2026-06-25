@@ -199,6 +199,7 @@ export async function GET(
     '}' +
     '});' +
     '})();</script>' +
+    '<div style="text-align:center;padding:12px 0 8px;font-size:11px;color:#9ca3af">Powered by <a href="https://boothgenius.com" target="_blank" rel="noopener noreferrer" style="color:#6b7280;font-weight:600;text-decoration:none">Booth Genius</a></div>' +
     '</body></html>';
 
   return new NextResponse(html, {

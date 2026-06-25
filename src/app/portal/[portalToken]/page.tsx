@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Printer, Layers, AlertCircle, Download, X, Copy } from 'lucide-react';
+import { PoweredByBadge } from '@/components/brand/PoweredByBadge';
 import { InvoicePaymentForm } from '@/components/stripe/PaymentForm';
 import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
 
@@ -1012,6 +1013,7 @@ export default function ClientPortalPage() {
 
       </div>
 
+      <PoweredByBadge />
       <style>{`@media print { header, nav { display: none; } }`}</style>
     </div>
   );

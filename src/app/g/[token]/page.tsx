@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Camera, Download, Lock, Image, X, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { PoweredByBadge } from '@/components/brand/PoweredByBadge';
 
 export default function GallerySharePage() {
   const { token } = useParams<{ token: string }>();
@@ -237,6 +238,7 @@ export default function GallerySharePage() {
           </a>
         </div>
       )}
+      <PoweredByBadge />
     </div>
   );
 }
