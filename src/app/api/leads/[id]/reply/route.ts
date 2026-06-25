@@ -21,9 +21,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const tenant = await prisma.tenant.findUnique({
     where: { id: session.tenantId },
-    include: { branding: { select: { companyName: true } } },
+    include: { branding: { select: { companyName: true, replyToEmail: true } } },
   });
   const companyName = tenant?.branding?.companyName || tenant?.name || 'Your Photo Booth Company';
+  const contactEmail = tenant?.branding?.replyToEmail || null;
 
   // reply-to routes client replies back into the app via Resend inbound webhook
   const inboundDomain = process.env.RESEND_INBOUND_DOMAIN ?? 'boothgen.com';
@@ -49,11 +50,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 
+  const attachmentNote = contactEmail
+    ? `<p style="color:#9ca3af;font-size:11px;margin:8px 0 0">To share a file, CC <a href="mailto:${contactEmail}" style="color:#9ca3af">${contactEmail}</a> in your reply.</p>`
+    : '';
+
   const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
 ${bodyContent}
 <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px">
   ${companyName}
 </p>
+${attachmentNote}
 </div>`;
 
   const result = await sendEmail(lead.email, subject, html, replyTo, fromDisplay);

@@ -453,6 +453,7 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
               />
             </div>
             <p className="text-xs text-gray-400">Replies from the client will go directly to your email address on file. Merge tags are resolved when sent.</p>
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">Attachments sent as replies are not captured in this thread. The outgoing email instructs clients to CC your contact email if they need to share a file.</p>
             <div className="flex justify-end">
               <Button onClick={sendReply} disabled={sending || !emailSubject.trim() || !emailBody.trim()} className="gap-2">
                 <Send className="w-4 h-4" /> {sending ? 'Sending…' : 'Send Email'}
