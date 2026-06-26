@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
-import { stripe, applicationFee } from '@/lib/stripe';
+import { stripe } from '@/lib/stripe';
 
 export async function POST(req: NextRequest) {
   const { invoiceId, milestoneId } = await req.json();
@@ -9,13 +9,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'invoiceId required' }, { status: 400 });
   }
 
-  const invoice = await prisma.invoice.findUnique({
-    where:   { id: invoiceId },
-    include: {
-      tenant:          { include: { stripeConnect: true } },
-      PaymentMilestone: true,
-    },
-  });
+  const [invoice, commissionSetting] = await Promise.all([
+    prisma.invoice.findUnique({
+      where:   { id: invoiceId },
+      include: {
+        tenant: { include: { stripeConnect: true, stripeSubscription: true } },
+        PaymentMilestone: true,
+      },
+    }),
+    prisma.systemSetting.findUnique({ where: { key: 'commission_percentage' } }),
+  ]);
 
   if (!invoice) {
     return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
@@ -75,12 +78,19 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const fee = applicationFee(amountCents);
+  // Pro subscribers (MONTHLY/ANNUAL, ACTIVE or PAST_DUE) pay no commission
+  const sub = (invoice.tenant as any).stripeSubscription;
+  const isPro = sub &&
+    ['MONTHLY', 'ANNUAL'].includes(sub.plan) &&
+    ['ACTIVE', 'PAST_DUE'].includes(sub.status);
+
+  const commissionPct = parseFloat(commissionSetting?.value ?? '1.5');
+  const fee = isPro ? 0 : Math.round(amountCents * (commissionPct / 100));
 
   const pi = await stripe.paymentIntents.create({
     amount:                  amountCents,
     currency:                invoice.currency ?? 'usd',
-    application_fee_amount:  fee,
+    ...(fee > 0 ? { application_fee_amount: fee } : {}),
     transfer_data:           { destination: connect.stripeAccountId },
     metadata:                meta,
     description:             'Invoice ' + invoice.invoiceNumber +
