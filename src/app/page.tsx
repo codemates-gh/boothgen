@@ -20,11 +20,13 @@ export const metadata: Metadata = {
 };
 
 async function getPricing() {
-  const settings = await prisma.systemSetting.findMany({ where: { key: { in: ['price_display_monthly', 'commission_percentage'] } } });
+  const settings = await prisma.systemSetting.findMany({ where: { key: { in: ['price_display_monthly', 'commission_percentage', 'terms_url', 'privacy_url'] } } });
   const map = Object.fromEntries(settings.map(s => [s.key, s.value]));
   return {
     monthly: map.price_display_monthly || '',
     commissionPct: map.commission_percentage || '1.5',
+    termsUrl: map.terms_url || '',
+    privacyUrl: map.privacy_url || '',
   };
 }
 
@@ -737,6 +739,8 @@ export default async function HomePage() {
             <Link href="/support" className="hover:text-gray-600 transition-colors">Support</Link>
             <Link href="/contact" className="hover:text-gray-600 transition-colors">Contact</Link>
             <Link href="/sign-in" className="hover:text-gray-600 transition-colors">Sign In</Link>
+            {pricing.termsUrl && <a href={pricing.termsUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 transition-colors">Terms</a>}
+            {pricing.privacyUrl && <a href={pricing.privacyUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 transition-colors">Privacy</a>}
           </nav>
           <p>© {new Date().getFullYear()} Booth Genius. All rights reserved.</p>
         </div>

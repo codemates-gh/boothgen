@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, Image, CreditCard, Mail, MessageCircle, Users } from 'lucide-react';
+import { Settings, Image, CreditCard, Mail, MessageCircle, Users, FileText } from 'lucide-react';
 
 interface InitialSettings {
   message_retention_months: string;
@@ -14,6 +14,8 @@ interface InitialSettings {
   support_email: string;
   chatbot_enabled: boolean;
   early_adopter_cap: string;
+  terms_url: string;
+  privacy_url: string;
 }
 
 export default function PlatformSettings({ initial, proSubscriberCount }: { initial: InitialSettings; proSubscriberCount: number }) {
@@ -26,6 +28,8 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
   const [supportEmail, setSupportEmail]     = useState(initial.support_email);
   const [chatbotEnabled, setChatbotEnabled] = useState(initial.chatbot_enabled);
   const [earlyAdopterCap, setEarlyAdopterCap] = useState(initial.early_adopter_cap);
+  const [termsUrl, setTermsUrl]               = useState(initial.terms_url);
+  const [privacyUrl, setPrivacyUrl]           = useState(initial.privacy_url);
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
 
@@ -49,6 +53,8 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
         support_email: supportEmail,
         chatbot_enabled: chatbotEnabled ? 'true' : 'false',
         early_adopter_cap: earlyAdopterCap,
+        terms_url: termsUrl,
+        privacy_url: privacyUrl,
       }),
     });
     setSaving(false);
@@ -276,6 +282,44 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
             <span className="text-sm font-medium text-gray-700">
               {chatbotEnabled ? 'Chatbot enabled — visible on /support' : 'Chatbot disabled — chat widget hidden'}
             </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <FileText className="w-4 h-4" /> Legal Pages
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-gray-500">
+            Paste the public URLs for your Terms of Service and Privacy Policy pages. These links appear in the marketing footer and on the sign-up form as a required acknowledgement checkbox.
+            Leave blank to hide the links and skip the checkbox.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4 max-w-2xl">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Terms of Service URL</label>
+              <p className="text-xs text-gray-400 mb-2">e.g. https://boothgen.com/terms</p>
+              <input
+                type="url"
+                value={termsUrl}
+                onChange={e => setTermsUrl(e.target.value)}
+                placeholder="https://"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Privacy Policy URL</label>
+              <p className="text-xs text-gray-400 mb-2">e.g. https://boothgen.com/privacy</p>
+              <input
+                type="url"
+                value={privacyUrl}
+                onChange={e => setPrivacyUrl(e.target.value)}
+                placeholder="https://"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
