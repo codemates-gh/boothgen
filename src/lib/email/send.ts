@@ -132,9 +132,16 @@ export async function sendPaymentConfirmationEmail(params: {
 }
 
 export async function sendGalleryPublishedEmail(params: {
-  to: string; firstName: string; companyName: string; galleryTitle: string; portalUrl: string; replyTo?: string; from?: string;
+  to: string; firstName: string; companyName: string; galleryTitle: string; portalUrl: string; accessCode?: string | null; replyTo?: string; from?: string;
 }) {
-  const { to, firstName, companyName, galleryTitle, portalUrl, replyTo, from } = params;
+  const { to, firstName, companyName, galleryTitle, portalUrl, accessCode, replyTo, from } = params;
+  const passwordBlock = accessCode
+    ? `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin:20px 0">
+<p style="margin:0 0 4px;color:#166534;font-size:13px;font-weight:600">🔒 Gallery Password Required</p>
+<p style="margin:0;color:#15803d;font-size:15px;font-weight:700;letter-spacing:0.05em">${accessCode}</p>
+<p style="margin:4px 0 0;color:#166534;font-size:12px">Enter this code when prompted to access your gallery.</p>
+</div>`
+    : '';
   return sendEmail(
     to,
     `Your photos are ready — ${companyName}`,
@@ -142,6 +149,7 @@ export async function sendGalleryPublishedEmail(params: {
 <h2 style="font-size:20px;color:#111827">Hi ${firstName}, your photos are ready! 🎉</h2>
 <p style="color:#374151"><strong>${companyName}</strong> has published your online gallery: <strong>${galleryTitle}</strong>.</p>
 <p style="color:#374151">You can view, download, and share your photos from your client portal.</p>
+${passwordBlock}
 <p style="margin:28px 0"><a href="${portalUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View Your Gallery</a></p>
 <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">Questions? Reply to this email — we're happy to help.</p>
 <p>Warm regards,<br/><strong>${companyName}</strong></p>

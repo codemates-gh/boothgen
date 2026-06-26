@@ -33,6 +33,7 @@ const MERGE_TAGS = [
   { label: 'Company Phone', value: '{{host.phone}}' },
   { label: 'Company Website', value: '{{host.website}}' },
   { label: 'Email Signature', value: '{{host.signature}}' },
+  { label: 'Gallery Password', value: '{{gallery.password}}' },
 ];
 
 interface MergeTag { label: string; value: string }

@@ -7,6 +7,7 @@ export type MergeCtx = {
   quote: { link?: string; number?: string; total?: string };
   host: { company_name: string; email?: string; phone?: string; website?: string; signature?: string };
   portal: { link: string };
+  gallery: { password?: string };
 };
 /** Strip editor merge-tag span wrappers, keeping only the inner text or resolved tag value. */
 export function stripMergeTagSpans(html: string): string {
@@ -34,10 +35,11 @@ export function buildCtx(params: {
   contract?: { clientToken: string; title: string; expiresAt?: Date | null } | null;
   quote?: { quoteNumber: string; totalCents: number; currency?: string } | null;
   branding: { companyName?: string | null; replyToEmail?: string | null; supportPhone?: string | null; websiteUrl?: string | null; emailHeaderHtml?: string | null };
+  gallery?: { accessCode?: string | null } | null;
   appUrl: string;
 }): MergeCtx {
   const { format } = require('date-fns');
-  const { client, event, invoice, contract, quote, branding, appUrl } = params;
+  const { client, event, invoice, contract, quote, branding, gallery, appUrl } = params;
   const fmt = (cents: number, cur = 'usd') => new Intl.NumberFormat('en-US', { style: 'currency', currency: cur.toUpperCase() }).format(cents / 100);
   return {
     client: { first_name: client.firstName, last_name: client.lastName, full_name: client.firstName + ' ' + client.lastName, email: client.email, phone: client.phone ?? undefined, company: client.company ?? undefined },
@@ -47,5 +49,6 @@ export function buildCtx(params: {
     quote: quote ? { link: appUrl + '/portal/' + (event.portalToken ?? '') + '?tab=quote', number: quote.quoteNumber, total: fmt(quote.totalCents, quote.currency) } : {},
     host: { company_name: branding.companyName ?? 'Your Company', email: branding.replyToEmail ?? undefined, phone: branding.supportPhone ?? undefined, website: branding.websiteUrl ?? undefined, signature: branding.emailHeaderHtml ? branding.emailHeaderHtml.replace(/\n/g, '<br>') : undefined },
     portal: { link: appUrl + '/portal/' + (event.portalToken ?? '') },
+    gallery: { password: gallery?.accessCode ?? undefined },
   };
 }

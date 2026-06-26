@@ -60,6 +60,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         companyName,
         galleryTitle: updated.title,
         portalUrl: `${appUrl}/portal/${event.portalToken}?tab=gallery`,
+        accessCode: updated.accessCode ?? null,
         replyTo: branding?.replyToEmail ?? undefined,
         from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
       }).catch(e => console.error('[gallery-publish] email error:', e));
