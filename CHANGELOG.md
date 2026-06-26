@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.0.3] — 2026-06-26
+
+### Fixed
+- **Lead message retention — event date anchoring** — the nightly purge job previously deleted messages based on `sentAt` (message date), which could wipe threads for events booked a year in advance; now uses the **event date** as the anchor for converted leads (messages purged X months after the event); unconverted leads (never converted to an event) still use the message date as a fallback; events that haven't occurred yet are never purged early
+- **Super admin + support page notices updated** to reflect the new retention logic
+
+---
+
 ## [2.0.2] — 2026-06-26
 
 ### Added
