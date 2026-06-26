@@ -95,7 +95,7 @@ Set your default deposit percentage (applied automatically when building new quo
 - **CLOSED/LOST** — The lead went cold or booked elsewhere
 
 **Responding to a Lead**
-Open a lead to see the inquiry details — event date, event type, venue, guest count, hours needed, and any additional message. Use the message thread to send replies. Your reply goes to the client's email, and their response comes back into the thread. Message threads are retained for **[[message_retention_months]] months** after the event date (for leads converted to events) or after the message date (for unconverted leads). Events that haven't happened yet are never purged early.
+Open a lead to see the inquiry details — event date, event type, venue, guest count, hours needed, and any additional message. Use the message thread to send replies. Your reply goes to the client's email, and their response comes back into the thread. Message threads are retained for **[[message_retention_months]] months** after the event date (for leads converted to events) or after the message date (for unconverted leads). A booking made a year in advance won't be purged until [[message_retention_months]] months after the event actually takes place.
 
 **Converting to an Event**
 Click "Convert to Event" on any lead. Booth Genius creates a new Event and Client record pre-filled with the lead's information. From there you can create a quote immediately.
