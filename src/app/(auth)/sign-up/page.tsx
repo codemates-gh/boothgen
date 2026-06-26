@@ -3,8 +3,10 @@ import SignUpForm from './SignUpForm';
 
 export default async function SignUpPage() {
   const settings = await prisma.systemSetting.findMany({
-    where: { key: { in: ['terms_url', 'privacy_url'] } },
+    where: { key: { in: ['terms_content', 'privacy_content'] } },
   });
   const map = Object.fromEntries(settings.map(s => [s.key, s.value]));
-  return <SignUpForm termsUrl={map.terms_url ?? ''} privacyUrl={map.privacy_url ?? ''} />;
+  const hasTerms = !!(map.terms_content?.trim());
+  const hasPrivacy = !!(map.privacy_content?.trim());
+  return <SignUpForm hasTerms={hasTerms} hasPrivacy={hasPrivacy} />;
 }

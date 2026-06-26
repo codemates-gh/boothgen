@@ -14,8 +14,8 @@ interface InitialSettings {
   support_email: string;
   chatbot_enabled: boolean;
   early_adopter_cap: string;
-  terms_url: string;
-  privacy_url: string;
+  terms_content: string;
+  privacy_content: string;
 }
 
 export default function PlatformSettings({ initial, proSubscriberCount }: { initial: InitialSettings; proSubscriberCount: number }) {
@@ -28,8 +28,8 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
   const [supportEmail, setSupportEmail]     = useState(initial.support_email);
   const [chatbotEnabled, setChatbotEnabled] = useState(initial.chatbot_enabled);
   const [earlyAdopterCap, setEarlyAdopterCap] = useState(initial.early_adopter_cap);
-  const [termsUrl, setTermsUrl]               = useState(initial.terms_url);
-  const [privacyUrl, setPrivacyUrl]           = useState(initial.privacy_url);
+  const [termsContent, setTermsContent]       = useState(initial.terms_content);
+  const [privacyContent, setPrivacyContent]   = useState(initial.privacy_content);
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
 
@@ -53,8 +53,8 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
         support_email: supportEmail,
         chatbot_enabled: chatbotEnabled ? 'true' : 'false',
         early_adopter_cap: earlyAdopterCap,
-        terms_url: termsUrl,
-        privacy_url: privacyUrl,
+        terms_content: termsContent,
+        privacy_content: privacyContent,
       }),
     });
     setSaving(false);
@@ -294,30 +294,29 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-500">
-            Paste the public URLs for your Terms of Service and Privacy Policy pages. These links appear in the marketing footer and on the sign-up form as a required acknowledgement checkbox.
-            Leave blank to hide the links and skip the checkbox.
+            Paste the full text of your Terms of Service and Privacy Policy below. Each document will be published at <strong>/terms</strong> and <strong>/privacy</strong> on the site. Links appear in the marketing footer and on the sign-up form as a required acknowledgement checkbox. Leave both blank to hide the links and skip the checkbox.
           </p>
-          <div className="grid sm:grid-cols-2 gap-4 max-w-2xl">
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Terms of Service URL</label>
-              <p className="text-xs text-gray-400 mb-2">e.g. https://boothgen.com/terms</p>
-              <input
-                type="url"
-                value={termsUrl}
-                onChange={e => setTermsUrl(e.target.value)}
-                placeholder="https://"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              <label className="block text-sm font-medium text-gray-700 mb-1">Terms of Service</label>
+              <p className="text-xs text-gray-400 mb-2">Published at boothgen.com/terms</p>
+              <textarea
+                value={termsContent}
+                onChange={e => setTermsContent(e.target.value)}
+                placeholder="Paste your full Terms of Service text here…"
+                rows={12}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand resize-y font-mono"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Privacy Policy URL</label>
-              <p className="text-xs text-gray-400 mb-2">e.g. https://boothgen.com/privacy</p>
-              <input
-                type="url"
-                value={privacyUrl}
-                onChange={e => setPrivacyUrl(e.target.value)}
-                placeholder="https://"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              <label className="block text-sm font-medium text-gray-700 mb-1">Privacy Policy</label>
+              <p className="text-xs text-gray-400 mb-2">Published at boothgen.com/privacy</p>
+              <textarea
+                value={privacyContent}
+                onChange={e => setPrivacyContent(e.target.value)}
+                placeholder="Paste your full Privacy Policy text here…"
+                rows={12}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand resize-y font-mono"
               />
             </div>
           </div>

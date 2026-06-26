@@ -7,11 +7,11 @@ import { Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 
 interface Props {
-  termsUrl: string;
-  privacyUrl: string;
+  hasTerms: boolean;
+  hasPrivacy: boolean;
 }
 
-export default function SignUpForm({ termsUrl, privacyUrl }: Props) {
+export default function SignUpForm({ hasTerms, hasPrivacy }: Props) {
   const [form, setForm] = useState({ name:'', email:'', password:'', confirm:'' });
   const [agreed, setAgreed] = useState(false);
   const [showPw, setShowPw] = useState(false);
@@ -24,7 +24,7 @@ export default function SignUpForm({ termsUrl, privacyUrl }: Props) {
   const strengthColor = { weak: 'bg-red-400', good: 'bg-yellow-400', strong: 'bg-green-500' };
   const strengthWidth = { weak: 'w-1/3', good: 'w-2/3', strong: 'w-full' };
 
-  const hasLegal = termsUrl || privacyUrl;
+  const hasLegal = hasTerms || hasPrivacy;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -103,12 +103,12 @@ export default function SignUpForm({ termsUrl, privacyUrl }: Props) {
               />
               <span className="text-xs text-gray-500 leading-relaxed">
                 I agree to the{' '}
-                {termsUrl
-                  ? <a href={termsUrl} target="_blank" rel="noopener noreferrer" className="text-brand font-medium hover:underline">Terms of Service</a>
+                {hasTerms
+                  ? <Link href="/terms" target="_blank" className="text-brand font-medium hover:underline">Terms of Service</Link>
                   : <span className="font-medium">Terms of Service</span>}
-                {termsUrl && privacyUrl && ' and '}
-                {privacyUrl
-                  ? <a href={privacyUrl} target="_blank" rel="noopener noreferrer" className="text-brand font-medium hover:underline">Privacy Policy</a>
+                {hasTerms && hasPrivacy && ' and '}
+                {hasPrivacy
+                  ? <Link href="/privacy" target="_blank" className="text-brand font-medium hover:underline">Privacy Policy</Link>
                   : null}
               </span>
             </label>
