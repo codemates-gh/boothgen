@@ -4,6 +4,34 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [1.9.9] — 2026-06-25
+
+### Fixed
+- **Stripe commission — Pro subscribers no longer charged a fee** — payment intent creation was applying `application_fee_amount` to all operators regardless of subscription plan; now checks `stripeSubscription` on the tenant and sets fee to 0 for MONTHLY/ANNUAL subscribers with ACTIVE or PAST_DUE status
+- **Stripe commission — rate now read exclusively from DB** — `STRIPE_PLATFORM_FEE_PERCENT` env var removed; commission percentage is always fetched from the `commission_percentage` system setting at payment time; removed the `applicationFee()` helper from `src/lib/stripe.ts` entirely
+- **Template designs — "No designs uploaded yet" on event detail** — Vercel's build cache was skipping `postinstall`, so the Prisma client wasn't regenerated when the schema changed; fixed by adding `prisma generate &&` to the `build` script in `package.json`
+
+### Added
+- **Support page — dynamic settings in articles** — gallery expiry days, gallery deletion days, and message retention months in the Support Center now resolve from live super admin settings at render time instead of hardcoded values; placeholder tokens `[[gallery_expire_days]]`, `[[gallery_delete_days]]`, `[[message_retention_months]]` are replaced server-side on every page render
+- **Stripe Connect — "already have Stripe?" callout** — blue info box added to the Stripe Connect setup card explaining that operators with an existing Stripe account don't need a new one; clarifies the two separate Stripe relationships (platform subscription vs. client payments)
+- **Support page — Stripe two-account clarification** — Getting Started Step 3 and the Billing article updated to explain that the Booth Genius subscription and Stripe Connect are two separate Stripe relationships
+
+---
+
+## [1.9.8] — 2026-06-25
+
+### Fixed
+- **Email thread — `&nbsp;` showing as literal text** — HTML entity decoding added client-side (`decodeEntities()` helper in `LeadDetail.tsx`) and server-side (inbound webhook now decodes `&nbsp;`, `&amp;`, `&lt;`, `&gt;`, `&quot;` before stripping tags)
+- **Email thread — line breaks lost in inbound messages** — server-side HTML stripping now converts `<br>`, `</p>`, and `</div>` tags to newlines before removing remaining HTML, preserving paragraph structure in the thread view
+- **Email signature — merging into a single line** — `{{host.signature}}` was stored with `\n` line breaks but rendered as a single line; reply route now converts `\n` → `<br>` in the signature before injecting it into the outgoing HTML email
+
+### Added
+- **Attachment disclosure — compose notice** — amber info box added above the Compose tab on lead detail pages instructing operators that file attachments must be sent by CC'ing the client's email directly; prevents confusion when replies to the BoothGen thread can't carry attachments
+- **Attachment disclosure — outbound email footer note** — sent emails now include a small grey footnote linking to the operator's contact email so clients know where to send files back; uses `replyToEmail` from the operator's branding settings
+- **Default email template prefix** — all 6 pre-seeded email templates renamed with a `default_` prefix (e.g. `default_new_inquiry`, `default_quote_sent`) to distinguish them from operator-created templates; existing tenant records are migrated automatically on next deploy via `seed-email-defaults.ts`
+
+---
+
 ## [1.9.7] — 2026-06-24
 
 ### Added
