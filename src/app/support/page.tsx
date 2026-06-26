@@ -27,7 +27,7 @@ When you first sign in, you'll be guided through a short onboarding flow asking 
 Go to Settings → Branding. Upload your business logo (PNG or JPG, recommended 400×120px horizontal), choose your primary brand color, and fill in your company name, reply-to email address, support phone number, and website URL. Everything clients see — emails, portal, invoices — will carry your brand, not Booth Genius.
 
 **Step 3 — Connect Stripe**
-Go to Settings → Billing → Connect Stripe. You'll be redirected to Stripe to set up a free Stripe Connect account (or link your existing one). This is required before clients can pay invoices online. Booth Genius never holds your money — all payments go directly to your Stripe account.
+Go to Settings → Billing → Connect Stripe. You'll be redirected to Stripe's secure onboarding flow. If you already have a Stripe account, just log in — it links your existing account, no new account needed. This step is separate from any Booth Genius subscription payment; it's what routes your clients' payments directly to your bank. Booth Genius never holds your money. Required before clients can pay invoices online.
 
 **Step 4 — Add Your Service Packages**
 Go to Settings → Packages. Create packages for your common booth rental options (e.g. "3-Hour Booth — $800", "4-Hour Booth — $1,000"). These populate as quick-add buttons when building quotes, so you don't have to re-type services for every booking.
@@ -687,8 +687,15 @@ Packages can be edited at any time. Changes to a package only affect new quotes 
 **Switching Plans**
 Go to Settings → Billing to upgrade to Pro or manage your subscription. You can cancel at any time — you'll retain Pro access until the end of your billing period.
 
-**Stripe Connect**
-Click "Connect Stripe" in Settings → Billing. You'll complete a Stripe onboarding flow. Once connected, your Stripe account status shows as "Connected" and clients can pay invoices online. If you disconnect Stripe, clients will no longer be able to pay online until you reconnect.
+**Stripe Connect — Two separate Stripe relationships**
+Booth Genius uses Stripe in two distinct ways that are easy to confuse:
+
+1. **Booth Genius subscription billing** — If you're on the Pro plan, Stripe charges your card the monthly fee. This is Booth Genius paying *you* nothing — it's you paying Booth Genius.
+2. **Stripe Connect (client payments)** — This is a separate connection that routes your *clients'* invoice payments directly to your bank account. Booth Genius never holds your funds.
+
+Both Free and Pro plan operators need to set up Stripe Connect to accept online payments. Go to Settings → Billing → Connect Stripe. If you already have a Stripe account, just log in during the flow — Stripe will link your existing account. No new account required. Takes about 60 seconds.
+
+Once connected, your Stripe account status shows as "Connected" and clients can pay invoices online. If you disconnect Stripe, clients will no longer be able to pay online until you reconnect.
 
 **Commission Rate**
 The current commission rate is displayed in Settings → Billing and on the marketing page. This rate is set by the Booth Genius platform and may change over time.`,

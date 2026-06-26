@@ -63,6 +63,9 @@ export function StripeConnectCard({ status, chargesEnabled }: Props) {
               </div>
             </div>
           </div>
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-800 leading-relaxed">
+            <strong>Already have a Stripe account?</strong> No need to create a new one — just log in during the setup flow and Stripe will link your existing account to Booth Genius. This is separate from any Booth Genius subscription payment; it's what routes your <em>clients'</em> payments directly to your bank.
+          </div>
           <p className="text-xs text-gray-400">
             Clicking the button below will redirect you to Stripe's secure onboarding flow. You'll be returned here once setup is complete. Required to send quotes and accept payments.
           </p>
