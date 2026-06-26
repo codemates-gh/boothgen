@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.0.2] — 2026-06-26
+
+### Added
+- **Gallery publish email — password callout** — when a gallery has password protection set, the "Your photos are ready" client notification email now includes a green callout block showing the access code; the block is omitted entirely when no password is set
+- **`{{gallery.password}}` merge tag** — available in the email template editor (Insert Variable → Gallery Password); resolves to the gallery's access code on `GALLERY_PUBLISHED` automation emails; empty string when no password is set so it renders nothing in the template
+
+---
+
 ## [2.0.1] — 2026-06-26
 
 ### Changed
