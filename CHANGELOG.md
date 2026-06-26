@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.0.0] — 2026-06-26
+
+### Added
+- **Super admin — Legal Pages settings** — new card in Platform Settings with URL inputs for Terms of Service and Privacy Policy; saved alongside all other platform settings via the existing PATCH endpoint
+- **Marketing footer — Terms & Privacy links** — Terms and Privacy links appear in the footer nav when their URLs are populated in super admin; hidden when blank so the footer is unaffected until pages are ready
+- **Sign-up — legal acknowledgement checkbox** — required "I agree to the Terms of Service and Privacy Policy" checkbox added to the sign-up form; each label links to its respective URL; the Create Account button is disabled until the box is checked; checkbox is hidden entirely when both URLs are empty so the sign-up flow is unchanged until URLs are configured
+
+---
+
 ## [1.9.9] — 2026-06-25
 
 ### Fixed
