@@ -76,7 +76,7 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Lead message retention (months)
               </label>
-              <p className="text-xs text-gray-400 mb-2">Messages older than this are purged nightly</p>
+              <p className="text-xs text-gray-400 mb-2">For converted leads, messages are purged this many months after the <strong>event date</strong>. For unconverted leads, the cutoff is from the message date. Events that haven&apos;t happened yet are never purged.</p>
               <input
                 type="number" min={1} max={120} value={months}
                 onChange={e => setMonths(e.target.value)}

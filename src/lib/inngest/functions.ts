@@ -180,9 +180,29 @@ export const purgeOldLeadMessages = inngest.createFunction(
     const months = parseInt(setting?.value ?? '12', 10);
     const cutoff = new Date();
     cutoff.setMonth(cutoff.getMonth() - months);
-    const { count } = await prisma.leadMessage.deleteMany({ where: { sentAt: { lt: cutoff } } });
-    console.log(`[PURGE] Deleted ${count} lead messages older than ${months} months`);
-    return { deleted: count, months };
+
+    // For leads converted to events: delete messages X months after the event date
+    // (never deletes messages for events that haven't happened yet)
+    const { count: countEvents } = await prisma.leadMessage.deleteMany({
+      where: {
+        lead: {
+          convertedToEventId: { not: null },
+          convertedToEvent: { eventDate: { lt: cutoff } },
+        },
+      },
+    });
+
+    // For pure leads (never converted to an event): fall back to message date
+    const { count: countLeads } = await prisma.leadMessage.deleteMany({
+      where: {
+        sentAt: { lt: cutoff },
+        lead: { convertedToEventId: null },
+      },
+    });
+
+    const total = countEvents + countLeads;
+    console.log(`[PURGE] Deleted ${total} lead messages (${countEvents} by event date, ${countLeads} by message date) — ${months} month cutoff`);
+    return { deleted: total, months };
   }
 );
 
