@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.0.1] — 2026-06-26
+
+### Changed
+- **Super admin — Legal Pages: URL inputs → full-text editors** — replaced the Terms and Privacy URL input fields with large resizable textareas; paste the complete document verbiage directly into super admin and it is stored in the database
+- **`/terms` and `/privacy` public pages** — new server-rendered pages at these routes display the stored content; return 404 when the respective field is empty; include a minimal branded header and footer
+- **Footer and sign-up links now point to internal routes** — `/terms` and `/privacy` instead of external URLs; links still hidden when content is blank
+
+---
+
 ## [2.0.0] — 2026-06-26
 
 ### Added
