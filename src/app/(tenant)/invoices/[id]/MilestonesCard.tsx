@@ -13,7 +13,7 @@ interface Milestone {
   id: string;
   label: string;
   amountCents: number;
-  dueDate: string;
+  dueDate: string | Date; // RSC passes Date objects; JSON API passes strings
   status: string;
 }
 
@@ -36,7 +36,7 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
 
   function startEdit(m: Milestone) {
     setEditing(m.id);
-    setDateVal(m.dueDate.slice(0, 10));
+    setDateVal((m.dueDate instanceof Date ? m.dueDate.toISOString() : m.dueDate).slice(0, 10));
     setError('');
   }
 
@@ -94,7 +94,7 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
                   </div>
                 ) : (
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <p className="text-xs text-gray-400">Due {format(new Date(m.dueDate.slice(0,10) + 'T00:00:00'), 'MMMM d, yyyy')}</p>
+                    <p className="text-xs text-gray-400">Due {format(new Date((m.dueDate instanceof Date ? m.dueDate.toISOString() : m.dueDate).slice(0,10) + 'T00:00:00'), 'MMMM d, yyyy')}</p>
                     {isAdmin && m.status !== 'PAID' && m.status !== 'REFUNDED' && (
                       <button onClick={() => startEdit(m)} className="text-gray-300 hover:text-gray-500 transition-colors">
                         <Pencil className="w-3 h-3" />
