@@ -91,7 +91,7 @@ export async function executeAutomation(executionId: string) {
 
   const result = await sendEmail(ev.client.email, subject, body, replyTo, fromAddress);
   if (!result.success) {
-    throw new Error(String(result.error)); // Inngest retries; onFailure marks FAILED + alerts admin
+    throw new Error(typeof result.error === 'string' ? result.error : JSON.stringify(result.error));
   }
 
   await prisma.automationExecution.update({

@@ -10,7 +10,8 @@ export async function sendEmail(to: string, subject: string, html: string, reply
     return { success: true, id: data?.id };
   } catch (err) {
     console.error('[EMAIL_SEND]', err);
-    return { success: false, error: err };
+    const message = err instanceof Error ? err.message : JSON.stringify(err);
+    return { success: false, error: message };
   }
 }
 

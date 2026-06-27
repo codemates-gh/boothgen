@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.0.9] — 2026-06-27
+
+### Fixed
+- **Automation failure email showed "Error: [object Object]"** — the Resend error object was being serialized with `String()` which produces `[object Object]` for plain objects; now returns `error.message` (string) from `sendEmail` and re-throws with `JSON.stringify` fallback so the actual Resend error reason appears in the failure notification
+
+---
+
 ## [2.0.8] — 2026-06-27
 
 ### Fixed
