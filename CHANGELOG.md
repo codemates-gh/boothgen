@@ -4,6 +4,22 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.0.5] — 2026-06-27
+
+### Fixed
+- **Invoice payment reminder — send on due date, not day after** — the nightly overdue-payment cron used `dueDate < today` (midnight), which excluded milestones due today and delayed the reminder email by one day; changed to `dueDate <= today` so the email fires on the actual due date
+- **Dashboard overdue payment alerts not showing** — the "Requires Attention" panel queried `invoice.dueDate` (nullable — not set on milestone-based invoices), so invoices with payment milestones never surfaced as overdue; switched both overdue and due-soon queries to `PaymentMilestone.dueDate`, then deduplicate to one entry per invoice
+- **Send Reminder button on invoice detail page** — added a "Send Reminder" button (visible on SENT, PARTIALLY_PAID, and OVERDUE invoices with a remaining balance) that immediately fires the overdue payment email to the client; uses the earliest unpaid milestone due date, falling back to the invoice-level due date
+
+---
+
+## [2.0.4] — 2026-06-26
+
+### Fixed
+- **Google OAuth — always show account picker** — clicking "Sign in with Google" previously skipped the account chooser in Safari (and any browser with an active Google session), silently logging back in as the last-used account; added `prompt: select_account` to the Google provider config so the account picker is always displayed
+
+---
+
 ## [2.0.3] — 2026-06-26
 
 ### Fixed

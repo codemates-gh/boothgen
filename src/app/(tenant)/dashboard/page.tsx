@@ -30,7 +30,7 @@ export default async function DashboardPage() {
     upcomingEvents, totalClients, newLeads, tenant,
     revenue, bookedPipeline, outstanding, totalLeads, totalBooked,
     recentLeads,
-    overdueInvoices, dueSoonInvoices,
+    overdueByMilestone, dueSoonByMilestone,
     pendingContracts,
     staleLeads,
     atRiskGalleries,
@@ -50,10 +50,10 @@ export default async function DashboardPage() {
     prisma.event.count({ where: { tenantId, status: { not: 'CANCELLED' } } }),
     prisma.event.count({ where: { tenantId, status: { in: ['BOOKED', 'IN_PROGRESS', 'COMPLETED'] } } }),
     prisma.leadSubmission.findMany({ where: { tenantId }, orderBy: { createdAt: 'desc' }, take: 8, select: { id: true, firstName: true, lastName: true, email: true, eventDate: true, eventType: true, status: true, createdAt: true } }),
-    // Overdue invoices
-    prisma.invoice.findMany({ where: { tenantId, balanceDueCents: { gt: 0 }, status: { in: ['SENT', 'PARTIALLY_PAID', 'OVERDUE'] }, dueDate: { lt: now } }, include: { client: { select: { firstName: true, lastName: true } } }, orderBy: { dueDate: 'asc' }, take: 10 }),
-    // Invoices due in next 7 days
-    prisma.invoice.findMany({ where: { tenantId, balanceDueCents: { gt: 0 }, status: { in: ['SENT', 'PARTIALLY_PAID'] }, dueDate: { gte: now, lte: sevenDaysOut } }, include: { client: { select: { firstName: true, lastName: true } } }, orderBy: { dueDate: 'asc' }, take: 10 }),
+    // Overdue milestones — use milestone dueDate since invoice.dueDate is nullable
+    prisma.paymentMilestone.findMany({ where: { tenantId, dueDate: { lt: now }, status: { notIn: ['PAID', 'REFUNDED'] }, invoice: { status: { notIn: ['PAID', 'CANCELLED'] } } }, include: { invoice: { include: { client: { select: { firstName: true, lastName: true } } } } }, orderBy: { dueDate: 'asc' }, take: 20 }),
+    // Milestones due in the next 7 days (not yet paid)
+    prisma.paymentMilestone.findMany({ where: { tenantId, dueDate: { gte: now, lte: sevenDaysOut }, status: { notIn: ['PAID', 'REFUNDED'] }, invoice: { status: { notIn: ['PAID', 'CANCELLED'] } } }, include: { invoice: { include: { client: { select: { firstName: true, lastName: true } } } } }, orderBy: { dueDate: 'asc' }, take: 20 }),
     // Contracts awaiting any signature
     prisma.contract.findMany({ where: { tenantId, status: { in: ['SENT_TO_CLIENT', 'CLIENT_SIGNED'] } }, include: { client: { select: { firstName: true, lastName: true } }, event: { select: { title: true } } }, orderBy: { updatedAt: 'desc' }, take: 10 }),
     // New leads with no contact for 3+ days
@@ -79,6 +79,27 @@ export default async function DashboardPage() {
       take: 10,
     }),
   ]);
+
+  // Deduplicate milestone results to one entry per invoice (earliest overdue/due-soon milestone wins)
+  const overdueInvoices = (() => {
+    const seen = new Set<string>();
+    return overdueByMilestone
+      .filter(ms => { const first = !seen.has(ms.invoiceId); seen.add(ms.invoiceId); return first; })
+      .slice(0, 10)
+      .map(ms => ({ id: ms.invoiceId, client: ms.invoice.client, balanceDueCents: ms.invoice.balanceDueCents, dueDate: ms.dueDate }));
+  })();
+
+  const dueSoonInvoices = (() => {
+    const overdueIds = new Set(overdueInvoices.map(i => i.id));
+    const seen = new Set<string>();
+    return dueSoonByMilestone
+      .filter(ms => {
+        if (overdueIds.has(ms.invoiceId)) return false;
+        const first = !seen.has(ms.invoiceId); seen.add(ms.invoiceId); return first;
+      })
+      .slice(0, 10)
+      .map(ms => ({ id: ms.invoiceId, client: ms.invoice.client, balanceDueCents: ms.invoice.balanceDueCents, dueDate: ms.dueDate }));
+  })();
 
   // Only alert on events where the LATEST design version is still REVISION_REQUESTED
   const revisionRequested = eventsWithRevision.filter(

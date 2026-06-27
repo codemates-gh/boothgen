@@ -7,7 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, Bell } from 'lucide-react';
 import { format } from 'date-fns';
 import MilestonesCard from './MilestonesCard';
 
@@ -34,6 +34,11 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
           <div className="flex gap-2 flex-wrap">
             <a href={'/api/invoices/' + inv.id + '/pdf'} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><Download className="w-4 h-4 mr-1.5"/>Download PDF</Button></a>
             {inv.status === 'DRAFT' && <form action={'/api/invoices/' + inv.id + '/send'} method="POST"><Button>Send to Client</Button></form>}
+            {['SENT', 'PARTIALLY_PAID', 'OVERDUE'].includes(inv.status) && inv.balanceDueCents > 0 && (
+              <form action={'/api/invoices/' + inv.id + '/remind'} method="POST">
+                <Button variant="outline" size="sm"><Bell className="w-4 h-4 mr-1.5"/>Send Reminder</Button>
+              </form>
+            )}
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

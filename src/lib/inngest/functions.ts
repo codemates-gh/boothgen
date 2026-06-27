@@ -371,7 +371,7 @@ export const sendOverduePaymentReminders = inngest.createFunction(
 
     const overdue = await prisma.paymentMilestone.findMany({
       where: {
-        dueDate: { lt: today },
+        dueDate: { lte: today },
         status: { notIn: ['PAID', 'REFUNDED'] },
         invoice: { status: { notIn: ['PAID', 'CANCELLED'] } },
       },
