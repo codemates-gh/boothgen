@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.0.6] — 2026-06-27
+
+### Fixed
+- **Send Reminder — no feedback after clicking** — button now shows a green confirmation banner ("Reminder sent to [name] ([email])") after the email is dispatched; implemented via redirect query param so no client-side JS or toast library required
+
+---
+
 ## [2.0.5] — 2026-06-27
 
 ### Fixed

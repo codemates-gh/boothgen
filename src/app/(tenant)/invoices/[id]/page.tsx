@@ -7,13 +7,13 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, Bell } from 'lucide-react';
+import { ArrowLeft, Download, Bell, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import MilestonesCard from './MilestonesCard';
 
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
 
-export default async function InvoiceDetailPage({ params }: { params: { id: string } }) {
+export default async function InvoiceDetailPage({ params, searchParams }: { params: { id: string }; searchParams?: { reminded?: string } }) {
   const session = await requireTenantSession();
   const isAdmin = session.tenantRole === 'HOST_ADMIN';
   const [tenant, subscription] = await Promise.all([
@@ -29,6 +29,12 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
       <TopBar title={'Invoice ' + inv.invoiceNumber} />
       <div className="p-4 sm:p-8 max-w-4xl space-y-6">
         <Link href="/invoices" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Invoices</Link>
+        {searchParams?.reminded === '1' && (
+          <div className="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
+            <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+            Reminder sent to {inv.client.firstName} {inv.client.lastName} ({inv.client.email}).
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <div className="flex items-center gap-3"><h2 className="text-xl sm:text-2xl font-bold">{inv.invoiceNumber}</h2><Badge variant={IC[inv.status]}>{inv.status}</Badge></div>
           <div className="flex gap-2 flex-wrap">

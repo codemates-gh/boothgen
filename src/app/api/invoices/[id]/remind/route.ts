@@ -51,5 +51,5 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
     from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
   });
 
-  return NextResponse.redirect(new URL('/invoices/' + inv.id, APP));
+  return NextResponse.redirect(new URL('/invoices/' + inv.id + '?reminded=1', APP));
 }
