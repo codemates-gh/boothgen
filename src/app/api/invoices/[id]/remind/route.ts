@@ -35,10 +35,9 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
     ? new Date(rawDue).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : 'N/A';
 
-  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-  const dueDayStart = rawDue ? new Date(rawDue) : null;
-  if (dueDayStart) dueDayStart.setHours(0, 0, 0, 0);
-  const isOverdue = dueDayStart ? dueDayStart < todayStart : false;
+  const todayUTCStr = new Date().toISOString().split('T')[0];
+  const dueDayStr   = rawDue ? new Date(rawDue).toISOString().split('T')[0] : null;
+  const isOverdue   = dueDayStr ? dueDayStr < todayUTCStr : false;
 
   const portalUrl = inv.event
     ? `${APP}/portal/${(inv.event as any).portalToken}?tab=invoice`

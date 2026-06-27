@@ -126,7 +126,7 @@ export default async function DashboardPage() {
       icon: AlertTriangle, iconCls: 'text-red-500',
       rowCls: 'border-l-4 border-red-400 bg-red-50',
       title: `Overdue payment — ${inv.client.firstName} ${inv.client.lastName}`,
-      detail: `${fmt(inv.balanceDueCents)} past due${inv.dueDate ? ' since ' + format(inv.dueDate, 'MMM d') : ''}`,
+      detail: `${fmt(inv.balanceDueCents)} past due${inv.dueDate ? ' since ' + format(new Date(new Date(inv.dueDate).toISOString().slice(0,10) + 'T00:00:00'), 'MMM d') : ''}`,
       href: `/invoices/${inv.id}`,
     })),
     ...atRiskGalleries.map(g => ({

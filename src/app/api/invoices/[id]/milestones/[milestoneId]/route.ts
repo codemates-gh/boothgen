@@ -23,7 +23,7 @@ export async function PATCH(
 
   const updated = await prisma.paymentMilestone.update({
     where: { id: params.milestoneId },
-    data: { dueDate: new Date(dueDate) },
+    data: { dueDate: new Date(dueDate + 'T12:00:00.000Z') },
   });
 
   return NextResponse.json(updated);

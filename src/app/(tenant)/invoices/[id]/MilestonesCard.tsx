@@ -49,7 +49,7 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
       body: JSON.stringify({ dueDate: dateVal }),
     });
     if (res.ok) {
-      setMilestones(ms => ms.map(m => m.id === milestoneId ? { ...m, dueDate: dateVal + 'T00:00:00.000Z' } : m));
+      setMilestones(ms => ms.map(m => m.id === milestoneId ? { ...m, dueDate: dateVal + 'T12:00:00.000Z' } : m));
       setEditing(null);
     } else {
       const d = await res.json().catch(() => ({}));
@@ -94,7 +94,7 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
                   </div>
                 ) : (
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <p className="text-xs text-gray-400">Due {format(new Date(m.dueDate), 'MMMM d, yyyy')}</p>
+                    <p className="text-xs text-gray-400">Due {format(new Date(m.dueDate.slice(0,10) + 'T00:00:00'), 'MMMM d, yyyy')}</p>
                     {isAdmin && m.status !== 'PAID' && m.status !== 'REFUNDED' && (
                       <button onClick={() => startEdit(m)} className="text-gray-300 hover:text-gray-500 transition-colors">
                         <Pencil className="w-3 h-3" />

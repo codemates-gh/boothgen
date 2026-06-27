@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.0.8] — 2026-06-27
+
+### Fixed
+- **Timezone inconsistency in due date display** — dates stored as UTC midnight (e.g. `2026-06-27T00:00:00Z`) were rendered as "Jun 26" in Eastern-timezone browsers (via date-fns local formatting) but "Jun 27" on the UTC server (emails, dashboard); root fix: all date inputs now stored as **UTC noon** (`T12:00:00Z`) so the same calendar day appears in Eastern, Central, and UTC alike; all client-side date displays updated to extract the UTC date portion before formatting
+- **isOverdue logic used local midnight comparison** — switched to UTC date-string comparison (`"YYYY-MM-DD"`) in the cron and Send Reminder route so "overdue" is determined by UTC calendar date, matching what was stored
+- **Nightly cron query used `lte: today-midnight-UTC`** — changed to `lt: tomorrow-midnight-UTC` so noon-UTC due dates on the due day are correctly included in the day's reminder run
+
+---
+
 ## [2.0.7] — 2026-06-27
 
 ### Fixed

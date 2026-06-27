@@ -64,7 +64,7 @@ export default function InvoicesPage() {
                       <td className="px-6 py-4 text-sm text-gray-500">{(() => {
                           const nextMs = inv.PaymentMilestone?.find((m: any) => m.status !== 'PAID');
                           const d = nextMs?.dueDate ?? inv.dueDate;
-                          return d ? format(new Date(d), 'MMM d') : '—';
+                          return d ? format(new Date(String(d).slice(0,10) + 'T00:00:00'), 'MMM d') : '—';
                         })()}</td>
                       <td className="px-6 py-4"><Badge variant={IC[inv.status]}>{inv.status}</Badge></td>
                       <td className="px-6 py-4 text-right"><Link href={'/invoices/' + inv.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>

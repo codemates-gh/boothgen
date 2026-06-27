@@ -634,13 +634,13 @@ export default function ClientPortalPage() {
         {/* Deposit confirmed — shown below a partially-paid invoice */}
         {tab === 'invoice' && data?.invoice?.status === 'PARTIALLY_PAID' && (() => {
           const nextDue = data.invoice.milestones?.find((m: any) => m.status !== 'PAID');
-          const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-          const dueDayStart = nextDue ? new Date(nextDue.dueDate) : null;
-          if (dueDayStart) dueDayStart.setHours(0, 0, 0, 0);
-          const isPastDue  = dueDayStart ? dueDayStart < todayStart : false;
-          const isDueToday = dueDayStart ? dueDayStart.getTime() === todayStart.getTime() : false;
-          const dueDateFormatted = nextDue
-            ? new Date(nextDue.dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+          // Compare using UTC calendar dates to stay consistent with server-side storage
+          const todayUTC = new Date().toISOString().split('T')[0];
+          const dueUTC   = nextDue ? String(nextDue.dueDate).slice(0, 10) : null;
+          const isPastDue  = dueUTC ? dueUTC < todayUTC : false;
+          const isDueToday = dueUTC ? dueUTC === todayUTC : false;
+          const dueDateFormatted = dueUTC
+            ? new Date(dueUTC + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
             : '';
 
           if (isPastDue) {

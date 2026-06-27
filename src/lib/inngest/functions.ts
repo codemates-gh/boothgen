@@ -366,12 +366,16 @@ export const sendOverduePaymentReminders = inngest.createFunction(
   { id: 'send-overdue-payment-reminders' },
   { cron: '0 14 * * *' },
   async () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const todayUTCStr = now.toISOString().split('T')[0]; // "YYYY-MM-DD" in UTC
+    // Use start of tomorrow (UTC) so noon-UTC due dates on today are included
+    const tomorrow = new Date(now);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    tomorrow.setUTCHours(0, 0, 0, 0);
 
     const overdue = await prisma.paymentMilestone.findMany({
       where: {
-        dueDate: { lte: today },
+        dueDate: { lt: tomorrow },
         status: { notIn: ['PAID', 'REFUNDED'] },
         invoice: { status: { notIn: ['PAID', 'CANCELLED'] } },
       },
@@ -399,8 +403,7 @@ export const sendOverduePaymentReminders = inngest.createFunction(
       if (!event) continue;
       const branding = event.tenant.branding;
       const companyName = branding?.companyName ?? event.tenant.name;
-      const msDay = new Date(ms.dueDate); msDay.setHours(0, 0, 0, 0);
-      const isOverdue = msDay < today;
+      const isOverdue = new Date(ms.dueDate).toISOString().split('T')[0] < todayUTCStr;
       try {
         await sendPaymentReminderEmail({
           to: event.client.email,

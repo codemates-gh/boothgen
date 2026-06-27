@@ -28,9 +28,11 @@ export async function POST(req: NextRequest) {
   const depositAmt = paymentType === 'deposit' ? Math.round(total * ((depositPercent||50)/100)) : total;
 
   // For full payment, use dueDate; for deposit, each milestone has its own due date
-  const fullDueDate = dueDate ? new Date(dueDate) : null;
-  const depositMilestoneDue = depositDueDate ? new Date(depositDueDate) : (fullDueDate ?? new Date());
-  const balanceMilestoneDue = balanceDueDate ? new Date(balanceDueDate) : (fullDueDate ?? new Date());
+  // Store as UTC noon so the same calendar date renders correctly in all US timezones
+  const toUTCNoon = (s?: string): Date | null => s ? new Date(s + 'T12:00:00.000Z') : null;
+  const fullDueDate = toUTCNoon(dueDate);
+  const depositMilestoneDue = toUTCNoon(depositDueDate) ?? fullDueDate ?? new Date();
+  const balanceMilestoneDue = toUTCNoon(balanceDueDate) ?? fullDueDate ?? new Date();
 
   const invoice = await prisma.invoice.create({
     data: {
