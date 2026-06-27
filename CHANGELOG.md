@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.0.7] — 2026-06-27
+
+### Fixed
+- **Client portal — "Deposit received" shown when payment is overdue/due today** — the PARTIALLY_PAID banner now shows three distinct states: green "Deposit received" (payment future), orange "Payment due today" (due date is today), and red "Payment overdue — action required" (past due)
+- **Payment reminder email — "overdue" language used even when due today** — email subject, body, and callout now use "due today" (amber styling) vs "overdue" (red styling) based on whether the milestone date is today or in the past; applies to both the nightly cron and the manual Send Reminder button
+
+---
+
 ## [2.0.6] — 2026-06-27
 
 ### Fixed

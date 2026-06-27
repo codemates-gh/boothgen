@@ -361,7 +361,7 @@ export const sendGalleryDeletionReminders = inngest.createFunction(
   }
 );
 
-// Send overdue payment reminders daily at 2 PM UTC
+// Send payment reminders daily at 2 PM UTC — covers "due today" and past-due milestones
 export const sendOverduePaymentReminders = inngest.createFunction(
   { id: 'send-overdue-payment-reminders' },
   { cron: '0 14 * * *' },
@@ -399,6 +399,8 @@ export const sendOverduePaymentReminders = inngest.createFunction(
       if (!event) continue;
       const branding = event.tenant.branding;
       const companyName = branding?.companyName ?? event.tenant.name;
+      const msDay = new Date(ms.dueDate); msDay.setHours(0, 0, 0, 0);
+      const isOverdue = msDay < today;
       try {
         await sendPaymentReminderEmail({
           to: event.client.email,
@@ -408,6 +410,7 @@ export const sendOverduePaymentReminders = inngest.createFunction(
           amountDueFormatted: fmt(ms.amountCents),
           dueDate: new Date(ms.dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
           portalUrl: `${appUrl}/portal/${event.portalToken}?tab=invoice`,
+          isOverdue,
           replyTo: branding?.replyToEmail ?? undefined,
           from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
         });

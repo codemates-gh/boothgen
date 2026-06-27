@@ -634,6 +634,54 @@ export default function ClientPortalPage() {
         {/* Deposit confirmed — shown below a partially-paid invoice */}
         {tab === 'invoice' && data?.invoice?.status === 'PARTIALLY_PAID' && (() => {
           const nextDue = data.invoice.milestones?.find((m: any) => m.status !== 'PAID');
+          const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+          const dueDayStart = nextDue ? new Date(nextDue.dueDate) : null;
+          if (dueDayStart) dueDayStart.setHours(0, 0, 0, 0);
+          const isPastDue  = dueDayStart ? dueDayStart < todayStart : false;
+          const isDueToday = dueDayStart ? dueDayStart.getTime() === todayStart.getTime() : false;
+          const dueDateFormatted = nextDue
+            ? new Date(nextDue.dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+            : '';
+
+          if (isPastDue) {
+            return (
+              <div className="bg-white rounded-2xl border border-red-200 overflow-hidden shadow-sm">
+                <div className="px-6 py-5 border-b border-red-100 flex items-center gap-3 bg-red-50">
+                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0"/>
+                  <div>
+                    <p className="font-bold text-red-800">Payment overdue — action required</p>
+                    <p className="text-sm text-red-600 mt-0.5">Your remaining balance was due on {dueDateFormatted} and has not been received.</p>
+                  </div>
+                </div>
+                {nextDue && (
+                  <div className="px-6 py-4 text-sm text-gray-700">
+                    Please pay your remaining balance of <strong className="text-gray-900">{fmt(nextDue.amountCents)}</strong> as soon as possible using the invoice above.
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          if (isDueToday) {
+            return (
+              <div className="bg-white rounded-2xl border border-orange-200 overflow-hidden shadow-sm">
+                <div className="px-6 py-5 border-b border-orange-100 flex items-center gap-3 bg-orange-50">
+                  <AlertCircle className="w-5 h-5 text-orange-500 flex-shrink-0"/>
+                  <div>
+                    <p className="font-bold text-orange-800">Payment due today</p>
+                    <p className="text-sm text-orange-600 mt-0.5">Your remaining balance is due today. Please submit your payment at your earliest convenience.</p>
+                  </div>
+                </div>
+                {nextDue && (
+                  <div className="px-6 py-4 text-sm text-gray-700">
+                    Your remaining balance of <strong className="text-gray-900">{fmt(nextDue.amountCents)}</strong> is due today, {dueDateFormatted}.
+                    You can pay it anytime from the invoice above.
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
             <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
               <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-3">
@@ -646,7 +694,7 @@ export default function ClientPortalPage() {
               {nextDue && (
                 <div className="px-6 py-4 text-sm text-gray-600">
                   Your remaining balance of <strong className="text-gray-900">{fmt(nextDue.amountCents)}</strong> is due by{' '}
-                  <strong className="text-gray-900">{new Date(nextDue.dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>.
+                  <strong className="text-gray-900">{dueDateFormatted}</strong>.
                   You can pay it anytime from the invoice above.
                 </div>
               )}

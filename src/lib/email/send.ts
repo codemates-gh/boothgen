@@ -161,18 +161,32 @@ ${passwordBlock}
 
 export async function sendPaymentReminderEmail(params: {
   to: string; firstName: string; companyName: string; invoiceNumber: string;
-  amountDueFormatted: string; dueDate: string; portalUrl: string; replyTo?: string; from?: string;
+  amountDueFormatted: string; dueDate: string; portalUrl: string;
+  isOverdue: boolean;
+  replyTo?: string; from?: string;
 }) {
-  const { to, firstName, companyName, invoiceNumber, amountDueFormatted, dueDate, portalUrl, replyTo, from } = params;
+  const { to, firstName, companyName, invoiceNumber, amountDueFormatted, dueDate, portalUrl, isOverdue, replyTo, from } = params;
+  const subject = isOverdue
+    ? `Payment overdue — ${invoiceNumber} — ${companyName}`
+    : `Payment due today — ${invoiceNumber} — ${companyName}`;
+  const bodyIntro = isOverdue
+    ? `This is a friendly reminder that a payment for your event with <strong>${companyName}</strong> is overdue.`
+    : `Your payment for your event with <strong>${companyName}</strong> is due today.`;
+  const calloutBg   = isOverdue ? '#fef2f2' : '#fff7ed';
+  const calloutBorder = isOverdue ? '#fecaca' : '#fed7aa';
+  const amountColor = isOverdue ? '#991b1b' : '#9a3412';
+  const detailColor = isOverdue ? '#b91c1c' : '#c2410c';
+  const amountLabel = isOverdue ? `${amountDueFormatted} overdue` : `${amountDueFormatted} due today`;
+  const dateLabel   = isOverdue ? `Invoice ${invoiceNumber} · Was due ${dueDate}` : `Invoice ${invoiceNumber} · Due ${dueDate}`;
   return sendEmail(
     to,
-    `Payment overdue — ${invoiceNumber} — ${companyName}`,
+    subject,
     `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
 <h2 style="font-size:20px;color:#111827">Hi ${firstName},</h2>
-<p style="color:#374151">This is a friendly reminder that a payment for your event with <strong>${companyName}</strong> is overdue.</p>
-<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:20px;margin:24px 0">
-  <p style="margin:0;color:#991b1b;font-weight:600;font-size:16px;">${amountDueFormatted} overdue</p>
-  <p style="margin:4px 0 0;color:#b91c1c;font-size:14px;">Invoice ${invoiceNumber} · Was due ${dueDate}</p>
+<p style="color:#374151">${bodyIntro}</p>
+<div style="background:${calloutBg};border:1px solid ${calloutBorder};border-radius:12px;padding:20px;margin:24px 0">
+  <p style="margin:0;color:${amountColor};font-weight:600;font-size:16px;">${amountLabel}</p>
+  <p style="margin:4px 0 0;color:${detailColor};font-size:14px;">${dateLabel}</p>
 </div>
 <p style="margin:24px 0"><a href="${portalUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Pay Now</a></p>
 <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">If you've already made this payment, please disregard this notice.</p>
