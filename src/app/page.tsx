@@ -12,10 +12,24 @@ export const metadata: Metadata = {
   title: 'Booth Genius — 6 Tools. 1 Platform. Free to Start.',
   description:
     'Replace your CRM, e-signature tool, invoicing platform, photo gallery, email automation, and client portal with one Genius platform. Built by a real photo booth operator. Start free — no monthly fees.',
+  keywords: [
+    'photo booth CRM', 'photo booth software', 'photo booth business', 'booth rental management',
+    'photo booth invoicing', 'photo booth contracts', 'photo booth client portal', 'event photo booth platform',
+  ],
+  alternates: { canonical: 'https://boothgen.com' },
   openGraph: {
     title: 'Booth Genius — 6 Tools. 1 Platform. Free to Start.',
     description: 'Stop paying $100+/month for tools that don\'t talk to each other. Booth Genius replaces all of them — built by an operator who ran 2 photo booth businesses for 10+ years.',
     type: 'website',
+    url: 'https://boothgen.com',
+    siteName: 'Booth Genius',
+    images: [{ url: '/api/og', width: 1200, height: 630, alt: 'Booth Genius — CRM for Photo Booth Operators' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Booth Genius — 6 Tools. 1 Platform. Free to Start.',
+    description: 'Stop paying $100+/month for tools that don\'t talk to each other. Booth Genius replaces all of them — free to start.',
+    images: ['/api/og'],
   },
 };
 
@@ -290,6 +304,132 @@ const GENIUS_PILLARS = [
   { label: 'Automation Genius', icon: '⚡', desc: 'Email sequences that follow up, remind, and nurture — while you run events' },
 ];
 
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Booth Genius',
+  url: 'https://boothgen.com',
+  logo: 'https://boothgen.com/icon.svg',
+  description: 'Booth Genius is the all-in-one CRM for photo booth operators — combining lead management, quotes, contracts, invoicing, client portals, and photo delivery in a single platform.',
+  foundingDate: '2024',
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'customer support',
+    url: 'https://boothgen.com/contact',
+  },
+  sameAs: ['https://boothgen.com'],
+};
+
+const softwareSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Booth Genius',
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web',
+  url: 'https://boothgen.com',
+  description: 'All-in-one CRM and business management platform for photo booth operators. Includes lead capture, quotes, e-signatures, invoicing, Stripe payments, client portal, photo gallery delivery, and email automation.',
+  offers: [
+    {
+      '@type': 'Offer',
+      name: 'Commission Plan',
+      price: '0',
+      priceCurrency: 'USD',
+      description: 'Free to start — a small commission per booking collected. No monthly fee.',
+    },
+    {
+      '@type': 'Offer',
+      name: 'Pro Plan',
+      price: '25',
+      priceCurrency: 'USD',
+      description: 'Flat monthly rate with zero per-booking commission and access to Gallery Genius photo delivery.',
+    },
+  ],
+  featureList: [
+    'Embeddable lead capture form',
+    'Quote builder with e-signature',
+    'Digital contracts',
+    'Invoicing with milestone payments',
+    'Stripe-powered client payments',
+    'Branded client portal',
+    'Private photo gallery delivery',
+    'Guest-safe gallery share link',
+    'Email automation & follow-ups',
+    'Business analytics dashboard',
+    'Team management with role-based access',
+  ],
+};
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'How much does Booth Genius cost?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Booth Genius offers two plans. The Commission Plan is free to start — you pay a small percentage per booking collected and nothing monthly. The Pro Plan is a flat monthly fee (currently $25/month at introductory pricing) with zero per-booking commission and includes Gallery Genius photo delivery.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'What tools does Booth Genius replace?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Booth Genius replaces six separate tools that photo booth operators typically pay for: an event CRM ($29/mo), digital contract & e-signature platform ($20/mo), online invoicing & payment links ($20/mo), photo delivery & gallery platform ($20/mo), email automation & drip sequences ($15/mo), and embeddable lead capture forms ($12/mo). That\'s over $140/month replaced by one platform.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Do my clients need to create an account to use the client portal?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'No. Clients access their portal via a unique link — no account, no app download, no password required. From one link they can review their quote, sign the contract, pay their invoice, and download their event photos.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'How do Stripe payments work with Booth Genius?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Clients pay directly through your Stripe-connected account. Booth Genius never holds your funds. You set up milestone payment schedules (deposits and balances), and clients pay through the branded portal. Stripe\'s standard fee of 2.9% + $0.30 per transaction applies in addition to any Booth Genius platform fee.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'How does the photo gallery work?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'With the Gallery Genius feature (Pro plan), you upload event photos directly to Booth Genius after an event. Clients receive a private link through their portal. You can also generate a separate guest-safe share link that lets wedding guests or event attendees view and download photos without ever seeing the client\'s invoice or billing details.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'How long does it take to set up Booth Genius?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Most operators are up and running in under 30 minutes. You upload your logo, set your brand color, connect Stripe, and add your service packages. Your client portal is live immediately. The embeddable lead capture form can be added to your website with a single code snippet.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Can I use Booth Genius if I have a team or staff?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes. Booth Genius includes team management with role-based access. Staff members can see their assigned events without accessing your financials, client payment details, or other sensitive business data.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Is Booth Genius mobile-friendly?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes. The entire client portal — including quote acceptance, contract signing, invoice payment, and photo gallery — is fully mobile-responsive. Your clients can complete every step from any phone or tablet without downloading an app.',
+      },
+    },
+  ],
+};
+
 export default async function HomePage() {
   const session = await getServerSession(authOptions);
   if (session?.userId) {
@@ -303,6 +443,9 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
 
       {/* ── NAV ──────────────────────────────────────────────────────────────── */}
       <MarketingNav />

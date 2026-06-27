@@ -5,8 +5,21 @@ import { Mail, MessageCircle, Clock, HelpCircle, Bug, CreditCard, Lightbulb, Han
 import { MarketingContactForm } from '../MarketingContactForm';
 
 export const metadata: Metadata = {
-  title: 'Contact Us — Booth Genius',
+  title: 'Contact Us',
   description: 'Reach out to the Booth Genius team with questions, technical issues, billing inquiries, or partnership opportunities.',
+  alternates: { canonical: 'https://boothgen.com/contact' },
+  openGraph: {
+    title: 'Contact Booth Genius',
+    description: 'Reach out to the Booth Genius team with questions, technical issues, billing inquiries, or partnership opportunities.',
+    url: 'https://boothgen.com/contact',
+    images: [{ url: '/api/og?title=Contact+Us&subtitle=We%E2%80%99re+here+to+help', width: 1200, height: 630, alt: 'Contact Booth Genius' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contact Booth Genius',
+    description: 'Reach out to the Booth Genius team with questions, technical issues, or partnership opportunities.',
+    images: ['/api/og?title=Contact+Us&subtitle=We%E2%80%99re+here+to+help'],
+  },
 };
 
 const TOPICS = [

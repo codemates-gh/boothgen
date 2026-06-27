@@ -3,8 +3,28 @@ import Link from 'next/link';
 import { MarketingNav } from '@/app/MarketingNav';
 import { Check, Lock, Zap } from 'lucide-react';
 import BreakevenCalculator from './BreakevenCalculator';
+import type { Metadata } from 'next';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Pricing — Free to Start, Pro When You\'re Ready',
+  description: 'Booth Genius is free to start with a small commission per booking, or go Pro for a flat monthly rate with zero commission. No hidden fees. No credit card required.',
+  keywords: ['photo booth software pricing', 'photo booth CRM cost', 'booth rental software plans', 'free photo booth management'],
+  alternates: { canonical: 'https://boothgen.com/pricing' },
+  openGraph: {
+    title: 'Booth Genius Pricing — Free to Start, Pro When You\'re Ready',
+    description: 'Start free with a commission plan or lock in flat-rate Pro pricing. No monthly fee to start. Built for photo booth operators.',
+    url: 'https://boothgen.com/pricing',
+    images: [{ url: '/api/og?title=Simple%2C+Honest+Pricing&subtitle=Free+commission+plan+or+flat+Pro+rate+%E2%80%94+no+surprises', width: 1200, height: 630, alt: 'Booth Genius Pricing' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Booth Genius Pricing — Free to Start, Pro When You\'re Ready',
+    description: 'Start free with a commission plan or lock in flat-rate Pro pricing.',
+    images: ['/api/og?title=Simple%2C+Honest+Pricing&subtitle=Free+commission+plan+or+flat+Pro+rate+%E2%80%94+no+surprises'],
+  },
+};
 
 async function getPricing() {
   const [settings, proSubscriberCount] = await Promise.all([

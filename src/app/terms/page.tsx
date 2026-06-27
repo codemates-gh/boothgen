@@ -4,7 +4,12 @@ import Link from 'next/link';
 import { BoothGeniusLogo } from '@/components/brand/BoothGeniusLogo';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = { title: 'Terms of Service — Booth Genius' };
+export const metadata: Metadata = {
+  title: 'Terms of Service',
+  description: 'Booth Genius terms of service — the rules and conditions governing use of the platform.',
+  alternates: { canonical: 'https://boothgen.com/terms' },
+  robots: { index: true, follow: true },
+};
 
 export default async function TermsPage() {
   const setting = await prisma.systemSetting.findUnique({ where: { key: 'terms_content' } });

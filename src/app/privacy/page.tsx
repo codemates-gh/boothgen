@@ -4,7 +4,12 @@ import Link from 'next/link';
 import { BoothGeniusLogo } from '@/components/brand/BoothGeniusLogo';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = { title: 'Privacy Policy — Booth Genius' };
+export const metadata: Metadata = {
+  title: 'Privacy Policy',
+  description: 'Booth Genius privacy policy — how we collect, use, and protect your data.',
+  alternates: { canonical: 'https://boothgen.com/privacy' },
+  robots: { index: true, follow: true },
+};
 
 export default async function PrivacyPage() {
   const setting = await prisma.systemSetting.findUnique({ where: { key: 'privacy_content' } });

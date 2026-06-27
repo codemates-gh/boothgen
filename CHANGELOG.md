@@ -4,6 +4,22 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.2.0] — 2026-06-27
+
+### Added
+- **SEO & AI SEO overhaul** — comprehensive structured data, metadata, and crawler improvements across all public routes:
+  - `src/app/layout.tsx` — added `metadataBase` (https://boothgen.com), `title.template` ('%s | Booth Genius'), `robots: { index: true, follow: true }`, global OG/Twitter defaults
+  - `src/app/page.tsx` — full OG image, Twitter card, canonical URL; JSON-LD schemas: Organization, SoftwareApplication, FAQPage (8 Q&As targeting Google AI Overviews and Perplexity)
+  - `src/app/sitemap.ts` — new; all public pages with priority values
+  - `src/app/robots.ts` — new; blocks all dashboard/API/private routes, points to sitemap
+  - `src/app/api/og/route.tsx` — new; Edge-rendered 1200×630 OG image; default branded marketing card; `?title=` & `?subtitle=` params for per-page cards
+  - `public/llms.txt` — new; llms.txt standard for ChatGPT, Perplexity, Claude, and other AI crawlers
+  - `src/app/pricing/page.tsx` — added `generateMetadata`, `export const dynamic = 'force-dynamic'` (was revalidate=60), full OG/Twitter with parameterized OG image
+  - `src/app/contact/page.tsx`, `src/app/support/page.tsx` — enhanced metadata with OG/Twitter cards
+  - `src/app/privacy/page.tsx`, `src/app/terms/page.tsx` — added description, canonical, and explicit robots
+
+---
+
 ## [2.1.0] — 2026-06-27
 
 ### Added

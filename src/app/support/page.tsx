@@ -6,8 +6,21 @@ import { SupportChat } from './SupportChat';
 import { prisma } from '@/lib/prisma/client';
 
 export const metadata: Metadata = {
-  title: 'Support Center — Booth Genius',
+  title: 'Support Center',
   description: 'Help guides, feature documentation, and step-by-step workflows for Booth Genius — the photo booth business platform.',
+  alternates: { canonical: 'https://boothgen.com/support' },
+  openGraph: {
+    title: 'Booth Genius Support Center',
+    description: 'Help guides, feature documentation, and step-by-step workflows for Booth Genius.',
+    url: 'https://boothgen.com/support',
+    images: [{ url: '/api/og?title=Support+Center&subtitle=Guides+and+documentation+for+Booth+Genius', width: 1200, height: 630, alt: 'Booth Genius Support Center' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Booth Genius Support Center',
+    description: 'Help guides and documentation for Booth Genius.',
+    images: ['/api/og?title=Support+Center&subtitle=Guides+and+documentation+for+Booth+Genius'],
+  },
 };
 
 export const ARTICLES = [
