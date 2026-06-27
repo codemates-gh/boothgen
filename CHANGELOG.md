@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.1.0] — 2026-06-27
+
+### Added
+- **Package category grouping in Quote and Invoice pickers** — the "Add from Packages" section on the new Quote, Edit Quote, and new Invoice forms now groups packages by category (Full Packages, Add-Ons, À La Carte, Discounts) with a section header per group; packages within each group are sorted alphabetically so operators can control display order via naming conventions (e.g. "1. Package Name", "A. Package Name")
+
+---
+
 ## [2.0.9] — 2026-06-27
 
 ### Fixed

@@ -12,6 +12,13 @@ import { Suspense } from 'react';
 interface LineItem { description: string; quantity: number; unitPrice: string; }
 type DiscountMode = 'none' | 'percentage' | 'fixed' | 'coupon';
 
+const PKG_CATS: [string, string][] = [
+  ['package', 'Full Packages'],
+  ['addon', 'Add-Ons'],
+  ['product', 'À La Carte'],
+  ['discount', 'Discounts'],
+];
+
 function QuoteEditForm() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -89,6 +96,17 @@ function QuoteEditForm() {
     setItems(prev => prev.map((item, j) => j === idx ? { ...item, [field]: val } : item));
   }
 
+  const groupedPackages = (() => {
+    const groups = PKG_CATS.map(([key, label]) => ({
+      key, label,
+      items: packages.filter((p: any) => p.category === key).sort((a: any, b: any) => a.name.localeCompare(b.name)),
+    })).filter(g => g.items.length > 0);
+    const other = packages.filter((p: any) => !PKG_CATS.some(([k]) => k === p.category))
+      .sort((a: any, b: any) => a.name.localeCompare(b.name));
+    if (other.length) groups.push({ key: 'other', label: 'Other', items: other });
+    return groups;
+  })();
+
   const subtotal = items.reduce((s, i) => s + (i.quantity * (parseFloat(i.unitPrice) || 0)), 0);
   const taxAmt = subtotal * (parseFloat(taxRate) / 100);
 
@@ -161,19 +179,24 @@ function QuoteEditForm() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {packages.length > 0 && (
-                <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+              {groupedPackages.length > 0 && (
+                <div className="bg-gray-50 rounded-xl p-3 space-y-3">
                   <p className="text-xs font-medium text-gray-500 uppercase">Add from Packages</p>
-                  <div className="flex flex-wrap gap-2">
-                    {packages.map((pkg: any) => (
-                      <button key={pkg.id} type="button" onClick={() => addFromPackage(pkg)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-sm hover:border-brand hover:text-brand transition-colors">
-                        <Plus className="w-3 h-3 flex-shrink-0" />
-                        <span className="font-medium">{pkg.name}</span>
-                        <span className="text-gray-400">${(pkg.priceCents / 100).toFixed(2)}</span>
-                      </button>
-                    ))}
-                  </div>
+                  {groupedPackages.map(({ key, label, items }) => (
+                    <div key={key}>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">{label}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {items.map((pkg: any) => (
+                          <button key={pkg.id} type="button" onClick={() => addFromPackage(pkg)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-sm hover:border-brand hover:text-brand transition-colors text-left">
+                            <Plus className="w-3 h-3 flex-shrink-0" />
+                            <span className="font-medium">{pkg.name}</span>
+                            <span className="text-gray-400">${(pkg.priceCents / 100).toFixed(2)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
               <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-500 uppercase px-1">
