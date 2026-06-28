@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.3.1] — 2026-06-27
+
+### Added
+- **Business address in Branding Settings** — new "Business Address" field under Settings → Branding (e.g. `123 Main St, Laurel, MD 20707`); used to pin the dashboard weather widget to the company's location instead of the user's browser/IP location
+- **Weather widget uses company address** — the dashboard weather now geocodes the stored business address via Nominatim and fetches weather for that location; falls back to IP geolocation when no address is set; a note below the widget indicates which source is in use with a direct link to update in Branding Settings
+
+---
+
 ## [2.3.0] — 2026-06-27
 
 ### Fixed

@@ -204,7 +204,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Weather */}
-        <WeatherWidget />
+        <WeatherWidget businessAddress={tenant?.branding?.businessAddress ?? ''} />
 
         {/* Today's Events */}
         {todayEvents.length > 0 && (
