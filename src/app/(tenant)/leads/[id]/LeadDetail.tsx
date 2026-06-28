@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { ArrowLeft, Save, Send, ArrowRight, CheckCircle, RefreshCw, FileText } from 'lucide-react';
+import { ArrowLeft, Save, Send, ArrowRight, CheckCircle, RefreshCw, FileText, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -150,6 +150,8 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
   const [activeTab, setActiveTab] = useState<'details' | 'reply' | 'thread'>('details');
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [branding, setBranding] = useState<Branding>({});
+  const [drafting, setDrafting] = useState(false);
+  const [draftError, setDraftError] = useState<string | null>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -248,6 +250,25 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
       router.push(`/events/${data.eventId}`);
     }
     setConverting(false);
+  }
+
+  async function draftWithAI() {
+    setDrafting(true);
+    setDraftError(null);
+    const res = await fetch(`/api/leads/${lead.id}/draft-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      setDraftError(data.error ?? 'AI draft failed. Try again.');
+    } else {
+      setEmailSubject(data.subject ?? emailSubject);
+      setEmailBody(data.bodyHtml ?? emailBody);
+      setEditorKey(k => k + 1);
+    }
+    setDrafting(false);
   }
 
   return (
@@ -454,7 +475,19 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
             </div>
             <p className="text-xs text-gray-400">Replies from the client will go directly to your email address on file. Merge tags are resolved when sent.</p>
             <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">Attachments sent as replies are not captured in this thread. The outgoing email instructs clients to CC your contact email if they need to share a file.</p>
-            <div className="flex justify-end">
+            {draftError && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{draftError}</p>
+            )}
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={draftWithAI}
+                disabled={drafting}
+                className="flex items-center gap-1.5 text-sm text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg px-3 py-2 transition-colors disabled:opacity-50"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {drafting ? 'Drafting…' : 'Draft with AI'}
+              </button>
               <Button onClick={sendReply} disabled={sending || !emailSubject.trim() || !emailBody.trim()} className="gap-2">
                 <Send className="w-4 h-4" /> {sending ? 'Sending…' : 'Send Email'}
               </Button>

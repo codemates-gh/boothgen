@@ -4,6 +4,23 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.3.0] — 2026-06-27
+
+### Fixed
+- **AI chatbot not appearing on /support after super-admin toggle** — the support page was potentially served from a static cache, so toggling `chatbot_enabled` in the DB had no effect until a redeploy; added `export const dynamic = 'force-dynamic'` to the support page and `revalidatePath('/support')` to the settings PATCH API so changes take effect immediately
+
+### Added
+- **AI chatbot in host admin** — the floating Booth Genius support assistant (same widget as `/support`) now appears in the tenant dashboard for logged-in operators; controlled by the same super-admin `chatbot_enabled` toggle
+- **AI email drafting for leads** — new "Draft with AI" button in the Lead → Compose tab generates a ready-to-send subject + body based on the client's name, event details, and inquiry message using Gemini; operators can edit the draft before sending
+  - New API route: `src/app/api/leads/[id]/draft-email/route.ts` (uses `gemini-2.5-flash` for drafting quality)
+
+### Improved
+- **Chatbot model split** — support Q&A chat now uses `gemini-2.5-flash-lite` (faster, cheaper for retrieval tasks); email drafting uses `gemini-2.5-flash` (better for generation); override via `GEMINI_MODEL_LITE` / `GEMINI_MODEL` env vars
+- **Chatbot output quality** — system prompt updated to ban markdown formatting (asterisks, headers, bullet dashes) from AI responses; responses now appear cleanly in the plain-text chat widget
+- **Unanswered question sentinel** — when the AI can't answer a question it prefixes `[UNANSWERED]:`; the chat widget strips the prefix and shows an inline "Contact our support team" button instead of a generic footer prompt
+
+---
+
 ## [2.2.0] — 2026-06-27
 
 ### Added

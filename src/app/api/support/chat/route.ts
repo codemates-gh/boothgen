@@ -152,12 +152,16 @@ A: The discount appears as a line item on the quote in the client portal, clearl
 **Q: How do automated emails work?**
 A: Go to Automation in the sidebar. Create a rule by choosing a trigger event (e.g. "Quote Accepted"), set optional delay (e.g. send immediately or wait N days), and select an email template. The system sends the email automatically when the trigger fires.
 
-If you cannot find an answer, suggest the user contact support at support@boothgen.com.
+OUTPUT RULES (follow exactly):
+- Never use markdown. No asterisks, no bold (**text**), no headers (#), no bullet dashes. Use plain sentences only. Numbered steps are OK (1. 2. 3.).
+- Keep responses under 5 sentences unless a numbered walkthrough is truly needed.
+- If the answer is not covered by the documentation above, start your reply with [UNANSWERED]: and then briefly acknowledge the gap and direct them to support@boothgen.com.
 `;
 
 type SimpleMessage = { role: 'user' | 'assistant'; content: string };
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
+// Use the lite model for retrieval-style Q&A; reserve the full model for drafting tasks
+const GEMINI_MODEL = process.env.GEMINI_MODEL_LITE ?? 'gemini-2.5-flash-lite';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 export async function POST(req: Request) {

@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, User, Loader2, Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 
-type Message = { id: string; role: 'user' | 'assistant'; content: string };
+type Message = { id: string; role: 'user' | 'assistant'; content: string; escalate?: boolean };
 type Panel = 'chat' | 'contact';
 type ContactState = 'idle' | 'sending' | 'sent' | 'error';
 
@@ -62,8 +62,11 @@ export function SupportChat() {
       if (!res.ok || data.error) {
         throw new Error(data.error ?? 'Request failed');
       }
+      const raw: string = data.text ?? '';
+      const escalate = raw.startsWith('[UNANSWERED]');
+      const content = escalate ? raw.replace(/^\[UNANSWERED\]:\s*/i, '').trim() : raw;
       setMessages(prev =>
-        prev.map(m => m.id === assistantId ? { ...m, content: data.text ?? '' } : m)
+        prev.map(m => m.id === assistantId ? { ...m, content, escalate } : m)
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Something went wrong.';
@@ -144,8 +147,18 @@ export function SupportChat() {
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${m.role === 'user' ? 'bg-orange-500' : 'bg-[#2D1B69]'}`}>
                       {m.role === 'user' ? <User className="w-3.5 h-3.5 text-white" /> : <Bot className="w-3.5 h-3.5 text-white" />}
                     </div>
-                    <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${m.role === 'user' ? 'bg-orange-500 text-white rounded-tr-sm' : 'bg-white text-gray-800 border border-gray-100 rounded-tl-sm shadow-sm'}`}>
-                      {m.content || (loading && m.role === 'assistant' ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" /> : null)}
+                    <div className="flex flex-col gap-1.5 max-w-[80%]">
+                      <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${m.role === 'user' ? 'bg-orange-500 text-white rounded-tr-sm' : 'bg-white text-gray-800 border border-gray-100 rounded-tl-sm shadow-sm'}`}>
+                        {m.content || (loading && m.role === 'assistant' ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" /> : null)}
+                      </div>
+                      {m.escalate && (
+                        <button
+                          onClick={openContact}
+                          className="self-start text-xs text-orange-500 hover:text-orange-600 bg-orange-50 border border-orange-100 rounded-xl px-2.5 py-1 flex items-center gap-1 transition-colors"
+                        >
+                          <Mail className="w-3 h-3" /> Contact our support team
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
