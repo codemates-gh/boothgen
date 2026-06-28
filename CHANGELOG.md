@@ -18,6 +18,8 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 - **Chatbot model split** — support Q&A chat now uses `gemini-2.5-flash-lite` (faster, cheaper for retrieval tasks); email drafting uses `gemini-2.5-flash` (better for generation); override via `GEMINI_MODEL_LITE` / `GEMINI_MODEL` env vars
 - **Chatbot output quality** — system prompt updated to ban markdown formatting (asterisks, headers, bullet dashes) from AI responses; responses now appear cleanly in the plain-text chat widget
 - **Unanswered question sentinel** — when the AI can't answer a question it prefixes `[UNANSWERED]:`; the chat widget strips the prefix and shows an inline "Contact our support team" button instead of a generic footer prompt
+- **Marketing page updated** — added AI Support Assistant and AI Email Drafting to the feature grid, updated `softwareSchema` description and `featureList`, added FAQ entry "Does Booth Genius have AI features?" for AI Overview / Perplexity indexing
+- **Support center updated** — new "AI Features" category with two articles: "AI Support Assistant" (how to use the chatbot) and "Draft with AI — Writing Lead Emails" (step-by-step for the draft button); FAQ article updated to mention both AI features
 
 ---
 

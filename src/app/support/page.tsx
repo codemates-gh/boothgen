@@ -859,7 +859,56 @@ A: Yes. Go to Settings → Lead Capture (Embed tab). Toggle which fields appear 
 A: Chrome, Safari, Firefox, and Edge — all current versions. Internet Explorer is not supported.
 
 **Q: How do I contact support?**
-A: Email us at support@boothgen.com. You can also use the AI chat assistant on this page for instant answers to common questions.`,
+A: Email us at support@boothgen.com. You can also use the AI chat assistant on this page for instant answers to common questions.
+
+**Q: Does Booth Genius have AI features?**
+A: Yes — two of them. The AI Support Assistant is a chatbot built into your dashboard and this support page. Click the orange chat bubble in the bottom-right corner to ask any question about the platform and get an instant answer. The AI Email Drafting tool is in the Lead detail page: open a lead, go to the Compose tab, and click "Draft with AI." It reads the client's name, event details, and inquiry message and writes a ready-to-edit email reply for you.`,
+  },
+  // ─── AI FEATURES ────────────────────────────────────────────────────────────
+  {
+    id: 'ai-support-assistant',
+    category: 'AI Features',
+    categoryIcon: '🤖',
+    title: 'AI Support Assistant',
+    slug: 'ai-support-assistant',
+    content: `The AI Support Assistant is a chatbot built into every page of your Booth Genius dashboard and the public support center at boothgen.com/support. It knows the full Booth Genius platform and can answer questions about leads, quotes, contracts, invoices, galleries, automation, team management, and more.
+
+**How to open it**
+Look for the orange chat bubble in the bottom-right corner of any page. Click it to open the assistant. Type your question and press Enter or click Send.
+
+**What it can answer**
+Any how-to question about Booth Genius. For example: "How do I share gallery photos with guests without showing them the invoice?", "Where do I set the deposit percentage?", "How do I resend a contract?", or "What does the PARTIALLY_PAID status mean?"
+
+**What happens if it can't answer**
+If the assistant doesn't know the answer, it will say so and offer a link to contact our support team. You can also click "Contact our support team" in the chat to send us a message directly.
+
+**Who sees the chatbot**
+The chatbot is available to all logged-in operators in the dashboard and to anyone visiting the public support page. It is controlled by the platform administrator and may occasionally be disabled for maintenance.`,
+  },
+  {
+    id: 'ai-email-drafting',
+    category: 'AI Features',
+    categoryIcon: '🤖',
+    title: 'Draft with AI — Writing Lead Emails',
+    slug: 'ai-email-drafting',
+    content: `The "Draft with AI" button in the Lead Compose tab generates a personalized email reply for you using the client's inquiry details. It reads the client's name, event date, event type, venue, guest count, and original message, then writes a professional, warm reply that you can edit and send.
+
+**How to use it**
+1. Open a lead from Leads in the sidebar.
+2. Click the Compose tab (or + Compose new reply from the Thread tab).
+3. Click the purple "Draft with AI" button on the left side of the toolbar.
+4. Wait 2-4 seconds — the subject line and message body will fill in automatically.
+5. Review and edit the draft to match your voice.
+6. Click Send Email when ready.
+
+**What the AI uses**
+The draft is based on: the client's first and last name, their event date, event type, venue name, city, expected guest count, and the message they submitted in the inquiry form. If you've already exchanged emails with this lead, the most recent messages are also included so the AI understands the conversation context.
+
+**Tips for best results**
+Use Draft with AI early in the conversation when you're sending a first response to a new inquiry — it shines there. For follow-up messages where tone and nuance matter more, it still gives a solid starting point but always review before sending.
+
+**The AI doesn't send automatically**
+Draft with AI only fills in the compose fields. You must click "Send Email" yourself. Nothing is sent without your action.`,
   },
 ];
 
@@ -879,6 +928,7 @@ const CATEGORIES = [
   { label: 'Dashboard', icon: '🏠', color: 'bg-violet-50 border-violet-200 text-violet-700', desc: 'Stats, attention alerts, activity' },
   { label: 'Workflows', icon: '🔄', color: 'bg-cyan-50 border-cyan-200 text-cyan-700', desc: 'End-to-end booking walkthroughs' },
   { label: 'Settings', icon: '⚙️', color: 'bg-gray-50 border-gray-200 text-gray-700', desc: 'Packages, billing, checklists, profile' },
+  { label: 'AI Features', icon: '🤖', color: 'bg-purple-50 border-purple-200 text-purple-700', desc: 'AI chatbot, email drafting, smart tools' },
   { label: 'FAQ', icon: '❓', color: 'bg-rose-50 border-rose-200 text-rose-700', desc: 'Quick answers to common questions' },
 ];
 

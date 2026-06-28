@@ -283,6 +283,8 @@ const FEATURES = [
   { icon: '⚡', title: 'Automated Email Follow-Ups', desc: 'Email sequences triggered by inquiry, signing, and payment — your business runs follow-ups on autopilot.', pro: false },
   { icon: '👥', title: 'Team Management', desc: 'Invite staff with role-based access. They see their events; your financials and client data stay private.', pro: false },
   { icon: '📊', title: 'Business Analytics', desc: 'Revenue, conversion rates, and monthly booking trends at a glance — no spreadsheet required.', pro: false },
+  { icon: '🤖', title: 'AI Support Assistant', desc: 'An AI chatbot built into your dashboard and the support center answers how-to questions instantly — no waiting for an email reply.', pro: false },
+  { icon: '✨', title: 'AI Email Drafting', desc: 'Click "Draft with AI" in any lead thread and get a personalized reply pre-written from the client\'s inquiry and event details. Edit and send in seconds.', pro: false },
 ];
 
 const SAVINGS_TOOLS = [
@@ -327,7 +329,7 @@ const softwareSchema = {
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web',
   url: 'https://boothgen.com',
-  description: 'All-in-one CRM and business management platform for photo booth operators. Includes lead capture, quotes, e-signatures, invoicing, Stripe payments, client portal, photo gallery delivery, and email automation.',
+  description: 'All-in-one CRM and business management platform for photo booth operators. Includes lead capture, quotes, e-signatures, invoicing, Stripe payments, client portal, photo gallery delivery, email automation, AI support assistant, and AI email drafting.',
   offers: [
     {
       '@type': 'Offer',
@@ -356,6 +358,8 @@ const softwareSchema = {
     'Email automation & follow-ups',
     'Business analytics dashboard',
     'Team management with role-based access',
+    'AI support assistant in dashboard and support center',
+    'AI email drafting for lead replies',
   ],
 };
 
@@ -425,6 +429,14 @@ const faqSchema = {
       acceptedAnswer: {
         '@type': 'Answer',
         text: 'Yes. The entire client portal — including quote acceptance, contract signing, invoice payment, and photo gallery — is fully mobile-responsive. Your clients can complete every step from any phone or tablet without downloading an app.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Does Booth Genius have AI features?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes. Booth Genius includes two built-in AI features. The AI Support Assistant is a chatbot available in your dashboard and on the public support page — ask it anything about the platform and get an instant answer. The AI Email Drafting tool lets you click "Draft with AI" in any lead thread to auto-generate a personalized email reply based on the client\'s inquiry, event date, and event details. Both features are included at no extra cost.',
       },
     },
   ],
