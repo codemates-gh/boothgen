@@ -4,7 +4,9 @@ import type { NextRequest } from 'next/server';
 export const runtime = 'edge';
 
 const BRAND_DARK = '#1e1247';
+const BRAND_MID = '#2D1B69';
 const BRAND_ORANGE = '#f97316';
+const BRAND_PURPLE_TEXT = 'rgba(196,181,253,0.85)';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -26,50 +28,42 @@ export async function GET(req: NextRequest) {
             position: 'relative',
           }}
         >
-          {/* Decorative glow top-right */}
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: '400px',
-              height: '400px',
-              background: 'rgba(249,115,22,0.15)',
-              borderRadius: '50%',
-              filter: 'blur(80px)',
-            }}
-          />
           {/* Brand mark top-left */}
           <div
             style={{
               position: 'absolute',
               top: '48px',
               left: '60px',
+              right: '0px',
+              bottom: '0px',
               display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
+              alignItems: 'flex-start',
+              justifyContent: 'flex-start',
             }}
           >
-            <div
-              style={{
-                width: '40px',
-                height: '40px',
-                background: BRAND_ORANGE,
-                borderRadius: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '20px',
-                fontWeight: '900',
-                color: 'white',
-              }}
-            >
-              B
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  background: BRAND_ORANGE,
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '20px',
+                  fontWeight: '900',
+                  color: 'white',
+                }}
+              >
+                B
+              </div>
+              <span style={{ color: 'white', fontSize: '20px', fontWeight: '700' }}>
+                Booth Genius
+              </span>
             </div>
-            <span style={{ color: 'white', fontSize: '20px', fontWeight: '700' }}>
-              Booth Genius
-            </span>
           </div>
+
           {/* Title */}
           <div
             style={{
@@ -79,22 +73,26 @@ export async function GET(req: NextRequest) {
               lineHeight: 1.15,
               marginBottom: subtitle ? '16px' : '0px',
               maxWidth: '900px',
+              display: 'flex',
             }}
           >
             {title}
           </div>
+
           {subtitle && (
             <div
               style={{
-                color: 'rgba(196,181,253,0.9)',
+                color: BRAND_PURPLE_TEXT,
                 fontSize: '28px',
                 fontWeight: '400',
                 maxWidth: '800px',
+                display: 'flex',
               }}
             >
               {subtitle}
             </div>
           )}
+
           {/* Bottom accent bar */}
           <div
             style={{
@@ -104,6 +102,7 @@ export async function GET(req: NextRequest) {
               right: '0px',
               height: '6px',
               background: BRAND_ORANGE,
+              display: 'flex',
             }}
           />
         </div>
@@ -117,7 +116,7 @@ export async function GET(req: NextRequest) {
     (
       <div
         style={{
-          background: `linear-gradient(135deg, ${BRAND_DARK} 0%, #2D1B69 100%)`,
+          background: BRAND_DARK,
           width: '100%',
           height: '100%',
           display: 'flex',
@@ -128,31 +127,43 @@ export async function GET(req: NextRequest) {
           position: 'relative',
         }}
       >
-        {/* Decorative circles */}
+        {/* Decorative accent — top-right corner block (no filter/blur) */}
         <div
           style={{
             position: 'absolute',
-            top: '-60px',
-            right: '-60px',
-            width: '500px',
-            height: '500px',
-            background: 'rgba(249,115,22,0.12)',
-            borderRadius: '50%',
-            filter: 'blur(60px)',
+            top: '0px',
+            right: '0px',
+            width: '420px',
+            height: '420px',
+            background: BRAND_MID,
+            borderRadius: '0px 0px 0px 420px',
+            display: 'flex',
           }}
         />
+        {/* Decorative dot grid strip */}
         <div
           style={{
             position: 'absolute',
-            bottom: '-80px',
-            left: '200px',
-            width: '300px',
-            height: '300px',
-            background: 'rgba(139,92,246,0.1)',
-            borderRadius: '50%',
-            filter: 'blur(60px)',
+            bottom: '60px',
+            right: '80px',
+            display: 'flex',
+            gap: '16px',
           }}
-        />
+        >
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              style={{
+                width: '8px',
+                height: '8px',
+                background: 'rgba(249,115,22,0.4)',
+                borderRadius: '50%',
+                display: 'flex',
+              }}
+            />
+          ))}
+        </div>
+
         {/* Logo row */}
         <div
           style={{
@@ -178,47 +189,51 @@ export async function GET(req: NextRequest) {
           >
             B
           </div>
-          <span style={{ color: 'white', fontSize: '28px', fontWeight: '700', letterSpacing: '-0.5px' }}>
+          <span
+            style={{
+              color: 'white',
+              fontSize: '28px',
+              fontWeight: '700',
+              letterSpacing: '-0.5px',
+              display: 'flex',
+            }}
+          >
             Booth Genius
           </span>
         </div>
+
         {/* Headline */}
         <div
           style={{
             color: 'white',
-            fontSize: '64px',
+            fontSize: '72px',
             fontWeight: '800',
-            lineHeight: 1.1,
-            marginBottom: '24px',
-            maxWidth: '800px',
+            lineHeight: 1.05,
+            marginBottom: '20px',
             letterSpacing: '-1px',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          6 tools.{'\n'}1 platform.
+          <span>6 tools. 1 platform.</span>
+          <span style={{ color: BRAND_ORANGE }}>Free to start.</span>
         </div>
-        <div
-          style={{
-            color: BRAND_ORANGE,
-            fontSize: '40px',
-            fontWeight: '800',
-            marginBottom: '32px',
-          }}
-        >
-          That&apos;s the Genius of it.
-        </div>
+
         {/* Subline */}
         <div
           style={{
-            color: 'rgba(196,181,253,0.85)',
+            color: BRAND_PURPLE_TEXT,
             fontSize: '24px',
             fontWeight: '400',
-            maxWidth: '700px',
+            maxWidth: '680px',
             lineHeight: 1.5,
             marginBottom: '48px',
+            display: 'flex',
           }}
         >
           CRM · Quotes · Contracts · Invoicing · Client Portal · Photo Gallery
         </div>
+
         {/* CTA pill */}
         <div
           style={{
@@ -232,8 +247,9 @@ export async function GET(req: NextRequest) {
             borderRadius: '50px',
           }}
         >
-          Free to start — boothgen.com
+          boothgen.com
         </div>
+
         {/* Bottom bar */}
         <div
           style={{
@@ -243,6 +259,7 @@ export async function GET(req: NextRequest) {
             right: '0px',
             height: '6px',
             background: BRAND_ORANGE,
+            display: 'flex',
           }}
         />
       </div>
