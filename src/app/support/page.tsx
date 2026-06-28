@@ -38,7 +38,7 @@ export const ARTICLES = [
 When you first sign in, you'll be guided through a short onboarding flow asking for your business name and time zone. Complete this to unlock your dashboard.
 
 **Step 2 — Set Up Your Branding**
-Go to Settings → Branding. Upload your business logo (PNG or JPG, recommended 400×120px horizontal), choose your primary brand color, and fill in your company name, reply-to email address, support phone number, and website URL. Everything clients see — emails, portal, invoices — will carry your brand, not Booth Genius.
+Go to Settings → Branding. Upload your business logo (PNG or JPG, recommended 400×120px horizontal), choose your primary brand color, and fill in your company name, reply-to email address, support phone number, business address, and website URL. Everything clients see — emails, portal, invoices — will carry your brand, not Booth Genius. Your business address is also used to show accurate local weather on your dashboard.
 
 **Step 3 — Connect Stripe**
 Go to Settings → Billing → Connect Stripe. You'll be redirected to Stripe's secure onboarding flow. If you already have a Stripe account, just log in — it links your existing account, no new account needed. This step is separate from any Booth Genius subscription payment; it's what routes your clients' payments directly to your bank. Booth Genius never holds your money. Required before clients can pay invoices online.
@@ -77,6 +77,9 @@ Displayed in the portal header and email sender name (e.g. "My Booth Co."). If b
 
 **Reply-To Email**
 When clients reply to your automated emails, replies go to this address — not a generic system address.
+
+**Business Address**
+Your physical business or mailing address (e.g. 123 Main St, Laurel, MD 20707). This is used to show accurate local weather on the dashboard — the weather widget geocodes this address so conditions reflect your business location, not your browser's IP. If left blank, the widget falls back to IP-based location. A note under the dashboard weather widget indicates which source is in use and links directly back here to update it.
 
 **Invoice Footer Text**
 Add custom text at the bottom of invoices — useful for thank-you notes, payment terms, or cancellation policy reminders.
@@ -653,7 +656,10 @@ Below "Requires Attention" is a Recent Activity feed showing design approvals fr
 A list of your next several events sorted by date, with their status badges. Click any event to go directly to its detail page.
 
 **Recent Leads**
-Your most recently submitted lead inquiries, with the event date and lead status. Click a lead to open it and respond.`,
+Your most recently submitted lead inquiries, with the event date and lead status. Click a lead to open it and respond.
+
+**Weather Widget**
+Below the stats row is a 5-day weather forecast showing conditions for your business location. The widget reads your Business Address from Settings → Branding, geocodes it, and fetches accurate local weather — so if you're based in Laurel, MD, it shows Laurel's forecast rather than wherever your browser's IP happens to resolve. A small note below the widget confirms which source is in use and links directly to Branding Settings if you need to update the address. If no business address has been saved yet, it falls back to IP-based geolocation.`,
   },
 
   // ─── SETTINGS ───────────────────────────────────────────────────────────────
