@@ -1,7 +1,7 @@
 
 import { inngest } from './client';
 import { prisma } from '@/lib/prisma/client';
-import { sendDesignReadyEmail, sendDesignDecisionEmail, sendPaymentReminderEmail, sendGalleryDeletionReminderEmail } from '@/lib/email/send';
+import { sendEmail, sendDesignReadyEmail, sendDesignDecisionEmail, sendPaymentReminderEmail, sendGalleryDeletionReminderEmail, sendDesignApprovalReminderEmail } from '@/lib/email/send';
 import { triggerAutomation, scheduleEventDateAutomations, executeAutomation, notifyAdminOfFailure } from './trigger';
 import { deleteFromR2, r2KeyFromUrl } from '@/lib/storage/r2';
 
@@ -45,6 +45,19 @@ export const scheduleBookingConfirmedAutomations = inngest.createFunction(
     if (eventDate) {
       await scheduleEventDateAutomations({ tenantId, eventId, eventDate: new Date(eventDate) });
     }
+
+    // Schedule design approval check 5 days before the event.
+    // If the event is already within 5 days, fire within the next minute.
+    if (eventDate) {
+      const fiveDaysBefore = new Date(new Date(eventDate).getTime() - 5 * 86400_000);
+      const fireAt = fiveDaysBefore > new Date() ? fiveDaysBefore : new Date(Date.now() + 60_000);
+      inngest.send({
+        name: 'design/approval-check',
+        data: { eventId },
+        ts: fireAt.getTime(),
+      }).catch(e => console.error('[BOOKING_CONFIRMED] design-check schedule error:', e));
+    }
+
     return { ok: true };
   }
 );
@@ -361,23 +374,28 @@ export const sendGalleryDeletionReminders = inngest.createFunction(
   }
 );
 
-// Send payment reminders daily at 2 PM UTC — covers "due today" and past-due milestones
+// Send payment reminders daily at 2 PM UTC — fallback for any milestones missed by event-driven scheduling
 export const sendOverduePaymentReminders = inngest.createFunction(
   { id: 'send-overdue-payment-reminders' },
   { cron: '0 14 * * *' },
   async () => {
     const now = new Date();
-    const todayUTCStr = now.toISOString().split('T')[0]; // "YYYY-MM-DD" in UTC
-    // Use start of tomorrow (UTC) so noon-UTC due dates on today are included
+    const todayUTCStr = now.toISOString().split('T')[0];
     const tomorrow = new Date(now);
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     tomorrow.setUTCHours(0, 0, 0, 0);
+    // Only remind if never reminded or last reminder was sent more than 23 hours ago
+    const reminderCutoff = new Date(now.getTime() - 23 * 3600 * 1000);
 
     const overdue = await prisma.paymentMilestone.findMany({
       where: {
         dueDate: { lt: tomorrow },
         status: { notIn: ['PAID', 'REFUNDED'] },
         invoice: { status: { notIn: ['PAID', 'CANCELLED'] } },
+        OR: [
+          { lastReminderSentAt: null },
+          { lastReminderSentAt: { lt: reminderCutoff } },
+        ],
       },
       include: {
         invoice: {
@@ -395,9 +413,11 @@ export const sendOverduePaymentReminders = inngest.createFunction(
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
     const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
+    const adminEmail = process.env.SUPER_ADMIN_EMAIL ?? 'codemates@gmail.com';
     const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
 
     let sent = 0;
+    let failed = 0;
     for (const ms of overdue) {
       const event = ms.invoice.event;
       if (!event) continue;
@@ -417,13 +437,216 @@ export const sendOverduePaymentReminders = inngest.createFunction(
           replyTo: branding?.replyToEmail ?? undefined,
           from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
         });
+        await prisma.paymentMilestone.update({
+          where: { id: ms.id },
+          data: { lastReminderSentAt: now },
+        });
         sent++;
       } catch (e) {
+        failed++;
         console.error('[OVERDUE_REMINDER] email error:', e);
+        // Notify super admin of silent failures so they don't go undetected
+        sendEmail(adminEmail, `[Booth Genius] Payment reminder failed — ${ms.invoice.invoiceNumber}`,
+          `<p>Failed to send payment reminder for invoice <strong>${ms.invoice.invoiceNumber}</strong> (milestone: ${ms.label}, due: ${new Date(ms.dueDate).toLocaleDateString()}).</p><p>Error: ${String(e)}</p>`
+        ).catch(() => {});
       }
     }
 
-    console.log(`[OVERDUE_REMINDER] Sent ${sent} of ${overdue.length} reminder emails`);
-    return { sent, total: overdue.length };
+    console.log(`[OVERDUE_REMINDER] Sent ${sent}, failed ${failed}, of ${overdue.length} milestones`);
+    return { sent, failed, total: overdue.length };
+  }
+);
+
+// Event-driven: fires at the balance milestone's exact due date when the invoice is sent
+export const notifyPaymentMilestoneDue = inngest.createFunction(
+  { id: 'notify-payment-milestone-due', retries: 3 },
+  { event: 'payment/milestone-due' },
+  async ({ event: evt }) => {
+    const { milestoneId } = evt.data as { milestoneId: string };
+    const ms = await prisma.paymentMilestone.findUnique({
+      where: { id: milestoneId },
+      include: {
+        invoice: {
+          include: {
+            event: {
+              include: {
+                client: true,
+                tenant: { include: { branding: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!ms) return;
+    if (ms.status === 'PAID' || ms.status === 'REFUNDED') return;
+    if (!ms.invoice.event) return;
+    if (ms.invoice.status === 'PAID' || ms.invoice.status === 'CANCELLED') return;
+
+    const event = ms.invoice.event;
+    const branding = event.tenant.branding;
+    const companyName = branding?.companyName ?? event.tenant.name;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
+    const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
+    const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+
+    await sendPaymentReminderEmail({
+      to: event.client.email,
+      firstName: event.client.firstName,
+      companyName,
+      invoiceNumber: ms.invoice.invoiceNumber,
+      amountDueFormatted: fmt(ms.amountCents),
+      dueDate: new Date(ms.dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+      portalUrl: `${appUrl}/portal/${event.portalToken}?tab=invoice`,
+      isOverdue: false,
+      replyTo: branding?.replyToEmail ?? undefined,
+      from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
+    });
+
+    await prisma.paymentMilestone.update({
+      where: { id: ms.id },
+      data: { lastReminderSentAt: new Date() },
+    });
+  }
+);
+
+// Event-driven: fires at eventDate - 5 days when booking is confirmed.
+// If the event is already within 5 days at booking time, this fires immediately.
+export const notifyHostDesignDeadline = inngest.createFunction(
+  { id: 'notify-host-design-deadline', retries: 3 },
+  { event: 'design/approval-check' },
+  async ({ event: evt }) => {
+    const { eventId } = evt.data as { eventId: string };
+
+    const ev = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: {
+        client: true,
+        templateDesigns: { where: { status: 'APPROVED' }, take: 1 },
+        tenant: {
+          include: {
+            branding: true,
+            memberships: {
+              where: { role: 'HOST_ADMIN', status: 'ACTIVE' },
+              include: { user: { select: { email: true } } },
+            },
+          },
+        },
+      },
+    });
+
+    if (!ev) return;
+    // Skip if cancelled or already past
+    if (ev.status === 'CANCELLED') return;
+    if (new Date(ev.eventDate) < new Date()) return;
+    // Skip if design already approved
+    if (ev.templateDesigns.length > 0) return;
+    // Skip if reminder already sent
+    if (ev.designReminderSentAt) return;
+
+    const adminEmails = ev.tenant.memberships
+      .map(m => m.user?.email)
+      .filter((e): e is string => Boolean(e));
+    const replyTo = ev.tenant.branding?.replyToEmail;
+    const recipients = replyTo
+      ? [replyTo, ...adminEmails.filter(e => e !== replyTo)]
+      : adminEmails;
+    if (recipients.length === 0) return;
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
+    const companyName = ev.tenant.branding?.companyName ?? ev.tenant.name;
+    const clientName = `${ev.client.firstName} ${ev.client.lastName}`;
+    const eventDateStr = new Date(ev.eventDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    const msUntil = new Date(ev.eventDate).getTime() - Date.now();
+    const daysUntil = Math.max(0, Math.floor(msUntil / 86400_000));
+
+    await sendDesignApprovalReminderEmail({
+      to: recipients,
+      companyName,
+      clientName,
+      eventTitle: ev.title,
+      eventDate: eventDateStr,
+      daysUntilEvent: daysUntil,
+      designUrl: `${appUrl}/events/${ev.id}/designs`,
+    });
+
+    await prisma.event.update({
+      where: { id: ev.id },
+      data: { designReminderSentAt: new Date() },
+    });
+  }
+);
+
+// Daily cron at 9 AM UTC — catches BOOKED events within 5 days with no approved design
+// that were missed by event-driven scheduling (pre-existing bookings, rescheduled events, etc.)
+export const sendDesignApprovalReminders = inngest.createFunction(
+  { id: 'send-design-approval-reminders' },
+  { cron: '0 9 * * *' },
+  async () => {
+    const now = new Date();
+    const fiveDaysOut = new Date(now.getTime() + 5 * 86400_000);
+
+    const events = await prisma.event.findMany({
+      where: {
+        status: { in: ['BOOKED', 'IN_PROGRESS'] },
+        eventDate: { gte: now, lte: fiveDaysOut },
+        designReminderSentAt: null,
+        templateDesigns: { none: { status: 'APPROVED' } },
+      },
+      include: {
+        client: true,
+        tenant: {
+          include: {
+            branding: true,
+            memberships: {
+              where: { role: 'HOST_ADMIN', status: 'ACTIVE' },
+              include: { user: { select: { email: true } } },
+            },
+          },
+        },
+      },
+    });
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
+    let sent = 0;
+
+    for (const ev of events) {
+      const adminEmails = ev.tenant.memberships
+        .map(m => m.user?.email)
+        .filter((e): e is string => Boolean(e));
+      const replyTo = ev.tenant.branding?.replyToEmail;
+      const recipients = replyTo
+        ? [replyTo, ...adminEmails.filter(e => e !== replyTo)]
+        : adminEmails;
+      if (recipients.length === 0) continue;
+
+      const companyName = ev.tenant.branding?.companyName ?? ev.tenant.name;
+      const clientName = `${ev.client.firstName} ${ev.client.lastName}`;
+      const eventDateStr = new Date(ev.eventDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+      const daysUntil = Math.max(0, Math.floor((new Date(ev.eventDate).getTime() - now.getTime()) / 86400_000));
+
+      try {
+        await sendDesignApprovalReminderEmail({
+          to: recipients,
+          companyName,
+          clientName,
+          eventTitle: ev.title,
+          eventDate: eventDateStr,
+          daysUntilEvent: daysUntil,
+          designUrl: `${appUrl}/events/${ev.id}/designs`,
+        });
+        await prisma.event.update({
+          where: { id: ev.id },
+          data: { designReminderSentAt: now },
+        });
+        sent++;
+      } catch (e) {
+        console.error('[DESIGN_REMINDER] email error:', e);
+      }
+    }
+
+    console.log(`[DESIGN_REMINDER] Sent ${sent} of ${events.length} design approval reminders`);
+    return { sent, total: events.length };
   }
 );

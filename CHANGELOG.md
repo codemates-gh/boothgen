@@ -4,6 +4,34 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.4.0] — 2026-06-29
+
+### Fixed
+- **Balance due email not sending on due date** — the daily cron (`sendOverduePaymentReminders`) runs once at 2 PM UTC; if an invoice was created after that window, the first reminder wouldn't fire until the next day. Added event-driven Inngest scheduling (`payment/milestone-due`) that fires exactly at each milestone's `dueDate` when the invoice is sent — guarantees on-time delivery regardless of cron timing.
+- **Silent payment reminder failures** — cron errors were swallowed with `console.error` only. Now sends an admin email alert on any `sendPaymentReminderEmail` failure, matching the behavior of automation failures.
+
+### Added
+- **`lastReminderSentAt` on payment milestones** — new DB field tracks when the last payment reminder was sent per milestone; the daily cron now skips milestones that already received a reminder within the past 23 hours, preventing duplicate emails for long-overdue balances.
+- **ICS calendar includes payment milestones** — the calendar feed (`/api/calendar/feed/[token]`) now emits a `VEVENT` for each unpaid deposit and balance milestone in addition to event dates; overdue milestones are prefixed with ⚠️ OVERDUE so hosts see them at a glance in Google/Apple Calendar.
+- **Calendar subscription card expanded** — added a "What's included" section listing all entry types (event dates, design deadlines, deposit due, balance due, overdue payments) with descriptions; added step-by-step subscribe instructions for Google Calendar, Apple Calendar (Mac + iPhone), and Outlook (web + desktop).
+
+## [2.4.2] — 2026-06-29
+
+### Changed
+- **Event detail page — Quotes section** — quotes are now fetched and displayed on the event detail page. When a quote exists, a "Quotes" card appears (showing quote number, total, sent date, status, and a "View Quote" button per row). The header "Create Quote" button is replaced by a primary "View Quote" button linking to the most recent quote, plus a secondary "+ New Quote" option. When no quotes exist, the original "Create Quote" button remains unchanged.
+
+---
+
+## [2.4.1] — 2026-06-29
+
+### Added
+- **Design approval deadline reminders** — if a BOOKED or IN_PROGRESS event has no approved template design with 5 days or less until the event, the host admin receives an email alert. Events already within 5 days when the booking is confirmed trigger the check within 1 minute; events booked earlier schedule the check exactly at the 5-day mark via Inngest.
+- **Daily design cron** — `sendDesignApprovalReminders` cron at 9 AM UTC catches any pre-existing bookings or rescheduled events missed by event-driven scheduling; uses `designReminderSentAt` on the `Event` model to send exactly one reminder per event.
+- **Dashboard: No approved design flag** — BOOKED/IN_PROGRESS events within 5 days without an approved design appear in the "Requires Attention" section. Red border + red icon for ≤2 days, orange for 3–5 days.
+- **ICS calendar: Design approval entries** — for each BOOKED/IN_PROGRESS event without an approved design, a `🎨 Design approval needed` VEVENT is added at the 5-day-before mark (or today if already within 5 days); events within 2 days show `⚠️ URGENT` prefix. Calendar "What's included" section updated to list these entries.
+
+---
+
 ## [2.3.1] — 2026-06-27
 
 ### Added

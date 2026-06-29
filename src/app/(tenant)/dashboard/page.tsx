@@ -21,6 +21,7 @@ export default async function DashboardPage() {
   const now = new Date();
   const monthStart   = new Date(now.getFullYear(), now.getMonth(), 1);
   const sevenDaysOut = new Date(now.getTime() + 7  * 86400_000);
+  const fiveDaysOut  = new Date(now.getTime() + 5  * 86400_000);
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400_000);
   const threeDaysAgo = new Date(now.getTime() - 3  * 86400_000);
   const todayStart   = new Date(now); todayStart.setHours(0, 0, 0, 0);
@@ -39,6 +40,8 @@ export default async function DashboardPage() {
     eventsWithRevision,
     // Designs approved in the last 30 days
     recentlyApproved,
+    // BOOKED/IN_PROGRESS events within 5 days with no approved design
+    noDesignEvents,
   ] = await Promise.all([
     prisma.event.findMany({ where: { tenantId, eventDate: { gte: now }, status: { not: 'CANCELLED' } }, include: { client: true }, orderBy: { eventDate: 'asc' }, take: 8 }),
     prisma.client.count({ where: { tenantId } }),
@@ -78,6 +81,17 @@ export default async function DashboardPage() {
       orderBy: { approvedAt: 'desc' },
       take: 10,
     }),
+    // BOOKED/IN_PROGRESS events within 5 days with no approved design
+    prisma.event.findMany({
+      where: {
+        tenantId,
+        status: { in: ['BOOKED', 'IN_PROGRESS'] },
+        eventDate: { gte: now, lte: fiveDaysOut },
+        templateDesigns: { none: { status: 'APPROVED' } },
+      },
+      include: { client: { select: { firstName: true, lastName: true } } },
+      orderBy: { eventDate: 'asc' },
+    }),
   ]);
 
   // Deduplicate milestone results to one entry per invoice (earliest overdue/due-soon milestone wins)
@@ -105,6 +119,9 @@ export default async function DashboardPage() {
   const revisionRequested = eventsWithRevision.filter(
     e => e.templateDesigns[0]?.status === 'REVISION_REQUESTED'
   );
+
+  // Days until event for design-missing items
+  const daysUntil = (d: Date) => Math.max(0, Math.floor((new Date(d).getTime() - now.getTime()) / 86400_000));
 
   const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
   const conversionRate = totalLeads > 0 ? Math.round((totalBooked / totalLeads) * 100) : 0;
@@ -137,6 +154,19 @@ export default async function DashboardPage() {
       detail: `${g._count.assets} photo${g._count.assets !== 1 ? 's' : ''} will be permanently deleted soon`,
       href: `/gallery/${g.id}`,
     })),
+    ...noDesignEvents.map(e => {
+      const days = daysUntil(e.eventDate);
+      const isUrgent = days <= 2;
+      return {
+        key: 'nodesign-' + e.id,
+        icon: Layers,
+        iconCls: isUrgent ? 'text-red-500' : 'text-orange-500',
+        rowCls: isUrgent ? 'border-l-4 border-red-400 bg-red-50' : 'border-l-4 border-orange-400 bg-orange-50',
+        title: `No approved design — ${e.client.firstName} ${e.client.lastName}`,
+        detail: `${e.title} · ${days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`} (${format(new Date(e.eventDate), 'MMM d')}) — design must be approved before the event`,
+        href: `/events/${e.id}/designs`,
+      };
+    }),
     ...revisionRequested.map(e => {
       const d = e.templateDesigns[0];
       return {

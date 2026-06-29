@@ -237,6 +237,37 @@ export async function sendDesignReadyEmail(params: {
   );
 }
 
+export async function sendDesignApprovalReminderEmail(params: {
+  to: string | string[]; companyName: string; clientName: string;
+  eventTitle: string; eventDate: string; daysUntilEvent: number; designUrl: string;
+}) {
+  const { to, companyName, clientName, eventTitle, eventDate, daysUntilEvent, designUrl } = params;
+  const recipients = Array.isArray(to) ? to : [to];
+  const isUrgent = daysUntilEvent <= 2;
+  const urgencyColor = isUrgent ? '#dc2626' : '#d97706';
+  const urgencyBg    = isUrgent ? '#fef2f2' : '#fffbeb';
+  const urgencyBorder = isUrgent ? '#fecaca' : '#fde68a';
+  const daysLabel = daysUntilEvent === 0 ? 'today' : daysUntilEvent === 1 ? 'tomorrow' : `in ${daysUntilEvent} day${daysUntilEvent !== 1 ? 's' : ''}`;
+  const subject = isUrgent
+    ? `⚠️ Design not approved — ${eventTitle} is ${daysLabel}`
+    : `Action needed: Design approval for ${eventTitle} (${daysLabel})`;
+  const html =
+    `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">` +
+    `<h2 style="font-size:20px;color:#111827;margin:0 0 8px">${isUrgent ? '⚠️ ' : ''}Design Approval Needed</h2>` +
+    `<p style="color:#374151;margin:0 0 20px">The photo booth template design for the following event has not been approved yet.</p>` +
+    `<div style="background:${urgencyBg};border:1px solid ${urgencyBorder};border-radius:12px;padding:20px;margin:0 0 24px">` +
+    `<p style="margin:0 0 4px;font-weight:700;color:#111827;font-size:16px">${eventTitle}</p>` +
+    `<p style="margin:0 0 4px;color:#374151;font-size:14px;">Client: ${clientName}</p>` +
+    `<p style="margin:0 0 4px;color:#374151;font-size:14px;">Event date: <strong>${eventDate}</strong></p>` +
+    `<p style="margin:8px 0 0;color:${urgencyColor};font-size:14px;font-weight:700">Event is ${daysLabel} — design needs approval before then.</p>` +
+    `</div>` +
+    `<p style="color:#374151;margin:0 0 8px">Please upload the design and submit it for client approval as soon as possible, or confirm that an approved design is already on file.</p>` +
+    `<p style="margin:0 0 24px"><a href="${designUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View Designs in Dashboard</a></p>` +
+    `<p style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">Automated reminder from Booth Genius · ${companyName}</p>` +
+    `</div>`;
+  await Promise.all(recipients.map(addr => sendEmail(addr, subject, html)));
+}
+
 export async function sendDesignDecisionEmail(params: {
   to: string; clientName: string; eventTitle: string; version: number;
   decision: 'approved' | 'revision_requested'; revisionNote?: string; designUrl: string;

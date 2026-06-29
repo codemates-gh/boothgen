@@ -355,6 +355,7 @@ model Event {
   guestCount           Int?
   hearAboutUs          String?
   estimatedValueCents  Int?
+  designReminderSentAt DateTime?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -881,6 +882,7 @@ model PaymentMilestone {
   status                PaymentMilestoneStatus @default(PENDING)
   paidAt                DateTime?
   stripePaymentIntentId String?
+  lastReminderSentAt    DateTime?
   createdAt             DateTime               @default(now())
   invoice               Invoice                @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)

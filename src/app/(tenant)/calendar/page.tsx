@@ -279,47 +279,106 @@ export default function CalendarPage() {
 
         {/* Google Calendar / iCal subscription */}
         {icalUrl && (
-          <div className="mt-6 border border-gray-200 rounded-xl p-5">
-            <h3 className="font-semibold text-sm text-gray-800 mb-1">Subscribe to Your Calendar</h3>
-            <p className="text-xs text-gray-500 mb-3">
-              Add your events to Google Calendar, Apple Calendar, or any app that supports iCal subscriptions.
-            </p>
-            <div className="flex items-center gap-2 mb-4">
-              <code className="flex-1 text-xs bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-600 break-all">
-                {icalUrl}
-              </code>
+          <div className="mt-6 border border-gray-200 rounded-xl overflow-hidden">
+            {/* Header */}
+            <div className="px-5 pt-5 pb-4 border-b border-gray-100">
+              <h3 className="font-semibold text-sm text-gray-800 mb-1">Subscribe to Your Calendar</h3>
+              <p className="text-xs text-gray-500">
+                Sync your Booth Genius schedule to Google Calendar, Apple Calendar, or Outlook. The feed updates automatically — no re-import needed.
+              </p>
+            </div>
+
+            {/* What's included */}
+            <div className="px-5 py-4 border-b border-gray-100 bg-orange-50/40">
+              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2.5">What's included in this calendar</p>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {[
+                  { icon: '📅', label: 'Event dates', desc: 'All active events (Lead, Quoted, Booked, Completed) with client name, venue, and status' },
+                  { icon: '🎨', label: 'Design approval deadline', desc: 'For Booked/In-Progress events, an entry appears 5 days before the event if no design has been approved yet. Moves to today if the event is already within 5 days.' },
+                  { icon: '⚠️', label: 'Urgent design flag', desc: 'Events with no approved design within 2 days are labeled ⚠️ URGENT so they stand out immediately in your calendar.' },
+                  { icon: '💳', label: 'Deposit due dates', desc: 'An entry on the day each unpaid deposit is due, showing the client name and amount owed' },
+                  { icon: '💰', label: 'Balance due dates', desc: 'An entry on the day each unpaid balance is due, showing the invoice number and amount' },
+                  { icon: '🚨', label: 'Overdue payments', desc: 'Any deposit or balance past its due date is labeled OVERDUE so it stands out immediately' },
+                ].map(({ icon, label, desc }) => (
+                  <div key={label} className="flex gap-2.5 bg-white border border-gray-100 rounded-lg p-3">
+                    <span className="text-base leading-none mt-0.5 flex-shrink-0">{icon}</span>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-800">{label}</p>
+                      <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 mt-2.5">Cancelled events and paid milestones are excluded. The feed refreshes on Google Calendar roughly every 24 hours; Apple Calendar and Outlook refresh more frequently.</p>
+            </div>
+
+            {/* URL + copy */}
+            <div className="px-5 py-4 border-b border-gray-100">
+              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Your subscription URL</p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-600 break-all select-all">
+                  {icalUrl}
+                </code>
+                <button
+                  onClick={copyIcal}
+                  className="flex-shrink-0 flex items-center gap-1.5 text-xs font-medium px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  {copied ? <><Check className="w-3.5 h-3.5 text-green-500" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-1.5">Keep this URL private — anyone with it can view your schedule.</p>
+            </div>
+
+            {/* Platform instructions */}
+            <div className="px-5 py-4">
+              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">How to subscribe</p>
+              <div className="grid sm:grid-cols-3 gap-3 text-xs text-gray-600">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+                    <span className="text-base">🗓️</span> Google Calendar
+                  </p>
+                  <ol className="space-y-1 list-decimal list-inside text-gray-500 leading-relaxed">
+                    <li>Copy the URL above</li>
+                    <li>Open <strong>calendar.google.com</strong></li>
+                    <li>On the left, click <strong>+</strong> next to "Other calendars"</li>
+                    <li>Select <strong>"From URL"</strong></li>
+                    <li>Paste the URL and click <strong>Add calendar</strong></li>
+                  </ol>
+                  <p className="text-gray-400 mt-2 text-[11px]">Note: Google may take up to 24 hours to refresh new changes.</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+                    <span className="text-base">🍎</span> Apple Calendar
+                  </p>
+                  <ol className="space-y-1 list-decimal list-inside text-gray-500 leading-relaxed">
+                    <li>Copy the URL above</li>
+                    <li><strong>Mac:</strong> Open Calendar → File → <strong>New Calendar Subscription…</strong></li>
+                    <li>Paste the URL and click <strong>Subscribe</strong></li>
+                    <li>Choose refresh frequency and click <strong>OK</strong></li>
+                  </ol>
+                  <p className="text-gray-400 mt-2 text-[11px]">iPhone: Settings → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar → paste URL.</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+                    <span className="text-base">📧</span> Outlook
+                  </p>
+                  <ol className="space-y-1 list-decimal list-inside text-gray-500 leading-relaxed">
+                    <li>Copy the URL above</li>
+                    <li>Open <strong>Outlook</strong> (desktop or web)</li>
+                    <li>Go to Calendar view → <strong>Add calendar</strong></li>
+                    <li>Select <strong>"Subscribe from web"</strong></li>
+                    <li>Paste the URL and click <strong>Import</strong></li>
+                  </ol>
+                  <p className="text-gray-400 mt-2 text-[11px]">Outlook desktop: File → Account Settings → Internet Calendars → New → paste URL.</p>
+                </div>
+              </div>
               <button
-                onClick={copyIcal}
-                className="flex-shrink-0 flex items-center gap-1.5 text-xs font-medium px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                onClick={regenerateToken}
+                className="mt-4 flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors"
               >
-                {copied ? <><Check className="w-3.5 h-3.5 text-green-500" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
+                <RefreshCw className="w-3 h-3" /> Regenerate link — invalidates the old URL and creates a new one
               </button>
             </div>
-            <div className="grid sm:grid-cols-2 gap-3 text-xs text-gray-600">
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="font-semibold text-gray-700 mb-1">Google Calendar</p>
-                <ol className="space-y-0.5 list-decimal list-inside text-gray-500">
-                  <li>Open Google Calendar</li>
-                  <li>Click + next to "Other calendars"</li>
-                  <li>Select "From URL"</li>
-                  <li>Paste the URL above and click Add</li>
-                </ol>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="font-semibold text-gray-700 mb-1">Apple Calendar</p>
-                <ol className="space-y-0.5 list-decimal list-inside text-gray-500">
-                  <li>Open Calendar on Mac or iPhone</li>
-                  <li>File → New Calendar Subscription</li>
-                  <li>Paste the URL above and click Subscribe</li>
-                </ol>
-              </div>
-            </div>
-            <button
-              onClick={regenerateToken}
-              className="mt-3 flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors"
-            >
-              <RefreshCw className="w-3 h-3" /> Regenerate link (invalidates old URL)
-            </button>
           </div>
         )}
       </div>
