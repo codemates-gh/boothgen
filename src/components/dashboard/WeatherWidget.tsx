@@ -103,6 +103,12 @@ export default function WeatherWidget({ businessAddress }: Props) {
               })}
             </div>
           )}
+          {!loading && forecast && (
+            <p className="mt-3 text-xs text-gray-400 flex items-start gap-1.5">
+              <span className="flex-shrink-0">💡</span>
+              <span>Always check the forecast before each event — plan ahead to protect your operators and equipment from heat, rain, and storms.</span>
+            </p>
+          )}
         </CardContent>
       </Card>
       {!loading && forecast && (
