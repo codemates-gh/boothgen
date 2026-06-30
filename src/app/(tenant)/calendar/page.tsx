@@ -15,6 +15,7 @@ const STATUS_COLORS: Record<string, string> = {
   BOOKED:      'bg-orange-100 text-orange-800',
   IN_PROGRESS: 'bg-brand text-white',
   COMPLETED:   'bg-green-100 text-green-800',
+  ARCHIVED:    'bg-gray-100 text-gray-500',
   CANCELLED:   'bg-gray-100 text-gray-400 line-through',
 };
 
@@ -24,6 +25,7 @@ const LEGEND = [
   ['BOOKED',    'bg-orange-100 text-orange-800','Booked'],
   ['IN_PROGRESS','bg-brand text-white',         'In Progress'],
   ['COMPLETED', 'bg-green-100 text-green-800',  'Completed'],
+  ['ARCHIVED',  'bg-gray-100 text-gray-500',     'Archived'],
 ] as const;
 
 export default function CalendarPage() {

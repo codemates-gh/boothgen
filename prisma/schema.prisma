@@ -54,6 +54,7 @@ enum EventStatus {
   BOOKED
   IN_PROGRESS
   COMPLETED
+  ARCHIVED
   CANCELLED
 }
 

@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
-const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', CANCELLED:'danger' };
+const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger' };
 
 export default async function DashboardPage() {
   const session = await requireTenantSession();
@@ -51,7 +51,7 @@ export default async function DashboardPage() {
     prisma.event.aggregate({ where: { tenantId, status: { in: ['BOOKED', 'IN_PROGRESS'] } }, _sum: { estimatedValueCents: true } }),
     prisma.invoice.aggregate({ where: { tenantId, status: { notIn: ['PAID', 'CANCELLED'] }, balanceDueCents: { gt: 0 } }, _sum: { balanceDueCents: true } }),
     prisma.event.count({ where: { tenantId, status: { not: 'CANCELLED' } } }),
-    prisma.event.count({ where: { tenantId, status: { in: ['BOOKED', 'IN_PROGRESS', 'COMPLETED'] } } }),
+    prisma.event.count({ where: { tenantId, status: { in: ['BOOKED', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED'] } } }),
     prisma.leadSubmission.findMany({ where: { tenantId }, orderBy: { createdAt: 'desc' }, take: 8, select: { id: true, firstName: true, lastName: true, email: true, eventDate: true, eventType: true, status: true, createdAt: true } }),
     // Overdue milestones — use milestone dueDate since invoice.dueDate is nullable
     prisma.paymentMilestone.findMany({ where: { tenantId, dueDate: { lt: now }, status: { notIn: ['PAID', 'REFUNDED'] }, invoice: { status: { notIn: ['PAID', 'CANCELLED'] } } }, include: { invoice: { include: { client: { select: { firstName: true, lastName: true } } } } }, orderBy: { dueDate: 'asc' }, take: 20 }),

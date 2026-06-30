@@ -11,7 +11,7 @@ import { ArrowLeft, Save, Trash2, Calendar, ArrowRight, Plus } from 'lucide-reac
 import Link from 'next/link';
 import { format } from 'date-fns';
 
-const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', CANCELLED:'danger' };
+const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger' };
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();

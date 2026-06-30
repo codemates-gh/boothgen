@@ -650,3 +650,21 @@ export const sendDesignApprovalReminders = inngest.createFunction(
     return { sent, total: events.length };
   }
 );
+
+// Daily cron at 1 AM UTC — auto-complete events whose date has passed
+export const autoCompleteEvents = inngest.createFunction(
+  { id: 'auto-complete-events' },
+  { cron: '0 1 * * *' },
+  async () => {
+    const now = new Date();
+    const { count } = await prisma.event.updateMany({
+      where: {
+        status: { in: ['BOOKED', 'IN_PROGRESS'] },
+        eventDate: { lt: now },
+      },
+      data: { status: 'COMPLETED' },
+    });
+    console.log(`[AUTO_COMPLETE] Marked ${count} past events as COMPLETED`);
+    return { completed: count };
+  }
+);

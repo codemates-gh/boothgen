@@ -10,7 +10,7 @@ import { DollarSign, Users, Calendar, TrendingUp } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
   LEAD: '#3b82f6', QUOTED: '#eab308', BOOKED: '#f97316',
-  IN_PROGRESS: '#ea6100', COMPLETED: '#22c55e', CANCELLED: '#9ca3af',
+  IN_PROGRESS: '#ea6100', COMPLETED: '#22c55e', ARCHIVED: '#6b7280', CANCELLED: '#9ca3af',
 };
 const FUNNEL_COLORS = ['#3b82f6','#eab308','#f97316','#22c55e'];
 

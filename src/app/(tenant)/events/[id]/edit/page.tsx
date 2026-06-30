@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
-const STATUSES = ['LEAD','QUOTED','BOOKED','IN_PROGRESS','COMPLETED','CANCELLED'];
+const STATUSES = ['LEAD','QUOTED','BOOKED','IN_PROGRESS','COMPLETED','ARCHIVED','CANCELLED'];
 
 export default function EditEventPage() {
   const { id } = useParams<{ id: string }>();

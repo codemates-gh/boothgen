@@ -20,6 +20,7 @@ import {
   notifyPaymentMilestoneDue,
   notifyHostDesignDeadline,
   sendDesignApprovalReminders,
+  autoCompleteEvents,
 } from '@/lib/inngest/functions';
 
 const handler = serve({
@@ -43,6 +44,7 @@ const handler = serve({
     notifyPaymentMilestoneDue,
     notifyHostDesignDeadline,
     sendDesignApprovalReminders,
+    autoCompleteEvents,
   ],
   signingKey: process.env.INNGEST_SIGNING_KEY,
 });

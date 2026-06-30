@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { Plus, Calendar, ArrowRight, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 
-const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', CANCELLED:'danger' };
+const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger' };
 
 export default async function EventsPage() {
   const session = await requireTenantSession();

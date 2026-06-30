@@ -12,11 +12,12 @@ import { format } from 'date-fns';
 import DeleteEventButton from './DeleteEventButton';
 import CancelEventButton from './CancelEventButton';
 import MarkCompleteButton from './MarkCompleteButton';
+import CloseEventButton from './CloseEventButton';
 import AssignEventButton from './AssignEventButton';
 import EventNotes from './EventNotes';
 import EventChecklist from './EventChecklist';
 
-const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', CANCELLED:'danger' };
+const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger' };
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
 const CC: Record<string,any> = { DRAFT:'default', SENT_TO_CLIENT:'info', CLIENT_SIGNED:'warning', HOST_SIGNED:'warning', FULLY_EXECUTED:'success', VOIDED:'danger' };
 const QC: Record<string,any> = { DRAFT:'default', SENT:'info', VIEWED:'info', ACCEPTED:'success', DECLINED:'danger', EXPIRED:'default' };
@@ -46,6 +47,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
       contracts: { orderBy: { createdAt: 'desc' } },
       templateDesigns: { orderBy: { version: 'desc' }, take: 3 },
       leadSubmission: { select: { id: true } },
+      gallery: { select: { _count: { select: { assets: true } } } },
     },
   });
   if (!event) notFound();
@@ -101,6 +103,12 @@ export default async function EventDetailPage({ params }: { params: { id: string
               <Link href={'/invoices/new?eventId=' + event.id}><Button variant="outline" size="sm"><Receipt className="w-4 h-4 mr-1"/>Create Invoice</Button></Link>
               {(event.status === 'BOOKED' || event.status === 'IN_PROGRESS') && new Date(event.eventDate) < new Date() && (
                 <MarkCompleteButton eventId={event.id} />
+              )}
+              {event.status === 'COMPLETED' && (
+                <CloseEventButton
+                  eventId={event.id}
+                  hasPhotos={(event as any).gallery?._count?.assets > 0}
+                />
               )}
               <CancelEventButton eventId={event.id} status={event.status} depositPaidCents={depositPaidCents} totalPaidCents={totalPaidCents} />
               <DeleteEventButton eventId={event.id} hasInvoices={event.invoices.length > 0} hasContracts={event.contracts.length > 0} />

@@ -4,6 +4,22 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.5.0] — 2026-06-30
+
+### Added
+- **Auto-complete past events** — new Inngest cron (`autoCompleteEvents`) runs at 1 AM UTC daily and sets any BOOKED or IN_PROGRESS event whose `eventDate` has passed to COMPLETED automatically. No manual action needed from the host.
+- **ARCHIVED event status** — new final-state status after COMPLETED. Hosts can archive a completed event via an "Archive Event" button on the event detail page, but only after uploading at least one photo to the event gallery. If no photos exist, the button is replaced by an amber notice ("Upload event photos to archive"). The gate is enforced server-side at `POST /api/events/[id]/close`.
+- **Archive gate — gallery photo check** — the `/api/events/[id]/close` route verifies `gallery.assets.count > 0` before transitioning to ARCHIVED; returns `409 { error: 'no_photos' }` otherwise.
+
+### Changed
+- All event status badge/color maps updated across event detail, event list, client detail, dashboard, calendar legend, and analytics chart to include ARCHIVED (gray/default).
+- Analytics counts now include ARCHIVED alongside COMPLETED for bookings, completion funnel, and average booking value.
+- Dashboard total events count includes ARCHIVED.
+- ICS calendar feed excludes ARCHIVED events (like CANCELLED) since they are fully closed out.
+- Edit event page status dropdown includes ARCHIVED.
+
+---
+
 ## [2.4.3] — 2026-06-30
 
 ### Added

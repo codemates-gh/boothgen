@@ -52,7 +52,7 @@ export async function GET() {
   const leadsByMonth: Record<string, number> = {};
   for (const ev of events) {
     const k = monthKey(new Date(ev.eventDate));
-    if (['BOOKED','IN_PROGRESS','COMPLETED'].includes(ev.status)) {
+    if (['BOOKED','IN_PROGRESS','COMPLETED','ARCHIVED'].includes(ev.status)) {
       bookedByMonth[k] = (bookedByMonth[k] ?? 0) + 1;
     }
   }
@@ -80,9 +80,9 @@ export async function GET() {
   // Conversion funnel (all-time)
   const [totalLeads, totalQuoted, totalBooked, totalCompleted] = await Promise.all([
     prisma.leadSubmission.count({ where: { tenantId } }),
-    prisma.event.count({ where: { tenantId, status: { in: ['QUOTED','BOOKED','IN_PROGRESS','COMPLETED'] } } }),
-    prisma.event.count({ where: { tenantId, status: { in: ['BOOKED','IN_PROGRESS','COMPLETED'] } } }),
-    prisma.event.count({ where: { tenantId, status: 'COMPLETED' } }),
+    prisma.event.count({ where: { tenantId, status: { in: ['QUOTED','BOOKED','IN_PROGRESS','COMPLETED','ARCHIVED'] } } }),
+    prisma.event.count({ where: { tenantId, status: { in: ['BOOKED','IN_PROGRESS','COMPLETED','ARCHIVED'] } } }),
+    prisma.event.count({ where: { tenantId, status: { in: ['COMPLETED','ARCHIVED'] } } }),
   ]);
   const funnel = [
     { stage: 'Leads', count: totalLeads },
@@ -94,7 +94,7 @@ export async function GET() {
   // Top-line KPIs
   const totalRevenue = milestones.reduce((s, m) => s + m.amountCents, 0);
   const avgBookingValue = totalBooked > 0
-    ? events.filter(e => ['BOOKED','IN_PROGRESS','COMPLETED'].includes(e.status)).reduce((s, e) => s + (e.estimatedValueCents ?? 0), 0) / totalBooked
+    ? events.filter(e => ['BOOKED','IN_PROGRESS','COMPLETED','ARCHIVED'].includes(e.status)).reduce((s, e) => s + (e.estimatedValueCents ?? 0), 0) / totalBooked
     : 0;
 
   return NextResponse.json({ monthly, statusDist, funnel, kpis: { totalRevenue12m: totalRevenue, totalClients, totalBooked, avgBookingValue: Math.round(avgBookingValue) } });

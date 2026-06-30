@@ -64,7 +64,7 @@ export async function GET(_: NextRequest, { params }: { params: { token: string 
   ];
 
   for (const ev of tenant.events) {
-    if (ev.status === 'CANCELLED') continue;
+    if (ev.status === 'CANCELLED' || ev.status === 'ARCHIVED') continue;
     const dtStart = icsDate(ev.eventDate);
     const nextDay = new Date(ev.eventDate);
     nextDay.setDate(nextDay.getDate() + 1);
