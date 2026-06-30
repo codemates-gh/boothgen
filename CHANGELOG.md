@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.4.3] — 2026-06-30
+
+### Added
+- **Event detail — Mark Complete button** — HOST_ADMIN users now see a "Mark Complete" button on event detail pages when the event date has passed and the event is still in BOOKED or IN_PROGRESS status. Calls `POST /api/events/[id]/complete` and refreshes the page on success.
+- **Event detail — Send Message button** — new button in the event header opens the lead message thread (if the event was converted from a lead) or falls back to a `mailto:` link to the client's email address.
+
+### Changed
+- **Gallery upload — removed storage provider disclosure** — the upload dropzone no longer mentions "stored on Cloudflare R2"; now shows "JPG, PNG, WEBP" only.
+
+---
+
 ## [2.4.0] — 2026-06-29
 
 ### Fixed

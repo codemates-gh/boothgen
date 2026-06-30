@@ -241,7 +241,7 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
           className={'border-2 border-dashed rounded-2xl p-10 text-center transition-colors ' + (dragOver ? 'border-brand bg-brand-surface' : 'border-gray-300 hover:border-brand hover:bg-gray-50')}>
           <Upload className="w-10 h-10 mx-auto mb-3 text-gray-400"/>
           <p className="font-semibold text-gray-700 mb-1">Drop photos here or click to upload</p>
-          <p className="text-sm text-gray-400 mb-4">JPG, PNG, WEBP — stored on Cloudflare R2</p>
+          <p className="text-sm text-gray-400 mb-4">JPG, PNG, WEBP</p>
           <label className="cursor-pointer">
             <input type="file" multiple accept="image/*" className="sr-only" onChange={e => uploadFiles(e.target.files)}/>
             <span className="px-6 py-2.5 bg-brand text-white rounded-xl text-sm font-semibold hover:bg-brand-dark transition-colors">Choose Photos</span>

@@ -7,10 +7,11 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Package, ArrowLeft, ExternalLink, FileText, Receipt, Edit2, ClipboardList, Layers, PenLine } from 'lucide-react';
+import { Calendar, MapPin, Users, Package, ArrowLeft, ExternalLink, FileText, Receipt, Edit2, ClipboardList, Layers, PenLine, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import DeleteEventButton from './DeleteEventButton';
 import CancelEventButton from './CancelEventButton';
+import MarkCompleteButton from './MarkCompleteButton';
 import AssignEventButton from './AssignEventButton';
 import EventNotes from './EventNotes';
 import EventChecklist from './EventChecklist';
@@ -44,6 +45,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
       Quote: { orderBy: { createdAt: 'desc' } },
       contracts: { orderBy: { createdAt: 'desc' } },
       templateDesigns: { orderBy: { version: 'desc' }, take: 3 },
+      leadSubmission: { select: { id: true } },
     },
   });
   if (!event) notFound();
@@ -83,6 +85,11 @@ export default async function EventDetailPage({ params }: { params: { id: string
             <div className="flex flex-wrap gap-2">
               <Link href={'/events/' + event.id + '/edit'}><Button variant="outline" size="sm"><Edit2 className="w-4 h-4 mr-1"/>Edit Event</Button></Link>
               <a href={portalUrl} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><ExternalLink className="w-4 h-4 mr-1"/>Client Portal</Button></a>
+              {(event as any).leadSubmission ? (
+                <Link href={'/leads/' + (event as any).leadSubmission.id}><Button variant="outline" size="sm"><MessageSquare className="w-4 h-4 mr-1"/>Send Message</Button></Link>
+              ) : (
+                <a href={`mailto:${event.client.email}`}><Button variant="outline" size="sm"><MessageSquare className="w-4 h-4 mr-1"/>Send Message</Button></a>
+              )}
               {event.Quote.length > 0 ? (
                 <>
                   <Link href={'/quotes/' + event.Quote[0].id}><Button size="sm"><ClipboardList className="w-4 h-4 mr-1"/>View Quote</Button></Link>
@@ -92,6 +99,9 @@ export default async function EventDetailPage({ params }: { params: { id: string
                 <Link href={'/quotes/new?eventId=' + event.id}><Button size="sm"><ClipboardList className="w-4 h-4 mr-1"/>Create Quote</Button></Link>
               )}
               <Link href={'/invoices/new?eventId=' + event.id}><Button variant="outline" size="sm"><Receipt className="w-4 h-4 mr-1"/>Create Invoice</Button></Link>
+              {(event.status === 'BOOKED' || event.status === 'IN_PROGRESS') && new Date(event.eventDate) < new Date() && (
+                <MarkCompleteButton eventId={event.id} />
+              )}
               <CancelEventButton eventId={event.id} status={event.status} depositPaidCents={depositPaidCents} totalPaidCents={totalPaidCents} />
               <DeleteEventButton eventId={event.id} hasInvoices={event.invoices.length > 0} hasContracts={event.contracts.length > 0} />
             </div>
