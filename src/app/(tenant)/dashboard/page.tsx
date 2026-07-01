@@ -43,7 +43,7 @@ export default async function DashboardPage() {
     // BOOKED/IN_PROGRESS events within 5 days with no approved design
     noDesignEvents,
   ] = await Promise.all([
-    prisma.event.findMany({ where: { tenantId, eventDate: { gte: now }, status: { not: 'CANCELLED' } }, include: { client: true }, orderBy: { eventDate: 'asc' }, take: 8 }),
+    prisma.event.findMany({ where: { tenantId, eventDate: { gte: now }, status: { notIn: ['CANCELLED', 'COMPLETED', 'ARCHIVED'] } }, include: { client: true }, orderBy: { eventDate: 'asc' }, take: 8 }),
     prisma.client.count({ where: { tenantId } }),
     prisma.leadSubmission.count({ where: { tenantId, createdAt: { gte: monthStart } } }),
     prisma.tenant.findUnique({ where: { id: tenantId }, include: { branding: true } }),

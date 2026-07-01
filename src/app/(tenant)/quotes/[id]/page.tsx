@@ -318,7 +318,26 @@ export default function QuoteDetailPage() {
         <Card>
           <CardHeader><CardTitle>Line Items</CardTitle></CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* Mobile: stacked card per line item */}
+            <div className="sm:hidden divide-y">
+              {quote.lineItems?.map((li: any) => (
+                <div key={li.id} className="px-5 py-4">
+                  <p className="text-sm text-gray-800 mb-2">{li.description}</p>
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <span>Qty: <strong className="text-gray-700">{li.quantity}</strong></span>
+                    <span>Unit: <strong className="text-gray-700">{fmt(li.unitCents)}</strong></span>
+                    <span className="ml-auto font-semibold text-sm text-gray-900">{fmt(li.totalCents)}</span>
+                  </div>
+                </div>
+              ))}
+              <div className="px-5 py-3 bg-gray-50 border-t space-y-1.5">
+                <div className="flex justify-between text-sm text-gray-500"><span>Subtotal</span><span>{fmt(quote.subtotalCents)}</span></div>
+                {quote.taxAmountCents > 0 && <div className="flex justify-between text-sm text-gray-500"><span>Tax ({quote.taxRatePercent}%)</span><span>{fmt(quote.taxAmountCents)}</span></div>}
+                <div className="flex justify-between font-bold text-base pt-1 border-t"><span>Total</span><span>{fmt(quote.totalCents)}</span></div>
+              </div>
+            </div>
+            {/* Desktop: table */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full min-w-[400px]">
                 <thead>
                   <tr className="border-b bg-gray-50 text-xs font-medium text-gray-500 uppercase">

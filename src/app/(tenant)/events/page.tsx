@@ -15,23 +15,25 @@ export default async function EventsPage() {
   const session = await requireTenantSession();
   const isAdmin = session.tenantRole === 'HOST_ADMIN';
 
-  const events = await prisma.event.findMany({
-    where: {
-      tenantId: session.tenantId,
-      // Team members only see events assigned to them
-      ...(!isAdmin ? { assignedToUserId: session.userId } : {}),
-    },
-    include: {
-      client: true,
-      assignedTo: { select: { id: true, name: true } },
-    },
-    orderBy: { eventDate: 'asc' },
-    take: 100,
-  });
+  const ACTIVE_STATUSES = ['LEAD', 'QUOTED', 'BOOKED', 'IN_PROGRESS'] as const;
+  const DONE_STATUSES = ['COMPLETED', 'ARCHIVED', 'CANCELLED'] as const;
 
-  const emptyMessage = isAdmin
-    ? 'No events yet'
-    : 'No events assigned to you yet';
+  const [activeEvents, doneEvents] = await Promise.all([
+    prisma.event.findMany({
+      where: { tenantId: session.tenantId, status: { in: [...ACTIVE_STATUSES] }, ...(!isAdmin ? { assignedToUserId: session.userId } : {}) },
+      include: { client: true, assignedTo: { select: { id: true, name: true } } },
+      orderBy: { eventDate: 'asc' },
+      take: 100,
+    }),
+    prisma.event.findMany({
+      where: { tenantId: session.tenantId, status: { in: [...DONE_STATUSES] }, ...(!isAdmin ? { assignedToUserId: session.userId } : {}) },
+      include: { client: true, assignedTo: { select: { id: true, name: true } } },
+      orderBy: { eventDate: 'desc' },
+      take: 50,
+    }),
+  ]);
+
+  const emptyMessage = isAdmin ? 'No active events yet' : 'No events assigned to you yet';
 
   return (
     <>
@@ -49,8 +51,9 @@ export default async function EventsPage() {
             <Link href="/events/new"><Button><Plus className="w-4 h-4 mr-2"/>New Event</Button></Link>
           )}
         </div>
+        {/* Active events */}
         <Card><CardContent className="p-0">
-          {events.length === 0 ? (
+          {activeEvents.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
               <Calendar className="w-12 h-12 mx-auto mb-4 opacity-30"/>
               <p className="text-lg font-medium mb-2">{emptyMessage}</p>
@@ -70,7 +73,7 @@ export default async function EventsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {events.map(ev => (
+                  {activeEvents.map(ev => (
                     <tr key={ev.id} className="border-b last:border-0 hover:bg-gray-50">
                       <td className="px-6 py-4"><p className="font-semibold">{ev.title}</p><p className="text-xs text-gray-400">{ev.venueName ?? ''}</p></td>
                       <td className="px-6 py-4 text-sm">{ev.client.firstName} {ev.client.lastName}</td>
@@ -91,6 +94,39 @@ export default async function EventsPage() {
             </div>
           )}
         </CardContent></Card>
+
+        {/* Completed / archived events */}
+        {doneEvents.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Completed Events</h2>
+            <Card><CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px]">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Event</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Client</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className="px-6 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {doneEvents.map(ev => (
+                      <tr key={ev.id} className="border-b last:border-0 hover:bg-gray-50 opacity-70">
+                        <td className="px-6 py-3"><p className="font-medium text-sm">{ev.title}</p><p className="text-xs text-gray-400">{ev.venueName ?? ''}</p></td>
+                        <td className="px-6 py-3 text-sm text-gray-500">{ev.client.firstName} {ev.client.lastName}</td>
+                        <td className="px-6 py-3 text-sm text-gray-400">{format(ev.eventDate,'MMM d, yyyy')}</td>
+                        <td className="px-6 py-3"><Badge variant={SC[ev.status]}>{ev.status.replace('_',' ')}</Badge></td>
+                        <td className="px-6 py-3 text-right"><Link href={'/events/' + ev.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent></Card>
+          </div>
+        )}
       </div>
     </>
   );

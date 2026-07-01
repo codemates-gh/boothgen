@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.7.0] — 2026-07-01
+
+### Added
+- **Design reminder button** — "Send reminder" button appears on the Template Designs page for any design in PENDING_APPROVAL state. Triggers the same client-facing email as the initial send. Button shows "Sent!" confirmation for 3 seconds. New API route: `POST /api/template-designs/[id]/remind`.
+- **Events page — Completed Events section** — COMPLETED, ARCHIVED, and CANCELLED events are now separated from the active event table. A "Completed Events" section appears at the bottom with reduced opacity, sorted newest-first, to use as reference before archiving. Active events (LEAD, QUOTED, BOOKED, IN_PROGRESS) only appear in the main table.
+
+### Fixed
+- **Dashboard Upcoming Events — excludes COMPLETED and ARCHIVED** — the "Upcoming Events" widget was showing completed events if their `eventDate` was >= now (e.g., same-day completions). Query now filters to active statuses only: LEAD, QUOTED, BOOKED, IN_PROGRESS.
+- **Quote line items — mobile readability** — the 4-column table was compressing the description column to an unreadable sliver on narrow screens. On mobile the layout now shows description full-width with qty/unit/total as a compact inline row below. Desktop keeps the table layout.
+
+---
+
 ## [2.6.1] — 2026-06-30
 
 ### Fixed

@@ -5,7 +5,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Upload, FileImage, ArrowLeft, CheckCircle2, Clock, MessageSquare, Trash2 } from 'lucide-react';
+import { Upload, FileImage, ArrowLeft, CheckCircle2, Clock, MessageSquare, Trash2, Bell } from 'lucide-react';
 import Link from 'next/link';
 
 const STATUS_VARIANT: Record<string, string> = {
@@ -21,6 +21,8 @@ export default function TemplateDesignsPage() {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState('');
+  const [reminding, setReminding] = useState<string | null>(null);
+  const [reminderSent, setReminderSent] = useState<string | null>(null);
 
   useEffect(() => { load(); }, [eventId]);
 
@@ -56,6 +58,19 @@ export default function TemplateDesignsPage() {
       setError(err.message || 'Upload failed. Please try again.');
     }
     setUploading(false);
+  }
+
+  async function sendReminder(designId: string) {
+    setReminding(designId);
+    const res = await fetch('/api/template-designs/' + designId + '/remind', { method: 'POST' });
+    if (res.ok) {
+      setReminderSent(designId);
+      setTimeout(() => setReminderSent(null), 3000);
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error || 'Failed to send reminder');
+    }
+    setReminding(null);
   }
 
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -192,9 +207,19 @@ export default function TemplateDesignsPage() {
                         View file ↗
                       </a>
                       {d.status === 'PENDING_APPROVAL' && (
-                        <span className="text-xs text-blue-500 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />Awaiting client
-                        </span>
+                        <div className="flex flex-col items-end gap-1.5">
+                          <span className="text-xs text-blue-500 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />Awaiting client
+                          </span>
+                          <button
+                            onClick={() => sendReminder(d.id)}
+                            disabled={reminding === d.id}
+                            className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 font-medium disabled:opacity-50"
+                          >
+                            <Bell className="w-3 h-3" />
+                            {reminderSent === d.id ? 'Sent!' : reminding === d.id ? 'Sending…' : 'Send reminder'}
+                          </button>
+                        </div>
                       )}
                       {d.status === 'APPROVED' && (
                         <span className="text-xs text-green-600 flex items-center gap-1">
