@@ -84,7 +84,9 @@ Example: {"subject": "Re: Your Photo Booth Inquiry", "body": "Hi Jane,\n\nThank 
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 
-  const raw: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  // Gemini 2.5 Flash returns thinking tokens as the first part; skip them.
+  const parts: Array<{ text?: string; thought?: boolean }> = data?.candidates?.[0]?.content?.parts ?? [];
+  const raw: string = parts.find(p => !p.thought)?.text ?? parts[0]?.text ?? '';
   const jsonMatch = raw.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
     console.error('[draft-email] Could not parse JSON from Gemini response:', raw);

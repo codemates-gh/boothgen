@@ -17,6 +17,7 @@ const STATUS_COLORS: Record<string, string> = {
   COMPLETED:   'bg-green-100 text-green-800',
   ARCHIVED:    'bg-gray-100 text-gray-500',
   CANCELLED:   'bg-gray-100 text-gray-400 line-through',
+  LOST:        'bg-gray-100 text-gray-400 line-through',
 };
 
 const LEGEND = [

@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
-const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger' };
+const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger', LOST:'default' };
 
 export default async function DashboardPage() {
   const session = await requireTenantSession();
@@ -251,10 +251,13 @@ export default async function DashboardPage() {
                   <div className={`flex items-center justify-between px-6 py-4 hover:bg-brand/10 transition-colors ${i < todayEvents.length - 1 ? 'border-b border-brand/10' : ''}`}>
                     <div>
                       <p className="font-semibold text-gray-900">{ev.title}</p>
-                      <p className="text-sm text-gray-500">{ev.client.firstName} {ev.client.lastName}{ev.venueName ? ` · ${ev.venueName}` : ''}</p>
+                      <p className="text-sm text-gray-500">
+                        {ev.client.firstName} {ev.client.lastName}{ev.venueName ? ` · ${ev.venueName}` : ''}
+                        {ev.startTime && <span className="ml-1">· {format(ev.startTime, 'h:mm a')}{ev.endTime ? ` – ${format(ev.endTime, 'h:mm a')}` : ''}</span>}
+                      </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge variant={SC[ev.status]}>{ev.status}</Badge>
+                      <Badge variant="brand">TODAY</Badge>
                       <ArrowRight className="w-4 h-4 text-brand" />
                     </div>
                   </div>

@@ -9,14 +9,14 @@ import Link from 'next/link';
 import { Plus, Calendar, ArrowRight, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 
-const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger' };
+const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger', LOST:'default' };
 
 export default async function EventsPage() {
   const session = await requireTenantSession();
   const isAdmin = session.tenantRole === 'HOST_ADMIN';
 
   const ACTIVE_STATUSES = ['LEAD', 'QUOTED', 'BOOKED', 'IN_PROGRESS'] as const;
-  const DONE_STATUSES = ['COMPLETED', 'ARCHIVED', 'CANCELLED'] as const;
+  const DONE_STATUSES = ['COMPLETED', 'ARCHIVED', 'CANCELLED', 'LOST'] as const;
 
   const [activeEvents, doneEvents] = await Promise.all([
     prisma.event.findMany({

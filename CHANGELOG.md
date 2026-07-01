@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.8.0] — 2026-07-01
+
+### Added
+- **LOST event status** — new `LOST` status for events in LEAD or QUOTED state that never converted. "Mark as Lost" button appears on the event detail page alongside "Cancel Event". LOST events appear in the Completed Events section. New API route: `POST /api/events/[id]/lost`.
+
+### Fixed
+- **AI Draft — unexpected format error** — Gemini 2.5 Flash returns thinking tokens as the first `parts` entry; the reply parser now skips thought parts and reads the first non-thought text, eliminating the "AI returned an unexpected format" error.
+- **Auto-complete — today's events marked COMPLETED at 1 AM UTC** — the cron cutoff changed from `eventDate < now` to `eventDate < start-of-today`, so events happening today are never auto-completed before they occur.
+- **Dashboard Today badge** — today's events now show a "TODAY" badge instead of the raw status (e.g., "COMPLETED"). Booth hours (start–end time) are displayed inline if set on the event.
+
+---
+
 ## [2.7.0] — 2026-07-01
 
 ### Added
