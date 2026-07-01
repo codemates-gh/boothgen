@@ -73,7 +73,8 @@ Example: {"subject": "Re: Your Photo Booth Inquiry", "body": "Hi Jane,\n\nThank 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 600, temperature: 0.7 },
+      // Disable thinking — this task only needs structured JSON output.
+      generationConfig: { maxOutputTokens: 1024, temperature: 0.7, thinkingConfig: { thinkingBudget: 0 } },
     }),
   });
 
@@ -84,9 +85,10 @@ Example: {"subject": "Re: Your Photo Booth Inquiry", "body": "Hi Jane,\n\nThank 
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 
-  // Gemini 2.5 Flash returns thinking tokens as the first part; skip them.
+  // Concatenate all non-thought parts; some model versions surface thinking tokens separately.
   const parts: Array<{ text?: string; thought?: boolean }> = data?.candidates?.[0]?.content?.parts ?? [];
-  const raw: string = parts.find(p => !p.thought)?.text ?? parts[0]?.text ?? '';
+  const raw: string = parts.filter(p => !p.thought).map(p => p.text ?? '').join('') || parts.map(p => p.text ?? '').join('');
+  console.log('[draft-email] raw response:', raw.slice(0, 300));
   const jsonMatch = raw.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
     console.error('[draft-email] Could not parse JSON from Gemini response:', raw);
