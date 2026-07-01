@@ -4,6 +4,21 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.6.0] — 2026-06-30
+
+### Added
+- **Calendar list view** — new Month/List toggle in the calendar header. List view shows all events and lead inquiries for the selected month in chronological order, grouped by date, with status badges. Easier to read on mobile and landscape orientation.
+- **Gallery link merge tag** — `{{gallery.link}}` now available in email templates. Resolves to the public gallery URL (`/g/[clientToken]`) when a published gallery exists for the event. Also exposed in the merge tag picker in the email template editor.
+- **Open lead notice on Leads page** — informational chip above the leads list explains how to send a message (open the lead → Compose tab).
+
+### Fixed
+- **Calendar duplicate entries** — converted leads (those linked to a booked event) were appearing twice on the calendar (once as a purple Lead entry and once as the event). They are now filtered out of the lead layer; only the event entry is shown.
+- **Gallery list "Pending Upload" badge incorrect** — galleries that already had photos uploaded showed "PENDING UPLOAD" instead of "PENDING REVIEW" because the asset upload API never advanced the `approvalStatus`. Fixed at two levels: (1) the asset upload route now auto-advances `PENDING_UPLOAD` → `PENDING_REVIEW` on first photo; (2) the gallery list page has a display-level fallback for existing galleries already in this state.
+- **Quotes page full-page horizontal scroll on mobile** — the table was causing the entire document to scroll horizontally. Fixed with `overflow-x-auto` wrapper and `min-w-[640px]` on the table, plus responsive outer padding.
+- **Lead detail mobile layout** — name, status, and date were being crushed by action buttons in a single flex row. Header is now responsive: stacked vertically on mobile, side-by-side on sm+.
+
+---
+
 ## [2.5.0] — 2026-06-30
 
 ### Added

@@ -31,9 +31,15 @@ export default async function LeadsPage() {
     <>
       <TopBar title="Leads" />
       <div className="p-4 sm:p-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-500">{leads.length} inquiry{leads.length !== 1 ? 's' : ''}</p>
         </div>
+        {leads.length > 0 && (
+          <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mb-4">
+            <MessageSquare className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+            <span>To send a message, open a lead and use the <strong className="text-gray-700">Compose</strong> tab.</span>
+          </div>
+        )}
 
         {leads.length === 0 ? (
           <Card>

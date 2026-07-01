@@ -40,7 +40,7 @@ export default function QuotesPage() {
   return (
     <>
       <TopBar title="Quotes" />
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div className="flex flex-wrap gap-1">
             {STATUSES.map(s => (
@@ -63,7 +63,8 @@ export default function QuotesPage() {
               {filter === 'ALL' && <Link href="/quotes/new"><Button className="mt-2">Create First Quote</Button></Link>}
             </div>
           ) : (
-            <table className="w-full">
+            <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px]">
               <thead><tr className="border-b bg-gray-50">
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Quote</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Client</th>
@@ -103,6 +104,7 @@ export default function QuotesPage() {
                 ))}
               </tbody>
             </table>
+          </div>
           )}
         </CardContent></Card>
       </div>

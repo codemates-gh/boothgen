@@ -274,33 +274,35 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
   return (
     <div className="p-4 sm:p-8 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-start gap-4 mb-6">
-        <Link href="/leads" className="mt-1 text-gray-400 hover:text-gray-600">
+      <div className="flex items-start gap-3 mb-6">
+        <Link href="/leads" className="mt-1 text-gray-400 hover:text-gray-600 shrink-0">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-3 mb-1">
-            <h1 className="text-xl font-bold text-gray-900">{lead.firstName} {lead.lastName}</h1>
-            <div className="relative group">
-              <button className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border cursor-pointer ${statusOption.color}`}>
-                {statusOption.label} ▾
-              </button>
-              <div className="absolute left-0 top-full mt-1 z-10 hidden group-hover:block bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden min-w-[140px]">
-                {STATUS_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => changeStatus(opt.value)}
-                    className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-gray-50 ${lead.status === opt.value ? 'font-bold' : ''}`}
-                  >
-                    {opt.label}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <h1 className="text-xl font-bold text-gray-900 break-words">{lead.firstName} {lead.lastName}</h1>
+                <div className="relative group">
+                  <button className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border cursor-pointer ${statusOption.color}`}>
+                    {statusOption.label} ▾
                   </button>
-                ))}
+                  <div className="absolute left-0 top-full mt-1 z-10 hidden group-hover:block bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden min-w-[140px]">
+                    {STATUS_OPTIONS.map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => changeStatus(opt.value)}
+                        className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-gray-50 ${lead.status === opt.value ? 'font-bold' : ''}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
+              <p className="text-sm text-gray-500">Submitted {format(new Date(lead.createdAt), 'MMM d, yyyy h:mm a')}</p>
             </div>
-          </div>
-          <p className="text-sm text-gray-500">Submitted {format(new Date(lead.createdAt), 'MMM d, yyyy h:mm a')}</p>
-        </div>
-        <div className="flex flex-wrap gap-2 shrink-0">
+            <div className="flex flex-wrap gap-2 shrink-0">
           {lead.convertedToEventId ? (
             <>
               <Link href={`/events/${lead.convertedToEventId}`}>
@@ -319,6 +321,8 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
               {converting ? 'Converting…' : 'Convert to Event'}
             </Button>
           )}
+            </div>
+          </div>
         </div>
       </div>
 

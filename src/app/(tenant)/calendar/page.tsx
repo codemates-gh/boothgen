@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Plus, CalendarX, Copy, Check, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, CalendarX, Copy, Check, RefreshCw, List, CalendarDays } from 'lucide-react';
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-  addDays, isSameMonth, isSameDay, addMonths, subMonths,
+  addDays, isSameMonth, isSameDay, addMonths, subMonths, parseISO,
 } from 'date-fns';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -38,6 +38,7 @@ export default function CalendarPage() {
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'month' | 'list'>('month');
 
   useEffect(() => {
     Promise.all([
@@ -72,7 +73,7 @@ export default function CalendarPage() {
     byDate.get(key)!.push({ ...ev, _type: 'event' });
   }
   for (const lead of leads) {
-    if (!lead.eventDate) continue;
+    if (!lead.eventDate || lead.convertedToEventId) continue; // skip converted leads — already shown as events
     const key = format(new Date(lead.eventDate), 'yyyy-MM-dd');
     if (!byDate.has(key)) byDate.set(key, []);
     byDate.get(key)!.push({ ...lead, _type: 'lead' });
@@ -140,7 +141,22 @@ export default function CalendarPage() {
               Today
             </button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* View toggle */}
+            <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+              <button
+                onClick={() => setViewMode('month')}
+                className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'month' ? 'bg-brand text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                <CalendarDays className="w-3.5 h-3.5" />Month
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors border-l border-gray-200 ${viewMode === 'list' ? 'bg-brand text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                <List className="w-3.5 h-3.5" />List
+              </button>
+            </div>
             <button
               onClick={() => setManageMode(v => !v)}
               className={`flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg border transition-colors ${manageMode ? 'bg-red-50 border-red-200 text-red-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
@@ -160,17 +176,75 @@ export default function CalendarPage() {
           </div>
         )}
 
+        {/* List view */}
+        {viewMode === 'list' && (() => {
+          const monthItems: { date: Date; key: string; items: any[] }[] = [];
+          const seen = new Set<string>();
+          for (const [key, items] of byDate.entries()) {
+            const d = parseISO(key);
+            if (isSameMonth(d, current) && !seen.has(key)) {
+              seen.add(key);
+              monthItems.push({ date: d, key, items });
+            }
+          }
+          monthItems.sort((a, b) => a.date.getTime() - b.date.getTime());
+          if (monthItems.length === 0) {
+            return (
+              <div className="text-center py-16 text-gray-400 border border-gray-200 rounded-xl">
+                No events or leads scheduled for {format(current, 'MMMM yyyy')}.
+              </div>
+            );
+          }
+          return (
+            <div className="space-y-3">
+              {monthItems.map(({ date, key, items }) => (
+                <div key={key} className="border border-gray-200 rounded-xl overflow-hidden">
+                  <div className={`px-4 py-2 text-sm font-semibold ${isSameDay(date, today) ? 'bg-brand text-white' : 'bg-gray-50 text-gray-700 border-b border-gray-200'}`}>
+                    {format(date, 'EEEE, MMMM d, yyyy')}
+                    {blackouts.has(key) && <span className="ml-2 text-xs font-normal opacity-70">· Unavailable</span>}
+                  </div>
+                  <div className="divide-y divide-gray-100">
+                    {items.map((ev: any) =>
+                      ev._type === 'lead' ? (
+                        <Link key={'lead-' + ev.id} href={`/leads/${ev.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                          <span className="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">{ev.firstName} {ev.lastName}</p>
+                            <p className="text-xs text-gray-400">{ev.eventType ?? 'Lead Inquiry'}</p>
+                          </div>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 flex-shrink-0">Lead</span>
+                        </Link>
+                      ) : (
+                        <Link key={ev.id} href={`/events/${ev.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_COLORS[ev.status]?.split(' ')[0] ?? 'bg-gray-300'}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">{ev.title}</p>
+                            {ev.venue && <p className="text-xs text-gray-400 truncate">{ev.venue}</p>}
+                          </div>
+                          <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${STATUS_COLORS[ev.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                            {ev.status?.replace(/_/g, ' ')}
+                          </span>
+                        </Link>
+                      )
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
         {/* Day-of-week headers */}
-        <div className="grid grid-cols-7 mb-1">
+        {viewMode === 'month' && <div className="grid grid-cols-7 mb-1">
           {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day => (
             <div key={day} className="text-xs font-semibold text-gray-400 text-center py-1.5 uppercase tracking-wide">
               {day}
             </div>
           ))}
-        </div>
+        </div>}
 
         {/* Calendar grid */}
-        <div className="border border-gray-200 rounded-xl overflow-hidden">
+        {viewMode === 'month' && <div className="border border-gray-200 rounded-xl overflow-hidden">
           <div className="grid grid-cols-7">
             {days.map((day, i) => {
               const key        = format(day, 'yyyy-MM-dd');
@@ -258,7 +332,7 @@ export default function CalendarPage() {
               );
             })}
           </div>
-        </div>
+        </div>}
 
         {/* Legend */}
         <div className="flex flex-wrap gap-4 mt-4">

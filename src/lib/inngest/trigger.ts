@@ -75,7 +75,7 @@ export async function executeAutomation(executionId: string) {
   const branding = ev.tenant.branding;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
   const gallery = execution.rule.trigger === 'GALLERY_PUBLISHED'
-    ? await prisma.gallery.findFirst({ where: { eventId: ev.id, isPublished: true }, select: { accessCode: true } })
+    ? await prisma.gallery.findFirst({ where: { eventId: ev.id, isPublished: true }, select: { accessCode: true, clientToken: true } })
     : null;
   const ctx = buildCtx({ client: ev.client, event: ev, invoice: ev.invoices[0] ?? null, quote: ev.Quote[0] ?? null, branding: branding ?? {}, gallery, appUrl });
   const subject = parseMergeTags(execution.rule.emailTemplate.subject, ctx);

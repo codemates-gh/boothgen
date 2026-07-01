@@ -14,6 +14,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const asset = await prisma.galleryAsset.create({
     data: { galleryId: params.id, url, filename: fileName || url.split('/').pop() || 'photo', fileSizeBytes: fileSize || 0, mimeType: mimeType || 'image/jpeg', assetType: 'PHOTO', approvalStatus: 'APPROVED' },
   });
+  // Advance approval status off PENDING_UPLOAD once photos start arriving
+  if (gallery.approvalStatus === 'PENDING_UPLOAD') {
+    await prisma.gallery.update({ where: { id: params.id }, data: { approvalStatus: 'PENDING_REVIEW' } });
+  }
   return NextResponse.json(asset, { status: 201 });
 }
 
