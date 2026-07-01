@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.6.1] — 2026-06-30
+
+### Fixed
+- **Gallery approval badge — published galleries now show APPROVED** — a published gallery with photos was showing "PENDING REVIEW" instead of "APPROVED". Display logic now treats `isPublished + photos > 0` as the approved state, since publishing is the operator's approval action.
+
+---
+
 ## [2.6.0] — 2026-06-30
 
 ### Added
