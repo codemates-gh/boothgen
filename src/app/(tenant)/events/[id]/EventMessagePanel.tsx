@@ -35,9 +35,6 @@ export default function EventMessagePanel({ eventId, clientName, clientEmail }: 
       .then(d => { if (Array.isArray(d)) setMessages(d); });
   }, [eventId]);
 
-  useEffect(() => {
-    if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [open, messages.length]);
 
   async function send() {
     if (!subject.trim() || !body.trim()) { setError('Subject and message are required.'); return; }
@@ -56,6 +53,7 @@ export default function EventMessagePanel({ eventId, clientName, clientEmail }: 
       setBody('');
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     }
     setSending(false);
   }

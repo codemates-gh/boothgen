@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.18.0] — 2026-07-02
+
+### Fixed
+- **Messages inbox now shows existing lead conversations** — old messages sent before this feature (via lead reply) had no `tenantId`. Inbox now also matches messages via the linked lead's `tenantId`, so all prior conversations appear without needing a backfill.
+- **Event page no longer auto-scrolls to Messages on load** — the scroll-to-bottom effect was firing when messages loaded on page open. Now only scrolls after you actively send a new message.
+
+---
+
 ## [2.17.0] — 2026-07-02
 
 ### Fixed

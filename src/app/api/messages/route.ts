@@ -16,8 +16,14 @@ export async function GET() {
     WHERE lm.lead_id = ls.id AND lm.tenant_id IS NULL
   `;
 
+  // Include old messages that predate tenantId (matched via the lead's tenantId)
   const messages = await prisma.leadMessage.findMany({
-    where: { tenantId: session.tenantId },
+    where: {
+      OR: [
+        { tenantId: session.tenantId },
+        { lead: { tenantId: session.tenantId } },
+      ],
+    },
     include: {
       lead: { select: { id: true, firstName: true, lastName: true, email: true, status: true, convertedToEventId: true } },
       event: { select: { id: true, title: true, client: { select: { firstName: true, lastName: true, email: true } } } },
