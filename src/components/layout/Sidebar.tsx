@@ -4,28 +4,50 @@ import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, ChevronRight, Mail, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, ChevronRight, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare } from 'lucide-react';
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 import { APP_VERSION } from '@/lib/version';
 
 type NavItem = { href: string; label: string; icon: any; pro?: boolean };
+type NavSection = { label: string; items: NavItem[] };
 
-const adminNav: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/calendar', label: 'Calendar', icon: CalendarDays },
-  { href: '/events', label: 'Events', icon: Calendar },
-  { href: '/clients', label: 'Clients', icon: Users },
-  { href: '/leads', label: 'Leads', icon: Inbox },
-  { href: '/messages', label: 'Messages', icon: MessageSquare },
-  { href: '/quotes', label: 'Quotes', icon: FileText },
-  { href: '/invoices', label: 'Invoices', icon: Receipt },
-  { href: '/contracts', label: 'Contracts', icon: FileText },
-  { href: '/gallery', label: 'Gallery', icon: Camera, pro: true },
-  { href: '/analytics', label: 'Analytics', icon: BarChart2 },
-  { href: '/automation', label: 'Automation', icon: Zap },
-  { href: '/automation/email-templates', label: 'Email Templates', icon: Mail },
-  { href: '/settings', label: 'Settings', icon: Settings },
+const adminSections: NavSection[] = [
+  {
+    label: 'Overview',
+    items: [
+      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/calendar', label: 'Calendar', icon: CalendarDays },
+      { href: '/events', label: 'Events', icon: Calendar },
+    ],
+  },
+  {
+    label: 'Clients',
+    items: [
+      { href: '/clients', label: 'Clients', icon: Users },
+      { href: '/leads', label: 'Leads', icon: Inbox },
+      { href: '/messages', label: 'Messages', icon: MessageSquare },
+    ],
+  },
+  {
+    label: 'Financial',
+    items: [
+      { href: '/quotes', label: 'Quotes', icon: FileText },
+      { href: '/invoices', label: 'Invoices', icon: Receipt },
+      { href: '/contracts', label: 'Contracts', icon: FileText },
+    ],
+  },
+  {
+    label: 'Delivery & Ops',
+    items: [
+      { href: '/gallery', label: 'Gallery', icon: Camera, pro: true },
+      { href: '/analytics', label: 'Analytics', icon: BarChart2 },
+      { href: '/automation', label: 'Automation', icon: Zap },
+    ],
+  },
 ];
+
+// Flat list for team member nav (no sections needed)
+const adminNav: NavItem[] = adminSections.flatMap(s => s.items);
 
 // All possible team member nav items keyed by module ID
 const TEAM_NAV_MAP: Record<string, NavItem> = {
@@ -37,6 +59,24 @@ const TEAM_NAV_MAP: Record<string, NavItem> = {
   clients:  { href: '/clients', label: 'Clients',         icon: Users },
   gallery:  { href: '/gallery', label: 'Gallery',         icon: Camera, pro: true },
 };
+
+function NavLink({ href, label, Icon, pro, active, close }: { href: string; label: string; Icon: any; pro?: boolean; active: boolean; close: () => void }) {
+  return (
+    <Link
+      href={href}
+      onClick={close}
+      className={cn(
+        'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors group',
+        active ? 'bg-sidebar-active text-white' : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white'
+      )}
+    >
+      <Icon className={cn('w-4 h-4 flex-shrink-0', active ? 'text-brand' : 'text-sidebar-text group-hover:text-brand')} />
+      {label}
+      {pro && <span className="ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-yellow-400/20 text-yellow-300 tracking-wide">PRO</span>}
+      {active && !pro && <ChevronRight className="w-3 h-3 ml-auto text-brand" />}
+    </Link>
+  );
+}
 
 export function Sidebar() {
   const path = usePathname();
@@ -101,30 +141,41 @@ export function Sidebar() {
           </div>
         </div>
         <nav className="px-3 py-4 flex-1">
-          {nav.map(({ href, label, icon: Icon, pro }) => {
-            const active = path === href || (
-              path.startsWith(href + '/') &&
-              !nav.some(item => item.href !== href && (path === item.href || path.startsWith(item.href + '/')))
-            );
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={close}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors group',
-                  active ? 'bg-sidebar-active text-white' : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white'
-                )}
-              >
-                <Icon className={cn('w-4 h-4 flex-shrink-0', active ? 'text-brand' : 'text-sidebar-text group-hover:text-brand')} />
-                {label}
-                {pro && <span className="ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-yellow-400/20 text-yellow-300 tracking-wide">PRO</span>}
-                {active && !pro && <ChevronRight className="w-3 h-3 ml-auto text-brand" />}
-              </Link>
-            );
-          })}
+          {isTeamMember ? (
+            nav.map(({ href, label, icon: Icon, pro }) => {
+              const active = path === href || (path.startsWith(href + '/') && !nav.some(item => item.href !== href && (path === item.href || path.startsWith(item.href + '/'))));
+              return (
+                <NavLink key={href} href={href} label={label} Icon={Icon} pro={pro} active={active} close={close} />
+              );
+            })
+          ) : (
+            adminSections.map((section, si) => (
+              <div key={section.label} className={si > 0 ? 'mt-4' : ''}>
+                <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-white/30">{section.label}</p>
+                {section.items.map(({ href, label, icon: Icon, pro }) => {
+                  const allItems = adminNav;
+                  const active = path === href || (path.startsWith(href + '/') && !allItems.some(item => item.href !== href && (path === item.href || path.startsWith(item.href + '/'))));
+                  return (
+                    <NavLink key={href} href={href} label={label} Icon={Icon} pro={pro} active={active} close={close} />
+                  );
+                })}
+              </div>
+            ))
+          )}
         </nav>
-        <div className="px-3 py-4 border-t border-white/10 shrink-0">
+        <div className="px-3 pb-4 shrink-0">
+          {!isTeamMember && (
+            <>
+              <NavLink
+                href="/settings"
+                label="Settings"
+                Icon={Settings}
+                active={path === '/settings' || path.startsWith('/settings/')}
+                close={close}
+              />
+              <div className="border-t border-white/10 my-3" />
+            </>
+          )}
           {session?.user && (
             <div className="px-3 py-2 mb-2">
               <p className="text-white text-xs font-medium truncate">{session.user.name}</p>

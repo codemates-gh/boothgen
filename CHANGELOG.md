@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.20.0] — 2026-07-02
+
+### Changed
+- **Sidebar restructured with section groups** — nav items now organized under labeled sections: Overview (Dashboard, Calendar, Events), Clients (Clients, Leads, Messages), Financial (Quotes, Invoices, Contracts), Delivery & Ops (Gallery, Analytics, Automation). Email Templates removed from top-level nav (accessible via Automation page). Settings moved to the bottom footer above Sign Out with a divider.
+
+### Fixed
+- **Automation page "Settings → Templates" link** — was pointing to `/contracts/templates` (contract templates) instead of `/automation/email-templates`. Now links correctly to Email Templates.
+
+---
+
 ## [2.19.0] — 2026-07-02
 
 ### Fixed

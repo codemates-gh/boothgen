@@ -85,7 +85,7 @@ export default function AutomationPage() {
             <Zap className="w-5 h-5 text-brand mt-0.5 flex-shrink-0"/>
             <div>
               <p className="font-semibold text-brand-dark">Email Automation</p>
-              <p className="text-sm text-gray-600 mt-1">Rules trigger automated emails at key points in your client journey. Create email templates in <a href="/contracts/templates" className="text-brand underline">Settings → Templates</a> first.</p>
+              <p className="text-sm text-gray-600 mt-1">Rules trigger automated emails at key points in your client journey. Create email templates in <a href="/automation/email-templates" className="text-brand underline">Email Templates</a> first.</p>
             </div>
           </div>
           <Button onClick={openCreate} className="flex-shrink-0"><Plus className="w-4 h-4 mr-2"/>New Rule</Button>
