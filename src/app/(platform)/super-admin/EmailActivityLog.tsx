@@ -1,9 +1,62 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
-import { CheckCircle2, XCircle, SkipForward, RefreshCw, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, XCircle, SkipForward, RefreshCw, AlertTriangle, Lightbulb } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+
+interface ParsedError {
+  summary: string;
+  detail: string;
+  resolution: string;
+}
+
+function parseErrorMessage(raw: string | null): ParsedError {
+  if (!raw) return { summary: 'Unknown error', detail: '', resolution: 'Check server logs for more details.' };
+
+  // Try to parse as JSON (Resend API errors come through as JSON strings)
+  let parsed: any = null;
+  try { parsed = JSON.parse(raw); } catch { /* not JSON */ }
+
+  if (parsed) {
+    const code = parsed.statusCode ?? parsed.status ?? null;
+    const msg: string = parsed.message ?? parsed.error ?? raw;
+    const name: string = parsed.name ?? '';
+
+    if (code === 401 || code === 403 || name === 'missing_api_key' || /api.key/i.test(msg)) {
+      return { summary: 'Email provider rejected the request — invalid API key', detail: msg, resolution: 'Verify that RESEND_API_KEY is set correctly in Vercel environment variables and is a live key (not a test key).' };
+    }
+    if (code === 422 || /invalid.*from|sender.*not.*verified|domain.*not.*verified/i.test(msg)) {
+      return { summary: 'Sender domain not verified', detail: msg, resolution: 'The "from" email domain must be verified in your Resend dashboard. Go to resend.com → Domains and confirm the domain is verified.' };
+    }
+    if (/invalid.*email|email.*invalid/i.test(msg)) {
+      return { summary: 'Invalid recipient email address', detail: msg, resolution: 'The client\'s email address may be malformed. Check and correct it on the client profile.' };
+    }
+    if (code === 429 || /rate.limit/i.test(msg)) {
+      return { summary: 'Email rate limit reached', detail: msg, resolution: 'Too many emails were sent in a short period. The automation will retry automatically. If this persists, check your Resend plan limits.' };
+    }
+    if (code >= 500 || /service.*unavailable|temporarily/i.test(msg)) {
+      return { summary: 'Email provider temporarily unavailable', detail: msg, resolution: 'This is likely a temporary outage with Resend. The automation retried and failed. You can manually resend from the operator\'s automation settings.' };
+    }
+    return { summary: `Email failed (${code ?? name || 'API error'})`, detail: msg, resolution: 'Check the Resend dashboard for more details on this delivery failure.' };
+  }
+
+  // Plain string errors
+  if (/\[object Object\]/.test(raw)) {
+    return { summary: 'Error object was not properly serialized', detail: raw, resolution: 'This is a bug in the error logger. Check Vercel function logs for the full stack trace around the time this email was sent.' };
+  }
+  if (/ECONNREFUSED|ENOTFOUND|getaddrinfo/i.test(raw)) {
+    return { summary: 'Network connection failed', detail: raw, resolution: 'The server could not connect to the email provider. This may be a transient network issue — check if other emails are sending successfully.' };
+  }
+  if (/not.*found|undefined.*template|missing.*template/i.test(raw)) {
+    return { summary: 'Email template missing', detail: raw, resolution: 'The automation rule\'s email template may have been deleted. Open the rule in Automation settings and re-assign a template.' };
+  }
+  if (/merge.?tag|parseMerge/i.test(raw)) {
+    return { summary: 'Merge tag error in template', detail: raw, resolution: 'A merge tag in the email template couldn\'t be resolved. Check that all {{tags}} in the template are valid and the event has the required fields.' };
+  }
+
+  return { summary: raw.length > 120 ? raw.slice(0, 120) + '…' : raw, detail: raw.length > 120 ? raw : '', resolution: 'Review the error details and check Vercel function logs for the full stack trace.' };
+}
 
 type ExecutionStatus = 'SENT' | 'FAILED' | 'SKIPPED';
 
@@ -166,18 +219,28 @@ export default function EmailActivityLog({ initialFailedTotal }: { initialFailed
                           <Badge variant={STATUS_BADGE[ex.status]}>{ex.status}</Badge>
                           {ex.status === 'FAILED' && ex.errorMessage && (
                             <p className="text-xs text-red-500 mt-0.5 cursor-pointer underline decoration-dotted">
-                              {expandedError === ex.id ? 'hide error' : 'show error'}
+                              {expandedError === ex.id ? 'hide details' : 'show details'}
                             </p>
                           )}
                         </td>
                       </tr>
-                      {expandedError === ex.id && ex.errorMessage && (
-                        <tr key={ex.id + '-err'} className="bg-red-50 border-b">
-                          <td colSpan={7} className="px-4 py-3">
-                            <p className="text-xs font-mono text-red-700 break-all">{ex.errorMessage}</p>
-                          </td>
-                        </tr>
-                      )}
+                      {expandedError === ex.id && ex.errorMessage && (() => {
+                        const parsed = parseErrorMessage(ex.errorMessage);
+                        return (
+                          <tr key={ex.id + '-err'} className="bg-red-50 border-b">
+                            <td colSpan={7} className="px-4 py-4 space-y-2">
+                              <p className="text-sm font-semibold text-red-700">{parsed.summary}</p>
+                              {parsed.detail && parsed.detail !== parsed.summary && (
+                                <p className="text-xs font-mono text-red-600 break-all bg-red-100 rounded px-2 py-1">{parsed.detail}</p>
+                              )}
+                              <div className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+                                <Lightbulb className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                <span><strong>How to fix:</strong> {parsed.resolution}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })()}
                     </>
                   ))}
                 </tbody>

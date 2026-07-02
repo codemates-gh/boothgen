@@ -124,7 +124,8 @@ export async function triggerAutomation(params: {
         try {
           await executeAutomation(execution.id);
         } catch (err) {
-          await notifyAdminOfFailure(execution.id, String(err));
+          const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err);
+          await notifyAdminOfFailure(execution.id, msg);
         }
       } else {
         // Future delivery — use Inngest scheduler (best-effort)
