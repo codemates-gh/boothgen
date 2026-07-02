@@ -38,7 +38,7 @@ function parseErrorMessage(raw: string | null): ParsedError {
     if (code >= 500 || /service.*unavailable|temporarily/i.test(msg)) {
       return { summary: 'Email provider temporarily unavailable', detail: msg, resolution: 'This is likely a temporary outage with Resend. The automation retried and failed. You can manually resend from the operator\'s automation settings.' };
     }
-    return { summary: `Email failed (${code ?? name || 'API error'})`, detail: msg, resolution: 'Check the Resend dashboard for more details on this delivery failure.' };
+    return { summary: `Email failed (${(code ?? name) || 'API error'})`, detail: msg, resolution: 'Check the Resend dashboard for more details on this delivery failure.' };
   }
 
   // Plain string errors
