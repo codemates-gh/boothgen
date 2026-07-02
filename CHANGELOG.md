@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.10.0] — 2026-07-02
+
+### Added
+- **CSV/Excel import** — operators can now migrate clients and bookings from any CRM or Excel spreadsheet via Settings → Import. Upload a .csv, .xlsx, or .xls file; the importer auto-detects column names (supports 17+ common variations like "Email Address", "Full Name", "Mobile", "Booking Date", etc.). Each row creates one client + one event. Clients who already exist (matched by email) are reused — no duplicates. Past events import as COMPLETED, future events as BOOKED. New API routes: `POST /api/import/preview`, `POST /api/import/confirm`, `POST /api/import/[batchId]/undo`.
+- **Import — skip-and-report** — rows with invalid or missing emails are skipped; a results summary shows exactly which rows failed and why, with a "Download error report" CSV.
+- **Import — 24-hour undo** — every import is tagged with a batch ID. An "Undo this import" button appears in the results screen for 24 hours; clicking it deletes all clients and events created by that import without touching pre-existing records.
+- **Settings → Import tab** — added "Import" to the settings tab bar across all settings pages.
+- **Schema**: `ImportBatch` model, `importBatchId` field on `Client` and `Event`.
+
+---
+
 ## [2.9.0] — 2026-07-02
 
 ### Added

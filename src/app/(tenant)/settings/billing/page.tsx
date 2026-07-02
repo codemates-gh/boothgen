@@ -11,7 +11,7 @@ import { PaymentTermsCard } from './PaymentTermsCard';
 import { UpgradeButton } from './UpgradeButton';
 import { StripeConnectCard } from './StripeConnectCard';
 
-const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile']];
+const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import']];
 
 export default async function BillingSettingsPage() {
   const session = await requireTenantSession();

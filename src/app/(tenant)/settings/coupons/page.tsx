@@ -10,7 +10,7 @@ import { Plus, Trash2, ToggleLeft, ToggleRight, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
-const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile']];
+const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import']];
 
 const fmt = (v: number, type: string) => type === 'PERCENTAGE' ? `${v}% off` : `$${v.toFixed(2)} off`;
 
