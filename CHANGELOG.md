@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.17.0] — 2026-07-02
+
+### Fixed
+- **Event Messages panel now open by default** — the panel was collapsed on load, so the "Messages" button anchor scroll landed on a closed section. Now open on page load.
+
+---
+
 ## [2.16.0] — 2026-07-02
 
 ### Added

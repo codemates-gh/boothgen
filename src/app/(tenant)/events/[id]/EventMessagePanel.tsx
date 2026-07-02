@@ -21,7 +21,7 @@ interface Msg {
 
 export default function EventMessagePanel({ eventId, clientName, clientEmail }: Props) {
   const [messages, setMessages] = useState<Msg[]>([]);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
