@@ -1,18 +1,20 @@
 'use client';
 import Link from 'next/link';
-import { LayoutDashboard, Mail, Settings, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, Mail, FileText, Settings } from 'lucide-react';
 
 const TABS = [
-  { id: 'overview',         label: 'Overview',        icon: LayoutDashboard },
-  { id: 'email-logs',       label: 'Email Logs',      icon: Mail },
-  { id: 'settings',         label: 'Settings',        icon: Settings },
-  { id: 'email-templates',  label: 'Email Templates', icon: FileText },
+  { id: 'overview',          label: 'Overview',           icon: LayoutDashboard },
+  { id: 'operators',         label: 'Operators',          icon: Users },
+  { id: 'payment',           label: 'Payment Processing', icon: CreditCard },
+  { id: 'email-logs',        label: 'Email Logs',         icon: Mail },
+  { id: 'email-templates',   label: 'Email Templates',    icon: FileText },
+  { id: 'settings',          label: 'Settings',           icon: Settings },
 ];
 
 export default function SuperAdminTabs({ active, failedTotal }: { active: string; failedTotal: number }) {
   return (
-    <div className="bg-white border-b border-gray-200 px-8 sticky top-0 z-10">
-      <nav className="flex gap-0.5 -mb-px">
+    <div className="bg-white border-b border-gray-200 px-8 sticky top-0 z-10 overflow-x-auto">
+      <nav className="flex gap-0.5 -mb-px min-w-max">
         {TABS.map(tab => {
           const isActive = active === tab.id;
           const showBadge = tab.id === 'email-logs' && failedTotal > 0;

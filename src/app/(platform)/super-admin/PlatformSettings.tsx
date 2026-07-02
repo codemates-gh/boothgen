@@ -2,40 +2,28 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, Image, CreditCard, Mail, MessageCircle, Users, FileText } from 'lucide-react';
+import { Settings, Image, Mail, MessageCircle, FileText } from 'lucide-react';
 
 interface InitialSettings {
   message_retention_months: string;
   gallery_expire_days: string;
   gallery_delete_days: string;
-  stripe_price_monthly_id: string;
-  price_display_monthly: string;
-  commission_percentage: string;
   support_email: string;
   chatbot_enabled: boolean;
-  early_adopter_cap: string;
   terms_content: string;
   privacy_content: string;
 }
 
-export default function PlatformSettings({ initial, proSubscriberCount }: { initial: InitialSettings; proSubscriberCount: number }) {
-  const [months, setMonths]   = useState(initial.message_retention_months);
-  const [expireDays, setExpireDays] = useState(initial.gallery_expire_days);
-  const [deleteDays, setDeleteDays] = useState(initial.gallery_delete_days);
-  const [monthlyPriceId, setMonthlyPriceId] = useState(initial.stripe_price_monthly_id);
-  const [monthlyDisplay, setMonthlyDisplay] = useState(initial.price_display_monthly);
-  const [commissionPct, setCommissionPct]   = useState(initial.commission_percentage);
-  const [supportEmail, setSupportEmail]     = useState(initial.support_email);
+export default function PlatformSettings({ initial }: { initial: InitialSettings }) {
+  const [months, setMonths]               = useState(initial.message_retention_months);
+  const [expireDays, setExpireDays]       = useState(initial.gallery_expire_days);
+  const [deleteDays, setDeleteDays]       = useState(initial.gallery_delete_days);
+  const [supportEmail, setSupportEmail]   = useState(initial.support_email);
   const [chatbotEnabled, setChatbotEnabled] = useState(initial.chatbot_enabled);
-  const [earlyAdopterCap, setEarlyAdopterCap] = useState(initial.early_adopter_cap);
-  const [termsContent, setTermsContent]       = useState(initial.terms_content);
-  const [privacyContent, setPrivacyContent]   = useState(initial.privacy_content);
-  const [saving, setSaving]   = useState(false);
-  const [saved, setSaved]     = useState(false);
-
-  const cap = parseInt(earlyAdopterCap) || 50;
-  const spotsRemaining = Math.max(0, cap - proSubscriberCount);
-  const capFull = proSubscriberCount >= cap;
+  const [termsContent, setTermsContent]   = useState(initial.terms_content);
+  const [privacyContent, setPrivacyContent] = useState(initial.privacy_content);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved]   = useState(false);
 
   async function save() {
     setSaving(true);
@@ -45,16 +33,12 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message_retention_months: months,
-        gallery_expire_days: expireDays,
-        gallery_delete_days: deleteDays,
-        stripe_price_monthly_id: monthlyPriceId,
-        price_display_monthly: monthlyDisplay,
-        commission_percentage: commissionPct,
-        support_email: supportEmail,
-        chatbot_enabled: chatbotEnabled ? 'true' : 'false',
-        early_adopter_cap: earlyAdopterCap,
-        terms_content: termsContent,
-        privacy_content: privacyContent,
+        gallery_expire_days:      expireDays,
+        gallery_delete_days:      deleteDays,
+        support_email:            supportEmail,
+        chatbot_enabled:          chatbotEnabled ? 'true' : 'false',
+        terms_content:            termsContent,
+        privacy_content:          privacyContent,
       }),
     });
     setSaving(false);
@@ -76,7 +60,11 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Lead message retention (months)
               </label>
-              <p className="text-xs text-gray-400 mb-2">For converted leads, messages are purged this many months after the <strong>event date</strong> — so a booking a year away won&apos;t be purged until X months after the event occurs. For unconverted leads, the cutoff is from the message date.</p>
+              <p className="text-xs text-gray-400 mb-2">
+                For converted leads, messages are purged this many months after the <strong>event date</strong> — so
+                a booking a year away won&apos;t be purged until X months after the event occurs. For unconverted
+                leads, the cutoff is from the message date.
+              </p>
               <input
                 type="number" min={1} max={120} value={months}
                 onChange={e => setMonths(e.target.value)}
@@ -98,12 +86,9 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
             Galleries are automatically expired and then permanently deleted based on the event date.
             The nightly job runs at 4 AM UTC.
           </p>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-lg">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Days until expiry
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Days until expiry</label>
               <p className="text-xs text-gray-400 mb-2">
                 After this many days past the event date, the gallery is hidden from the client portal.
               </p>
@@ -114,9 +99,7 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Additional days until deletion
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Additional days until deletion</label>
               <p className="text-xs text-gray-400 mb-2">
                 After expiry, photos are kept for this many more days before being permanently deleted from storage.
               </p>
@@ -127,110 +110,10 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
               />
             </div>
           </div>
-
           <div className="p-4 bg-gray-50 rounded-xl text-sm text-gray-600 max-w-lg">
             <p className="font-medium text-gray-800 mb-1">Current schedule</p>
             <p>Galleries expire <strong>{expireDays} days</strong> after the event date.</p>
             <p>Photos are permanently deleted <strong>{parseInt(expireDays) + parseInt(deleteDays || '0')} days</strong> after the event date ({deleteDays} days after expiry).</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <CreditCard className="w-4 h-4" /> Stripe Billing
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-gray-500">
-            Stripe Price IDs for platform subscriptions. Find these in your Stripe Dashboard under Products.
-          </p>
-          <div className="max-w-sm">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Pro Monthly Price ID</label>
-            <p className="text-xs text-gray-400 mb-2">e.g. price_1ABC… (from Stripe Dashboard → Products)</p>
-            <input
-              type="text"
-              value={monthlyPriceId}
-              onChange={e => setMonthlyPriceId(e.target.value)}
-              placeholder="price_..."
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand"
-            />
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-gray-700 mb-3">Commission Plan <span className="font-normal text-gray-400">(shown on marketing page)</span></p>
-            <div className="max-w-xs">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Commission %</label>
-              <p className="text-xs text-gray-400 mb-2">Platform fee taken from each booking (e.g. 5 = 5%)</p>
-              <input
-                type="number" min={0} max={100} step={0.1}
-                value={commissionPct}
-                onChange={e => setCommissionPct(e.target.value)}
-                placeholder="5"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
-              />
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-gray-700 mb-1">Pro Monthly Display Price <span className="font-normal text-gray-400">(shown on /pricing page)</span></p>
-            <p className="text-xs text-gray-400 mb-2">Number only, e.g. 25</p>
-            <div className="max-w-xs">
-              <input
-                type="number" min={0} step={1}
-                value={monthlyDisplay}
-                onChange={e => setMonthlyDisplay(e.target.value)}
-                placeholder="25"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Users className="w-4 h-4" /> Early Adopter Cap
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-gray-500">
-            Limit introductory Pro plan signups. When the cap is reached, the pricing page shows "All spots claimed" and new subscribers cannot sign up at the introductory rate.
-          </p>
-
-          <div className="flex items-start gap-6 flex-wrap">
-            <div className="max-w-xs">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Spot limit</label>
-              <p className="text-xs text-gray-400 mb-2">Set to 0 to disable the cap entirely</p>
-              <input
-                type="number" min={0} max={10000} step={1}
-                value={earlyAdopterCap}
-                onChange={e => setEarlyAdopterCap(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
-              />
-            </div>
-
-            <div className="flex-1 min-w-48">
-              <p className="text-sm font-medium text-gray-700 mb-3">Current status</p>
-              <div className={`rounded-xl p-4 border ${capFull ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
-                <p className={`text-2xl font-bold ${capFull ? 'text-red-600' : 'text-green-600'}`}>
-                  {proSubscriberCount} <span className="text-base font-normal">of {cap}</span>
-                </p>
-                <p className={`text-sm mt-1 ${capFull ? 'text-red-500' : 'text-green-600'}`}>
-                  {capFull ? 'Cap reached — new Pro signups are blocked' : `${spotsRemaining} spot${spotsRemaining !== 1 ? 's' : ''} remaining`}
-                </p>
-              </div>
-              {cap > 0 && (
-                <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${capFull ? 'bg-red-500' : 'bg-green-500'}`}
-                    style={{ width: `${Math.min(100, (proSubscriberCount / cap) * 100)}%` }}
-                  />
-                </div>
-              )}
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -243,7 +126,8 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-500">
-            Operators and visitors who click &ldquo;Contact support&rdquo; on the support page will send an email to this address.
+            Operators and visitors who click &ldquo;Contact support&rdquo; on the support page will send an email
+            to this address.
           </p>
           <div className="max-w-sm">
             <label className="block text-sm font-medium text-gray-700 mb-1">Support email address</label>
@@ -267,7 +151,8 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-500">
-            Controls the floating AI chat widget on the public support page. Disable it to stop Gemini API usage while you evaluate costs.
+            Controls the floating AI chat widget on the public support page. Disable it to stop Gemini API
+            usage while you evaluate costs.
           </p>
           <div className="flex items-center gap-4">
             <button
@@ -294,7 +179,10 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-500">
-            Paste the full text of your Terms of Service and Privacy Policy below. Each document will be published at <strong>/terms</strong> and <strong>/privacy</strong> on the site. Links appear in the marketing footer and on the sign-up form as a required acknowledgement checkbox. Leave both blank to hide the links and skip the checkbox.
+            Paste the full text of your Terms of Service and Privacy Policy below. Each document will be published
+            at <strong>/terms</strong> and <strong>/privacy</strong> on the site. Links appear in the marketing footer
+            and on the sign-up form as a required acknowledgement checkbox. Leave both blank to hide the links and
+            skip the checkbox.
           </p>
           <div className="space-y-6">
             <div>
@@ -325,7 +213,7 @@ export default function PlatformSettings({ initial, proSubscriberCount }: { init
 
       <div>
         <Button onClick={save} disabled={saving}>
-          {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save All Settings'}
+          {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save Settings'}
         </Button>
       </div>
     </div>

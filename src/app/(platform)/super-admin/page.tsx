@@ -2,20 +2,30 @@ export const dynamic = 'force-dynamic';
 import { requireSuperAdminSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Camera, Users, TrendingUp, AlertTriangle } from 'lucide-react';
+import { format } from 'date-fns';
 import PlatformSettings from './PlatformSettings';
+import PaymentSettings from './PaymentSettings';
+import EarlyAdopterCard from './EarlyAdopterCard';
 import { OperatorsTable } from './OperatorsTable';
 import PlatformEmailTemplates from './PlatformEmailTemplates';
 import SuperAdminSignOut from './SuperAdminSignOut';
 import EmailActivityLog from './EmailActivityLog';
 import SuperAdminTabs from './SuperAdminTabs';
 
-const VALID_TABS = ['overview', 'email-logs', 'settings', 'email-templates'] as const;
+const VALID_TABS = ['overview', 'operators', 'payment', 'email-logs', 'email-templates', 'settings'] as const;
 type Tab = typeof VALID_TABS[number];
+
+const TENANT_BADGE: Record<string, 'warning' | 'success' | 'danger' | 'default'> = {
+  TRIAL: 'warning', ACTIVE: 'success', SUSPENDED: 'danger', CANCELLED: 'default',
+};
 
 export default async function SuperAdminPage({ searchParams }: { searchParams: { tab?: string } }) {
   await requireSuperAdminSession();
-  const tab: Tab = (VALID_TABS as readonly string[]).includes(searchParams?.tab ?? '') ? searchParams.tab as Tab : 'overview';
+  const tab: Tab = (VALID_TABS as readonly string[]).includes(searchParams?.tab ?? '')
+    ? searchParams.tab as Tab
+    : 'overview';
 
   const [tenants, totalUsers, totalEvents, allSettings, failedCounts, failedTotal, proSubscriberCount] = await Promise.all([
     prisma.tenant.findMany({
@@ -40,11 +50,12 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
   const failedMap = Object.fromEntries((failedCounts as any[]).map((f: any) => [f.tenantId, f._count.id]));
   const settingsMap = Object.fromEntries(allSettings.map(s => [s.key, s.value]));
   const ov = {
-    total: tenants.length,
-    active: tenants.filter(t => t.status === 'ACTIVE').length,
-    trial: tenants.filter(t => t.status === 'TRIAL').length,
+    total:     tenants.length,
+    active:    tenants.filter(t => t.status === 'ACTIVE').length,
+    trial:     tenants.filter(t => t.status === 'TRIAL').length,
     suspended: tenants.filter(t => t.status === 'SUSPENDED').length,
   };
+  const recentOperators = tenants.slice(0, 10);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -68,13 +79,15 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
           <>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
-              <p className="text-sm text-gray-500 mt-1">Platform-wide operator and usage statistics.</p>
+              <p className="text-sm text-gray-500 mt-1">Platform-wide statistics and recent signups.</p>
             </div>
+
+            {/* Stats */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               {([
-                ['Total Operators', ov.total,    Users,         'text-brand'],
-                ['Active',          ov.active,   TrendingUp,    'text-green-500'],
-                ['Trial',           ov.trial,    Camera,        'text-yellow-500'],
+                ['Total Operators', ov.total,     Users,         'text-brand'],
+                ['Active',          ov.active,    TrendingUp,    'text-green-500'],
+                ['Trial',           ov.trial,     Camera,        'text-yellow-500'],
                 ['Suspended',       ov.suspended, AlertTriangle, 'text-red-500'],
               ] as const).map(([label, val, Icon, color]) => (
                 <Card key={label}>
@@ -93,7 +106,88 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
               <Card><CardContent className="pt-6 text-center"><p className="text-3xl font-bold text-brand">{totalEvents}</p><p className="text-sm text-gray-500 mt-1">Total Events</p></CardContent></Card>
               <Card><CardContent className="pt-6 text-center"><p className="text-3xl font-bold text-brand">{tenants.filter(t => t.stripeConnect?.chargesEnabled).length}</p><p className="text-sm text-gray-500 mt-1">Stripe Connected</p></CardContent></Card>
             </div>
+
+            {/* Recent Operators */}
+            <Card>
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-gray-900">Recent Signups</p>
+                  <p className="text-xs text-gray-400 mt-0.5">10 most recently joined operators</p>
+                </div>
+                <a href="?tab=operators" className="text-xs text-brand font-medium hover:underline">
+                  View all →
+                </a>
+              </div>
+              <CardContent className="p-0">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Operator</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Slug</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Joined</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Plan</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentOperators.map(op => (
+                      <tr key={op.id} className="border-b last:border-0 hover:bg-gray-50">
+                        <td className="px-6 py-3 font-medium text-gray-900">
+                          {op.branding?.companyName ?? op.name}
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 font-mono text-xs">{op.slug}</td>
+                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                          {format(new Date(op.createdAt), 'MMM d, yyyy')}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge variant={TENANT_BADGE[op.status] ?? 'default'}>{op.status}</Badge>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">
+                          {op.stripeSubscription?.plan ?? 'FREE_TRIAL'}
+                        </td>
+                      </tr>
+                    ))}
+                    {recentOperators.length === 0 && (
+                      <tr><td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-400">No operators yet.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+
+            {/* Early Adopter Cap */}
+            <EarlyAdopterCard
+              initialCap={settingsMap.early_adopter_cap ?? '50'}
+              proSubscriberCount={proSubscriberCount}
+            />
+          </>
+        )}
+
+        {/* OPERATORS */}
+        {tab === 'operators' && (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Operators</h1>
+              <p className="text-sm text-gray-500 mt-1">All registered operators — manage status, view events, and monitor email failures.</p>
+            </div>
             <OperatorsTable operators={tenants} failedMap={failedMap} />
+          </>
+        )}
+
+        {/* PAYMENT PROCESSING */}
+        {tab === 'payment' && (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Payment Processing</h1>
+              <p className="text-sm text-gray-500 mt-1">Stripe billing configuration, display pricing, and platform commission rates.</p>
+            </div>
+            <PaymentSettings
+              initial={{
+                stripe_price_monthly_id: settingsMap.stripe_price_monthly_id ?? '',
+                price_display_monthly:   settingsMap.price_display_monthly   ?? '',
+                commission_percentage:   settingsMap.commission_percentage    ?? '1.5',
+              }}
+            />
           </>
         )}
 
@@ -108,32 +202,6 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
           </>
         )}
 
-        {/* SETTINGS */}
-        {tab === 'settings' && (
-          <>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Platform Settings</h1>
-              <p className="text-sm text-gray-500 mt-1">Global configuration: pricing, retention, billing, support, and legal.</p>
-            </div>
-            <PlatformSettings
-              initial={{
-                message_retention_months:  settingsMap.message_retention_months  ?? '12',
-                gallery_expire_days:       settingsMap.gallery_expire_days        ?? '30',
-                gallery_delete_days:       settingsMap.gallery_delete_days        ?? '30',
-                stripe_price_monthly_id:   settingsMap.stripe_price_monthly_id   ?? '',
-                price_display_monthly:     settingsMap.price_display_monthly      ?? '',
-                commission_percentage:     settingsMap.commission_percentage      ?? '1.5',
-                support_email:             settingsMap.support_email              ?? '',
-                chatbot_enabled:           settingsMap.chatbot_enabled !== 'false',
-                early_adopter_cap:         settingsMap.early_adopter_cap          ?? '50',
-                terms_content:             settingsMap.terms_content              ?? '',
-                privacy_content:           settingsMap.privacy_content            ?? '',
-              }}
-              proSubscriberCount={proSubscriberCount}
-            />
-          </>
-        )}
-
         {/* EMAIL TEMPLATES */}
         {tab === 'email-templates' && (
           <>
@@ -145,6 +213,27 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
               initial={{
                 email_template_welcome:         settingsMap.email_template_welcome         ?? '',
                 email_template_forgot_password: settingsMap.email_template_forgot_password ?? '',
+              }}
+            />
+          </>
+        )}
+
+        {/* SETTINGS */}
+        {tab === 'settings' && (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+              <p className="text-sm text-gray-500 mt-1">Platform configuration: data retention, support contact, chatbot, and legal pages.</p>
+            </div>
+            <PlatformSettings
+              initial={{
+                message_retention_months: settingsMap.message_retention_months ?? '12',
+                gallery_expire_days:      settingsMap.gallery_expire_days      ?? '30',
+                gallery_delete_days:      settingsMap.gallery_delete_days      ?? '30',
+                support_email:            settingsMap.support_email            ?? '',
+                chatbot_enabled:          settingsMap.chatbot_enabled !== 'false',
+                terms_content:            settingsMap.terms_content            ?? '',
+                privacy_content:          settingsMap.privacy_content          ?? '',
               }}
             />
           </>

@@ -7,7 +7,10 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 ## [2.9.0] — 2026-07-02
 
 ### Added
-- **Super Admin — tabbed navigation** — the super admin console is now divided into four named tabs: **Overview** (operator stats + operators table), **Email Logs** (automation delivery history), **Settings** (platform config: pricing, retention, billing, legal), and **Email Templates** (welcome and forgot-password templates). Tab selection is reflected in the URL (`?tab=...`) for deep-linking. The Email Logs tab shows a red badge with the failed-email count when failures are present. New file: `SuperAdminTabs.tsx`.
+- **Super Admin — 6-tab navigation** — the super admin console is organized into six URL-persisted tabs: **Overview** (stats + recent 10 signups + early adopter cap), **Operators** (full operators table), **Payment Processing** (Stripe price IDs, display pricing, commission %), **Email Logs** (automation delivery history with failed-count badge), **Email Templates** (welcome/forgot-password), and **Settings** (retention, support contact, chatbot, legal pages).
+- **Super Admin Overview — Recent Signups** — the last 10 operators by join date are shown in a compact table with a "View all →" link to the Operators tab.
+- **Super Admin Overview — Early Adopter Cap widget** — moved from Settings to Overview so signup capacity is visible at a glance.
+- **Super Admin Payment Processing tab** — extracted Stripe Billing, Display Pricing, and Commission % from Settings into a dedicated section. New component: `PaymentSettings.tsx`. Designed to accommodate additional payment configuration in the future.
 
 ---
 
