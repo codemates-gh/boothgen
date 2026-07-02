@@ -8,15 +8,7 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json([], { status: 200 });
 
-  // Backfill tenantId on lead messages that predate this feature
-  await prisma.$executeRaw`
-    UPDATE lead_messages lm
-    SET tenant_id = ls.tenant_id
-    FROM lead_submissions ls
-    WHERE lm.lead_id = ls.id AND lm.tenant_id IS NULL
-  `;
-
-  // Include old messages that predate tenantId (matched via the lead's tenantId)
+  // Match both new messages (tenantId set) and old messages (tenantId null, matched via lead)
   const messages = await prisma.leadMessage.findMany({
     where: {
       OR: [

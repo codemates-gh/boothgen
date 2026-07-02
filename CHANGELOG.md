@@ -4,6 +4,11 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.19.0] — 2026-07-02
+
+### Fixed
+- **Messages inbox no longer returns 0 conversations** — the backfill SQL in `/api/messages` used snake_case column names (`tenant_id`, `lead_id`) but Prisma creates camelCase columns (`tenantId`, `leadId`), causing a PostgreSQL error that killed the entire response. Removed the broken backfill; the existing OR query (`lead.tenantId`) already handles old messages correctly.
+
 ## [2.18.0] — 2026-07-02
 
 ### Fixed
