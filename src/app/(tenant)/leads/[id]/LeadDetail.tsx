@@ -152,7 +152,19 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
   const [branding, setBranding] = useState<Branding>({});
   const [drafting, setDrafting] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
+  const [statusOpen, setStatusOpen] = useState(false);
   const threadEndRef = useRef<HTMLDivElement>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (statusRef.current && !statusRef.current.contains(e.target as Node)) {
+        setStatusOpen(false);
+      }
+    }
+    if (statusOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [statusOpen]);
 
   useEffect(() => {
     if (activeTab === 'thread') threadEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -283,21 +295,26 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
                 <h1 className="text-xl font-bold text-gray-900 break-words">{lead.firstName} {lead.lastName}</h1>
-                <div className="relative group">
-                  <button className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border cursor-pointer ${statusOption.color}`}>
+                <div ref={statusRef} className="relative">
+                  <button
+                    onClick={() => setStatusOpen(o => !o)}
+                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border cursor-pointer ${statusOption.color}`}
+                  >
                     {statusOption.label} ▾
                   </button>
-                  <div className="absolute left-0 top-full mt-1 z-10 hidden group-hover:block bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden min-w-[140px]">
-                    {STATUS_OPTIONS.map(opt => (
-                      <button
-                        key={opt.value}
-                        onClick={() => changeStatus(opt.value)}
-                        className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-gray-50 ${lead.status === opt.value ? 'font-bold' : ''}`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
+                  {statusOpen && (
+                    <div className="absolute left-0 top-full mt-1 z-20 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden min-w-[140px]">
+                      {STATUS_OPTIONS.map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => { changeStatus(opt.value); setStatusOpen(false); }}
+                          className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-gray-50 ${lead.status === opt.value ? 'font-bold' : ''}`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               <p className="text-sm text-gray-500">Submitted {format(new Date(lead.createdAt), 'MMM d, yyyy h:mm a')}</p>

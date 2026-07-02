@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.11.0] — 2026-07-02
+
+### Fixed
+- **Dashboard — LOST events removed from Upcoming Events** — events with status LOST are now excluded from the Upcoming Events table (alongside CANCELLED, COMPLETED, and ARCHIVED).
+- **Dashboard — gallery deletion shows exact date** — "Requires Attention" gallery warning now reads "4 photos will be permanently deleted on Aug 14, 2026" instead of "deleted soon". Date is computed from event date + gallery expire + delete day settings.
+- **Leads — status dropdown stays open** — the lead status pill dropdown was closing when the mouse moved off the pill toward the menu options (hover gap issue). Converted to a click-toggle with click-outside-to-close, so the menu stays open until a selection is made or the user clicks elsewhere.
+
+---
+
 ## [2.10.0] — 2026-07-02
 
 ### Added

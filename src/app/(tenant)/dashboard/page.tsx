@@ -35,6 +35,7 @@ export default async function DashboardPage() {
     pendingContracts,
     staleLeads,
     atRiskGalleries,
+    gallerySettings,
     todayEvents,
     // Events where ANY design is REVISION_REQUESTED (we post-filter to latest version)
     eventsWithRevision,
@@ -43,7 +44,7 @@ export default async function DashboardPage() {
     // BOOKED/IN_PROGRESS events within 5 days with no approved design
     noDesignEvents,
   ] = await Promise.all([
-    prisma.event.findMany({ where: { tenantId, eventDate: { gte: now }, status: { notIn: ['CANCELLED', 'COMPLETED', 'ARCHIVED'] } }, include: { client: true }, orderBy: { eventDate: 'asc' }, take: 8 }),
+    prisma.event.findMany({ where: { tenantId, eventDate: { gte: now }, status: { notIn: ['CANCELLED', 'COMPLETED', 'ARCHIVED', 'LOST'] } }, include: { client: true }, orderBy: { eventDate: 'asc' }, take: 8 }),
     prisma.client.count({ where: { tenantId } }),
     prisma.leadSubmission.count({ where: { tenantId, createdAt: { gte: monthStart } } }),
     prisma.tenant.findUnique({ where: { id: tenantId }, include: { branding: true } }),
@@ -62,7 +63,8 @@ export default async function DashboardPage() {
     // New leads with no contact for 3+ days
     prisma.leadSubmission.findMany({ where: { tenantId, status: 'NEW', createdAt: { lt: threeDaysAgo } }, select: { id: true, firstName: true, lastName: true, createdAt: true }, orderBy: { createdAt: 'asc' }, take: 10 }),
     // Galleries that are expired and still have photos (pending deletion)
-    prisma.gallery.findMany({ where: { tenantId, isExpired: true, assets: { some: {} } }, include: { event: { select: { title: true } }, _count: { select: { assets: true } } }, take: 10 }),
+    prisma.gallery.findMany({ where: { tenantId, isExpired: true, assets: { some: {} } }, include: { event: { select: { title: true, eventDate: true } }, _count: { select: { assets: true } } }, take: 10 }),
+    prisma.systemSetting.findMany({ where: { key: { in: ['gallery_expire_days', 'gallery_delete_days'] } }, select: { key: true, value: true } }),
     // Events happening today
     prisma.event.findMany({ where: { tenantId, eventDate: { gte: todayStart, lte: todayEnd }, status: { not: 'CANCELLED' } }, include: { client: true }, orderBy: { startTime: 'asc' } }),
     // Events that have at least one REVISION_REQUESTED design — we'll post-filter to latest version only
@@ -123,6 +125,15 @@ export default async function DashboardPage() {
   // Days until event for design-missing items
   const daysUntil = (d: Date) => Math.max(0, Math.floor((new Date(d).getTime() - now.getTime()) / 86400_000));
 
+  const galSettingsMap = Object.fromEntries(gallerySettings.map(s => [s.key, parseInt(s.value) || 0]));
+  const galExpireDays  = galSettingsMap['gallery_expire_days']  ?? 30;
+  const galDeleteDays  = galSettingsMap['gallery_delete_days']  ?? 30;
+  const galleryDeleteDate = (eventDate: Date) => {
+    const d = new Date(eventDate);
+    d.setDate(d.getDate() + galExpireDays + galDeleteDays);
+    return d;
+  };
+
   const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
   const conversionRate = totalLeads > 0 ? Math.round((totalBooked / totalLeads) * 100) : 0;
 
@@ -151,7 +162,7 @@ export default async function DashboardPage() {
       icon: Camera, iconCls: 'text-red-500',
       rowCls: 'border-l-4 border-red-400 bg-red-50',
       title: `Gallery photos scheduled for deletion — ${g.event.title}`,
-      detail: `${g._count.assets} photo${g._count.assets !== 1 ? 's' : ''} will be permanently deleted soon`,
+      detail: `${g._count.assets} photo${g._count.assets !== 1 ? 's' : ''} will be permanently deleted on ${format(galleryDeleteDate(g.event.eventDate), 'MMM d, yyyy')}`,
       href: `/gallery/${g.id}`,
     })),
     ...noDesignEvents.map(e => {
