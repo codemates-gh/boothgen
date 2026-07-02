@@ -54,28 +54,51 @@ export default async function GalleryPage() {
     });
   }
 
-  const galleries = await prisma.gallery.findMany({
-    where: { tenantId: session.tenantId, event: { status: { notIn: ['COMPLETED', 'LOST'] } } },
-    include: { event: { select: { title: true, eventDate: true } }, _count: { select: { assets: true } } },
-    orderBy: { createdAt: 'desc' },
-  });
+  const galInclude = { event: { select: { title: true, eventDate: true } }, _count: { select: { assets: true } } } as const;
+
+  const [activeGalleries, completedGalleries] = await Promise.all([
+    prisma.gallery.findMany({
+      where: { tenantId: session.tenantId, event: { status: { in: ['BOOKED', 'IN_PROGRESS', 'LEAD', 'QUOTED'] } } },
+      include: galInclude,
+      orderBy: { event: { eventDate: 'asc' } },
+    }),
+    prisma.gallery.findMany({
+      where: { tenantId: session.tenantId, event: { status: 'COMPLETED' } },
+      include: galInclude,
+      orderBy: { event: { eventDate: 'desc' } },
+      take: 10,
+    }),
+  ]);
+
+  const GalleryTable = ({ rows }: { rows: typeof activeGalleries }) => (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[480px]">
+        <thead><tr className="border-b bg-gray-50"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Gallery</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Assets</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Approval</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Published</th></tr></thead>
+        <tbody>{rows.map(g => (<tr key={g.id} className="border-b last:border-0 hover:bg-gray-50 cursor-pointer"><td className="px-6 py-4"><Link href={'/gallery/' + g.id} className="block"><p className="font-medium text-sm">{g.title}</p><p className="text-xs text-gray-400">{g.event.title} &bull; {format(g.event.eventDate,'MMM d, yyyy')}</p></Link></td><td className="px-6 py-4 text-sm">{g._count.assets} photos</td><td className="px-6 py-4">{(() => { const a = approvalLabel(g.approvalStatus, g._count.assets, g.isPublished); return <Badge variant={a.variant}>{a.label}</Badge>; })()}</td><td className="px-6 py-4">{g.isExpired ? <Badge variant="danger">Expired</Badge> : <Badge variant={g.isPublished ? 'success' : 'default'}>{g.isPublished ? 'Published' : 'Draft'}</Badge>}</td></tr>))}</tbody>
+      </table>
+    </div>
+  );
 
   return (
     <>
       <TopBar title="Gallery" />
-      <div className="p-4 sm:p-8">
+      <div className="p-4 sm:p-8 space-y-8">
         <Card><CardContent className="p-0">
-          {galleries.length === 0 ? (
-            <div className="text-center py-16 text-gray-400"><Camera className="w-12 h-12 mx-auto mb-4 opacity-30"/><p>Gallery folders are created automatically when you create an event.</p></div>
+          {activeGalleries.length === 0 ? (
+            <div className="text-center py-16 text-gray-400"><Camera className="w-12 h-12 mx-auto mb-4 opacity-30"/><p>Gallery folders are created automatically when you book an event.</p></div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[480px]">
-                <thead><tr className="border-b bg-gray-50"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Gallery</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Assets</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Approval</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Published</th></tr></thead>
-                <tbody>{galleries.map(g => (<tr key={g.id} className="border-b last:border-0 hover:bg-gray-50 cursor-pointer"><td className="px-6 py-4"><Link href={'/gallery/' + g.id} className="block"><p className="font-medium text-sm">{g.title}</p><p className="text-xs text-gray-400">{g.event.title} &bull; {format(g.event.eventDate,'MMM d, yyyy')}</p></Link></td><td className="px-6 py-4 text-sm">{g._count.assets} photos</td><td className="px-6 py-4">{(() => { const a = approvalLabel(g.approvalStatus, g._count.assets, g.isPublished); return <Badge variant={a.variant}>{a.label}</Badge>; })()}</td><td className="px-6 py-4">{g.isExpired ? <Badge variant="danger">Expired</Badge> : <Badge variant={g.isPublished ? 'success' : 'default'}>{g.isPublished ? 'Published' : 'Draft'}</Badge>}</td></tr>))}</tbody>
-              </table>
-            </div>
+            <GalleryTable rows={activeGalleries} />
           )}
         </CardContent></Card>
+
+        {completedGalleries.length > 0 && (
+          <div>
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Completed Events <span className="font-normal normal-case">(last 10)</span></h2>
+            <Card><CardContent className="p-0">
+              <GalleryTable rows={completedGalleries} />
+            </CardContent></Card>
+          </div>
+        )}
       </div>
     </>
   );

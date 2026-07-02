@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.15.0] — 2026-07-02
+
+### Changed
+- **Gallery list** — completed event galleries are now shown in a separate "Completed Events (last 10)" section below the active galleries table, ordered by most recent event date. Active galleries (BOOKED/IN_PROGRESS) remain at the top ordered by upcoming event date.
+
+---
+
 ## [2.14.0] — 2026-07-02
 
 ### Changed
