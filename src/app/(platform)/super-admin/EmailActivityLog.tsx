@@ -5,16 +5,17 @@ import { CheckCircle2, XCircle, SkipForward, RefreshCw, AlertTriangle, Lightbulb
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
+interface ErrorLink { label: string; url: string; external?: boolean }
 interface ParsedError {
   summary: string;
   detail: string;
   resolution: string;
+  links: ErrorLink[];
 }
 
 function parseErrorMessage(raw: string | null): ParsedError {
-  if (!raw) return { summary: 'Unknown error', detail: '', resolution: 'Check server logs for more details.' };
+  if (!raw) return { summary: 'Unknown error', detail: '', resolution: 'Check server logs for more details.', links: [] };
 
-  // Try to parse as JSON (Resend API errors come through as JSON strings)
   let parsed: any = null;
   try { parsed = JSON.parse(raw); } catch { /* not JSON */ }
 
@@ -24,38 +25,94 @@ function parseErrorMessage(raw: string | null): ParsedError {
     const name: string = parsed.name ?? '';
 
     if (code === 401 || code === 403 || name === 'missing_api_key' || /api.key/i.test(msg)) {
-      return { summary: 'Email provider rejected the request — invalid API key', detail: msg, resolution: 'Verify that RESEND_API_KEY is set correctly in Vercel environment variables and is a live key (not a test key).' };
+      return {
+        summary: 'Email provider rejected the request — invalid API key', detail: msg,
+        resolution: 'Verify that RESEND_API_KEY is set correctly in Vercel and is a live key (not a test key).',
+        links: [
+          { label: 'Resend API Keys', url: 'https://resend.com/api-keys', external: true },
+          { label: 'Vercel Env Vars', url: 'https://vercel.com/dashboard', external: true },
+        ],
+      };
     }
     if (code === 422 || /invalid.*from|sender.*not.*verified|domain.*not.*verified/i.test(msg)) {
-      return { summary: 'Sender domain not verified', detail: msg, resolution: 'The "from" email domain must be verified in your Resend dashboard. Go to resend.com → Domains and confirm the domain is verified.' };
+      return {
+        summary: 'Sender domain not verified', detail: msg,
+        resolution: 'The "from" email domain must be verified in your Resend dashboard before emails can be sent.',
+        links: [
+          { label: 'Resend Domains', url: 'https://resend.com/domains', external: true },
+        ],
+      };
     }
     if (/invalid.*email|email.*invalid/i.test(msg)) {
-      return { summary: 'Invalid recipient email address', detail: msg, resolution: 'The client\'s email address may be malformed. Check and correct it on the client profile.' };
+      return {
+        summary: 'Invalid recipient email address', detail: msg,
+        resolution: "The client's email address may be malformed. Find the client and correct their email address.",
+        links: [
+          { label: 'View Clients', url: '/clients' },
+        ],
+      };
     }
     if (code === 429 || /rate.limit/i.test(msg)) {
-      return { summary: 'Email rate limit reached', detail: msg, resolution: 'Too many emails were sent in a short period. The automation will retry automatically. If this persists, check your Resend plan limits.' };
+      return {
+        summary: 'Email rate limit reached', detail: msg,
+        resolution: 'Too many emails sent in a short period. Check your Resend plan limits and consider upgrading if needed.',
+        links: [
+          { label: 'Resend Dashboard', url: 'https://resend.com/overview', external: true },
+          { label: 'Resend Pricing', url: 'https://resend.com/pricing', external: true },
+        ],
+      };
     }
     if (code >= 500 || /service.*unavailable|temporarily/i.test(msg)) {
-      return { summary: 'Email provider temporarily unavailable', detail: msg, resolution: 'This is likely a temporary outage with Resend. The automation retried and failed. You can manually resend from the operator\'s automation settings.' };
+      return {
+        summary: 'Email provider temporarily unavailable', detail: msg,
+        resolution: 'This is likely a temporary Resend outage. Check their status page and retry once service is restored.',
+        links: [
+          { label: 'Resend Status', url: 'https://status.resend.com', external: true },
+        ],
+      };
     }
-    return { summary: `Email failed (${(code ?? name) || 'API error'})`, detail: msg, resolution: 'Check the Resend dashboard for more details on this delivery failure.' };
+    return {
+      summary: `Email failed (${(code ?? name) || 'API error'})`, detail: msg,
+      resolution: 'Check the Resend dashboard for more details on this delivery failure.',
+      links: [{ label: 'Resend Email Logs', url: 'https://resend.com/emails', external: true }],
+    };
   }
 
-  // Plain string errors
   if (/\[object Object\]/.test(raw)) {
-    return { summary: 'Error object was not properly serialized', detail: raw, resolution: 'This is a bug in the error logger. Check Vercel function logs for the full stack trace around the time this email was sent.' };
+    return {
+      summary: 'Error object was not properly serialized', detail: raw,
+      resolution: 'Check Vercel function logs for the full stack trace around the time this email was sent.',
+      links: [{ label: 'Vercel Function Logs', url: 'https://vercel.com/dashboard', external: true }],
+    };
   }
   if (/ECONNREFUSED|ENOTFOUND|getaddrinfo/i.test(raw)) {
-    return { summary: 'Network connection failed', detail: raw, resolution: 'The server could not connect to the email provider. This may be a transient network issue — check if other emails are sending successfully.' };
+    return {
+      summary: 'Network connection failed', detail: raw,
+      resolution: 'The server could not reach the email provider. Check Resend status for outages.',
+      links: [{ label: 'Resend Status', url: 'https://status.resend.com', external: true }],
+    };
   }
   if (/not.*found|undefined.*template|missing.*template/i.test(raw)) {
-    return { summary: 'Email template missing', detail: raw, resolution: 'The automation rule\'s email template may have been deleted. Open the rule in Automation settings and re-assign a template.' };
+    return {
+      summary: 'Email template missing', detail: raw,
+      resolution: "The automation rule's email template may have been deleted. Re-assign a template in Automation settings.",
+      links: [{ label: 'Automation Settings', url: '/automation' }],
+    };
   }
   if (/merge.?tag|parseMerge/i.test(raw)) {
-    return { summary: 'Merge tag error in template', detail: raw, resolution: 'A merge tag in the email template couldn\'t be resolved. Check that all {{tags}} in the template are valid and the event has the required fields.' };
+    return {
+      summary: 'Merge tag error in template', detail: raw,
+      resolution: "A merge tag in the email template couldn't be resolved. Check that all {{tags}} are valid.",
+      links: [{ label: 'Email Templates', url: '/automation/email-templates' }],
+    };
   }
 
-  return { summary: raw.length > 120 ? raw.slice(0, 120) + '…' : raw, detail: raw.length > 120 ? raw : '', resolution: 'Review the error details and check Vercel function logs for the full stack trace.' };
+  return {
+    summary: raw.length > 120 ? raw.slice(0, 120) + '…' : raw,
+    detail: raw.length > 120 ? raw : '',
+    resolution: 'Review the error details and check Vercel function logs for the full stack trace.',
+    links: [{ label: 'Vercel Function Logs', url: 'https://vercel.com/dashboard', external: true }],
+  };
 }
 
 type ExecutionStatus = 'SENT' | 'FAILED' | 'SKIPPED';
@@ -235,7 +292,25 @@ export default function EmailActivityLog({ initialFailedTotal }: { initialFailed
                               )}
                               <div className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
                                 <Lightbulb className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-                                <span><strong>How to fix:</strong> {parsed.resolution}</span>
+                                <div className="space-y-1.5">
+                                  <span><strong>How to fix:</strong> {parsed.resolution}</span>
+                                  {parsed.links.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 pt-0.5">
+                                      {parsed.links.map(link => (
+                                        <a
+                                          key={link.url}
+                                          href={link.url}
+                                          target={link.external ? '_blank' : undefined}
+                                          rel={link.external ? 'noopener noreferrer' : undefined}
+                                          onClick={e => e.stopPropagation()}
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 hover:bg-amber-200 text-amber-800 font-medium transition-colors"
+                                        >
+                                          {link.label} {link.external && '↗'}
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </td>
                           </tr>
