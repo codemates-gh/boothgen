@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.13.0] — 2026-07-02
+
+### Fixed
+- **Dashboard — Recent Activity excludes COMPLETED events** — design approval activity items are no longer shown for events that have already been marked COMPLETED, ARCHIVED, CANCELLED, or LOST. The feed now only surfaces approvals for active (BOOKED/IN_PROGRESS) events where follow-through is still needed.
+
+---
+
 ## [2.12.0] — 2026-07-02
 
 ### Added

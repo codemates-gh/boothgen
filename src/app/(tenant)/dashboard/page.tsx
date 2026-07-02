@@ -76,9 +76,12 @@ export default async function DashboardPage() {
       },
       take: 10,
     }),
-    // Designs approved in the last 30 days
+    // Designs approved in the last 30 days — exclude terminal event statuses
     prisma.templateDesign.findMany({
-      where: { tenantId, status: 'APPROVED', approvedAt: { gte: thirtyDaysAgo } },
+      where: {
+        tenantId, status: 'APPROVED', approvedAt: { gte: thirtyDaysAgo },
+        event: { status: { notIn: ['COMPLETED', 'ARCHIVED', 'CANCELLED', 'LOST'] } },
+      },
       include: { event: { select: { id: true, title: true, client: { select: { firstName: true, lastName: true } } } } },
       orderBy: { approvedAt: 'desc' },
       take: 10,
