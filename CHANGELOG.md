@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.9.0] — 2026-07-02
+
+### Added
+- **Super Admin — tabbed navigation** — the super admin console is now divided into four named tabs: **Overview** (operator stats + operators table), **Email Logs** (automation delivery history), **Settings** (platform config: pricing, retention, billing, legal), and **Email Templates** (welcome and forgot-password templates). Tab selection is reflected in the URL (`?tab=...`) for deep-linking. The Email Logs tab shows a red badge with the failed-email count when failures are present. New file: `SuperAdminTabs.tsx`.
+
+---
+
 ## [2.8.0] — 2026-07-01
 
 ### Added
