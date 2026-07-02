@@ -16,7 +16,6 @@ export default async function EventsPage() {
   const isAdmin = session.tenantRole === 'HOST_ADMIN';
 
   const ACTIVE_STATUSES = ['LEAD', 'QUOTED', 'BOOKED', 'IN_PROGRESS'] as const;
-  const DONE_STATUSES = ['COMPLETED', 'ARCHIVED', 'CANCELLED', 'LOST'] as const;
 
   const [activeEvents, doneEvents] = await Promise.all([
     prisma.event.findMany({
@@ -26,10 +25,10 @@ export default async function EventsPage() {
       take: 100,
     }),
     prisma.event.findMany({
-      where: { tenantId: session.tenantId, status: { in: [...DONE_STATUSES] }, ...(!isAdmin ? { assignedToUserId: session.userId } : {}) },
+      where: { tenantId: session.tenantId, status: 'COMPLETED', ...(!isAdmin ? { assignedToUserId: session.userId } : {}) },
       include: { client: true, assignedTo: { select: { id: true, name: true } } },
       orderBy: { eventDate: 'desc' },
-      take: 50,
+      take: 10,
     }),
   ]);
 
@@ -95,10 +94,10 @@ export default async function EventsPage() {
           )}
         </CardContent></Card>
 
-        {/* Completed / archived events */}
+        {/* Completed events — last 10 only */}
         {doneEvents.length > 0 && (
           <div className="mt-8">
-            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Completed Events</h2>
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Completed Events <span className="font-normal normal-case">(last 10)</span></h2>
             <Card><CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[640px]">

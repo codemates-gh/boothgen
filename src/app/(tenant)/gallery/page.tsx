@@ -43,9 +43,9 @@ export default async function GalleryPage() {
     );
   }
 
-  // Auto-create missing gallery records for any events that don't have one
+  // Auto-create galleries only for active (BOOKED/IN_PROGRESS) events
   const eventsWithoutGallery = await prisma.event.findMany({
-    where: { tenantId: session.tenantId, gallery: null },
+    where: { tenantId: session.tenantId, gallery: null, status: { in: ['BOOKED', 'IN_PROGRESS'] } },
     select: { id: true, title: true },
   });
   if (eventsWithoutGallery.length > 0) {
@@ -55,7 +55,7 @@ export default async function GalleryPage() {
   }
 
   const galleries = await prisma.gallery.findMany({
-    where: { tenantId: session.tenantId },
+    where: { tenantId: session.tenantId, event: { status: { notIn: ['COMPLETED', 'LOST'] } } },
     include: { event: { select: { title: true, eventDate: true } }, _count: { select: { assets: true } } },
     orderBy: { createdAt: 'desc' },
   });

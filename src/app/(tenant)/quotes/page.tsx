@@ -5,7 +5,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus, ArrowRight, FileText, Trash2 } from 'lucide-react';
+import { Plus, ArrowRight, FileText, Trash2, Info } from 'lucide-react';
 import { format } from 'date-fns';
 
 const QC: Record<string, any> = { DRAFT: 'default', SENT: 'info', VIEWED: 'warning', ACCEPTED: 'success', DECLINED: 'danger', EXPIRED: 'default' };
@@ -52,6 +52,10 @@ export default function QuotesPage() {
             ))}
           </div>
           <Link href="/quotes/new"><Button><Plus className="w-4 h-4 mr-2" />New Quote</Button></Link>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mb-4">
+          <Info className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+          <span>Showing active events only. Quotes for completed or lost events are not listed.</span>
         </div>
         <Card><CardContent className="p-0">
           {loading ? (

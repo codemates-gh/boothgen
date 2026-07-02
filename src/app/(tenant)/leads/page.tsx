@@ -22,7 +22,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default async function LeadsPage() {
   const session = await requireTenantSession();
   const leads = await prisma.leadSubmission.findMany({
-    where: { tenantId: session.tenantId },
+    where: { tenantId: session.tenantId, status: { notIn: ['CONVERTED', 'CLOSED_LOST'] } },
     orderBy: { createdAt: 'desc' },
     take: 200,
   });

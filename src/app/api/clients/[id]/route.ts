@@ -28,8 +28,17 @@ export async function DELETE(_: NextRequest, { params }: { params: { id: string 
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const client = await prisma.client.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
   if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  const eventCount = await prisma.event.count({ where: { clientId: client.id } });
-  if (eventCount > 0) return NextResponse.json({ error: 'Cannot delete client with ' + eventCount + ' event(s). Delete the events first.' }, { status: 400 });
-  await prisma.client.delete({ where: { id: params.id } });
+
+  // Cascade-delete all client data in dependency order.
+  // Invoices and Contracts don't cascade from Event in the DB schema, so we delete them first.
+  // Events cascade to: Quotes, Gallery, GalleryAssets, ChecklistItems, TemplateDesigns, EmailLogs, AutomationLogs.
+  await prisma.$transaction([
+    prisma.invoice.deleteMany({ where: { clientId: client.id } }),
+    prisma.contract.deleteMany({ where: { clientId: client.id } }),
+    prisma.event.deleteMany({ where: { clientId: client.id } }),
+    prisma.leadSubmission.deleteMany({ where: { clientId: client.id } }),
+    prisma.client.delete({ where: { id: params.id } }),
+  ]);
+
   return NextResponse.json({ success: true });
 }

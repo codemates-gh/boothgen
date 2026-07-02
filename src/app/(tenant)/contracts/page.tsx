@@ -6,7 +6,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, FileText, Settings, PenLine } from 'lucide-react';
+import { ArrowRight, FileText, Settings, PenLine, Info } from 'lucide-react';
 import { format } from 'date-fns';
 
 const CC: Record<string,any> = { DRAFT:'default', SENT_TO_CLIENT:'info', CLIENT_SIGNED:'warning', HOST_SIGNED:'warning', FULLY_EXECUTED:'success', VOIDED:'danger' };
@@ -14,7 +14,12 @@ const CC: Record<string,any> = { DRAFT:'default', SENT_TO_CLIENT:'info', CLIENT_
 export default async function ContractsPage() {
   const session = await requireTenantSession();
   const [contracts, templateCount] = await Promise.all([
-    prisma.contract.findMany({ where: { tenantId: session.tenantId }, include: { client: true, event: true }, orderBy: [{ status: 'asc' }, { createdAt: 'desc' }], take: 200 }),
+    prisma.contract.findMany({
+      where: { tenantId: session.tenantId, OR: [{ eventId: null }, { event: { status: { notIn: ['COMPLETED', 'LOST'] } } }] },
+      include: { client: true, event: true },
+      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+      take: 200,
+    }),
     prisma.contractTemplate.count({ where: { tenantId: session.tenantId } }),
   ]);
   const needsCountersign = contracts.filter(c => c.status === 'CLIENT_SIGNED');
@@ -52,6 +57,11 @@ export default async function ContractsPage() {
             </div>
           </div>
         )}
+
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+          <Info className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+          <span>Showing active events only. Contracts for completed or lost events are not listed.</span>
+        </div>
 
         <Card><CardContent className="p-0">
           {contracts.length === 0 ? (

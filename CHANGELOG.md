@@ -4,6 +4,19 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.14.0] — 2026-07-02
+
+### Changed
+- **Events list** — active section no longer includes LOST events (already excluded from dashboard). Completed section now shows only `COMPLETED` status events, capped at the last 10. ARCHIVED, CANCELLED, and LOST events are hidden from the list.
+- **Leads list** — CONVERTED and CLOSED_LOST leads are hidden. Only open/actionable leads are shown.
+- **Quotes list** — quotes for COMPLETED or LOST events are excluded. Added info notice explaining the filter.
+- **Invoices list** — invoices for COMPLETED or LOST events are excluded. Added info notice.
+- **Contracts list** — contracts for COMPLETED or LOST events are excluded. Added info notice.
+- **Gallery list** — galleries for COMPLETED or LOST events are hidden. Auto-creation of gallery shells now only triggers for BOOKED/IN_PROGRESS events.
+- **Client delete** — deleting a client now cascade-deletes all associated invoices, contracts, events (+ their quotes, galleries, designs, checklists, logs), and lead submissions. Previously blocked deletion if events existed.
+
+---
+
 ## [2.13.0] — 2026-07-02
 
 ### Fixed

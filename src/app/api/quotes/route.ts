@@ -8,7 +8,7 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json([], { status: 200 });
   const quotes = await prisma.quote.findMany({
-    where: { tenantId: session.tenantId },
+    where: { tenantId: session.tenantId, event: { status: { notIn: ['COMPLETED', 'LOST'] } } },
     include: { client: true, event: true, lineItems: { orderBy: { sortOrder: 'asc' } } },
     orderBy: { createdAt: 'desc' },
   });
