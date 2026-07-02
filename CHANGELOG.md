@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.21.0] — 2026-07-02
+
+### Changed
+- **Event message panel now matches lead compose attachment behavior** — added amber warning note in the compose area and appended the "To share a file, CC [contact email]" footer to outgoing event emails (shown only when a reply-to email is configured in branding), matching the existing lead reply behavior.
+
+---
+
 ## [2.20.0] — 2026-07-02
 
 ### Changed

@@ -45,6 +45,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     include: { branding: { select: { companyName: true, replyToEmail: true } } },
   });
   const companyName = tenant?.branding?.companyName || tenant?.name || 'Your Photo Booth Company';
+  const contactEmail = tenant?.branding?.replyToEmail || null;
+  const attachmentNote = contactEmail
+    ? `<p style="color:#9ca3af;font-size:11px;margin:8px 0 0">To share a file, CC <a href="mailto:${contactEmail}" style="color:#9ca3af">${contactEmail}</a> in your reply.</p>`
+    : '';
 
   const inboundDomain = process.env.RESEND_INBOUND_DOMAIN ?? 'boothgen.com';
   const leadId = (event as any).leadSubmission?.id ?? null;
@@ -66,6 +70,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
 ${bodyContent}
 <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px">${companyName}</p>
+${attachmentNote}
 </div>`;
 
   const result = await sendEmail(event.client.email, subject, html, replyTo, fromDisplay);

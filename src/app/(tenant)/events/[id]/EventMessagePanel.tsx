@@ -100,6 +100,7 @@ export default function EventMessagePanel({ eventId, clientName, clientEmail }: 
             {messages.length === 0 && (
               <p className="text-xs text-gray-400">No messages yet. Send the first message to {clientEmail}.</p>
             )}
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">Attachments sent as replies are not captured in this thread. The outgoing email instructs clients to CC your contact email if they need to share a file.</p>
             <input
               value={subject}
               onChange={e => setSubject(e.target.value)}
