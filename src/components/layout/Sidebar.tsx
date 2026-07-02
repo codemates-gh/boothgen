@@ -85,10 +85,10 @@ export function Sidebar() {
         />
       )}
       <aside className={cn(
-        'w-64 h-screen bg-canvas flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 ease-in-out',
+        'w-64 h-screen bg-canvas flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 ease-in-out overflow-y-auto',
         isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       )}>
-        <div className="px-6 py-5 border-b border-white/10">
+        <div className="px-6 py-5 border-b border-white/10 shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0">
               <BoothGeniusIcon size={36} />
@@ -99,7 +99,7 @@ export function Sidebar() {
             </button>
           </div>
         </div>
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
+        <nav className="px-3 py-4 flex-1">
           {nav.map(({ href, label, icon: Icon, pro }) => {
             const active = path === href || (
               path.startsWith(href + '/') &&
@@ -123,7 +123,7 @@ export function Sidebar() {
             );
           })}
         </nav>
-        <div className="px-3 py-4 border-t border-white/10">
+        <div className="px-3 py-4 border-t border-white/10 shrink-0">
           {session?.user && (
             <div className="px-3 py-2 mb-2">
               <p className="text-white text-xs font-medium truncate">{session.user.name}</p>
