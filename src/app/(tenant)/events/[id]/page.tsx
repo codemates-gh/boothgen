@@ -18,6 +18,7 @@ import ReinstateEventButton from './ReinstateEventButton';
 import AssignEventButton from './AssignEventButton';
 import EventNotes from './EventNotes';
 import EventChecklist from './EventChecklist';
+import EventMessagePanel from './EventMessagePanel';
 
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger', LOST:'default' };
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
@@ -89,11 +90,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
             <div className="flex flex-wrap gap-2">
               <Link href={'/events/' + event.id + '/edit'}><Button variant="outline" size="sm"><Edit2 className="w-4 h-4 mr-1"/>Edit Event</Button></Link>
               <a href={portalUrl} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><ExternalLink className="w-4 h-4 mr-1"/>Client Portal</Button></a>
-              {(event as any).leadSubmission ? (
-                <Link href={'/leads/' + (event as any).leadSubmission.id}><Button variant="outline" size="sm"><MessageSquare className="w-4 h-4 mr-1"/>Send Message</Button></Link>
-              ) : (
-                <a href={`mailto:${event.client.email}`}><Button variant="outline" size="sm"><MessageSquare className="w-4 h-4 mr-1"/>Send Message</Button></a>
-              )}
+              <a href="#messages"><Button variant="outline" size="sm"><MessageSquare className="w-4 h-4 mr-1"/>Messages</Button></a>
               {event.Quote.length > 0 ? (
                 <>
                   <Link href={'/quotes/' + event.Quote[0].id}><Button size="sm"><ClipboardList className="w-4 h-4 mr-1"/>View Quote</Button></Link>
@@ -269,6 +266,17 @@ export default async function EventDetailPage({ params }: { params: { id: string
 
         {/* Checklist — visible to all */}
         <EventChecklist eventId={event.id} />
+
+        {/* Messages — admin only */}
+        {isAdmin && (
+          <div id="messages">
+            <EventMessagePanel
+              eventId={event.id}
+              clientName={`${event.client.firstName} ${event.client.lastName}`}
+              clientEmail={event.client.email}
+            />
+          </div>
+        )}
       </div>
     </>
   );

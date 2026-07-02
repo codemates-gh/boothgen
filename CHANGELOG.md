@@ -4,6 +4,20 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.16.0] — 2026-07-02
+
+### Added
+- **Messages inbox** (`/messages`) — unified conversation feed showing all client threads across leads and events, grouped by contact with event name links. Accessible from the new "Messages" nav item in the sidebar.
+- **Event message panel** — inline compose + thread viewer on every event detail page (admin only). Sends email to the client directly from the event; replies route back into the thread via `event-[id]@boothgen.com` or the linked lead's address if a lead exists.
+- **Full inbound reply support for events** — inbound email webhook now handles `event-[id]@domain` replies in addition to `lead-[id]@domain`. Admin notification email links to the event's message panel.
+- **Schema**: `LeadMessage` now has optional `tenantId`, `eventId` fields and nullable `leadId`, enabling event-only threads and tenant-scoped inbox queries. Backfill runs automatically on first inbox load.
+
+### Changed
+- Sidebar "Send Message" button on event detail page now scrolls to the inline Messages panel instead of redirecting to the lead page or opening a mailto link.
+- "Messages" added to sidebar nav between Leads and Quotes.
+
+---
+
 ## [2.15.0] — 2026-07-02
 
 ### Changed

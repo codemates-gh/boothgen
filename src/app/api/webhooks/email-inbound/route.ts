@@ -97,29 +97,16 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Lead reply threading ─────────────────────────────────────────────────
-    const match = toAddr.match(/lead-([a-z0-9]+)@/i);
-    if (!match) continue;
-    const leadId = match[1];
+    const leadMatch = toAddr.match(/^lead-([a-z0-9]+)@/i);
+    const eventMatch = toAddr.match(/^event-([a-z0-9]+)@/i);
+    if (!leadMatch && !eventMatch) continue;
 
-    const lead = await prisma.leadSubmission.findUnique({
-      where: { id: leadId },
-      include: { tenant: { include: { memberships: { where: { role: 'HOST_ADMIN' }, include: { user: { select: { email: true } } } }, branding: { select: { companyName: true } } } } },
-    });
-    if (!lead) {
-      console.error('[INBOUND_WEBHOOK] Lead not found:', leadId);
-      continue;
-    }
-
-    // Webhook omits body — fetch from Resend API
     const { text: fetchedText, html: fetchedHtml } = await fetchEmailBody(data.email_id);
     const rawText = data.text || fetchedText || null;
     const rawHtml = data.html || fetchedHtml || null;
 
     const stripQuoted = (text: string) =>
-      text
-        .split(/\n\nOn [\s\S]{0,200}wrote:/)[0]
-        .split(/\n-- \n/)[0]
-        .trim();
+      text.split(/\n\nOn [\s\S]{0,200}wrote:/)[0].split(/\n-- \n/)[0].trim();
 
     const bodyText = rawText
       ? stripQuoted(rawText)
@@ -129,62 +116,98 @@ export async function POST(req: NextRequest) {
             .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
             .replace(/<div[^>]*gmail_quote[^>]*>[\s\S]*?<\/div>/gi, '')
             .replace(/<blockquote[\s\S]*?<\/blockquote>/gi, '')
-            .replace(/<br\s*\/?>/gi, '\n')
-            .replace(/<\/p>/gi, '\n\n')
-            .replace(/<\/div>/gi, '\n')
-            .replace(/<[^>]+>/g, '')
-            .replace(/&nbsp;/g, ' ')
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&quot;/g, '"')
-            .replace(/&#39;/g, "'")
-            .replace(/\n{3,}/g, '\n\n')
-            .trim()
+            .replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n\n').replace(/<\/div>/gi, '\n')
+            .replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'").replace(/\n{3,}/g, '\n\n').trim()
         )
       : null;
 
-    await prisma.leadMessage.create({
-      data: {
-        leadId,
-        direction: 'INBOUND',
-        fromEmail: data.from ?? '',
-        toEmail: toAddr,
-        subject: data.subject ?? '(no subject)',
-        bodyText,
-        bodyHtml: null,
-      },
-    });
+    if (leadMatch) {
+      // ── Lead thread reply ──────────────────────────────────────────────────
+      const leadId = leadMatch[1];
+      const lead = await prisma.leadSubmission.findUnique({
+        where: { id: leadId },
+        include: { tenant: { include: { memberships: { where: { role: 'HOST_ADMIN' }, include: { user: { select: { email: true } } } }, branding: { select: { companyName: true } } } } },
+      });
+      if (!lead) { console.error('[INBOUND_WEBHOOK] Lead not found:', leadId); continue; }
 
-    if (lead.status === 'NEW') {
-      await prisma.leadSubmission.update({ where: { id: leadId }, data: { status: 'CONTACTED' } });
-    }
+      await prisma.leadMessage.create({
+        data: {
+          tenantId: lead.tenantId,
+          leadId,
+          eventId: lead.convertedToEventId ?? null,
+          direction: 'INBOUND',
+          fromEmail: data.from ?? '',
+          toEmail: toAddr,
+          subject: data.subject ?? '(no subject)',
+          bodyText,
+          bodyHtml: null,
+        },
+      });
 
-    // Email notification to all HOST_ADMINs
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
-    const companyName = lead.tenant.branding?.companyName ?? lead.tenant.name;
-    const leadName = `${lead.firstName} ${lead.lastName}`;
-    const preview = bodyText ? bodyText.slice(0, 120) + (bodyText.length > 120 ? '…' : '') : '';
-    const leadUrl = `${appUrl}/leads/${leadId}`;
+      if (lead.status === 'NEW') {
+        await prisma.leadSubmission.update({ where: { id: leadId }, data: { status: 'CONTACTED' } });
+      }
 
-    const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
-<h2 style="font-size:18px;color:#111827;margin:0 0 8px">💬 ${leadName} replied to their inquiry</h2>
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
+      const companyName = lead.tenant.branding?.companyName ?? lead.tenant.name;
+      const leadName = `${lead.firstName} ${lead.lastName}`;
+      const preview = bodyText ? bodyText.slice(0, 120) + (bodyText.length > 120 ? '…' : '') : '';
+      const linkUrl = lead.convertedToEventId ? `${appUrl}/events/${lead.convertedToEventId}#messages` : `${appUrl}/leads/${leadId}`;
+
+      const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
+<h2 style="font-size:18px;color:#111827;margin:0 0 8px">💬 ${leadName} replied</h2>
 ${preview ? `<p style="color:#374151;background:#f3f4f6;border-left:3px solid #f97316;padding:12px 16px;border-radius:4px;margin:16px 0;font-style:italic">"${preview}"</p>` : ''}
-<p style="margin:24px 0">
-  <a href="${leadUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View &amp; Reply in Booth Genius</a>
-</p>
+<p style="margin:24px 0"><a href="${linkUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View &amp; Reply in Booth Genius</a></p>
 <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:16px">${companyName}</p>
 </div>`;
 
-    for (const member of lead.tenant.memberships) {
-      await sendEmail(
-        member.user.email,
-        `${leadName} replied to their inquiry`,
-        html,
-      );
-    }
+      for (const member of lead.tenant.memberships) {
+        await sendEmail(member.user.email, `${leadName} replied`, html);
+      }
+      console.log('[INBOUND_WEBHOOK] Lead reply stored:', leadId);
 
-    console.log('[INBOUND_WEBHOOK] Stored + notified for lead:', leadId);
+    } else if (eventMatch) {
+      // ── Event thread reply (no lead) ───────────────────────────────────────
+      const eventId = eventMatch[1];
+      const event = await prisma.event.findUnique({
+        where: { id: eventId },
+        include: { client: true, tenant: { include: { memberships: { where: { role: 'HOST_ADMIN' }, include: { user: { select: { email: true } } } }, branding: { select: { companyName: true } } } } },
+      });
+      if (!event) { console.error('[INBOUND_WEBHOOK] Event not found:', eventId); continue; }
+
+      await prisma.leadMessage.create({
+        data: {
+          tenantId: event.tenantId,
+          eventId,
+          direction: 'INBOUND',
+          fromEmail: data.from ?? '',
+          toEmail: toAddr,
+          subject: data.subject ?? '(no subject)',
+          bodyText,
+          bodyHtml: null,
+        },
+      });
+
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
+      const companyName = event.tenant.branding?.companyName ?? event.tenant.name;
+      const clientName = `${event.client.firstName} ${event.client.lastName}`;
+      const preview = bodyText ? bodyText.slice(0, 120) + (bodyText.length > 120 ? '…' : '') : '';
+      const linkUrl = `${appUrl}/events/${eventId}#messages`;
+
+      const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
+<h2 style="font-size:18px;color:#111827;margin:0 0 8px">💬 ${clientName} replied</h2>
+${preview ? `<p style="color:#374151;background:#f3f4f6;border-left:3px solid #f97316;padding:12px 16px;border-radius:4px;margin:16px 0;font-style:italic">"${preview}"</p>` : ''}
+<p style="margin:24px 0"><a href="${linkUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View &amp; Reply in Booth Genius</a></p>
+<p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:16px">${companyName}</p>
+</div>`;
+
+      for (const member of event.tenant.memberships) {
+        await sendEmail(member.user.email, `${clientName} replied — ${event.title}`, html);
+      }
+      console.log('[INBOUND_WEBHOOK] Event reply stored:', eventId);
+    }
   }
 
   return NextResponse.json({ ok: true });

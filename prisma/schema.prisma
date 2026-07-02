@@ -212,6 +212,7 @@ model Tenant {
   blackoutDates        BlackoutDate[]
   checklistTemplates   ChecklistTemplate[]
   eventChecklistItems  EventChecklistItem[]
+  leadMessages         LeadMessage[]
 
   @@map("tenants")
 }
@@ -377,6 +378,7 @@ model Event {
   Quote                Quote[]
   notes                EventNote[]
   checklistItems       EventChecklistItem[]
+  messages             LeadMessage[]
 
   @@index([tenantId])
   @@index([tenantId, eventDate])
@@ -704,7 +706,9 @@ model LeadSubmission {
 
 model LeadMessage {
   id        String           @id @default(cuid())
-  leadId    String
+  tenantId  String?
+  leadId    String?
+  eventId   String?
   direction MessageDirection
   fromEmail String
   toEmail   String
@@ -714,9 +718,13 @@ model LeadMessage {
   sentAt    DateTime         @default(now())
   resendId  String?
 
-  lead LeadSubmission @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tenant Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lead   LeadSubmission? @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  event  Event?          @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId, sentAt])
   @@index([leadId, sentAt])
+  @@index([eventId, sentAt])
   @@map("lead_messages")
 }
 

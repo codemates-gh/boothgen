@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, ChevronRight, Mail, Menu, X, Inbox, BarChart2, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, ChevronRight, Mail, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare } from 'lucide-react';
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 import { APP_VERSION } from '@/lib/version';
 
@@ -15,7 +15,8 @@ const adminNav: NavItem[] = [
   { href: '/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/events', label: 'Events', icon: Calendar },
   { href: '/clients', label: 'Clients', icon: Users },
-  { href: '/leads', label: 'Leads & Messages', icon: Inbox },
+  { href: '/leads', label: 'Leads', icon: Inbox },
+  { href: '/messages', label: 'Messages', icon: MessageSquare },
   { href: '/quotes', label: 'Quotes', icon: FileText },
   { href: '/invoices', label: 'Invoices', icon: Receipt },
   { href: '/contracts', label: 'Contracts', icon: FileText },
@@ -30,7 +31,7 @@ const adminNav: NavItem[] = [
 const TEAM_NAV_MAP: Record<string, NavItem> = {
   events:   { href: '/events',  label: 'Events',          icon: Calendar },
   calendar: { href: '/calendar',label: 'Calendar',        icon: CalendarDays },
-  leads:    { href: '/leads',   label: 'Leads & Messages',icon: Inbox },
+  leads:    { href: '/leads',   label: 'Leads',icon: Inbox },
   quotes:   { href: '/quotes',  label: 'Quotes',          icon: FileText },
   invoices: { href: '/invoices',label: 'Invoices',        icon: Receipt },
   clients:  { href: '/clients', label: 'Clients',         icon: Users },
