@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.12.0] — 2026-07-02
+
+### Added
+- **Reinstate Event button** — ARCHIVED and LOST events now show a "Reinstate Event" button on the event detail page. ARCHIVED events are restored to BOOKED status; LOST events are restored to LEAD status. Uses the same inline confirmation pattern as other event action buttons. New API route: `POST /api/events/[id]/reinstate`.
+
+### Fixed
+- **Dashboard — Recent Leads no longer shows CONVERTED/CLOSED_LOST leads** — completed/closed leads are excluded from the dashboard Recent Leads feed, keeping the widget focused on actionable open leads only.
+
+---
+
 ## [2.11.0] — 2026-07-02
 
 ### Fixed

@@ -14,6 +14,7 @@ import CancelEventButton from './CancelEventButton';
 import MarkCompleteButton from './MarkCompleteButton';
 import CloseEventButton from './CloseEventButton';
 import MarkAsLostButton from './MarkAsLostButton';
+import ReinstateEventButton from './ReinstateEventButton';
 import AssignEventButton from './AssignEventButton';
 import EventNotes from './EventNotes';
 import EventChecklist from './EventChecklist';
@@ -112,6 +113,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
                 />
               )}
               <MarkAsLostButton eventId={event.id} status={event.status} />
+              <ReinstateEventButton eventId={event.id} status={event.status} />
               <CancelEventButton eventId={event.id} status={event.status} depositPaidCents={depositPaidCents} totalPaidCents={totalPaidCents} />
               <DeleteEventButton eventId={event.id} hasInvoices={event.invoices.length > 0} hasContracts={event.contracts.length > 0} />
             </div>
