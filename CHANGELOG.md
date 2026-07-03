@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.22.0] — 2026-07-02
+
+### Fixed
+- **Stripe Connect authorize 500 on live mode** — stored test-mode account ID was used against live Stripe API, causing a hard crash. Route now verifies the account ID is valid before use; if stale (e.g. test→live switch), creates a fresh live account automatically.
+
+---
+
 ## [2.21.0] — 2026-07-02
 
 ### Changed

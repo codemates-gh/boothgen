@@ -14,11 +14,23 @@ export async function GET() {
   const tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId }, include: { stripeConnect: true } });
   if (!tenant) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   let accountId = tenant.stripeConnect?.stripeAccountId;
+
+  // Verify the stored account ID is valid in the current Stripe mode (test vs live).
+  // A stale test-mode account ID will throw in live mode — create a fresh one if so.
+  if (accountId) {
+    try {
+      await stripe.accounts.retrieve(accountId);
+    } catch {
+      accountId = undefined;
+    }
+  }
+
   if (!accountId) {
     const acct = await stripe.accounts.create({ type: 'express' });
     accountId = acct.id;
-    await prisma.stripeConnectAccount.upsert({ where: { tenantId: tenant.id }, update: { stripeAccountId: accountId }, create: { tenantId: tenant.id, stripeAccountId: accountId, onboardingStatus: 'ONBOARDING_INITIATED' } });
+    await prisma.stripeConnectAccount.upsert({ where: { tenantId: tenant.id }, update: { stripeAccountId: accountId, onboardingStatus: 'ONBOARDING_INITIATED' }, create: { tenantId: tenant.id, stripeAccountId: accountId, onboardingStatus: 'ONBOARDING_INITIATED' } });
   }
+
   const link = await stripe.accountLinks.create({ account: accountId, refresh_url: APP + '/api/stripe/connect/authorize', return_url: APP + '/api/stripe/connect/callback?account_id=' + accountId + '&tenant_id=' + tenant.id, type: 'account_onboarding' });
   return NextResponse.redirect(link.url);
 }
