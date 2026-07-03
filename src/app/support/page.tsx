@@ -843,7 +843,7 @@ A: Stripe Connect is required to use Booth Genius. Connecting your Stripe accoun
 A: No. Both plans include unlimited events and clients.
 
 **Q: What happens to my data if I cancel?**
-A: Your data remains accessible for 30 days after cancellation. After that, it's permanently removed from our systems. We recommend exporting any important records before cancelling.
+A: When your account is cancelled, your data is removed from the platform. We recommend reaching out to support@boothgen.com before cancelling if you need assistance retrieving any records.
 
 **Q: Can clients see the commission % being deducted?**
 A: No. Clients see only the invoice total and payment amounts. The commission is a backend deduction handled between Booth Genius and your Stripe account — transparent to you, invisible to clients.

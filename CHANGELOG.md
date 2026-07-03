@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.32.0] — 2026-07-03
+
+### Changed
+- **Support FAQ: data retention answer updated** — removed unimplemented promise of 30-day access and export after cancellation. Answer now directs operators to contact support before cancelling. Export + graceful cancellation queued for next sprint.
+
+---
+
 ## [2.31.0] — 2026-07-03
 
 ### Changed
