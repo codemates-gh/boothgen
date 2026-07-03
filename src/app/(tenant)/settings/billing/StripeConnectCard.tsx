@@ -20,11 +20,23 @@ export function StripeConnectCard({ status, chargesEnabled }: Props) {
     <div className="space-y-4">
       {/* Status badge */}
       {status === 'active' ? (
-        <div className="flex items-center gap-3 text-green-700 bg-green-50 rounded-xl p-4">
-          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-          <div>
-            <p className="font-semibold">Connected</p>
-            <p className="text-sm">Charges: {chargesEnabled ? 'Enabled' : 'Pending'}</p>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 text-green-700 bg-green-50 rounded-xl p-4">
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+            <div>
+              <p className="font-semibold">Connected</p>
+              <p className="text-sm">Charges: {chargesEnabled ? 'Enabled' : 'Pending'}</p>
+            </div>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+            <p className="text-sm font-medium text-gray-700">When to use "Update Stripe"</p>
+            <ul className="list-disc list-inside space-y-1 text-sm text-gray-500">
+              <li>Change your <strong>payout bank account</strong> or deposit schedule</li>
+              <li>Update your <strong>business name, address, or tax ID</strong></li>
+              <li>Add or verify an <strong>owner or representative</strong></li>
+              <li>Respond to a <strong>Stripe request for additional information</strong></li>
+            </ul>
+            <p className="text-xs text-gray-400 pt-1">You'll be redirected to Stripe's secure portal and returned here when done. Your existing bookings and payment history are not affected.</p>
           </div>
         </div>
       ) : status === 'incomplete' ? (

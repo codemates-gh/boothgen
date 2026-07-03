@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.25.0] — 2026-07-03
+
+### Changed
+- **"Update Stripe" help text** — billing page now shows a contextual explanation when Stripe is already connected, listing the four scenarios where operators should click "Update Stripe" (bank account change, business info update, adding a representative, or responding to a Stripe verification request).
+
+---
+
 ## [2.24.0] — 2026-07-03
 
 ### Changed
