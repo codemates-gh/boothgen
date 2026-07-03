@@ -65,8 +65,8 @@ export default async function DashboardPage() {
     // Galleries that are expired and still have photos (pending deletion)
     prisma.gallery.findMany({ where: { tenantId, isExpired: true, assets: { some: {} } }, include: { event: { select: { title: true, eventDate: true } }, _count: { select: { assets: true } } }, take: 10 }),
     prisma.systemSetting.findMany({ where: { key: { in: ['gallery_expire_days', 'gallery_delete_days'] } }, select: { key: true, value: true } }),
-    // Events happening today
-    prisma.event.findMany({ where: { tenantId, eventDate: { gte: todayStart, lte: todayEnd }, status: { not: 'CANCELLED' } }, include: { client: true }, orderBy: { startTime: 'asc' } }),
+    // Events happening today — only confirmed bookings
+    prisma.event.findMany({ where: { tenantId, eventDate: { gte: todayStart, lte: todayEnd }, status: { in: ['BOOKED', 'IN_PROGRESS'] } }, include: { client: true }, orderBy: { startTime: 'asc' } }),
     // Events that have at least one REVISION_REQUESTED design — we'll post-filter to latest version only
     prisma.event.findMany({
       where: { tenantId, templateDesigns: { some: { status: 'REVISION_REQUESTED' } } },

@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.33.0] — 2026-07-03
+
+### Fixed
+- **Dashboard "Today" section only shows confirmed bookings** — previously showed any event on today's date regardless of status (LEAD, QUOTED, etc.). Now restricted to BOOKED and IN_PROGRESS events only.
+
+---
+
 ## [2.32.0] — 2026-07-03
 
 ### Changed
