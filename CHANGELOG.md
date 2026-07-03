@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.24.0] — 2026-07-03
+
+### Changed
+- **Billing page: "Free Trial" renamed to "Commission Plan"** — plan name and subtitle updated to reflect the actual plan. Badge now shows "ACTIVE" (green) instead of "TRIALING" (yellow) for commission plan operators.
+
+---
+
 ## [2.23.0] — 2026-07-03
 
 ### Fixed
