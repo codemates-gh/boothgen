@@ -60,6 +60,7 @@ function ActionsCell({ op }: { op: Operator }) {
   const [busy, setBusy] = useState(false);
   const [subError, setSubError] = useState('');
   const [subSuccess, setSubSuccess] = useState('');
+  const [deleteWarnings, setDeleteWarnings] = useState<string[]>([]);
 
   const currentPlan = op.stripeSubscription?.plan ?? 'FREE_TRIAL';
   const hasStripeSub = !!op.stripeSubscription?.stripeSubscriptionId;
@@ -97,8 +98,14 @@ function ActionsCell({ op }: { op: Operator }) {
 
   async function deleteTenant() {
     setBusy(true);
-    await fetch(`/api/super-admin/tenants/${op.id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/super-admin/tenants/${op.id}`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
     setBusy(false);
+    if (data.stripeWarnings?.length) {
+      setDeleteWarnings(data.stripeWarnings);
+      // Don't refresh yet — show the warnings first
+      return;
+    }
     router.refresh();
   }
 
@@ -201,15 +208,32 @@ function ActionsCell({ op }: { op: Operator }) {
   // ── Delete confirm ─────────────────────────────────────────────
   if (mode === 'delete') {
     const name = op.branding?.companyName ?? op.name;
+
+    if (deleteWarnings.length > 0) {
+      return (
+        <div className="w-72 space-y-2">
+          <p className="text-xs font-semibold text-amber-700">Account deleted — Stripe cleanup needed</p>
+          {deleteWarnings.map((w, i) => (
+            <p key={i} className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded px-2 py-1">{w}</p>
+          ))}
+          <p className="text-xs text-gray-500">Go to your Stripe dashboard and manually remove the Connect account or customer to complete cleanup.</p>
+          <Button size="sm" variant="outline" onClick={() => { setDeleteWarnings([]); router.refresh(); }}>Dismiss</Button>
+        </div>
+      );
+    }
+
     return (
-      <div className="flex items-center gap-2 min-w-[280px]">
-        <span className="text-xs text-red-600 font-medium">
+      <div className="space-y-1.5 min-w-[280px]">
+        <p className="text-xs text-red-600 font-medium">
           Delete &ldquo;{name}&rdquo;?{op._count.events > 0 ? ` (${op._count.events} events)` : ''}
-        </span>
-        <Button size="sm" variant="destructive" onClick={deleteTenant} disabled={busy}>
-          {busy ? 'Deleting…' : 'Confirm'}
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => setMode('idle')}>Cancel</Button>
+        </p>
+        <p className="text-xs text-gray-500">Removes all data, R2 files, Stripe customer, and Connect account.</p>
+        <div className="flex gap-2">
+          <Button size="sm" variant="destructive" onClick={deleteTenant} disabled={busy}>
+            {busy ? 'Deleting…' : 'Confirm Delete'}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setMode('idle')}>Cancel</Button>
+        </div>
       </div>
     );
   }

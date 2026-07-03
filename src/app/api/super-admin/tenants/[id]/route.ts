@@ -4,29 +4,67 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 import { deleteFromR2, r2KeyFromUrl } from '@/lib/storage/r2';
+import { stripe } from '@/lib/stripe';
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (session?.globalRole !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  // Collect all R2 keys to delete before removing DB records
-  const [branding, galleryAssets, templateDesigns] = await Promise.all([
+  // Fetch Stripe records and R2 assets before deleting DB
+  const [tenant, branding, galleryAssets, templateDesigns] = await Promise.all([
+    prisma.tenant.findUnique({
+      where: { id: params.id },
+      include: {
+        stripeSubscription: { select: { stripeCustomerId: true, stripeSubscriptionId: true } },
+        stripeConnect: { select: { stripeAccountId: true } },
+      },
+    }),
     prisma.tenantBranding.findUnique({ where: { tenantId: params.id }, select: { logoUrl: true, faviconUrl: true } }),
     prisma.galleryAsset.findMany({ where: { gallery: { tenantId: params.id } }, select: { url: true } }),
     prisma.templateDesign.findMany({ where: { tenantId: params.id }, select: { fileUrl: true } }),
   ]);
 
+  const stripeWarnings: string[] = [];
+
+  // Cancel Stripe subscription and delete customer (platform billing)
+  const customerId = tenant?.stripeSubscription?.stripeCustomerId;
+  if (customerId && !customerId.startsWith('manual_')) {
+    try {
+      // Cancelling the subscription first is optional — deleting the customer cascades it,
+      // but explicit cancellation avoids a final prorated invoice.
+      const subId = tenant?.stripeSubscription?.stripeSubscriptionId;
+      if (subId) {
+        await stripe.subscriptions.cancel(subId).catch(() => null);
+      }
+      await stripe.customers.del(customerId);
+    } catch (err: any) {
+      stripeWarnings.push(`Stripe customer cleanup failed: ${err.message}`);
+    }
+  }
+
+  // Delete Stripe Connect Express account
+  const connectAccountId = tenant?.stripeConnect?.stripeAccountId;
+  if (connectAccountId) {
+    try {
+      await stripe.accounts.del(connectAccountId);
+    } catch (err: any) {
+      // Deletion fails if account has a pending balance — log and continue
+      stripeWarnings.push(`Stripe Connect account not deleted: ${err.message}`);
+    }
+  }
+
+  // Delete R2 assets
   const r2Keys: string[] = [
     ...(branding?.logoUrl ? [r2KeyFromUrl(branding.logoUrl)] : []),
     ...(branding?.faviconUrl ? [r2KeyFromUrl(branding.faviconUrl)] : []),
     ...galleryAssets.map(a => r2KeyFromUrl(a.url)),
     ...templateDesigns.map(d => r2KeyFromUrl(d.fileUrl)),
   ];
-
   await Promise.allSettled(r2Keys.map(key => deleteFromR2(key)));
 
   await prisma.tenant.delete({ where: { id: params.id } });
-  return NextResponse.json({ success: true });
+
+  return NextResponse.json({ success: true, stripeWarnings });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {

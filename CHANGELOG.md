@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.29.0] — 2026-07-03
+
+### Changed
+- **Operator delete now cleans up Stripe** — deleting a tenant via Super Admin now cancels their Stripe subscription, deletes their Stripe customer record, and deletes their Stripe Connect Express account before removing the DB row. If the Connect account deletion fails (e.g. pending balance), the DB is still deleted and a warning is shown prompting manual cleanup in the Stripe dashboard.
+
+---
+
 ## [2.28.0] — 2026-07-03
 
 ### Fixed
