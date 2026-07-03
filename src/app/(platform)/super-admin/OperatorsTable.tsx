@@ -290,7 +290,7 @@ function ActionsCell({ op }: { op: Operator }) {
             </button>
           )}
 
-          {hasStripeCustomer && (
+          {hasStripeSub && (
             <button
               onClick={() => setSubConfirm('refund')}
               disabled={busy}
@@ -300,8 +300,8 @@ function ActionsCell({ op }: { op: Operator }) {
             </button>
           )}
 
-          {!hasStripeSub && !hasStripeCustomer && (
-            <p className="text-xs text-gray-400 px-1">No Stripe subscription on record.</p>
+          {!hasStripeSub && (
+            <p className="text-xs text-gray-400 px-1">No paid subscription on record — nothing to cancel or refund.</p>
           )}
         </div>
 
@@ -332,7 +332,7 @@ function ActionsCell({ op }: { op: Operator }) {
       >
         <ChevronDown className="w-4 h-4" />
       </button>
-      {(hasStripeSub || hasStripeCustomer) && (
+      {hasStripeSub && (
         <button
           onClick={() => { setMode('subscription'); resetSubscriptionMode(); }}
           title="Manage subscription"

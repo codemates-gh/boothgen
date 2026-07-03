@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.28.0] — 2026-07-03
+
+### Fixed
+- **Super Admin: subscription icon and refund only shown for Pro operators** — the credit card icon and "Refund last charge" button were appearing for commission plan operators who have a Stripe customer ID but no paid subscription. Both now require a `stripeSubscriptionId` to display. Commission plan operators show "No paid subscription on record" instead.
+
+---
+
 ## [2.27.0] — 2026-07-03
 
 ### Added
