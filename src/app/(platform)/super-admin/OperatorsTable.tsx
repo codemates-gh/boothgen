@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { Search, Trash2, ChevronDown, ArrowUpCircle, AlertTriangle, Check } from 'lucide-react';
+import { Search, Trash2, ChevronDown, ArrowUpCircle, AlertTriangle, Check, CreditCard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,14 @@ interface Operator {
   status: TenantStatus;
   createdAt: Date;
   branding: { companyName: string | null } | null;
-  stripeSubscription: { plan: SubscriptionPlan; status: SubscriptionStatus } | null;
+  stripeSubscription: {
+    plan: SubscriptionPlan;
+    status: SubscriptionStatus;
+    stripeSubscriptionId: string | null;
+    stripeCustomerId: string;
+    currentPeriodEnd: Date | null;
+    cancelAtPeriodEnd: boolean;
+  } | null;
   stripeConnect: { onboardingStatus: string; chargesEnabled: boolean } | null;
   _count: { events: number };
 }
@@ -43,12 +50,26 @@ const STATUS_OPTIONS: { value: TenantStatus; label: string }[] = [
   { value: 'CANCELLED', label: 'Cancelled' },
 ];
 
+type Mode = 'idle' | 'upgrade' | 'status' | 'delete' | 'subscription';
+type SubConfirm = 'cancel-now' | 'refund' | null;
+
 function ActionsCell({ op }: { op: Operator }) {
   const router = useRouter();
-  const [mode, setMode] = useState<'idle' | 'upgrade' | 'status' | 'delete'>('idle');
+  const [mode, setMode] = useState<Mode>('idle');
+  const [subConfirm, setSubConfirm] = useState<SubConfirm>(null);
   const [busy, setBusy] = useState(false);
+  const [subError, setSubError] = useState('');
+  const [subSuccess, setSubSuccess] = useState('');
 
   const currentPlan = op.stripeSubscription?.plan ?? 'FREE_TRIAL';
+  const hasStripeSub = !!op.stripeSubscription?.stripeSubscriptionId;
+  const hasStripeCustomer = !!op.stripeSubscription?.stripeCustomerId;
+
+  function resetSubscriptionMode() {
+    setSubConfirm(null);
+    setSubError('');
+    setSubSuccess('');
+  }
 
   async function changePlan(plan: SubscriptionPlan) {
     setBusy(true);
@@ -81,6 +102,43 @@ function ActionsCell({ op }: { op: Operator }) {
     router.refresh();
   }
 
+  async function cancelSub(immediate: boolean) {
+    setBusy(true);
+    setSubError('');
+    const res = await fetch(`/api/super-admin/tenants/${op.id}/subscription`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ immediate }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setSubError(data.error ?? 'Cancellation failed');
+      setSubConfirm(null);
+      return;
+    }
+    setSubSuccess(immediate ? 'Subscription cancelled immediately.' : 'Set to cancel at period end.');
+    setSubConfirm(null);
+    router.refresh();
+  }
+
+  async function refundLastCharge() {
+    setBusy(true);
+    setSubError('');
+    const res = await fetch(`/api/super-admin/tenants/${op.id}/subscription`, { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) {
+      setSubError(data.error ?? 'Refund failed');
+      setSubConfirm(null);
+      return;
+    }
+    const dollars = data.amountCents ? `$${(data.amountCents / 100).toFixed(2)}` : '';
+    setSubSuccess(`Refund issued${dollars ? ` (${dollars})` : ''}.`);
+    setSubConfirm(null);
+  }
+
+  // ── Plan picker ────────────────────────────────────────────────
   if (mode === 'upgrade') {
     return (
       <div className="w-44">
@@ -110,6 +168,7 @@ function ActionsCell({ op }: { op: Operator }) {
     );
   }
 
+  // ── Status picker ──────────────────────────────────────────────
   if (mode === 'status') {
     return (
       <div className="w-44">
@@ -139,6 +198,7 @@ function ActionsCell({ op }: { op: Operator }) {
     );
   }
 
+  // ── Delete confirm ─────────────────────────────────────────────
   if (mode === 'delete') {
     const name = op.branding?.companyName ?? op.name;
     return (
@@ -154,6 +214,108 @@ function ActionsCell({ op }: { op: Operator }) {
     );
   }
 
+  // ── Subscription management ────────────────────────────────────
+  if (mode === 'subscription') {
+    const periodEnd = op.stripeSubscription?.currentPeriodEnd;
+    const cancelPending = op.stripeSubscription?.cancelAtPeriodEnd;
+
+    // Confirm: cancel immediately
+    if (subConfirm === 'cancel-now') {
+      return (
+        <div className="w-56 space-y-2">
+          <p className="text-xs font-semibold text-red-700">Cancel immediately?</p>
+          <p className="text-xs text-gray-500">Operator loses Pro access right now. This cannot be undone.</p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="destructive" onClick={() => cancelSub(true)} disabled={busy}>
+              {busy ? 'Cancelling…' : 'Confirm'}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setSubConfirm(null)}>Back</Button>
+          </div>
+        </div>
+      );
+    }
+
+    // Confirm: refund last charge
+    if (subConfirm === 'refund') {
+      return (
+        <div className="w-56 space-y-2">
+          <p className="text-xs font-semibold text-gray-800">Refund last charge?</p>
+          <p className="text-xs text-gray-500">Issues a full refund for the most recent subscription payment.</p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="destructive" onClick={refundLastCharge} disabled={busy}>
+              {busy ? 'Refunding…' : 'Confirm Refund'}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setSubConfirm(null)}>Back</Button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-52 space-y-2">
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Subscription</p>
+
+        {periodEnd && (
+          <p className="text-xs text-gray-500">
+            Period ends {format(new Date(periodEnd), 'MMM d, yyyy')}
+            {cancelPending && <span className="ml-1 text-amber-600 font-medium">(cancels)</span>}
+          </p>
+        )}
+
+        {subSuccess && (
+          <p className="text-xs text-green-700 bg-green-50 rounded px-2 py-1">{subSuccess}</p>
+        )}
+        {subError && (
+          <p className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">{subError}</p>
+        )}
+
+        <div className="space-y-1">
+          {hasStripeSub && !cancelPending && (
+            <button
+              onClick={() => cancelSub(false)}
+              disabled={busy}
+              className="w-full text-left px-3 py-1.5 rounded-lg text-sm border border-gray-200 text-gray-700 hover:border-amber-400 hover:text-amber-700 hover:bg-amber-50 transition-colors font-medium"
+            >
+              Cancel at period end
+            </button>
+          )}
+
+          {hasStripeSub && (
+            <button
+              onClick={() => setSubConfirm('cancel-now')}
+              disabled={busy}
+              className="w-full text-left px-3 py-1.5 rounded-lg text-sm border border-red-200 text-red-600 hover:bg-red-50 transition-colors font-medium"
+            >
+              Cancel immediately
+            </button>
+          )}
+
+          {hasStripeCustomer && (
+            <button
+              onClick={() => setSubConfirm('refund')}
+              disabled={busy}
+              className="w-full text-left px-3 py-1.5 rounded-lg text-sm border border-gray-200 text-gray-700 hover:border-brand hover:text-brand hover:bg-orange-50 transition-colors font-medium"
+            >
+              Refund last charge
+            </button>
+          )}
+
+          {!hasStripeSub && !hasStripeCustomer && (
+            <p className="text-xs text-gray-400 px-1">No Stripe subscription on record.</p>
+          )}
+        </div>
+
+        <button
+          onClick={() => { setMode('idle'); resetSubscriptionMode(); }}
+          className="text-xs text-gray-400 hover:text-gray-600 mt-1 block"
+        >
+          Back
+        </button>
+      </div>
+    );
+  }
+
+  // ── Idle: icon buttons ─────────────────────────────────────────
   return (
     <div className="flex items-center gap-1">
       <button
@@ -170,6 +332,15 @@ function ActionsCell({ op }: { op: Operator }) {
       >
         <ChevronDown className="w-4 h-4" />
       </button>
+      {(hasStripeSub || hasStripeCustomer) && (
+        <button
+          onClick={() => { setMode('subscription'); resetSubscriptionMode(); }}
+          title="Manage subscription"
+          className="p-1.5 rounded-lg hover:bg-amber-50 text-amber-500 hover:text-amber-700 transition-colors"
+        >
+          <CreditCard className="w-4 h-4" />
+        </button>
+      )}
       <button
         onClick={() => setMode('delete')}
         title="Delete operator"
@@ -258,6 +429,9 @@ export function OperatorsTable({ operators, failedMap = {} }: { operators: Opera
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {PLAN_LABELS[op.stripeSubscription?.plan ?? 'FREE_TRIAL']}
+                      {op.stripeSubscription?.cancelAtPeriodEnd && (
+                        <span className="block text-xs text-amber-600">cancels at period end</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <Badge variant={CS[op.stripeConnect?.onboardingStatus ?? 'NOT_CONNECTED']} className="text-xs">

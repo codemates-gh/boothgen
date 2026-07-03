@@ -31,7 +31,7 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
     prisma.tenant.findMany({
       take: 100, orderBy: { createdAt: 'desc' },
       include: {
-        stripeSubscription: { select: { plan: true, status: true } },
+        stripeSubscription: { select: { plan: true, status: true, stripeSubscriptionId: true, stripeCustomerId: true, currentPeriodEnd: true, cancelAtPeriodEnd: true } },
         stripeConnect: { select: { onboardingStatus: true, chargesEnabled: true } },
         _count: { select: { events: true } },
         branding: { select: { companyName: true } },

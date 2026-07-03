@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.27.0] — 2026-07-03
+
+### Added
+- **Super Admin: subscription cancellation + refund** — operators with a Stripe subscription now show a credit card icon in the Actions column. Clicking opens a panel with three actions: cancel at period end (graceful), cancel immediately (removes Pro access now), and refund last charge (full refund of most recent payment). Cancellation state ("cancels at period end") is reflected in the Plan column. Backed by a new `/api/super-admin/tenants/[id]/subscription` route (DELETE = cancel, POST = refund).
+
+---
+
 ## [2.26.0] — 2026-07-03
 
 ### Fixed
