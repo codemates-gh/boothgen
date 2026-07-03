@@ -837,7 +837,7 @@ The colored bar at the top of the checklist fills from left to right as items ar
 A: No. Clients access everything through a unique portal link — no account, no password, no app download required.
 
 **Q: Can I use Booth Genius without connecting Stripe?**
-A: Yes. You can create quotes, contracts, and invoices and track everything without Stripe. However, clients won't be able to pay online until Stripe is connected. You can record manual payments (cash, check, Venmo) from within the platform.
+A: Stripe Connect is required to use Booth Genius. Connecting your Stripe account is what enables online client payments and is how the platform commission is processed for Commission Plan operators. Without it, clients cannot pay invoices online and your account will not be fully functional. Setup takes about 5 minutes — go to Settings → Billing → Connect Stripe. If you already have a Stripe account, just log in during the flow and it links automatically.
 
 **Q: Is there a limit to how many events or clients I can have?**
 A: No. Both plans include unlimited events and clients.

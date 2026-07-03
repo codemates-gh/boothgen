@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.31.0] — 2026-07-03
+
+### Changed
+- **Support FAQ: Stripe Connect is required** — updated the "Can I use Booth Genius without connecting Stripe?" answer to make clear that Stripe Connect is required, not optional. Previous answer implied manual payments were an acceptable workaround, which bypasses platform commission collection.
+
+---
+
 ## [2.30.0] — 2026-07-03
 
 ### Added
