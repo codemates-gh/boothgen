@@ -201,7 +201,7 @@ function InvoiceNewForm() {
               {items.map((item, i) => (
                 <div key={i} className="grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-6"><Input value={item.description} onChange={e => updateItem(i,'description',e.target.value)} placeholder="Description"/></div>
-                  <div className="col-span-2"><Input type="number" min="1" value={item.quantity} onChange={e => updateItem(i,'quantity',parseFloat(e.target.value)||1)}/></div>
+                  <div className="col-span-2"><Input type="number" min="1" value={item.quantity} onChange={e => updateItem(i,'quantity',parseFloat(e.target.value)||1)} onFocus={e => e.target.select()}/></div>
                   <div className="col-span-3"><Input type="number" step="0.01" min="0" value={item.unitPrice} onChange={e => updateItem(i,'unitPrice',e.target.value)} placeholder="0.00"/></div>
                   <div className="col-span-1">{items.length > 1 && <button type="button" onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>}</div>
                 </div>

@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.23.0] — 2026-07-03
+
+### Fixed
+- **Quantity input now clears on focus** — tapping the quantity field on quotes and invoices now selects the existing value so you can type to replace it directly. Fixed in quotes/new, quotes/edit, and invoices/new.
+
+### Changed
+- **App color scheme updated to match marketing page** — sidebar and canvas updated from near-black to the deep purple palette (`#1e1247` / `#2D1B69` / `#3d2880`) used on boothgen.com. Inactive nav text updated to soft lavender (`#c4b5fd`).
+
+---
+
 ## [2.22.0] — 2026-07-02
 
 ### Fixed
