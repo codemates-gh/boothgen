@@ -29,7 +29,7 @@ export default async function BillingSettingsPage() {
           <CardHeader><CardTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5"/>Subscription</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-3"><div><p className="font-semibold">{sub?.plan === 'MONTHLY' ? 'Pro Monthly' : sub?.plan === 'ANNUAL' ? 'Pro Annual' : 'Commission Plan'}</p><p className="text-sm text-gray-500">{sub?.status === 'ACTIVE' ? 'Status: ACTIVE' : (!sub || sub.status === 'TRIALING') ? 'Pay only when you collect — no monthly fee' : 'Status: ' + sub.status}</p>{sub?.currentPeriodEnd && <p className="text-xs text-gray-400 mt-0.5">Renews {new Date(sub.currentPeriodEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}</div><Badge variant={sub?.status === 'ACTIVE' ? 'success' : (!sub || sub.status === 'TRIALING') ? 'success' : 'warning'}>{sub?.status === 'TRIALING' || !sub ? 'ACTIVE' : sub.status}</Badge></div>
-            {!sub && <UpgradeButton />}
+            {(!sub || sub.status === 'TRIALING') && <UpgradeButton />}
             {sub && sub.status === 'ACTIVE' && (
               <a href="/api/stripe/billing/portal"><Button variant="outline" className="flex items-center gap-2"><ExternalLink className="w-4 h-4"/>Manage Subscription</Button></a>
             )}

@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.26.0] — 2026-07-03
+
+### Fixed
+- **Upgrade button missing on Commission Plan** — operators on the commission plan (TRIALING status) no longer see a blank subscription card. The "Upgrade to Pro" button now appears for both no-subscription and TRIALING states.
+
+---
+
 ## [2.25.0] — 2026-07-03
 
 ### Changed
