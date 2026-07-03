@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.30.0] — 2026-07-03
+
+### Added
+- **Support Center updated** — four new articles added: Events overview (status lifecycle, tabs, notes), Cancelling an Event & Issuing a Refund (in-app refund flow, Stripe behavior, partial refund guidance), Messages Inbox (how threads work, attachment note, retention), and CSV Import (step-by-step walkthrough). Events and Messages added as new category cards.
+- **Support Center updated — existing articles** — Invoicing & Payments refunds section rewritten to reflect in-app cancel/refund flow (previously said "not supported"). Billing article updated with "When to Use Update Stripe" section. FAQ refund answer updated to match current behavior.
+
+---
+
 ## [2.29.0] — 2026-07-03
 
 ### Changed

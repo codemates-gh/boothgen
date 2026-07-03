@@ -237,7 +237,7 @@ If a client has an overdue balance and a gallery exists, the gallery will be loc
 If a client pays by cash, check, or Venmo outside of Stripe, you can record the payment manually from the invoice detail page. Mark the amount and payment method — the invoice status will update accordingly.
 
 **Refunds**
-Process refunds from your Stripe dashboard directly. Booth Genius does not currently support one-click refunds from the platform.`,
+To refund a client payment, open the event detail page and click "Cancel Event." Choose from three options: no refund, refund deposit only, or refund all payments. If the client paid via Stripe, the refund is processed automatically — they typically see the credit within 5–10 business days. For a custom partial refund (e.g. 75% of a deposit), go to your Stripe dashboard to issue it there. If the original payment was recorded manually (cash, check), Booth Genius marks the milestone as REFUNDED in the system but does not move money — handle the return yourself. See "Cancelling an Event & Issuing a Refund" for full details.`,
   },
 
   // ─── CLIENT PORTAL ──────────────────────────────────────────────────────────
@@ -718,7 +718,15 @@ Both Free and Pro plan operators need to set up Stripe Connect to accept online 
 Once connected, your Stripe account status shows as "Connected" and clients can pay invoices online. If you disconnect Stripe, clients will no longer be able to pay online until you reconnect.
 
 **Commission Rate**
-The current commission rate is displayed in Settings → Billing and on the marketing page. This rate is set by the Booth Genius platform and may change over time.`,
+The current commission rate is displayed in Settings → Billing and on the marketing page. This rate is set by the Booth Genius platform and may change over time.
+
+**When to Use "Update Stripe"**
+If you are already connected to Stripe and need to make changes, click "Update Stripe" from Settings → Billing → Stripe Connect. Use this button when you need to:
+- Change your payout bank account or deposit schedule
+- Update your business name, address, or tax ID
+- Add or verify an owner or representative
+- Respond to a Stripe request for additional verification
+You will be redirected to Stripe's secure portal and returned to Booth Genius when done. Your existing bookings and payment history are not affected.`,
   },
 
   {
@@ -855,8 +863,8 @@ A: Yes. Multiple users can be logged in and working simultaneously. There's no l
 **Q: Does Booth Genius work on mobile?**
 A: Yes. The operator dashboard is mobile-friendly. The client portal is fully mobile-optimized. Everything works on iOS and Android browsers.
 
-**Q: How do I get a refund to a client through Stripe?**
-A: Log in to your Stripe dashboard at dashboard.stripe.com, find the payment, and issue a full or partial refund from there. Booth Genius does not currently support in-app refunds.
+**Q: How do I issue a refund to a client?**
+A: Open the event, click "Cancel Event," and choose your refund option — no refund, refund deposit only, or refund all payments. If the client paid via Stripe, the refund processes automatically (5–10 business days to appear on their card). For a custom partial refund, go to your Stripe dashboard. If they paid manually (cash, check), mark the milestone as refunded in the app and handle the actual money transfer yourself.
 
 **Q: Can I customize which fields are on the inquiry form?**
 A: Yes. Go to Settings → Lead Capture (Embed tab). Toggle which fields appear (venue, guest count, hours needed, etc.) and which are required vs. optional.
@@ -916,11 +924,151 @@ Use Draft with AI early in the conversation when you're sending a first response
 **The AI doesn't send automatically**
 Draft with AI only fills in the compose fields. You must click "Send Email" yourself. Nothing is sent without your action.`,
   },
+
+  // ─── EVENTS ─────────────────────────────────────────────────────────────────
+  {
+    id: 'events-overview',
+    category: 'Events',
+    categoryIcon: '📅',
+    title: 'Managing Events',
+    slug: 'events',
+    content: `Events are the central record in Booth Genius — every quote, contract, invoice, message, and gallery for a booking lives inside one event.
+
+**Creating an Event**
+Events can be created three ways:
+1. **Convert a lead** — Open a lead and click "Convert to Event." Client info pre-fills automatically.
+2. **New Event** — Go to Events → New Event to create one manually (useful for phone or in-person bookings).
+3. **From the Calendar** — Click any date to open a pre-filled new event form.
+
+**Event Status Lifecycle**
+- LEAD — Inquiry received, not yet quoted
+- QUOTED — A quote has been sent, awaiting acceptance
+- BOOKED — Quote accepted, contract signed, deposit paid
+- IN_PROGRESS — Event day has arrived
+- COMPLETED — Event is over (auto-set overnight after the event date passes)
+- ARCHIVED — Closed out; moves here automatically after COMPLETED
+- CANCELLED — Event was cancelled (with or without refund)
+- LOST — Client went elsewhere before booking
+
+**Tabs on the Event Detail Page**
+- **Overview** — Key event info: date, time, venue, client contact, and internal notes
+- **Messages** — Full email thread with the client (client replies come in from email automatically)
+- **Checklist** — Task list for setup and day-of coordination
+- **Quotes** — All quotes for this event
+- **Invoices** — Payment milestones and collection status
+- **Contract** — The signed (or pending) contract
+- **Designs** — Booth template designs sent for client approval
+- **Gallery** — Photo delivery tab (Pro only)
+
+**Internal Notes**
+The Notes section on the event overview is private — clients never see it. Use it for parking details, setup contacts, venue quirks, or anything your team needs to know on event day.
+
+**Automated Status Transitions**
+Events past their date automatically move to COMPLETED overnight. You can also click "Mark Complete" from the event header to close an event out early. COMPLETED events transition to ARCHIVED automatically to keep your active event list clean.`,
+  },
+  {
+    id: 'events-cancel-refund',
+    category: 'Events',
+    categoryIcon: '📅',
+    title: 'Cancelling an Event & Issuing a Refund',
+    slug: 'event-cancellation',
+    content: `If a client cancels or you need to cancel a booking, Booth Genius handles the status change and optional refund in one step directly from the event detail page.
+
+**How to Cancel**
+Open the event detail page. In the header action buttons, click "Cancel Event." A confirmation panel appears with three options:
+
+- **No refund** — Cancel the event and keep all collected payments. Use this when your cancellation policy doesn't entitle the client to a refund (e.g. a non-refundable deposit clause in your contract).
+- **Refund deposit** — Returns the deposit (the first paid milestone) to the client's original card via Stripe. Any balance payment already collected is kept.
+- **Refund all payments** — Returns every collected payment to the client's card.
+
+**How Stripe Refunds Work**
+If the client paid online via Stripe, the refund is processed automatically — the client typically sees the credit on their card within 5–10 business days. No action in the Stripe dashboard is needed.
+
+If the original payment was recorded manually (cash, check, Venmo), Booth Genius marks the milestone as REFUNDED in the system but does not move any money — you must return the funds to the client yourself.
+
+**Partial Refunds**
+Booth Genius supports refunding the deposit only or all payments — not a custom percentage. For a custom partial amount (e.g. returning 75% of a deposit), go to your Stripe dashboard → find the payment → issue a partial refund there, then manually update the milestone status in Booth Genius.
+
+**After Cancellation**
+The event status changes to CANCELLED. Cancelled events are separated from your active event list and can be found using the Cancelled filter. No further automation emails are triggered.
+
+**Reinstating a Cancelled Event**
+Events can be reinstated from CANCELLED back to BOOKED using the "Reinstate" button in the event header. If a Stripe refund was already issued, it is not automatically reversed — coordinate any re-charge separately with the client.`,
+  },
+
+  // ─── MESSAGES ───────────────────────────────────────────────────────────────
+  {
+    id: 'messages-inbox',
+    category: 'Messages',
+    categoryIcon: '💬',
+    title: 'Using the Messages Inbox',
+    slug: 'messages',
+    content: `The Messages inbox collects all client email threads — from both leads and events — into one view so you never have to hunt across individual records to find a conversation.
+
+**Finding the Inbox**
+Click Messages in the left sidebar (under the Clients section). All conversations are listed, sorted by most recent activity.
+
+**How Conversations Are Organized**
+Each lead or event has one continuous thread. Each row in the inbox shows:
+- The client's name and record it's linked to
+- A preview of the most recent message
+- How long ago the last message was sent or received
+
+**Reading a Thread**
+Click any conversation to open the full thread — all sent and received emails in chronological order, with timestamps and sender details.
+
+**Replying from the Inbox**
+Type in the compose area at the bottom of any open thread and click Send. Your reply goes directly to the client's email inbox. Their next response comes back into the same thread automatically.
+
+**Attachments**
+The reply system does not capture file attachments sent by clients. If a client needs to share a file (e.g. venue floor plan), instruct them to CC your contact email in their reply. A note to this effect appears in the compose area as a reminder.
+
+**Lead vs. Event Messages**
+A lead's message thread carries over when you convert the lead to an event — the conversation history is preserved. Once converted, the thread is accessible from both the event's Messages tab and the main inbox.
+
+**Message Retention**
+Threads are kept for [[message_retention_months]] months after the event date (for converted events) or [[message_retention_months]] months after the last message date (for unconverted leads). An event booked a year in advance is not pruned until [[message_retention_months]] months after the event itself takes place.`,
+  },
+
+  // ─── IMPORT ─────────────────────────────────────────────────────────────────
+  {
+    id: 'settings-import',
+    category: 'Settings',
+    categoryIcon: '⚙️',
+    title: 'Importing Clients & Events via CSV',
+    slug: 'csv-import',
+    content: `The CSV Import tool lets you bring existing client and event records into Booth Genius in bulk — useful when migrating from another platform or a spreadsheet system.
+
+**Where to Find It**
+Go to Settings → Import (the Import tab in the Settings navigation row).
+
+**Step 1 — Download the Template**
+Click "Download CSV Template" to get a blank spreadsheet with the correct column headers. Use this template to prepare your data — importing a custom-formatted file without the template columns will not work.
+
+**Step 2 — Fill In Your Data**
+Open the template in Excel, Google Sheets, or Numbers. Required fields are: client first name, client last name, and event date. Everything else (email, phone, venue, event title, notes) is optional but recommended for a complete import.
+
+**Step 3 — Upload and Preview**
+Click "Upload CSV" and select your completed file. Booth Genius runs a preview pass — it shows each row that will be imported and flags any errors such as missing required fields, invalid date formats, or duplicate entries. Review the preview carefully before proceeding.
+
+**Step 4 — Confirm Import**
+Click "Confirm Import" to create the records. Client and event records are created from each row. Imported events are created in COMPLETED status by default (past bookings are assumed).
+
+**Step 5 — Undo if Needed**
+If something looks wrong after importing, click "Undo Import" from the import history section. This removes all records created in that batch. Undo is only available immediately after import.
+
+**Tips**
+- Run a small test import first (5–10 rows) to verify the format before importing hundreds of records
+- Client emails are matched against existing records — if an email already exists in Booth Genius, a new event is added to that client rather than creating a duplicate client record
+- Use the Notes field to carry over context from your previous system (e.g. "VIP client — gave 20% discount")`,
+  },
 ];
 
 const CATEGORIES = [
   { label: 'Getting Started', icon: '🚀', color: 'bg-blue-50 border-blue-200 text-blue-700', desc: 'Account setup, branding, first steps' },
   { label: 'Leads', icon: '📥', color: 'bg-green-50 border-green-200 text-green-700', desc: 'Lead capture, responding, converting' },
+  { label: 'Events', icon: '🎉', color: 'bg-orange-50 border-orange-200 text-orange-700', desc: 'Managing events, cancellations, refunds' },
+  { label: 'Messages', icon: '💬', color: 'bg-teal-50 border-teal-200 text-teal-700', desc: 'Client email threads and inbox' },
   { label: 'Quotes & Proposals', icon: '📄', color: 'bg-orange-50 border-orange-200 text-orange-700', desc: 'Building and sending quotes' },
   { label: 'Contracts & Signatures', icon: '✍️', color: 'bg-purple-50 border-purple-200 text-purple-700', desc: 'Templates, e-signatures, countersigning' },
   { label: 'Invoicing & Payments', icon: '💳', color: 'bg-yellow-50 border-yellow-200 text-yellow-700', desc: 'Deposits, Stripe, milestones' },
