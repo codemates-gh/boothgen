@@ -31,32 +31,46 @@ export async function POST() {
   const priceId = setting?.value || process.env.STRIPE_PRICE_MONTHLY_ID;
   if (!priceId) return NextResponse.json({ error: 'Billing not configured. Contact support.' }, { status: 500 });
 
-  // Find or create Stripe customer
-  let customerId = tenant.stripeSubscription?.stripeCustomerId;
-  if (!customerId) {
-    const user = await prisma.user.findFirst({
-      where: { memberships: { some: { tenantId: session.tenantId, role: 'HOST_ADMIN' } } },
+  try {
+    // Find or create Stripe customer.
+    // Ignore manual_ IDs created by the super admin plan tool — those aren't real Stripe customers.
+    let customerId = tenant.stripeSubscription?.stripeCustomerId;
+    if (!customerId || customerId.startsWith('manual_')) {
+      customerId = undefined;
+    }
+
+    if (!customerId) {
+      const user = await prisma.user.findFirst({
+        where: { memberships: { some: { tenantId: session.tenantId, role: 'HOST_ADMIN' } } },
+      });
+      const customer = await stripe.customers.create({
+        email: user?.email ?? undefined,
+        name: tenant.name,
+        metadata: { tenantId: session.tenantId },
+      });
+      customerId = customer.id;
+      // Persist the real customer ID so future calls don't re-create it
+      await prisma.stripeSubscription.upsert({
+        where: { tenantId: session.tenantId },
+        update: { stripeCustomerId: customerId },
+        create: { tenantId: session.tenantId, stripeCustomerId: customerId, plan: 'FREE_TRIAL', status: 'TRIALING' },
+      });
+    }
+
+    const checkoutSession = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer: customerId,
+      client_reference_id: session.tenantId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: APP_URL + '/settings/billing?upgraded=1',
+      cancel_url: APP_URL + '/settings/billing',
+      subscription_data: { metadata: { tenantId: session.tenantId } },
+      allow_promotion_codes: true,
     });
-    const customer = await stripe.customers.create({
-      email: user?.email ?? undefined,
-      name: tenant.name,
-      metadata: { tenantId: session.tenantId },
-    });
-    customerId = customer.id;
+
+    return NextResponse.json({ url: checkoutSession.url });
+  } catch (err: any) {
+    console.error('[checkout] Stripe error:', err.message);
+    return NextResponse.json({ error: err.message ?? 'Failed to start checkout. Please try again.' }, { status: 500 });
   }
-
-  const checkoutSession = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    customer: customerId,
-    client_reference_id: session.tenantId,
-    line_items: [{ price: priceId, quantity: 1 }],
-    success_url: APP_URL + '/settings/billing?upgraded=1',
-    cancel_url: APP_URL + '/settings/billing',
-    subscription_data: {
-      metadata: { tenantId: session.tenantId },
-    },
-    allow_promotion_codes: true,
-  });
-
-  return NextResponse.json({ url: checkoutSession.url });
 }

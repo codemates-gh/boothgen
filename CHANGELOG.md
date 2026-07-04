@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.34.0] — 2026-07-03
+
+### Fixed
+- **Upgrade to Pro "Network error"** — checkout route crashed when the tenant had a `manual_` customer ID (set by super admin plan tool) which Stripe rejected. Route now detects and skips manual IDs, creates a real Stripe customer, and persists it. Added try/catch so Stripe errors return a readable message instead of crashing with non-JSON.
+
+---
+
 ## [2.33.0] — 2026-07-03
 
 ### Fixed

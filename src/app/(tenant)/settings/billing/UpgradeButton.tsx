@@ -12,11 +12,11 @@ export function UpgradeButton() {
     setError('');
     try {
       const res = await fetch('/api/stripe/billing/checkout', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error ?? 'Something went wrong'); setLoading(false); return; }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(data.error ?? 'Something went wrong. Please try again.'); setLoading(false); return; }
       window.location.href = data.url;
     } catch {
-      setError('Network error. Please try again.');
+      setError('Could not reach the server. Please check your connection and try again.');
       setLoading(false);
     }
   }
