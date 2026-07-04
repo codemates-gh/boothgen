@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.35.0] — 2026-07-04
+
+### Fixed
+- **Billing page doesn't update after Pro upgrade** — billing page now syncs directly from Stripe when returning from checkout (`?upgraded=1`), guaranteeing the subscription reflects as Pro even if the webhook hasn't fired. Also fixes the underlying webhook gap by not depending solely on webhook delivery.
+
+---
+
 ## [2.34.0] — 2026-07-03
 
 ### Fixed

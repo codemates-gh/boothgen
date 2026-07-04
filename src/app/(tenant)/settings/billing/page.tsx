@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { requireTenantSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
+import { stripe } from '@/lib/stripe';
 import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,9 +14,43 @@ import { StripeConnectCard } from './StripeConnectCard';
 
 const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import']];
 
-export default async function BillingSettingsPage() {
+export default async function BillingSettingsPage({ searchParams }: { searchParams?: { upgraded?: string } }) {
   const session = await requireTenantSession();
-  const tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId }, include: { stripeSubscription: true, stripeConnect: true } });
+  let tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId }, include: { stripeSubscription: true, stripeConnect: true } });
+
+  // When returning from Stripe checkout, sync directly from Stripe in case the webhook
+  // hasn't fired yet (wrong secret, timing, etc.)
+  if (searchParams?.upgraded === '1') {
+    const customerId = tenant?.stripeSubscription?.stripeCustomerId;
+    if (customerId && !customerId.startsWith('manual_')) {
+      try {
+        const subs = await stripe.subscriptions.list({ customer: customerId, status: 'active', limit: 1 });
+        const activeSub = subs.data[0];
+        if (activeSub) {
+          const priceId = activeSub.items.data[0]?.price?.id;
+          const annualSetting = await prisma.systemSetting.findUnique({ where: { key: 'stripe_price_annual_id' } });
+          const plan = priceId === annualSetting?.value ? 'ANNUAL' : 'MONTHLY';
+          await prisma.stripeSubscription.update({
+            where: { tenantId: session.tenantId },
+            data: {
+              stripeSubscriptionId: activeSub.id,
+              plan,
+              status: 'ACTIVE',
+              stripePriceId: priceId,
+              currentPeriodStart: new Date(activeSub.current_period_start * 1000),
+              currentPeriodEnd: new Date(activeSub.current_period_end * 1000),
+              cancelAtPeriodEnd: activeSub.cancel_at_period_end,
+            },
+          });
+          await prisma.tenant.update({ where: { id: session.tenantId }, data: { status: 'ACTIVE' } });
+          tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId }, include: { stripeSubscription: true, stripeConnect: true } });
+        }
+      } catch (e) {
+        console.error('[billing] post-checkout Stripe sync failed:', e);
+      }
+    }
+  }
+
   const sub = tenant?.stripeSubscription;
   const conn = tenant?.stripeConnect;
   return (
