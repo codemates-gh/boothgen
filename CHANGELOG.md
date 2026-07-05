@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.41.5] — 2026-07-05
+
+### Fixed
+- **Design approval reminder** — when no template designs have been uploaded for an event, reminder is now sent only to the operator (replyTo email). HOST_ADMIN staff are only included when at least one design exists but none are approved. Applies to both the event-driven trigger and the daily cron. Previously all staff received the reminder even when there was nothing to review.
+
+---
+
 ## [2.41.4] — 2026-07-05
 
 ### Added

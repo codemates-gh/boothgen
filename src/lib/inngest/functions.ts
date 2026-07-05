@@ -524,7 +524,7 @@ export const notifyHostDesignDeadline = inngest.createFunction(
       where: { id: eventId },
       include: {
         client: true,
-        templateDesigns: { where: { status: 'APPROVED' }, take: 1 },
+        templateDesigns: { select: { status: true } },
         tenant: {
           include: {
             branding: true,
@@ -538,21 +538,20 @@ export const notifyHostDesignDeadline = inngest.createFunction(
     });
 
     if (!ev) return;
-    // Skip if cancelled or already past
     if (ev.status === 'CANCELLED') return;
     if (new Date(ev.eventDate) < new Date()) return;
-    // Skip if design already approved
-    if (ev.templateDesigns.length > 0) return;
-    // Skip if reminder already sent
+    if (ev.templateDesigns.some(d => d.status === 'APPROVED')) return;
     if (ev.designReminderSentAt) return;
 
+    const hasAnyDesign = ev.templateDesigns.length > 0;
     const adminEmails = ev.tenant.memberships
       .map(m => m.user?.email)
       .filter((e): e is string => Boolean(e));
     const replyTo = ev.tenant.branding?.replyToEmail;
-    const recipients = replyTo
-      ? [replyTo, ...adminEmails.filter(e => e !== replyTo)]
-      : adminEmails;
+    // No designs uploaded → operator-only (replyTo); designs exist but unapproved → full list
+    const recipients = hasAnyDesign
+      ? (replyTo ? [replyTo, ...adminEmails.filter(e => e !== replyTo)] : adminEmails)
+      : (replyTo ? [replyTo] : []);
     if (recipients.length === 0) return;
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
@@ -597,6 +596,7 @@ export const sendDesignApprovalReminders = inngest.createFunction(
       },
       include: {
         client: true,
+        templateDesigns: { select: { status: true } },
         tenant: {
           include: {
             branding: true,
@@ -613,13 +613,15 @@ export const sendDesignApprovalReminders = inngest.createFunction(
     let sent = 0;
 
     for (const ev of events) {
+      const hasAnyDesign = ev.templateDesigns.length > 0;
       const adminEmails = ev.tenant.memberships
         .map(m => m.user?.email)
         .filter((e): e is string => Boolean(e));
       const replyTo = ev.tenant.branding?.replyToEmail;
-      const recipients = replyTo
-        ? [replyTo, ...adminEmails.filter(e => e !== replyTo)]
-        : adminEmails;
+      // No designs uploaded → operator-only (replyTo); designs exist but unapproved → full list
+      const recipients = hasAnyDesign
+        ? (replyTo ? [replyTo, ...adminEmails.filter(e => e !== replyTo)] : adminEmails)
+        : (replyTo ? [replyTo] : []);
       if (recipients.length === 0) continue;
 
       const companyName = ev.tenant.branding?.companyName ?? ev.tenant.name;
