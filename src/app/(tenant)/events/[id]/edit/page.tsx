@@ -12,7 +12,7 @@ import Link from 'next/link';
 
 const STATUSES = ['LEAD','QUOTED','BOOKED','IN_PROGRESS','COMPLETED','ARCHIVED','CANCELLED'];
 
-type ClientResult = { id: string; firstName: string; lastName: string; email: string };
+type ClientResult = { id: string; name: string; email: string };
 
 export default function EditEventPage() {
   const { id } = useParams<{ id: string }>();
@@ -63,9 +63,12 @@ export default function EditEventPage() {
     if (searchRef.current) clearTimeout(searchRef.current);
     if (q.length < 2) { setClientResults([]); return; }
     searchRef.current = setTimeout(async () => {
-      const res = await fetch('/api/search?q=' + encodeURIComponent(q));
-      const data = await res.json();
-      setClientResults(data.clients ?? []);
+      const data: any[] = await fetch('/api/search?q=' + encodeURIComponent(q)).then(r => r.json());
+      setClientResults(
+        data
+          .filter(r => r.type === 'client')
+          .map(r => ({ id: r.id, name: r.title, email: r.subtitle }))
+      );
     }, 250);
   }
 
@@ -121,7 +124,7 @@ export default function EditEventPage() {
                 {selectedClient ? (
                   <div className="flex items-center justify-between rounded-lg border border-brand/30 bg-brand/5 px-4 py-3">
                     <div>
-                      <p className="font-medium text-sm">{selectedClient.firstName} {selectedClient.lastName}</p>
+                      <p className="font-medium text-sm">{selectedClient.name}</p>
                       <p className="text-xs text-gray-500">{selectedClient.email}</p>
                     </div>
                     <button type="button" onClick={() => setSelectedClient(null)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
@@ -145,7 +148,7 @@ export default function EditEventPage() {
                               onClick={() => pickClient(c)}
                               className="w-full text-left px-4 py-3 hover:bg-gray-50"
                             >
-                              <span className="font-medium">{c.firstName} {c.lastName}</span>
+                              <span className="font-medium">{c.name}</span>
                               <span className="text-gray-400 ml-2">{c.email}</span>
                             </button>
                           </li>
