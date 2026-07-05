@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.41.4] — 2026-07-05
+
+### Added
+- **Blog admin — View button** on all posts (including scheduled file posts): expands inline to show the raw MDX source so you can read the full article before it goes live
+- **Blog admin — Override button** on file posts: pre-fills the editor modal with the post's title, slug, description, and scheduled date; you write the body in the WYSIWYG and save — the DB version takes precedence over the file automatically
+- **Blog admin — stats line**: total · published · scheduled counts + "N auto-scheduled from files" in brand color
+- **Blog admin — date column**: exact publish/schedule date shown at a glance, amber-colored for upcoming scheduled posts
+- **Blog admin — info banner**: explains the file → DB override mechanic
+
+---
+
 ## [2.41.3] — 2026-07-05
 
 ### Fixed

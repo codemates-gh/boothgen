@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit2, Trash2, Eye, ExternalLink, Calendar, FileText, Lock } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, EyeOff, ExternalLink, Calendar, FileText, Lock } from 'lucide-react';
 import EmailTemplateEditor from '@/components/email/EmailTemplateEditor';
 import { format } from 'date-fns';
 
@@ -15,8 +15,6 @@ interface Post {
   description: string;
   readingTime: number;
   publishedAt: string | null;
-  createdAt?: string;
-  updatedAt?: string;
   source: 'db' | 'file';
 }
 
@@ -43,17 +41,46 @@ export default function BlogManager() {
   const [preview, setPreview] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ slug: '', title: '', description: '', content: '', publishedAt: '' });
+  const [expandedSlugs, setExpandedSlugs] = useState<Record<string, string | null>>({});
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => { load(); }, []);
+
   async function load() {
     const r = await fetch('/api/super-admin/blog');
     if (r.ok) setPosts(await r.json());
   }
 
+  async function toggleView(slug: string) {
+    if (slug in expandedSlugs) {
+      setExpandedSlugs(e => { const n = { ...e }; delete n[slug]; return n; });
+      return;
+    }
+    setExpandedSlugs(e => ({ ...e, [slug]: null }));
+    const r = await fetch(`/api/super-admin/blog/file-source?slug=${encodeURIComponent(slug)}`);
+    if (r.ok) {
+      const { raw } = await r.json();
+      setExpandedSlugs(e => ({ ...e, [slug]: raw }));
+    }
+  }
+
   function openCreate() {
     setEditing(null);
     setForm({ slug: '', title: '', description: '', content: '<p>Write your post here...</p>', publishedAt: '' });
+    setPreview(false);
+    setShowModal(true);
+  }
+
+  // Override: pre-fill metadata from the file post, leave body for user to write
+  function openOverride(p: Post) {
+    setEditing(null);
+    setForm({
+      slug: p.slug,
+      title: p.title,
+      description: p.description,
+      content: '<p></p>',
+      publishedAt: p.publishedAt ? new Date(p.publishedAt).toISOString().slice(0, 16) : '',
+    });
     setPreview(false);
     setShowModal(true);
   }
@@ -115,18 +142,28 @@ export default function BlogManager() {
     await load();
   }
 
-  const dbCount = posts.filter(p => p.source === 'db').length;
+  const now = new Date();
+  const publishedCount = posts.filter(p => p.publishedAt && new Date(p.publishedAt) <= now).length;
+  const scheduledCount = posts.filter(p => p.publishedAt && new Date(p.publishedAt) > now).length;
   const fileCount = posts.filter(p => p.source === 'file').length;
 
   return (
     <div className="space-y-4">
+      {/* Stats + action */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">
-          {posts.length} post{posts.length !== 1 ? 's' : ''}
-          {fileCount > 0 && <span className="ml-1 text-gray-400">({fileCount} from files, {dbCount} from DB)</span>}
+          {posts.length} total · {publishedCount} published · {scheduledCount} scheduled
+          {fileCount > 0 && <span className="ml-2 font-medium text-brand">{fileCount} auto-scheduled from files</span>}
         </p>
         <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2"/>New Post</Button>
       </div>
+
+      {/* File-post info banner */}
+      {fileCount > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 text-sm text-blue-800 leading-relaxed">
+          <strong>File-based posts</strong> publish automatically on their scheduled date. To edit one before it goes live, click <strong>Override</strong> — this pre-fills the editor with the post&apos;s metadata so you can write the body in the WYSIWYG. The DB version takes precedence over the file.
+        </div>
+      )}
 
       {posts.length === 0 ? (
         <div className="text-center py-16 text-gray-400 border border-dashed border-gray-200 rounded-xl">
@@ -137,66 +174,97 @@ export default function BlogManager() {
         </div>
       ) : (
         <div className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden bg-white">
-          {posts.map((p, i) => {
+          {posts.map(p => {
             const status = postStatus(p);
             const isFile = p.source === 'file';
+            const isExpanded = p.slug in expandedSlugs;
+            const rawSource = expandedSlugs[p.slug];
+
             return (
-              <div key={p.id ?? p.slug} className={`flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between px-5 py-4 ${isFile ? 'bg-gray-50/60' : 'hover:bg-gray-50'}`}>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                    <p className="font-semibold text-sm text-gray-900 truncate">{p.title}</p>
-                    <Badge variant={STATUS_BADGE[status]}>{status}</Badge>
+              <div key={p.id ?? p.slug} className={isFile ? 'bg-gray-50/40' : ''}>
+                <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between px-5 py-4">
+                  {/* Left: date + meta */}
+                  <div className="flex gap-4 min-w-0">
+                    {p.publishedAt && (
+                      <div className="flex-shrink-0 w-24 text-xs text-gray-400 pt-0.5">
+                        <span className={status === 'scheduled' ? 'font-medium text-amber-600' : ''}>
+                          {format(new Date(p.publishedAt), 'MMM d, yyyy')}
+                        </span>
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <Badge variant={STATUS_BADGE[status]}>{status}</Badge>
+                        {isFile && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-500 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-full">
+                            <Lock className="w-2.5 h-2.5"/>FILE
+                          </span>
+                        )}
+                        <p className="font-semibold text-sm text-gray-900">{p.title}</p>
+                      </div>
+                      <p className="text-xs text-gray-400 font-mono">/blog/{p.slug}</p>
+                      {p.description && (
+                        <p className="text-xs text-gray-400 mt-0.5 truncate max-w-md">{p.description.slice(0, 100)}{p.description.length > 100 ? '…' : ''}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: actions */}
+                  <div className="flex gap-2 flex-shrink-0 flex-wrap items-center">
+                    <button
+                      onClick={() => toggleView(p.slug)}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
+                      {isExpanded ? <><EyeOff className="w-3 h-3"/>Hide</> : <><Eye className="w-3 h-3"/>View</>}
+                    </button>
+
+                    {status === 'published' && (
+                      <a href={`/blog/${p.slug}`} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100">
+                        <ExternalLink className="w-3 h-3"/>Live
+                      </a>
+                    )}
+
                     {isFile && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                        <Lock className="w-2.5 h-2.5"/>MDX file
-                      </span>
+                      <Button size="sm" variant="outline" onClick={() => openOverride(p)}>Override</Button>
+                    )}
+
+                    {!isFile && status !== 'published' && (
+                      <Button size="sm" variant="outline" onClick={() => publishNow(p)}>Publish Now</Button>
+                    )}
+                    {!isFile && status !== 'draft' && (
+                      <Button size="sm" variant="ghost" onClick={() => setDraft(p)}>Revert to Draft</Button>
+                    )}
+                    {!isFile && (
+                      <Button size="sm" variant="outline" onClick={() => openEdit(p)}><Edit2 className="w-4 h-4 mr-1"/>Edit</Button>
+                    )}
+                    {!isFile && (
+                      <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-600" onClick={() => remove(p)}><Trash2 className="w-4 h-4"/></Button>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400">
-                    <span className="font-mono">/{p.slug}</span>
-                    {p.publishedAt && (
-                      <span className="ml-3 inline-flex items-center gap-0.5">
-                        <Calendar className="w-3 h-3"/>
-                        {status === 'scheduled'
-                          ? <span className="text-amber-600 font-medium">Schedules {format(new Date(p.publishedAt), 'MMM d, yyyy')}</span>
-                          : format(new Date(p.publishedAt), 'MMM d, yyyy')}
-                      </span>
+                </div>
+
+                {/* Inline raw MDX preview */}
+                {isExpanded && (
+                  <div className="border-t border-gray-100 bg-gray-50 px-5 py-4">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+                      RAW MDX SOURCE — read-only preview
+                    </p>
+                    {rawSource === null ? (
+                      <p className="text-xs text-gray-400 animate-pulse">Loading…</p>
+                    ) : (
+                      <pre className="text-xs font-mono text-gray-700 whitespace-pre-wrap leading-5 max-h-96 overflow-y-auto bg-white border border-gray-200 rounded-lg p-4">
+                        {rawSource}
+                      </pre>
                     )}
-                    <span className="ml-3">{p.readingTime} min read</span>
-                  </p>
-                </div>
-                <div className="flex gap-2 flex-shrink-0 flex-wrap">
-                  {status === 'published' && (
-                    <a href={`/blog/${p.slug}`} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100">
-                      <ExternalLink className="w-3 h-3"/>View
-                    </a>
-                  )}
-                  {!isFile && status !== 'published' && (
-                    <Button size="sm" variant="outline" onClick={() => publishNow(p)}>Publish Now</Button>
-                  )}
-                  {!isFile && status !== 'draft' && (
-                    <Button size="sm" variant="ghost" onClick={() => setDraft(p)}>Revert to Draft</Button>
-                  )}
-                  {!isFile && (
-                    <Button size="sm" variant="outline" onClick={() => openEdit(p)}><Edit2 className="w-4 h-4 mr-1"/>Edit</Button>
-                  )}
-                  {!isFile && (
-                    <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-600" onClick={() => remove(p)}><Trash2 className="w-4 h-4"/></Button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       )}
 
-      {fileCount > 0 && (
-        <p className="text-xs text-gray-400 flex items-center gap-1.5">
-          <Lock className="w-3 h-3"/><strong>MDX file</strong> posts are read-only — edit them in <code className="font-mono">content/blog/</code> to change content or schedule.
-        </p>
-      )}
-
+      {/* Editor modal */}
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Post' : 'New Post'} className="max-w-4xl">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
