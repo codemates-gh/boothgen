@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { LayoutDashboard, Users, CreditCard, Mail, FileText, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, Mail, FileText, Settings, BookOpen } from 'lucide-react';
 
 const TABS = [
   { id: 'overview',          label: 'Overview',           icon: LayoutDashboard },
@@ -8,6 +8,7 @@ const TABS = [
   { id: 'payment',           label: 'Payment Processing', icon: CreditCard },
   { id: 'email-logs',        label: 'Email Logs',         icon: Mail },
   { id: 'email-templates',   label: 'Email Templates',    icon: FileText },
+  { id: 'blog',              label: 'Blog',               icon: BookOpen },
   { id: 'settings',          label: 'Settings',           icon: Settings },
 ];
 

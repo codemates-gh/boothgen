@@ -10,11 +10,12 @@ import PaymentSettings from './PaymentSettings';
 import EarlyAdopterCard from './EarlyAdopterCard';
 import { OperatorsTable } from './OperatorsTable';
 import PlatformEmailTemplates from './PlatformEmailTemplates';
+import BlogManager from './BlogManager';
 import SuperAdminSignOut from './SuperAdminSignOut';
 import EmailActivityLog from './EmailActivityLog';
 import SuperAdminTabs from './SuperAdminTabs';
 
-const VALID_TABS = ['overview', 'operators', 'payment', 'email-logs', 'email-templates', 'settings'] as const;
+const VALID_TABS = ['overview', 'operators', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
 type Tab = typeof VALID_TABS[number];
 
 const TENANT_BADGE: Record<string, 'warning' | 'success' | 'danger' | 'default'> = {
@@ -215,6 +216,17 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
                 email_template_forgot_password: settingsMap.email_template_forgot_password ?? '',
               }}
             />
+          </>
+        )}
+
+        {/* BLOG */}
+        {tab === 'blog' && (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Blog</h1>
+              <p className="text-sm text-gray-500 mt-1">Manage published posts, drafts, and scheduled content for the public blog.</p>
+            </div>
+            <BlogManager />
           </>
         )}
 

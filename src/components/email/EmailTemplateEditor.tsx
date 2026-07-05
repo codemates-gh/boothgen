@@ -202,6 +202,18 @@ export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeT
           const url = prompt('Enter URL:');
           if (url) exec('createLink', url);
         }}><Link className="w-4 h-4"/></TB>
+        <div className="w-px h-5 bg-gray-300 mx-1"/>
+        <select
+          onChange={e => { exec('formatBlock', e.target.value); e.target.value = ''; }}
+          defaultValue=""
+          className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-600 hover:bg-gray-50 cursor-pointer focus:outline-none"
+          title="Heading style">
+          <option value="" disabled>Heading</option>
+          <option value="H2">Heading 2</option>
+          <option value="H3">Heading 3</option>
+          <option value="BLOCKQUOTE">Blockquote</option>
+          <option value="P">Normal</option>
+        </select>
         <TB title="Insert Image" onClick={() => setShowImgInput(!showImgInput)}><Image className="w-4 h-4"/></TB>
         <div className="w-px h-5 bg-gray-300 mx-1"/>
         <button type="button" onClick={() => { setShowBtnInput(!showBtnInput); setShowImgInput(false); }}

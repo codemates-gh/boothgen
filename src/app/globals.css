@@ -3,3 +3,26 @@
 @tailwind utilities;
 :root { font-feature-settings: "cv11", "ss01"; }
 body { @apply antialiased; }
+
+/* Blog typography */
+.blog-prose { @apply text-gray-700 leading-relaxed; }
+.blog-prose h1 { @apply text-3xl font-extrabold text-gray-900 mt-10 mb-4 leading-tight; }
+.blog-prose h2 { @apply text-2xl font-bold text-gray-900 mt-10 mb-3 leading-snug; }
+.blog-prose h3 { @apply text-xl font-semibold text-gray-900 mt-8 mb-2; }
+.blog-prose h4 { @apply text-base font-semibold text-gray-900 mt-6 mb-1; }
+.blog-prose p { @apply mb-5 text-base leading-7; }
+.blog-prose ul { @apply list-disc list-outside pl-6 mb-5 space-y-1.5; }
+.blog-prose ol { @apply list-decimal list-outside pl-6 mb-5 space-y-1.5; }
+.blog-prose li { @apply text-base leading-7; }
+.blog-prose strong { @apply font-semibold text-gray-900; }
+.blog-prose em { @apply italic; }
+.blog-prose a { @apply text-orange-500 underline hover:text-orange-600; }
+.blog-prose blockquote { @apply border-l-4 border-orange-400 pl-5 py-1 my-6 italic text-gray-500 bg-orange-50 rounded-r-xl; }
+.blog-prose code { @apply text-sm font-mono bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded; }
+.blog-prose pre { @apply bg-gray-900 text-gray-100 rounded-xl p-5 overflow-x-auto my-6 text-sm leading-6; }
+.blog-prose pre code { @apply bg-transparent text-inherit p-0; }
+.blog-prose hr { @apply border-gray-200 my-10; }
+.blog-prose table { @apply w-full text-sm border-collapse my-6; }
+.blog-prose th { @apply text-left font-semibold text-gray-900 border-b-2 border-gray-200 pb-2 px-3; }
+.blog-prose td { @apply border-b border-gray-100 py-2.5 px-3 text-gray-600; }
+.blog-prose img { @apply rounded-xl max-w-full h-auto my-6; }

@@ -4,6 +4,20 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.41.0] — 2026-07-05
+
+### Added
+- **Full SEO infrastructure** — noindex metadata on all auth, tenant app, and super-admin layouts; JSON-LD structured data (Organization, SoftwareApplication, FAQPage) already live on the landing page; updated sitemap now includes all published blog posts with correct `lastModified` timestamps; `llms.txt` in `/public` describes the platform for AI crawlers
+- **Managed blog** — `BlogPost` Prisma model (`blog_posts` table) with slug, title, description, content, readingTime, publishedAt, and isHtml fields
+- **Blog admin** — "Blog" tab added to the super-admin console; `BlogManager` component supports create, edit, publish now, schedule (future publishedAt), revert to draft, and delete; slug auto-generates from title; content edited in the extended EmailTemplateEditor
+- **Public blog** — `/blog` index page and `/blog/[slug]` post pages with ISR (revalidate=3600), `generateMetadata` per post, MDX rendering for file-based posts and `dangerouslySetInnerHTML` for DB posts; CTA block at end of every post
+- **Hybrid blog source** — `src/lib/blog.ts` merges file-based MDX posts from `content/blog/` with DB posts; DB wins on slug collision; only published posts visible publicly
+- **8 MDX seed posts** — published fortnightly July 1 → Oct 21 covering: why operators need a CRM, 6-tools-in-1 platform, booking workflow automation, client portals, contracts & e-signatures, team management, gallery delivery, invoicing & payments, and data-driven growth
+- **`.blog-prose` CSS** — full typography system in `globals.css`: headings H1–H4, paragraphs, lists, blockquotes, code blocks, tables, images
+- **EmailTemplateEditor heading toolbar** — added H2, H3, Blockquote, and Normal paragraph controls via a heading style select; used in both email templates and the blog editor
+
+---
+
 ## [2.40.0] — 2026-07-04
 
 ### Added

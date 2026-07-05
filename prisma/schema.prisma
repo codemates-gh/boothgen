@@ -1046,3 +1046,18 @@ model LeadCustomValue {
   @@unique([submissionId, fieldId])
   @@map("lead_custom_values")
 }
+
+model BlogPost {
+  id          String    @id @default(uuid())
+  slug        String    @unique
+  title       String
+  description String    @db.Text
+  content     String    @db.Text
+  readingTime Int       @default(5)
+  isHtml      Boolean   @default(true)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("blog_posts")
+}
