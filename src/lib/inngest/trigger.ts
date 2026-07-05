@@ -119,22 +119,13 @@ export async function triggerAutomation(params: {
         data: { tenantId, ruleId: rule.id, eventId, status: 'SCHEDULED', scheduledFor },
       });
 
-      if (offsetMs === 0) {
-        // Execute immediately — catch here since Inngest isn't in the loop for this path
-        try {
-          await executeAutomation(execution.id);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err);
-          await notifyAdminOfFailure(execution.id, msg);
-        }
-      } else {
-        // Future delivery — use Inngest scheduler (best-effort)
-        inngest.send({
-          name: 'automation/execute',
-          data: { executionId: execution.id },
-          ts: scheduledFor.getTime(),
-        }).catch(e => console.error('[AUTOMATION_SCHEDULE]', e));
-      }
+      // Always route through Inngest so retries + onFailure handler apply uniformly.
+      // ts: scheduledFor.getTime() fires immediately when offsetMs === 0.
+      inngest.send({
+        name: 'automation/execute',
+        data: { executionId: execution.id },
+        ts: scheduledFor.getTime(),
+      }).catch(e => console.error('[AUTOMATION_SCHEDULE]', e));
     }
   } catch (err) {
     console.error('[AUTOMATION_TRIGGER]', err);

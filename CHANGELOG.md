@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.37.0] — 2026-07-04
+
+### Fixed
+- **Automation emails fail permanently on transient Resend errors** — immediate-offset automations (e.g. GALLERY_PUBLISHED) were executed directly with no retry on failure. All automations now route through Inngest, giving them the same 3-retry + failure-alert behavior as scheduled automations. The admin failure alert now only fires after all retries are exhausted, not on the first transient network hiccup.
+
+---
+
 ## [2.36.0] — 2026-07-04
 
 ### Added
