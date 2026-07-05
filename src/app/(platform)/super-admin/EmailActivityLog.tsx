@@ -62,7 +62,7 @@ function parseErrorMessage(raw: string | null): ParsedError {
         ],
       };
     }
-    if (code >= 500 || /service.*unavailable|temporarily/i.test(msg)) {
+    if (code >= 500 || /service.*unavailable|temporarily|unable to fetch|request could not be resolved/i.test(msg) || name === 'application_error') {
       return {
         summary: 'Email provider temporarily unavailable', detail: msg,
         resolution: 'This is likely a temporary Resend outage. Check their status page and retry once service is restored.',
