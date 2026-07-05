@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.38.0] — 2026-07-04
+
+### Added
+- **Custom lead form fields** — operators can now add their own fields to the inquiry form from Settings → Lead Capture. Supports short text, long text, and dropdown types; fields can be marked required, reordered with up/down arrows, and deleted. Custom responses are saved per-submission and displayed in a new "Additional Info" section on the Lead detail page.
+
+---
+
 ## [2.37.0] — 2026-07-04
 
 ### Fixed

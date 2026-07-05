@@ -36,6 +36,17 @@ export async function POST(req: NextRequest, { params }: { params: { tenantSlug:
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400, headers: cors() });
   }
 
+  // Extract and validate custom field values from body (keys prefixed cf_)
+  const customFieldEntries: { fieldId: string; value: string }[] = [];
+  const activeFields = await prisma.customLeadField.findMany({ where: { tenantId: tenant.id, isActive: true } });
+  for (const field of activeFields) {
+    const value = (body[`cf_${field.id}`] ?? '').toString().trim();
+    if (field.required && !value) {
+      return NextResponse.json({ error: `${field.label} is required` }, { status: 400, headers: cors() });
+    }
+    if (value) customFieldEntries.push({ fieldId: field.id, value });
+  }
+
   // Server-side blackout date check
   if (eventDate) {
     const dateObj = new Date(eventDate);
@@ -56,7 +67,7 @@ export async function POST(req: NextRequest, { params }: { params: { tenantSlug:
   if (recent) {
     return NextResponse.json({ success: true, message: 'Inquiry received.' }, { status: 200, headers: cors() });
   }
-  await prisma.leadSubmission.create({
+  const submission = await prisma.leadSubmission.create({
     data: {
       tenantId: tenant.id,
       apiKeyId,
@@ -80,6 +91,14 @@ export async function POST(req: NextRequest, { params }: { params: { tenantSlug:
       ipAddress: ip,
     },
   });
+
+  // Save custom field responses
+  if (customFieldEntries.length > 0) {
+    await prisma.leadCustomValue.createMany({
+      data: customFieldEntries.map(e => ({ submissionId: submission.id, fieldId: e.fieldId, value: e.value })),
+      skipDuplicates: true,
+    });
+  }
 
   try {
     await prisma.client.upsert({

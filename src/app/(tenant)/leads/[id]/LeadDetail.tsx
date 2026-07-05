@@ -131,6 +131,7 @@ type Lead = {
   status: string;
   convertedToEventId: string | null;
   createdAt: string;
+  customValues: { label: string; value: string }[];
   messages: LeadMessage[];
 };
 
@@ -405,6 +406,19 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand resize-none"
                 />
               </div>
+              {lead.customValues.length > 0 && (
+                <div className="sm:col-span-2 space-y-3">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Additional Info</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {lead.customValues.map(cv => (
+                      <div key={cv.label} className="bg-gray-50 rounded-lg px-3 py-2.5">
+                        <p className="text-xs font-medium text-gray-500 mb-0.5">{cv.label}</p>
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap">{cv.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

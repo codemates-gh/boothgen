@@ -4,7 +4,11 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Copy, Check, ExternalLink, Globe, Save } from 'lucide-react';
+import { Select } from '@/components/ui/select';
+import { Copy, Check, ExternalLink, Globe, Save, Plus, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+
+type FieldType = 'TEXT' | 'TEXTAREA' | 'SELECT';
+interface CustomField { id: string; label: string; fieldType: FieldType; required: boolean; options: string[] | null; isActive: boolean; sortOrder: number }
 
 interface FormConfig {
   heading: string;
@@ -39,12 +43,66 @@ export default function EmbedPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // Custom fields state
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [newLabel, setNewLabel] = useState('');
+  const [newType, setNewType] = useState<FieldType>('TEXT');
+  const [newRequired, setNewRequired] = useState(false);
+  const [newOptions, setNewOptions] = useState('');
+  const [addingField, setAddingField] = useState(false);
+  const [fieldSaving, setFieldSaving] = useState(false);
+
   useEffect(() => {
     fetch('/api/settings/branding').then(r => r.json()).then(d => {
       setTenant(d);
       if (d.leadFormConfig) setFormConfig({ ...DEFAULT_CONFIG, ...d.leadFormConfig });
     });
+    fetch('/api/settings/lead-fields').then(r => r.json()).then(setCustomFields);
   }, []);
+
+  async function addField() {
+    if (!newLabel.trim()) return;
+    setFieldSaving(true);
+    const options = newType === 'SELECT' ? newOptions.split('\n').map(s => s.trim()).filter(Boolean) : null;
+    const res = await fetch('/api/settings/lead-fields', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label: newLabel, fieldType: newType, required: newRequired, options }),
+    });
+    const f = await res.json();
+    setCustomFields(prev => [...prev, f]);
+    setNewLabel(''); setNewType('TEXT'); setNewRequired(false); setNewOptions('');
+    setAddingField(false); setFieldSaving(false);
+  }
+
+  async function deleteField(id: string) {
+    await fetch(`/api/settings/lead-fields/${id}`, { method: 'DELETE' });
+    setCustomFields(prev => prev.filter(f => f.id !== id));
+  }
+
+  async function toggleRequired(field: CustomField) {
+    const updated = { ...field, required: !field.required };
+    setCustomFields(prev => prev.map(f => f.id === field.id ? updated : f));
+    await fetch(`/api/settings/lead-fields/${field.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ required: updated.required }),
+    });
+  }
+
+  async function moveField(index: number, dir: -1 | 1) {
+    const next = [...customFields];
+    const swap = index + dir;
+    if (swap < 0 || swap >= next.length) return;
+    [next[index], next[swap]] = [next[swap], next[index]];
+    const reordered = next.map((f, i) => ({ ...f, sortOrder: i }));
+    setCustomFields(reordered);
+    await Promise.all(reordered.map((f, i) =>
+      fetch(`/api/settings/lead-fields/${f.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sortOrder: i }),
+      })
+    ));
+  }
 
   const setFc = (k: keyof FormConfig, v: any) => setFormConfig(f => ({ ...f, [k]: v }));
 
@@ -248,6 +306,86 @@ export default function EmbedPage() {
                 ))}
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Custom Fields */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Custom Fields</CardTitle>
+                <p className="text-sm text-gray-500 mt-0.5">Add fields specific to your business — shown after the standard fields</p>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => setAddingField(v => !v)} className="flex items-center gap-1.5">
+                <Plus className="w-3.5 h-3.5"/>{addingField ? 'Cancel' : 'Add Field'}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {addingField && (
+              <div className="rounded-xl border border-brand/30 bg-brand/5 p-4 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Field Label</label>
+                    <Input placeholder="e.g. How did you hear about us?" value={newLabel} onChange={e => setNewLabel(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Field Type</label>
+                    <Select value={newType} onChange={e => setNewType(e.target.value as FieldType)}>
+                      <option value="TEXT">Short text</option>
+                      <option value="TEXTAREA">Long text</option>
+                      <option value="SELECT">Dropdown</option>
+                    </Select>
+                  </div>
+                </div>
+                {newType === 'SELECT' && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Options (one per line)</label>
+                    <textarea
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none h-24 focus:outline-none focus:border-brand"
+                      placeholder={"Google\nInstagram\nReferral\nOther"}
+                      value={newOptions}
+                      onChange={e => setNewOptions(e.target.value)}
+                    />
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" checked={newRequired} onChange={e => setNewRequired(e.target.checked)} className="w-4 h-4 rounded" />
+                    Required field
+                  </label>
+                  <Button size="sm" onClick={addField} disabled={fieldSaving || !newLabel.trim()}>
+                    {fieldSaving ? 'Saving…' : 'Add Field'}
+                  </Button>
+                </div>
+              </div>
+            )}
+            {customFields.length === 0 && !addingField && (
+              <p className="text-sm text-gray-400 py-2">No custom fields yet. Click "Add Field" to create one.</p>
+            )}
+            {customFields.map((field, i) => (
+              <div key={field.id} className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 bg-white">
+                <div className="flex flex-col gap-0.5">
+                  <button onClick={() => moveField(i, -1)} disabled={i === 0} className="text-gray-300 hover:text-gray-500 disabled:opacity-20"><ChevronUp className="w-3.5 h-3.5"/></button>
+                  <button onClick={() => moveField(i, 1)} disabled={i === customFields.length - 1} className="text-gray-300 hover:text-gray-500 disabled:opacity-20"><ChevronDown className="w-3.5 h-3.5"/></button>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">{field.label}</p>
+                  <p className="text-xs text-gray-400">
+                    {field.fieldType === 'TEXT' ? 'Short text' : field.fieldType === 'TEXTAREA' ? 'Long text' : 'Dropdown'}
+                    {field.required && <span className="ml-2 text-brand">Required</span>}
+                  </p>
+                </div>
+                <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+                  <input type="checkbox" checked={field.required} onChange={() => toggleRequired(field)} className="w-3.5 h-3.5 rounded" />
+                  Required
+                </label>
+                <button onClick={() => deleteField(field.id)} className="text-gray-300 hover:text-red-500 transition-colors">
+                  <Trash2 className="w-4 h-4"/>
+                </button>
+              </div>
+            ))}
           </CardContent>
         </Card>
 

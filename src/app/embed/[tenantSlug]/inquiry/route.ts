@@ -51,8 +51,12 @@ export async function GET(
 ) {
   const tenant = await prisma.tenant.findUnique({
     where: { slug: params.tenantSlug },
-    include: { branding: { select: { companyName: true, logoUrl: true, primaryColor: true, leadFormConfig: true, supportPhone: true, replyToEmail: true, websiteUrl: true } } },
+    include: {
+      branding: { select: { companyName: true, logoUrl: true, primaryColor: true, leadFormConfig: true, supportPhone: true, replyToEmail: true, websiteUrl: true } },
+      customLeadFields: { where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] },
+    },
   });
+  const customFields = tenant?.customLeadFields ?? [];
 
   if (!tenant || tenant.status === 'SUSPENDED') {
     return new NextResponse('Not found', { status: 404 });
@@ -105,6 +109,21 @@ export async function GET(
   const req2fields: string[] = ['firstName', 'lastName', 'email'];
   if (cfg.requirePhone) req2fields.push('phone');
   if (cfg.requireEventDate) req2fields.push('eventDate');
+  customFields.filter(f => f.required).forEach(f => req2fields.push('cf_' + f.id));
+
+  const customFieldsHtml = customFields.map(f => {
+    const name = 'cf_' + f.id;
+    const reqMark = f.required ? ' <span class="req">*</span>' : '';
+    const label = `<label>${f.label}${reqMark}</label>`;
+    if (f.fieldType === 'TEXTAREA') {
+      return `<div class="full">${label}<textarea name="${name}"></textarea></div>`;
+    }
+    if (f.fieldType === 'SELECT') {
+      const opts = (f.options as string[] ?? []).map(o => `<option value="${o.replace(/"/g, '&quot;')}">${o}</option>`).join('');
+      return `<div class="full">${label}<select name="${name}"><option value="">-- Select --</option>${opts}</select></div>`;
+    }
+    return `<div class="full">${label}<input type="text" name="${name}"/></div>`;
+  }).join('');
 
   const html = '<!DOCTYPE html>' +
     '<html lang="en">' +
@@ -136,6 +155,7 @@ export async function GET(
     (cfg.showVenue ? '<div><label>State</label><input type="text" name="venueState" autocomplete="address-level1" placeholder="MD"/></div>' : '') +
     (cfg.showVenue ? '<div><label>Zip Code</label><input type="text" name="venuePostalCode" autocomplete="postal-code" placeholder="20001"/></div>' : '') +
     (cfg.showMessage ? '<div class="full"><label>Additional Notes</label><textarea name="message" placeholder="Special requests, theme, anything else we should know..."></textarea></div>' : '') +
+    customFieldsHtml +
     '</div>' +
     '<div class="errbox" id="eb"></div>' +
     '<button type="submit" class="btn" id="sb">' + cfg.buttonText + '</button>' +

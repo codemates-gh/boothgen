@@ -149,6 +149,12 @@ enum TemplateDesignStatus {
   APPROVED
 }
 
+enum LeadFieldType {
+  TEXT
+  TEXTAREA
+  SELECT
+}
+
 enum StripeConnectStatus {
   NOT_CONNECTED
   ONBOARDING_INITIATED
@@ -202,6 +208,7 @@ model Tenant {
   stripeSubscription   StripeSubscription?
   apiKeys              TenantApiKey[]
   leadSubmissions      LeadSubmission[]
+  customLeadFields     CustomLeadField[]
   auditLogs            AuditLog[]
   servicePackages      ServicePackage[]
   quotes               Quote[]
@@ -694,11 +701,12 @@ model LeadSubmission {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  apiKey           TenantApiKey? @relation(fields: [apiKeyId], references: [id])
-  client           Client?       @relation(fields: [clientId], references: [id])
-  convertedToEvent Event?        @relation("LeadConvertedFrom", fields: [convertedToEventId], references: [id])
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  apiKey           TenantApiKey?     @relation(fields: [apiKeyId], references: [id])
+  client           Client?           @relation(fields: [clientId], references: [id])
+  convertedToEvent Event?            @relation("LeadConvertedFrom", fields: [convertedToEventId], references: [id])
   messages         LeadMessage[]
+  customValues     LeadCustomValue[]
 
   @@index([tenantId, createdAt])
   @@map("lead_submissions")
@@ -1003,4 +1011,37 @@ model ImportBatch {
 
   @@index([tenantId])
   @@map("import_batches")
+}
+
+model CustomLeadField {
+  id        String        @id @default(cuid())
+  tenantId  String
+  label     String
+  fieldType LeadFieldType @default(TEXT)
+  required  Boolean       @default(false)
+  sortOrder Int           @default(0)
+  options   Json?
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  responses LeadCustomValue[]
+
+  @@index([tenantId, sortOrder])
+  @@map("custom_lead_fields")
+}
+
+model LeadCustomValue {
+  id           String   @id @default(cuid())
+  submissionId String
+  fieldId      String
+  value        String   @db.Text
+  createdAt    DateTime @default(now())
+
+  submission LeadSubmission  @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  field      CustomLeadField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, fieldId])
+  @@map("lead_custom_values")
 }

@@ -9,7 +9,10 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
   const session = await requireTenantSession();
   const lead = await prisma.leadSubmission.findFirst({
     where: { id: params.id, tenantId: session.tenantId },
-    include: { messages: { orderBy: { sentAt: 'asc' } } },
+    include: {
+      messages: { orderBy: { sentAt: 'asc' } },
+      customValues: { include: { field: { select: { label: true, fieldType: true } } }, orderBy: { field: { sortOrder: 'asc' } } },
+    },
   });
   if (!lead) notFound();
 
@@ -34,6 +37,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
     status: lead.status,
     convertedToEventId: lead.convertedToEventId,
     createdAt: lead.createdAt.toISOString(),
+    customValues: lead.customValues.map(v => ({ label: v.field.label, value: v.value })),
     messages: lead.messages.map(m => ({
       id: m.id,
       direction: m.direction,
