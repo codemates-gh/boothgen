@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.36.0] — 2026-07-04
+
+### Added
+- **Client picker on Event Edit** — "Reassign to existing client" link in the Client card opens a live search (by name or email) and reassigns the event to any existing contact. Solves the duplicate client record problem when a returning client submits a lead under a different email. The old duplicate can then be deleted from the Clients list.
+
+---
+
 ## [2.35.0] — 2026-07-04
 
 ### Fixed

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Search, X } from 'lucide-react';
 import Link from 'next/link';
 
 const STATUSES = ['LEAD','QUOTED','BOOKED','IN_PROGRESS','COMPLETED','ARCHIVED','CANCELLED'];
+
+type ClientResult = { id: string; firstName: string; lastName: string; email: string };
 
 export default function EditEventPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +27,13 @@ export default function EditEventPage() {
     firstName:'', lastName:'', email:'', phone:'',
   });
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  // Client reassignment state
+  const [reassigning, setReassigning] = useState(false);
+  const [clientSearch, setClientSearch] = useState('');
+  const [clientResults, setClientResults] = useState<ClientResult[]>([]);
+  const [selectedClient, setSelectedClient] = useState<ClientResult | null>(null);
+  const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetch('/api/events/' + id + '/full').then(r => r.json()).then(d => {
@@ -48,9 +57,36 @@ export default function EditEventPage() {
     });
   }, [id]);
 
+  function handleClientSearch(q: string) {
+    setClientSearch(q);
+    setSelectedClient(null);
+    if (searchRef.current) clearTimeout(searchRef.current);
+    if (q.length < 2) { setClientResults([]); return; }
+    searchRef.current = setTimeout(async () => {
+      const res = await fetch('/api/search?q=' + encodeURIComponent(q));
+      const data = await res.json();
+      setClientResults(data.clients ?? []);
+    }, 250);
+  }
+
+  function pickClient(c: ClientResult) {
+    setSelectedClient(c);
+    setClientSearch('');
+    setClientResults([]);
+  }
+
+  function cancelReassign() {
+    setReassigning(false);
+    setSelectedClient(null);
+    setClientSearch('');
+    setClientResults([]);
+  }
+
   async function save() {
     setSaving(true); setError('');
-    const res = await fetch('/api/events/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+    const body: Record<string, unknown> = { ...form };
+    if (selectedClient) body.clientId = selectedClient.id;
+    const res = await fetch('/api/events/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const data = await res.json();
     if (res.ok) router.push('/events/' + id);
     else { setError(data.error ?? 'Save failed'); setSaving(false); }
@@ -69,10 +105,68 @@ export default function EditEventPage() {
       <div className="p-4 sm:p-8 max-w-3xl space-y-6">
         <Link href={'/events/' + id} className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Back to Event</Link>
         <Card>
-          <CardHeader><CardTitle>Client</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {F('firstName','First Name')} {F('lastName','Last Name')}
-            {F('email','Email','email')} {F('phone','Phone','tel')}
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Client</span>
+              {!reassigning && (
+                <button type="button" onClick={() => setReassigning(true)} className="text-xs font-normal text-brand hover:underline">
+                  Reassign to existing client
+                </button>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {reassigning ? (
+              <div className="space-y-3">
+                {selectedClient ? (
+                  <div className="flex items-center justify-between rounded-lg border border-brand/30 bg-brand/5 px-4 py-3">
+                    <div>
+                      <p className="font-medium text-sm">{selectedClient.firstName} {selectedClient.lastName}</p>
+                      <p className="text-xs text-gray-500">{selectedClient.email}</p>
+                    </div>
+                    <button type="button" onClick={() => setSelectedClient(null)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <Input
+                      autoFocus
+                      placeholder="Search by name or email…"
+                      value={clientSearch}
+                      onChange={e => handleClientSearch(e.target.value)}
+                      className="pl-9"
+                    />
+                    {clientResults.length > 0 && (
+                      <ul className="absolute z-10 mt-1 w-full rounded-lg border bg-white shadow-lg divide-y text-sm">
+                        {clientResults.map(c => (
+                          <li key={c.id}>
+                            <button
+                              type="button"
+                              onClick={() => pickClient(c)}
+                              className="w-full text-left px-4 py-3 hover:bg-gray-50"
+                            >
+                              <span className="font-medium">{c.firstName} {c.lastName}</span>
+                              <span className="text-gray-400 ml-2">{c.email}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {clientSearch.length >= 2 && clientResults.length === 0 && (
+                      <p className="mt-2 text-xs text-gray-400">No matching clients found.</p>
+                    )}
+                  </div>
+                )}
+                <button type="button" onClick={cancelReassign} className="text-xs text-gray-400 hover:text-gray-600">
+                  Cancel reassignment
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {F('firstName','First Name')} {F('lastName','Last Name')}
+                {F('email','Email','email')} {F('phone','Phone','tel')}
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card>
