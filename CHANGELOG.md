@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.41.1] — 2026-07-05
+
+### Fixed
+- Added Blog link to the marketing navigation bar (desktop and mobile)
+
+---
+
 ## [2.41.0] — 2026-07-05
 
 ### Added

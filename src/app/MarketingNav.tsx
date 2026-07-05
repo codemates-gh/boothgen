@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { label: 'Features',    href: '#features' },
   { label: 'Pricing',     href: '/pricing' },
   { label: 'Our Story',   href: '#our-story' },
+  { label: 'Blog',        href: '/blog' },
   { label: 'Support',     href: '/support', external: false },
   { label: 'Contact',     href: '#contact' },
 ];
