@@ -7,10 +7,11 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CreditCard, Link2, ExternalLink } from 'lucide-react';
+import { CreditCard, Link2, ExternalLink, Download } from 'lucide-react';
 import { PaymentTermsCard } from './PaymentTermsCard';
 import { UpgradeButton } from './UpgradeButton';
 import { StripeConnectCard } from './StripeConnectCard';
+import { CancelAccountButton } from './CancelAccountButton';
 
 const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import']];
 
@@ -80,6 +81,30 @@ export default async function BillingSettingsPage({ searchParams }: { searchPara
           </CardContent>
         </Card>
         <PaymentTermsCard />
+
+        {/* Data Export */}
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Download className="w-5 h-5"/>Export Your Data</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-gray-500">Download your data as CSV files you can open in Excel or Google Sheets.</p>
+            <div className="flex flex-wrap gap-3">
+              <a href="/api/settings/export?type=clients"><Button variant="outline" size="sm">Clients</Button></a>
+              <a href="/api/settings/export?type=events"><Button variant="outline" size="sm">Events</Button></a>
+              <a href="/api/settings/export?type=invoices"><Button variant="outline" size="sm">Invoices</Button></a>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Cancel Account */}
+        {tenant?.status !== 'CANCELLED' && (
+          <Card className="border-red-200">
+            <CardHeader><CardTitle className="text-red-700 text-base">Cancel Account</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-gray-500">Your data will remain accessible for 30 days after cancellation so you can export it. After that, everything is permanently deleted.</p>
+              <CancelAccountButton />
+            </CardContent>
+          </Card>
+        )}
       </div>
     </>
   );

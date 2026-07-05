@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.39.0] — 2026-07-04
+
+### Added
+- **Data export** — operators can download Clients, Events, and Invoices as CSV from Settings → Billing at any time
+- **Graceful account cancellation** — "Cancel Account" button in Settings → Billing triggers a 30-day soft-cancel: Stripe subscription cancels at period end, tenant status set to CANCELLED, data stays accessible for 30 days with a persistent red banner on every page linking to the export page
+- **Nightly purge cron** — Inngest job at 2 AM UTC hard-deletes tenants cancelled more than 30 days ago, cleaning Stripe and R2 in the same flow
+- Extracted shared `deleteTenant()` utility so super admin delete, self-cancel, and the cron all use identical cleanup logic
+
+---
+
 ## [2.38.0] — 2026-07-04
 
 ### Added

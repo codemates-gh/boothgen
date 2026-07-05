@@ -185,6 +185,7 @@ model Tenant {
   name        String
   slug        String       @unique
   status             TenantStatus @default(TRIAL)
+  cancelledAt        DateTime?
   trialEndsAt        DateTime?
   teamMemberAccess   String       @default("[\"events\"]")
   createdAt          DateTime     @default(now())

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma/client';
 import { sendEmail, sendDesignReadyEmail, sendDesignDecisionEmail, sendPaymentReminderEmail, sendGalleryDeletionReminderEmail, sendDesignApprovalReminderEmail } from '@/lib/email/send';
 import { triggerAutomation, scheduleEventDateAutomations, executeAutomation, notifyAdminOfFailure } from './trigger';
 import { deleteFromR2, r2KeyFromUrl } from '@/lib/storage/r2';
+import { deleteTenant } from '@/lib/tenant/cleanup';
 
 export const processAutomation = inngest.createFunction(
   {
@@ -648,6 +649,29 @@ export const sendDesignApprovalReminders = inngest.createFunction(
 
     console.log(`[DESIGN_REMINDER] Sent ${sent} of ${events.length} design approval reminders`);
     return { sent, total: events.length };
+  }
+);
+
+// Nightly at 2 AM UTC — hard-delete tenants cancelled more than 30 days ago
+export const purgeExpiredCancelledTenants = inngest.createFunction(
+  { id: 'purge-cancelled-tenants' },
+  { cron: '0 2 * * *' },
+  async () => {
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const expired = await prisma.tenant.findMany({
+      where: { status: 'CANCELLED', cancelledAt: { lt: cutoff } },
+      select: { id: true, name: true },
+    });
+    const results: { id: string; name: string; warnings: string[] }[] = [];
+    for (const t of expired) {
+      const { stripeWarnings } = await deleteTenant(t.id).catch(err => {
+        console.error(`[PURGE] Failed to delete tenant ${t.id}:`, err);
+        return { stripeWarnings: [String(err)] };
+      });
+      results.push({ id: t.id, name: t.name, warnings: stripeWarnings });
+    }
+    console.log(`[PURGE] Deleted ${results.length} expired cancelled tenants`);
+    return { deleted: results.length, results };
   }
 );
 
