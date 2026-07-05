@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.41.3] — 2026-07-05
+
+### Fixed
+- MDX file posts returning 404 on production — added `outputFileTracingIncludes` to `next.config.js` so Vercel bundles `content/blog/**` into the serverless functions for `/blog`, `/blog/[slug]`, `/sitemap.xml`, and the super-admin blog API
+
+---
+
 ## [2.41.2] — 2026-07-05
 
 ### Fixed
