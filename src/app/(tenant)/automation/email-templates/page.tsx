@@ -15,7 +15,24 @@ export default function EmailTemplatesPage() {
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState({ name: '', subject: '', bodyHtml: '' });
   const [saving, setSaving] = useState(false);
+  const [improving, setImproving] = useState(false);
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  async function aiImprove(currentHtml: string) {
+    if (!editing?.id) return;
+    setImproving(true);
+    const res = await fetch(`/api/automation/email-templates/${editing.id}/rewrite`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject: form.subject, bodyHtml: currentHtml }),
+    });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.subject) set('subject', d.subject);
+      if (d.bodyHtml) set('bodyHtml', d.bodyHtml);
+    }
+    setImproving(false);
+  }
 
   useEffect(() => { load(); }, []);
   async function load() {
@@ -99,7 +116,12 @@ export default function EmailTemplatesPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email Body *</label>
-            <EmailTemplateEditor value={form.bodyHtml} onChange={v => set('bodyHtml', v)}/>
+            <EmailTemplateEditor
+              value={form.bodyHtml}
+              onChange={v => set('bodyHtml', v)}
+              onAiImprove={editing ? aiImprove : undefined}
+              aiImproving={improving}
+            />
           </div>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>

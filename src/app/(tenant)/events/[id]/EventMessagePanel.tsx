@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Send, ChevronDown, ChevronUp } from 'lucide-react';
+import { MessageSquare, Send, ChevronDown, ChevronUp, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -25,6 +25,7 @@ export default function EventMessagePanel({ eventId, clientName, clientEmail }: 
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
+  const [rewriting, setRewriting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -35,6 +36,25 @@ export default function EventMessagePanel({ eventId, clientName, clientEmail }: 
       .then(d => { if (Array.isArray(d)) setMessages(d); });
   }, [eventId]);
 
+
+  async function rewriteWithAi() {
+    if (!subject.trim() && !body.trim()) { setError('Add a subject or message first.'); return; }
+    setRewriting(true); setError('');
+    const res = await fetch(`/api/events/${eventId}/messages/rewrite`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject, body }),
+    });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.subject) setSubject(d.subject);
+      if (d.body) setBody(d.body);
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error ?? 'AI rewrite failed. Try again.');
+    }
+    setRewriting(false);
+  }
 
   async function send() {
     if (!subject.trim() || !body.trim()) { setError('Subject and message are required.'); return; }
@@ -116,8 +136,12 @@ export default function EventMessagePanel({ eventId, clientName, clientEmail }: 
             />
             {error && <p className="text-xs text-red-600">{error}</p>}
             {success && <p className="text-xs text-green-600">Message sent.</p>}
-            <div className="flex justify-end">
-              <Button size="sm" onClick={send} disabled={sending}>
+            <div className="flex items-center justify-between">
+              <button type="button" onClick={rewriteWithAi} disabled={rewriting || sending}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-purple-600 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 disabled:opacity-50 transition-colors">
+                <Wand2 className="w-3 h-3"/>{rewriting ? 'Rewriting…' : 'Rewrite with AI'}
+              </button>
+              <Button size="sm" onClick={send} disabled={sending || rewriting}>
                 <Send className="w-3.5 h-3.5 mr-1.5" />{sending ? 'Sending…' : 'Send Message'}
               </Button>
             </div>

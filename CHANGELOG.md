@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.40.0] — 2026-07-04
+
+### Added
+- **AI rewrite for email templates** — when editing an existing email template in Automation → Email Templates, an "Improve with AI" button rewrites the subject line and body using Gemini while preserving all merge tags. Powered by `/api/automation/email-templates/[id]/rewrite`.
+- **AI rewrite for event messages** — the compose area in the Event detail Messages panel now has a "Rewrite with AI" button that polishes the draft subject and body in place. Powered by `/api/events/[id]/messages/rewrite`.
+
+---
+
 ## [2.39.0] — 2026-07-04
 
 ### Added

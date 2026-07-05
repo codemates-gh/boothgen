@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Bold, Italic, Underline, Link, Image, List,
-  ChevronDown, Eye, Code, AlignLeft, AlignCenter
+  ChevronDown, Eye, Code, AlignLeft, AlignCenter, Wand2
 } from 'lucide-react';
 
 const MERGE_TAGS = [
@@ -44,9 +44,11 @@ interface Props {
   onChange: (v: string) => void;
   mergeTags?: MergeTag[];
   previewSamples?: Record<string, string>;
+  onAiImprove?: (currentHtml: string) => Promise<void>;
+  aiImproving?: boolean;
 }
 
-export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeTagsProp, previewSamples: previewSamplesProp }: Props) {
+export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeTagsProp, previewSamples: previewSamplesProp, onAiImprove, aiImproving }: Props) {
   const mergeTags = mergeTagsProp ?? MERGE_TAGS;
   const [mode, setMode] = useState<'visual' | 'html'>('visual');
   const [showPreview, setShowPreview] = useState(false);
@@ -232,6 +234,12 @@ export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeT
         </div>
 
         <div className="ml-auto flex gap-1">
+          {onAiImprove && (
+            <button type="button" disabled={aiImproving} onClick={() => onAiImprove(value)}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-purple-600 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 disabled:opacity-50 transition-colors">
+              <Wand2 className="w-3 h-3"/>{aiImproving ? 'Improving…' : 'Improve with AI'}
+            </button>
+          )}
           <button type="button" onClick={() => { setMode(m => m === 'visual' ? 'html' : 'visual'); }}
             className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100">
             <Code className="w-3 h-3"/>{mode === 'visual' ? 'HTML' : 'Visual'}
