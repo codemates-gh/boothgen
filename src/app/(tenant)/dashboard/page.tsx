@@ -9,7 +9,7 @@ import WeatherWidget from '@/components/dashboard/WeatherWidget';
 import Link from 'next/link';
 import {
   Calendar, Users, DollarSign, TrendingUp, Plus, ArrowRight, Inbox,
-  AlertTriangle, Clock, FileText, Camera, CheckCircle, Layers,
+  AlertTriangle, Clock, FileText, Camera, CheckCircle, Layers, Upload,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
@@ -22,6 +22,7 @@ export default async function DashboardPage() {
   const monthStart   = new Date(now.getFullYear(), now.getMonth(), 1);
   const sevenDaysOut = new Date(now.getTime() + 7  * 86400_000);
   const fiveDaysOut  = new Date(now.getTime() + 5  * 86400_000);
+  const thirtyDaysOut = new Date(now.getTime() + 30 * 86400_000);
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400_000);
   const threeDaysAgo = new Date(now.getTime() - 3  * 86400_000);
   const todayStart   = new Date(now); todayStart.setHours(0, 0, 0, 0);
@@ -43,6 +44,8 @@ export default async function DashboardPage() {
     recentlyApproved,
     // BOOKED/IN_PROGRESS events within 5 days with no approved design
     noDesignEvents,
+    // BOOKED/IN_PROGRESS events within 30 days with zero designs uploaded
+    noDesignAtAll,
   ] = await Promise.all([
     prisma.event.findMany({ where: { tenantId, eventDate: { gte: now }, status: { notIn: ['CANCELLED', 'COMPLETED', 'ARCHIVED', 'LOST'] } }, include: { client: true }, orderBy: { eventDate: 'asc' }, take: 8 }),
     prisma.client.count({ where: { tenantId } }),
@@ -97,6 +100,18 @@ export default async function DashboardPage() {
       include: { client: { select: { firstName: true, lastName: true } } },
       orderBy: { eventDate: 'asc' },
     }),
+    // BOOKED/IN_PROGRESS events within 30 days with zero designs uploaded at all
+    prisma.event.findMany({
+      where: {
+        tenantId,
+        status: { in: ['BOOKED', 'IN_PROGRESS'] },
+        eventDate: { gte: now, lte: thirtyDaysOut },
+        templateDesigns: { none: {} },
+      },
+      include: { client: { select: { firstName: true, lastName: true } } },
+      orderBy: { eventDate: 'asc' },
+      take: 10,
+    }),
   ]);
 
   // Deduplicate milestone results to one entry per invoice (earliest overdue/due-soon milestone wins)
@@ -127,6 +142,9 @@ export default async function DashboardPage() {
 
   // Days until event for design-missing items
   const daysUntil = (d: Date) => Math.max(0, Math.floor((new Date(d).getTime() - now.getTime()) / 86400_000));
+
+  // Event IDs with zero designs uploaded — used to deduplicate attention list
+  const noDesignAtAllIds = new Set(noDesignAtAll.map(e => e.id));
 
   const galSettingsMap = Object.fromEntries(gallerySettings.map(s => [s.key, parseInt(s.value) || 0]));
   const galExpireDays  = galSettingsMap['gallery_expire_days']  ?? 30;
@@ -168,7 +186,20 @@ export default async function DashboardPage() {
       detail: `${g._count.assets} photo${g._count.assets !== 1 ? 's' : ''} will be permanently deleted on ${format(galleryDeleteDate(g.event.eventDate), 'MMM d, yyyy')}`,
       href: `/gallery/${g.id}`,
     })),
-    ...noDesignEvents.map(e => {
+    ...noDesignAtAll.map(e => {
+      const days = daysUntil(e.eventDate);
+      const isUrgent = days <= 5;
+      return {
+        key: 'nodesign-all-' + e.id,
+        icon: Upload,
+        iconCls: isUrgent ? 'text-red-500' : 'text-amber-500',
+        rowCls: isUrgent ? 'border-l-4 border-red-400 bg-red-50' : 'border-l-4 border-amber-400 bg-amber-50',
+        title: `No design uploaded yet — ${e.client.firstName} ${e.client.lastName}`,
+        detail: `${e.title} · ${days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`} (${format(new Date(e.eventDate), 'MMM d')}) — upload a template design for client approval`,
+        href: `/events/${e.id}/designs`,
+      };
+    }),
+    ...noDesignEvents.filter(e => !noDesignAtAllIds.has(e.id)).map(e => {
       const days = daysUntil(e.eventDate);
       const isUrgent = days <= 2;
       return {
@@ -176,7 +207,7 @@ export default async function DashboardPage() {
         icon: Layers,
         iconCls: isUrgent ? 'text-red-500' : 'text-orange-500',
         rowCls: isUrgent ? 'border-l-4 border-red-400 bg-red-50' : 'border-l-4 border-orange-400 bg-orange-50',
-        title: `No approved design — ${e.client.firstName} ${e.client.lastName}`,
+        title: `Design not approved — ${e.client.firstName} ${e.client.lastName}`,
         detail: `${e.title} · ${days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`} (${format(new Date(e.eventDate), 'MMM d')}) — design must be approved before the event`,
         href: `/events/${e.id}/designs`,
       };

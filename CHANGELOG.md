@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.41.6] — 2026-07-05
+
+### Added
+- **Dashboard — "No design uploaded yet" alert**: upcoming BOOKED/IN_PROGRESS events within 30 days with zero designs uploaded now appear in the Requires Attention panel with an amber Upload icon. Events within 5 days with uploads but no approval continue to show as "Design not approved" (orange). Each event appears only once — the more specific message wins.
+
+---
+
 ## [2.41.5] — 2026-07-05
 
 ### Fixed
