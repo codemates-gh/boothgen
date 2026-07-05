@@ -4,19 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit2, Trash2, Eye, ExternalLink, Calendar, FileText } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, ExternalLink, Calendar, FileText, Lock } from 'lucide-react';
 import EmailTemplateEditor from '@/components/email/EmailTemplateEditor';
 import { format } from 'date-fns';
 
 interface Post {
-  id: string;
+  id?: string;
   slug: string;
   title: string;
   description: string;
   readingTime: number;
   publishedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  source: 'db' | 'file';
 }
 
 function postStatus(post: Post): 'published' | 'scheduled' | 'draft' {
@@ -58,6 +59,7 @@ export default function BlogManager() {
   }
 
   async function openEdit(p: Post) {
+    if (!p.id) return;
     setEditing(p);
     setPreview(false);
     setForm({ slug: p.slug, title: p.title, description: p.description, content: '', publishedAt: p.publishedAt ? new Date(p.publishedAt).toISOString().slice(0, 16) : '' });
@@ -87,6 +89,7 @@ export default function BlogManager() {
   }
 
   async function publishNow(p: Post) {
+    if (!p.id) return;
     await fetch(`/api/super-admin/blog/${p.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -96,6 +99,7 @@ export default function BlogManager() {
   }
 
   async function setDraft(p: Post) {
+    if (!p.id) return;
     await fetch(`/api/super-admin/blog/${p.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -105,15 +109,22 @@ export default function BlogManager() {
   }
 
   async function remove(p: Post) {
+    if (!p.id) return;
     if (!confirm(`Delete "${p.title}"?`)) return;
     await fetch(`/api/super-admin/blog/${p.id}`, { method: 'DELETE' });
     await load();
   }
 
+  const dbCount = posts.filter(p => p.source === 'db').length;
+  const fileCount = posts.filter(p => p.source === 'file').length;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">{posts.length} post{posts.length !== 1 ? 's' : ''}</p>
+        <p className="text-sm text-gray-500">
+          {posts.length} post{posts.length !== 1 ? 's' : ''}
+          {fileCount > 0 && <span className="ml-1 text-gray-400">({fileCount} from files, {dbCount} from DB)</span>}
+        </p>
         <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2"/>New Post</Button>
       </div>
 
@@ -126,24 +137,32 @@ export default function BlogManager() {
         </div>
       ) : (
         <div className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden bg-white">
-          {posts.map(p => {
+          {posts.map((p, i) => {
             const status = postStatus(p);
+            const isFile = p.source === 'file';
             return (
-              <div key={p.id} className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between px-5 py-4 hover:bg-gray-50">
+              <div key={p.id ?? p.slug} className={`flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between px-5 py-4 ${isFile ? 'bg-gray-50/60' : 'hover:bg-gray-50'}`}>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                     <p className="font-semibold text-sm text-gray-900 truncate">{p.title}</p>
                     <Badge variant={STATUS_BADGE[status]}>{status}</Badge>
-                  </div>
-                  <p className="text-xs text-gray-400">
-                    /{p.slug}
-                    {p.publishedAt && (
-                      <span className="ml-2">
-                        <Calendar className="w-3 h-3 inline mr-0.5"/>
-                        {format(new Date(p.publishedAt), 'MMM d, yyyy')}
+                    {isFile && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                        <Lock className="w-2.5 h-2.5"/>MDX file
                       </span>
                     )}
-                    <span className="ml-2">{p.readingTime} min read</span>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    <span className="font-mono">/{p.slug}</span>
+                    {p.publishedAt && (
+                      <span className="ml-3 inline-flex items-center gap-0.5">
+                        <Calendar className="w-3 h-3"/>
+                        {status === 'scheduled'
+                          ? <span className="text-amber-600 font-medium">Schedules {format(new Date(p.publishedAt), 'MMM d, yyyy')}</span>
+                          : format(new Date(p.publishedAt), 'MMM d, yyyy')}
+                      </span>
+                    )}
+                    <span className="ml-3">{p.readingTime} min read</span>
                   </p>
                 </div>
                 <div className="flex gap-2 flex-shrink-0 flex-wrap">
@@ -153,19 +172,29 @@ export default function BlogManager() {
                       <ExternalLink className="w-3 h-3"/>View
                     </a>
                   )}
-                  {status !== 'published' && (
+                  {!isFile && status !== 'published' && (
                     <Button size="sm" variant="outline" onClick={() => publishNow(p)}>Publish Now</Button>
                   )}
-                  {status !== 'draft' && (
+                  {!isFile && status !== 'draft' && (
                     <Button size="sm" variant="ghost" onClick={() => setDraft(p)}>Revert to Draft</Button>
                   )}
-                  <Button size="sm" variant="outline" onClick={() => openEdit(p)}><Edit2 className="w-4 h-4 mr-1"/>Edit</Button>
-                  <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-600" onClick={() => remove(p)}><Trash2 className="w-4 h-4"/></Button>
+                  {!isFile && (
+                    <Button size="sm" variant="outline" onClick={() => openEdit(p)}><Edit2 className="w-4 h-4 mr-1"/>Edit</Button>
+                  )}
+                  {!isFile && (
+                    <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-600" onClick={() => remove(p)}><Trash2 className="w-4 h-4"/></Button>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
+      )}
+
+      {fileCount > 0 && (
+        <p className="text-xs text-gray-400 flex items-center gap-1.5">
+          <Lock className="w-3 h-3"/><strong>MDX file</strong> posts are read-only — edit them in <code className="font-mono">content/blog/</code> to change content or schedule.
+        </p>
       )}
 
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Post' : 'New Post'} className="max-w-4xl">

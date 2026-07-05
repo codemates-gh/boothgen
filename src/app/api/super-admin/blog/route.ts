@@ -2,13 +2,11 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdminSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
+import { getAllPostsAdmin } from '@/lib/blog';
 
 export async function GET() {
   await requireSuperAdminSession();
-  const posts = await prisma.blogPost.findMany({
-    orderBy: { createdAt: 'desc' },
-    select: { id: true, slug: true, title: true, description: true, readingTime: true, publishedAt: true, createdAt: true, updatedAt: true, isHtml: true },
-  });
+  const posts = await getAllPostsAdmin();
   return NextResponse.json(posts);
 }
 

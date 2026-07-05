@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.41.2] — 2026-07-05
+
+### Fixed
+- Blog admin now lists all posts including MDX file-based posts (previously only showed DB posts). File posts display with a "MDX file" read-only badge, their scheduled publish date highlighted in amber, and no edit/delete controls. DB-authored posts retain full edit/publish/delete actions.
+
+---
+
 ## [2.41.1] — 2026-07-05
 
 ### Fixed
