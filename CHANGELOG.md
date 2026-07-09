@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.41.7] — 2026-07-09
+
+### Added
+- **Dashboard — dismiss items**: every row in Requires Attention and Recent Activity now has a hover-reveal X button. Dismissed items are hidden immediately and remembered in localStorage for the session. When all items in a section are dismissed, the section transitions to the "all caught up" state (Requires Attention) or disappears (Recent Activity). Item count in the header updates live.
+
+---
+
 ## [2.41.6] — 2026-07-05
 
 ### Added

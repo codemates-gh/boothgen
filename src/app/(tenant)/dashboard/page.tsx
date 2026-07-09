@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import WeatherWidget from '@/components/dashboard/WeatherWidget';
+import DismissableSection, { type DismissRow } from '@/components/dashboard/DismissableSection';
 import Link from 'next/link';
 import {
   Calendar, Users, DollarSign, TrendingUp, Plus, ArrowRight, Inbox,
@@ -168,19 +169,18 @@ export default async function DashboardPage() {
     { label: 'Conversion Rate', value: conversionRate + '%', icon: TrendingUp, color: 'text-teal-500', href: '/events' },
   ];
 
-  type AttentionItem = { key: string; icon: any; iconCls: string; rowCls: string; title: string; detail: string; href: string };
-  const attention: AttentionItem[] = [
+  const attention: DismissRow[] = [
     ...overdueInvoices.map(inv => ({
-      key: 'inv-' + inv.id,
-      icon: AlertTriangle, iconCls: 'text-red-500',
+      id: 'inv-' + inv.id,
+      iconName: 'AlertTriangle', iconCls: 'text-red-500',
       rowCls: 'border-l-4 border-red-400 bg-red-50',
       title: `Overdue payment — ${inv.client.firstName} ${inv.client.lastName}`,
       detail: `${fmt(inv.balanceDueCents)} past due${inv.dueDate ? ' since ' + format(new Date(new Date(inv.dueDate).toISOString().slice(0,10) + 'T00:00:00'), 'MMM d') : ''}`,
       href: `/invoices/${inv.id}`,
     })),
     ...atRiskGalleries.map(g => ({
-      key: 'gal-' + g.id,
-      icon: Camera, iconCls: 'text-red-500',
+      id: 'gal-' + g.id,
+      iconName: 'Camera', iconCls: 'text-red-500',
       rowCls: 'border-l-4 border-red-400 bg-red-50',
       title: `Gallery photos scheduled for deletion — ${g.event.title}`,
       detail: `${g._count.assets} photo${g._count.assets !== 1 ? 's' : ''} will be permanently deleted on ${format(galleryDeleteDate(g.event.eventDate), 'MMM d, yyyy')}`,
@@ -190,8 +190,8 @@ export default async function DashboardPage() {
       const days = daysUntil(e.eventDate);
       const isUrgent = days <= 5;
       return {
-        key: 'nodesign-all-' + e.id,
-        icon: Upload,
+        id: 'nodesign-all-' + e.id,
+        iconName: 'Upload',
         iconCls: isUrgent ? 'text-red-500' : 'text-amber-500',
         rowCls: isUrgent ? 'border-l-4 border-red-400 bg-red-50' : 'border-l-4 border-amber-400 bg-amber-50',
         title: `No design uploaded yet — ${e.client.firstName} ${e.client.lastName}`,
@@ -203,8 +203,8 @@ export default async function DashboardPage() {
       const days = daysUntil(e.eventDate);
       const isUrgent = days <= 2;
       return {
-        key: 'nodesign-' + e.id,
-        icon: Layers,
+        id: 'nodesign-' + e.id,
+        iconName: 'Layers',
         iconCls: isUrgent ? 'text-red-500' : 'text-orange-500',
         rowCls: isUrgent ? 'border-l-4 border-red-400 bg-red-50' : 'border-l-4 border-orange-400 bg-orange-50',
         title: `Design not approved — ${e.client.firstName} ${e.client.lastName}`,
@@ -215,8 +215,8 @@ export default async function DashboardPage() {
     ...revisionRequested.map(e => {
       const d = e.templateDesigns[0];
       return {
-        key: 'rev-' + e.id,
-        icon: Layers, iconCls: 'text-orange-500',
+        id: 'rev-' + e.id,
+        iconName: 'Layers', iconCls: 'text-orange-500',
         rowCls: 'border-l-4 border-orange-400 bg-orange-50',
         title: `Design revision requested — ${e.client.firstName} ${e.client.lastName}`,
         detail: `Version ${d.version} · ${e.title}${d.revisionNote ? ' — "' + d.revisionNote + '"' : ''}`,
@@ -224,8 +224,8 @@ export default async function DashboardPage() {
       };
     }),
     ...pendingContracts.map(c => ({
-      key: 'con-' + c.id,
-      icon: FileText, iconCls: 'text-orange-500',
+      id: 'con-' + c.id,
+      iconName: 'FileText', iconCls: 'text-orange-500',
       rowCls: 'border-l-4 border-orange-400 bg-orange-50',
       title: c.status === 'SENT_TO_CLIENT'
         ? `Contract awaiting client signature — ${c.client.firstName} ${c.client.lastName}`
@@ -234,22 +234,38 @@ export default async function DashboardPage() {
       href: `/contracts/${c.id}`,
     })),
     ...dueSoonInvoices.map(inv => ({
-      key: 'due-' + inv.id,
-      icon: Clock, iconCls: 'text-yellow-600',
+      id: 'due-' + inv.id,
+      iconName: 'Clock', iconCls: 'text-yellow-600',
       rowCls: 'border-l-4 border-yellow-400 bg-yellow-50',
       title: `Payment due soon — ${inv.client.firstName} ${inv.client.lastName}`,
       detail: `${fmt(inv.balanceDueCents)} due ${inv.dueDate ? format(inv.dueDate, 'MMM d') : ''}`,
       href: `/invoices/${inv.id}`,
     })),
     ...staleLeads.map(l => ({
-      key: 'lead-' + l.id,
-      icon: Inbox, iconCls: 'text-purple-500',
+      id: 'lead-' + l.id,
+      iconName: 'Inbox', iconCls: 'text-purple-500',
       rowCls: 'border-l-4 border-purple-400 bg-purple-50',
       title: `New lead not contacted — ${l.firstName} ${l.lastName}`,
       detail: `Submitted ${formatDistanceToNow(l.createdAt)} ago with no response`,
       href: `/leads/${l.id}`,
     })),
   ];
+
+  const activityRows: DismissRow[] = recentlyApproved.map(d => ({
+    id: 'act-' + d.id,
+    iconName: 'CheckCircle', iconCls: 'text-green-500',
+    rowCls: 'border-l-4 border-green-400 bg-green-50',
+    title: `Design approved — ${d.event.client.firstName} ${d.event.client.lastName}`,
+    detail: `Version ${d.version} · ${d.event.title} · approved ${d.approvedAt ? formatDistanceToNow(d.approvedAt) + ' ago' : ''}`,
+    href: `/events/${d.event.id}/designs`,
+  }));
+
+  const allClearBanner = (
+    <div className="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
+      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+      You&apos;re all caught up — no overdue payments, unsigned contracts, or pending actions.
+    </div>
+  );
 
   return (
     <>
@@ -313,65 +329,27 @@ export default async function DashboardPage() {
         )}
 
         {/* Requires Attention */}
-        {attention.length > 0 && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <AlertTriangle className="w-4 h-4 text-red-500" />
-                Requires Attention
-                <span className="ml-auto text-xs font-normal text-gray-400">{attention.length} item{attention.length !== 1 ? 's' : ''}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {attention.map((item, i) => (
-                <Link key={item.key} href={item.href}>
-                  <div className={`flex items-center gap-4 px-6 py-3.5 hover:brightness-95 transition-all cursor-pointer ${item.rowCls} ${i < attention.length - 1 ? 'border-b border-white/60' : ''}`}>
-                    <item.icon className={`w-4 h-4 flex-shrink-0 ${item.iconCls}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
-                      <p className="text-xs text-gray-500">{item.detail}</p>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  </div>
-                </Link>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* All clear */}
-        {attention.length === 0 && (
-          <div className="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
-            <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-            You're all caught up — no overdue payments, unsigned contracts, or pending actions.
-          </div>
-        )}
+        {attention.length > 0 ? (
+          <DismissableSection
+            items={attention}
+            storagePrefix="bg_attn_"
+            title="Requires Attention"
+            titleIconName="AlertTriangle"
+            titleIconCls="text-red-500"
+            emptyNode={allClearBanner}
+          />
+        ) : allClearBanner}
 
         {/* Recent Activity */}
-        {recentlyApproved.length > 0 && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                Recent Activity
-                <span className="ml-auto text-xs font-normal text-gray-400">last 30 days</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {recentlyApproved.map((d, i) => (
-                <Link key={d.id} href={`/events/${d.event.id}/designs`}>
-                  <div className={`flex items-center gap-4 px-6 py-3.5 border-l-4 border-green-400 bg-green-50 hover:brightness-95 transition-all cursor-pointer ${i < recentlyApproved.length - 1 ? 'border-b border-white/60' : ''}`}>
-                    <CheckCircle className="w-4 h-4 flex-shrink-0 text-green-500" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">Design approved — {d.event.client.firstName} {d.event.client.lastName}</p>
-                      <p className="text-xs text-gray-500">Version {d.version} · {d.event.title} · approved {d.approvedAt ? formatDistanceToNow(d.approvedAt) + ' ago' : ''}</p>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  </div>
-                </Link>
-              ))}
-            </CardContent>
-          </Card>
+        {activityRows.length > 0 && (
+          <DismissableSection
+            items={activityRows}
+            storagePrefix="bg_act_"
+            title="Recent Activity"
+            titleIconName="CheckCircle"
+            titleIconCls="text-green-500"
+            subtitle="last 30 days"
+          />
         )}
 
         {/* Upcoming Events */}
