@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.42.2] — 2026-07-09
+
+### Changed
+- **Sidebar**: top-left now shows "Booth Genius" (static) instead of the operator's company name; removed unused `companyName` state (team member access still loads from branding API)
+- **Event detail page**: reorganized action buttons into two clear rows — primary row (Edit, Client Portal, Messages, View/Create Quote, Create Invoice) separated from secondary row (state-change: New Quote, Mark Complete, Close, Lost, Reinstate, Cancel, Delete) with a subtle `border-t` divider
+- **Settings tabs**: updated active tab style across all 9 settings pages from orange filled pill (`bg-brand text-white`) to Monday-style underline (`border-b-2 border-[#0085FF]`); inactive tabs now use muted text with hover color instead of rounded hover background
+
+---
+
 ## [2.42.1] — 2026-07-09
 
 ### Changed

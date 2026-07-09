@@ -84,7 +84,6 @@ export function Sidebar() {
   const path = usePathname();
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
-  const [companyName, setCompanyName] = useState<string>('');
   const [teamMemberAccess, setTeamMemberAccess] = useState<string[]>(['events']);
   const close = () => setIsOpen(false);
 
@@ -92,16 +91,11 @@ export function Sidebar() {
     fetch('/api/settings/branding')
       .then(r => r.json())
       .then(d => {
-        if (d && !d.error) {
-          setCompanyName(d.companyName ?? '');
-          if (d.teamMemberAccess) {
-            try { setTeamMemberAccess(JSON.parse(d.teamMemberAccess)); } catch { /* keep default */ }
-          }
+        if (d && !d.error && d.teamMemberAccess) {
+          try { setTeamMemberAccess(JSON.parse(d.teamMemberAccess)); } catch { /* keep default */ }
         }
       });
   }, []);
-
-  const displayName = companyName || session?.tenant?.name || 'Loading...';
   const isTeamMember = session?.tenantRole === 'TEAM_MEMBER';
 
   const teamNav: NavItem[] = teamMemberAccess
@@ -134,7 +128,7 @@ export function Sidebar() {
         <div className="px-4 py-4 border-b border-white/10 shrink-0">
           <div className="flex items-center gap-3">
             <BoothGeniusIcon size={32} />
-            <p className="text-white font-semibold text-sm leading-tight truncate flex-1">{displayName}</p>
+            <p className="text-white font-semibold text-sm leading-tight truncate flex-1">Booth Genius</p>
             <button onClick={close} className="lg:hidden text-white/50 hover:text-white" aria-label="Close menu">
               <X className="w-4 h-4" />
             </button>

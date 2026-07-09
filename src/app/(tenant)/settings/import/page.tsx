@@ -173,10 +173,10 @@ export default function ImportPage() {
       <TopBar title="Settings" />
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Settings tab bar */}
-        <div className="flex flex-wrap gap-1 mb-8">
+        <div className="flex flex-wrap border-b border-gray-200 mb-6">
           {TABS.map(([href, label]) => (
             <Link key={href} href={'/settings/' + href}
-              className={'px-3 sm:px-4 py-2 rounded-lg text-sm font-medium ' + (href === 'import' ? 'bg-brand text-white' : 'text-gray-600 hover:bg-gray-100')}>
+              className={'px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap -mb-px ' + (href === 'import' ? 'border-[#0085FF] text-[#1F1F3D]' : 'border-transparent text-[#676879] hover:text-[#1F1F3D]')}>
               {label}
             </Link>
           ))}

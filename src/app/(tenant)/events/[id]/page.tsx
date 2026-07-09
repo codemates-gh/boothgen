@@ -87,32 +87,35 @@ export default async function EventDetailPage({ params }: { params: { id: string
             <p className="text-gray-500 text-sm">{event.client.firstName} {event.client.lastName} &bull; {event.client.email}</p>
           </div>
           {isAdmin && (
-            <div className="flex flex-wrap gap-2">
-              <Link href={'/events/' + event.id + '/edit'}><Button variant="outline" size="sm"><Edit2 className="w-4 h-4 mr-1"/>Edit Event</Button></Link>
-              <a href={portalUrl} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><ExternalLink className="w-4 h-4 mr-1"/>Client Portal</Button></a>
-              <a href="#messages"><Button variant="outline" size="sm"><MessageSquare className="w-4 h-4 mr-1"/>Messages</Button></a>
-              {event.Quote.length > 0 ? (
-                <>
-                  <Link href={'/quotes/' + event.Quote[0].id}><Button size="sm"><ClipboardList className="w-4 h-4 mr-1"/>View Quote</Button></Link>
-                  <Link href={'/quotes/new?eventId=' + event.id}><Button variant="outline" size="sm">+ New Quote</Button></Link>
-                </>
-              ) : (
-                <Link href={'/quotes/new?eventId=' + event.id}><Button size="sm"><ClipboardList className="w-4 h-4 mr-1"/>Create Quote</Button></Link>
-              )}
-              <Link href={'/invoices/new?eventId=' + event.id}><Button variant="outline" size="sm"><Receipt className="w-4 h-4 mr-1"/>Create Invoice</Button></Link>
-              {(event.status === 'BOOKED' || event.status === 'IN_PROGRESS') && new Date(event.eventDate) < new Date() && (
-                <MarkCompleteButton eventId={event.id} />
-              )}
-              {event.status === 'COMPLETED' && (
-                <CloseEventButton
-                  eventId={event.id}
-                  hasPhotos={(event as any).gallery?._count?.assets > 0}
-                />
-              )}
-              <MarkAsLostButton eventId={event.id} status={event.status} />
-              <ReinstateEventButton eventId={event.id} status={event.status} />
-              <CancelEventButton eventId={event.id} status={event.status} depositPaidCents={depositPaidCents} totalPaidCents={totalPaidCents} />
-              <DeleteEventButton eventId={event.id} hasInvoices={event.invoices.length > 0} hasContracts={event.contracts.length > 0} />
+            <div className="space-y-2.5">
+              {/* Primary: navigation & creation */}
+              <div className="flex flex-wrap gap-2">
+                <Link href={'/events/' + event.id + '/edit'}><Button variant="outline" size="sm"><Edit2 className="w-3.5 h-3.5 mr-1.5"/>Edit Event</Button></Link>
+                <a href={portalUrl} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><ExternalLink className="w-3.5 h-3.5 mr-1.5"/>Client Portal</Button></a>
+                <a href="#messages"><Button variant="outline" size="sm"><MessageSquare className="w-3.5 h-3.5 mr-1.5"/>Messages</Button></a>
+                {event.Quote.length > 0 ? (
+                  <Link href={'/quotes/' + event.Quote[0].id}><Button size="sm"><ClipboardList className="w-3.5 h-3.5 mr-1.5"/>View Quote</Button></Link>
+                ) : (
+                  <Link href={'/quotes/new?eventId=' + event.id}><Button size="sm"><ClipboardList className="w-3.5 h-3.5 mr-1.5"/>Create Quote</Button></Link>
+                )}
+                <Link href={'/invoices/new?eventId=' + event.id}><Button variant="outline" size="sm"><Receipt className="w-3.5 h-3.5 mr-1.5"/>Create Invoice</Button></Link>
+              </div>
+              {/* Secondary: state changes & management */}
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+                {event.Quote.length > 0 && (
+                  <Link href={'/quotes/new?eventId=' + event.id}><Button variant="ghost" size="sm" className="text-[#676879]">+ New Quote</Button></Link>
+                )}
+                {(event.status === 'BOOKED' || event.status === 'IN_PROGRESS') && new Date(event.eventDate) < new Date() && (
+                  <MarkCompleteButton eventId={event.id} />
+                )}
+                {event.status === 'COMPLETED' && (
+                  <CloseEventButton eventId={event.id} hasPhotos={(event as any).gallery?._count?.assets > 0} />
+                )}
+                <MarkAsLostButton eventId={event.id} status={event.status} />
+                <ReinstateEventButton eventId={event.id} status={event.status} />
+                <CancelEventButton eventId={event.id} status={event.status} depositPaidCents={depositPaidCents} totalPaidCents={totalPaidCents} />
+                <DeleteEventButton eventId={event.id} hasInvoices={event.invoices.length > 0} hasContracts={event.contracts.length > 0} />
+              </div>
             </div>
           )}
         </div>

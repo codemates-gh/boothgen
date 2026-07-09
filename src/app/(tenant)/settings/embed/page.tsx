@@ -174,8 +174,8 @@ export default function EmbedPage() {
     <>
       <TopBar title="Settings" />
       <div className="p-4 sm:p-8 max-w-3xl space-y-6">
-        <div className="flex flex-wrap gap-2 border-b pb-4">
-          {tabs.map(([href, label]) => <Link key={href} href={'/settings/' + href} className={'px-3 sm:px-4 py-2 rounded-lg text-sm font-medium ' + (href === 'embed' ? 'bg-brand text-white' : 'text-gray-600 hover:bg-gray-100')}>{label}</Link>)}
+        <div className="flex flex-wrap border-b border-gray-200 mb-6">
+          {tabs.map(([href, label]) => <Link key={href} href={'/settings/' + href} className={'px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap -mb-px ' + (href === 'embed' ? 'border-[#0085FF] text-[#1F1F3D]' : 'border-transparent text-[#676879] hover:text-[#1F1F3D]')}>{label}</Link>)}
         </div>
 
         <div className="bg-brand-surface border border-brand/20 rounded-xl p-4 flex items-start gap-3">
