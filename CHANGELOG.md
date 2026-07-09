@@ -4,6 +4,21 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.42.0] — 2026-07-09
+
+### Changed
+- **Design system — Monday CRM theme**: Complete UI refresh matching Monday CRM's visual language
+  - Font: switched from Outfit → Poppins (400/500/600/700)
+  - Palette: added Monday design tokens — `#1F1F3D` sidebar, `#0085FF` CTA blue, `#00C875` success green, `#FDAB3D` warning orange, `#E2445C` danger red, `#784BD1` purple, `#F5F6F8` canvas background
+  - **Sidebar**: active item now uses left white bar indicator + subtle `bg-white/10` highlight; company initials avatar (blue square) at top; user avatar (purple circle) at bottom; all icons same-color treatment (no orange on active)
+  - **TopBar**: user avatar/initials circle on right, refined search pill, `shadow-[0_1px_3px]` bottom border
+  - **Card**: removed border, switched to `shadow-card` (soft floating shadow)
+  - **Badge**: Monday solid-color pills — white text on green/orange/red/blue/brand fill, `rounded-md` shape
+  - **Button**: default → Monday blue `#0085FF`, refined sizes (9px height down from 10px for tighter feel), `rounded-lg` maintained
+  - Layout canvas background: `bg-[#F5F6F8]` across all tenant pages
+
+---
+
 ## [2.41.7] — 2026-07-09
 
 ### Added

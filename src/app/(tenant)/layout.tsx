@@ -23,7 +23,7 @@ export default async function TenantLayout({ children }: { children: React.React
     : null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F5F6F8]">
       <Sidebar />
       <main className="lg:pl-64 pt-14 lg:pt-16">
         {isCancelled && (

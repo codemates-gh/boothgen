@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
-import { Outfit } from 'next/font/google';
+import { Poppins } from 'next/font/google';
 import { SessionProvider } from '@/components/providers/SessionProvider';
 import './globals.css';
 
-const outfit = Outfit({ subsets: ['latin'], weight: ['400', '500'], display: 'swap' });
+const poppins = Poppins({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap' });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://boothgen.com'),
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={outfit.className}><SessionProvider>{children}</SessionProvider></body>
+      <body className={poppins.className}><SessionProvider>{children}</SessionProvider></body>
     </html>
   );
 }
