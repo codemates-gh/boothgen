@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { fmtCents } from '@/lib/utils';
 import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,7 +10,6 @@ import { Plus, ArrowRight, Info } from 'lucide-react';
 import { format } from 'date-fns';
 
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
-const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
 const STATUSES = ['ALL', 'DRAFT', 'SENT', 'PARTIALLY_PAID', 'PAID', 'OVERDUE', 'CANCELLED'];
 
 export default function InvoicesPage() {
@@ -63,8 +63,8 @@ export default function InvoicesPage() {
                     <tr key={inv.id} className="border-b last:border-0 hover:bg-gray-50">
                       <td className="px-6 py-4"><p className="font-semibold text-sm">{inv.invoiceNumber}</p>{inv.event && <p className="text-xs text-gray-400">{inv.event.title}</p>}</td>
                       <td className="px-6 py-4 text-sm">{inv.client?.firstName} {inv.client?.lastName}</td>
-                      <td className="px-6 py-4 text-sm font-medium">{fmt(inv.totalCents)}</td>
-                      <td className="px-6 py-4 text-sm">{fmt(inv.balanceDueCents)}</td>
+                      <td className="px-6 py-4 text-sm font-medium">{fmtCents(inv.totalCents, inv.currency ?? 'usd')}</td>
+                      <td className="px-6 py-4 text-sm">{fmtCents(inv.balanceDueCents, inv.currency ?? 'usd')}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">{(() => {
                           const nextMs = inv.PaymentMilestone?.find((m: any) => m.status !== 'PAID');
                           const d = nextMs?.dueDate ?? inv.dueDate;

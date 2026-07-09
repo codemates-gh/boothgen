@@ -21,8 +21,12 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { eventId, lineItems, notes, terms, taxRatePercent, validUntil, discountCents, discountLabel, couponId, contractTemplateId, paymentType, depositPercent } = body;
   if (!eventId) return NextResponse.json({ error: 'Event required' }, { status: 400 });
-  const event = await prisma.event.findFirst({ where: { id: eventId, tenantId: session.tenantId }, include: { client: true } });
+  const [event, branding] = await Promise.all([
+    prisma.event.findFirst({ where: { id: eventId, tenantId: session.tenantId }, include: { client: true } }),
+    prisma.tenantBranding.findUnique({ where: { tenantId: session.tenantId }, select: { currency: true } }),
+  ]);
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+  const currency = branding?.currency ?? 'usd';
 
   // Validate coupon if provided
   let resolvedCouponId: string | null = couponId || null;
@@ -44,7 +48,7 @@ export async function POST(req: NextRequest) {
   const quote = await prisma.quote.create({
     data: {
       tenantId: session.tenantId, eventId, clientId: event.clientId,
-      quoteNumber, notes: notes || null, terms: terms || null,
+      quoteNumber, currency, notes: notes || null, terms: terms || null,
       taxRatePercent: taxRatePercent || 0, taxAmountCents: tax,
       subtotalCents: subtotal, discountCents: discount, discountLabel: discountLabel || null,
       couponId: resolvedCouponId, totalCents: total,

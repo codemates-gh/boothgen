@@ -23,7 +23,7 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
   const isPro = subscription?.plan === 'MONTHLY' || subscription?.plan === 'ANNUAL';
   const inv = await prisma.invoice.findFirst({ where: { id: params.id, tenantId: session.tenantId }, include: { client: true, event: true, lineItems: { orderBy: { sortOrder: 'asc' } }, payments: { orderBy: { paidAt: 'desc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } } });
   if (!inv) notFound();
-  const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+  const fmt = (c: number) => fmtCents(c, inv.currency ?? 'usd');
   return (
     <>
       <TopBar title={'Invoice ' + inv.invoiceNumber} />

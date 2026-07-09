@@ -38,7 +38,7 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
   const fromAddress = companyName ? `${companyName} <${emailFrom}>` : emailFrom;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
   const portalUrl = appUrl + '/portal/' + q.event.portalToken + '?tab=quote';
-  const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+  const fmt = (c: number) => fmtCents(c, quote.currency ?? 'usd');
 
   // Skip hardcoded email if an active automation rule covers QUOTE_SENT
   const hasQuoteRule = await prisma.automationRule.count({

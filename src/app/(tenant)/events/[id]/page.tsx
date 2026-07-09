@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { requireTenantSession } from '@/lib/auth/session';
+import { fmtCents } from '@/lib/utils';
 import { prisma } from '@/lib/prisma/client';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -63,7 +64,8 @@ export default async function EventDetailPage({ params }: { params: { id: string
         orderBy: { user: { name: 'asc' } },
       })
     : [];
-  const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+  const branding = await prisma.tenantBranding.findUnique({ where: { tenantId: session.tenantId }, select: { currency: true } });
+  const fmt = (c: number) => fmtCents(c, branding?.currency ?? 'usd');
   const portalUrl = process.env.NEXT_PUBLIC_APP_URL + '/portal/' + event.portalToken;
 
   // Payment totals for cancel refund options

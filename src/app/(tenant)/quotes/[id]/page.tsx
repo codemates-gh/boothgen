@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 
 const QC: Record<string, any> = { DRAFT: 'default', SENT: 'info', VIEWED: 'warning', ACCEPTED: 'success', DECLINED: 'danger', EXPIRED: 'default' };
-const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+const fmt = (c: number) => fmtCents(c, quote.currency ?? 'usd');
 const EDITABLE = ['DRAFT', 'SENT', 'VIEWED', 'DECLINED', 'EXPIRED'];
 
 export default function QuoteDetailPage() {

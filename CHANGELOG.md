@@ -4,6 +4,24 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.43.0] — 2026-07-09
+
+### Added
+- **Multi-currency support** — Canadian (CAD), British (GBP), Euro (EUR), Australian (AUD), and New Zealand (NZD) operators now fully supported alongside USD
+  - Settings → Branding → new "Currency & Tax" card: choose currency, set tax label (Tax / GST / HST / VAT / etc.)
+  - All new invoices and quotes inherit the tenant's configured currency at creation time
+  - Stripe payment intents already use `invoice.currency` — no Stripe-side changes needed
+  - All display pages (invoices, quotes, events, dashboard, portal), email sends, and Inngest notifications now format amounts with the document's own currency using locale-aware `Intl.NumberFormat` (CAD uses `en-CA` locale → shows `$` not `CA$`)
+  - PDFs (invoice + quote) use document currency and the configured tax label (e.g. "GST" appears instead of "Tax")
+  - `fmtCents(cents, currency)` in `src/lib/utils.ts` is now the single formatting utility across the app, with a locale map per currency code
+- **Packages page: type descriptions** — each section (Full Packages, Add-On / Extra, A La Carte, Discount) now shows a brief explanation beneath its title so operators know what to put where; package prices display in the tenant's configured currency
+
+### Changed
+- `TenantBranding` schema: added `currency` (default `"usd"`) and `taxLabel` (default `"Tax"`)
+- `Quote` schema: added `currency` (default `"usd"`) to mirror the existing `Invoice.currency` field
+
+---
+
 ## [2.42.4] — 2026-07-09
 
 ### Changed

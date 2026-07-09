@@ -13,11 +13,18 @@ import { Plus, Edit2, Trash2, Package, Layers } from 'lucide-react';
 const TABS = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import']];
 const CATS = [['package','Full Package'],['addon','Add-On / Extra'],['product','A La Carte Item'],['discount','Discount']];
 const CAT_COLOR: Record<string,string> = { package:'bg-brand-surface text-brand', addon:'bg-blue-50 text-blue-700', product:'bg-purple-50 text-purple-700', discount:'bg-green-50 text-green-700' };
-const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+const CAT_DESC: Record<string,string> = {
+  package: 'A complete, bundled offering — includes everything needed for the event (hours, setup, features). Clients typically choose one package as their main service.',
+  addon: 'Optional enhancements layered on top of a package, such as extra hours, a second booth, a roaming camera, or premium props.',
+  product: 'Individual items priced separately so clients can mix and match. Useful for things like digital albums, rush delivery, or photo prints.',
+  discount: 'A discount amount or coupon to apply on quotes and invoices.',
+};
+import { fmtCents } from '@/lib/utils';
 
 type Pkg = { id: string; name: string; description: string | null; priceCents: number; category: string; isActive: boolean };
 
 export default function PackagesPage() {
+  const [currency, setCurrency] = useState('usd');
   const [pkgs, setPkgs] = useState<Pkg[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Pkg | null>(null);
@@ -25,7 +32,10 @@ export default function PackagesPage() {
   const [saving, setSaving] = useState(false);
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    fetch('/api/settings/branding').then(r => r.json()).then(d => { if (d?.currency) setCurrency(d.currency); });
+  }, []);
   async function load() {
     const r = await fetch('/api/settings/packages');
     setPkgs(await r.json());
@@ -85,7 +95,10 @@ export default function PackagesPage() {
 
         {grouped.map(({ key, label, items }) => (
           <Card key={key}>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Layers className="w-4 h-4"/>{label}s</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base"><Layers className="w-4 h-4"/>{label}s</CardTitle>
+              {CAT_DESC[key] && <p className="text-xs text-[#676879] mt-0.5 font-normal">{CAT_DESC[key]}</p>}
+            </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[480px]">
@@ -95,7 +108,7 @@ export default function PackagesPage() {
                       <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50">
                         <td className="px-6 py-3"><p className="font-medium text-sm">{p.name}</p><span className={'text-xs px-2 py-0.5 rounded-full font-medium ' + (CAT_COLOR[p.category] ?? 'bg-gray-100 text-gray-600')}>{CATS.find(c=>c[0]===p.category)?.[1] ?? p.category}</span></td>
                         <td className="px-6 py-3 text-sm text-gray-500">{p.description ?? '—'}</td>
-                        <td className="px-6 py-3 text-right font-semibold text-sm">{fmt(p.priceCents)}</td>
+                        <td className="px-6 py-3 text-right font-semibold text-sm">{fmtCents(p.priceCents, currency)}</td>
                         <td className="px-6 py-3">
                           <div className="flex gap-1 justify-end">
                             <Button size="sm" variant="ghost" onClick={() => openEdit(p)}><Edit2 className="w-3 h-3"/></Button>

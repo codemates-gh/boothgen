@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select } from '@/components/ui/select';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Camera, Upload } from 'lucide-react';
@@ -12,7 +13,7 @@ import { Camera, Upload } from 'lucide-react';
 const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import']];
 
 export default function BrandingSettingsPage() {
-  const [form, setForm] = useState({ companyName:'', primaryColor:'#F97316', secondaryColor:'#EA6100', replyToEmail:'', supportPhone:'', websiteUrl:'', businessAddress:'', invoiceFooterText:'', emailHeaderHtml:'' });
+  const [form, setForm] = useState({ companyName:'', primaryColor:'#F97316', secondaryColor:'#EA6100', replyToEmail:'', supportPhone:'', websiteUrl:'', businessAddress:'', invoiceFooterText:'', emailHeaderHtml:'', currency:'usd', taxLabel:'Tax' });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -34,6 +35,8 @@ export default function BrandingSettingsPage() {
           businessAddress:   d.businessAddress   ?? '',
           invoiceFooterText: d.invoiceFooterText ?? '',
           emailHeaderHtml:   d.emailHeaderHtml   ?? '',
+          currency:          d.currency          ?? 'usd',
+          taxLabel:          d.taxLabel          ?? 'Tax',
         }));
         setLogoUrl(d.logoUrl ?? null);
       }
@@ -134,6 +137,30 @@ export default function BrandingSettingsPage() {
               </div>
               <p className="text-xs text-gray-400 mt-1">Paste the URL of an image hosted anywhere (Cloudflare, CDN, etc.)</p>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Currency &amp; Tax</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+              <Select value={form.currency} onChange={e => set('currency', e.target.value)}>
+                <option value="usd">USD — US Dollar ($)</option>
+                <option value="cad">CAD — Canadian Dollar ($)</option>
+                <option value="gbp">GBP — British Pound (£)</option>
+                <option value="eur">EUR — Euro (€)</option>
+                <option value="aud">AUD — Australian Dollar ($)</option>
+                <option value="nzd">NZD — New Zealand Dollar ($)</option>
+              </Select>
+              <p className="text-xs text-gray-400 mt-1">Applied to all new quotes, invoices, and client payments.</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tax Label</label>
+              <Input value={form.taxLabel} onChange={e => set('taxLabel', e.target.value)} placeholder="Tax" className="max-w-[180px]" />
+              <p className="text-xs text-gray-400 mt-1">Shown on quotes and invoices — e.g. Tax, GST, HST, VAT.</p>
+            </div>
+            <div className="flex justify-end"><Button onClick={save} disabled={saving}>{saving ? 'Saving...' : saved ? '✓ Saved' : 'Save Changes'}</Button></div>
           </CardContent>
         </Card>
 

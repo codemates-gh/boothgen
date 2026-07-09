@@ -285,6 +285,9 @@ model TenantBranding {
   websiteUrl        String?
   businessAddress   String?
   leadFormConfig    Json?
+  // Currency & tax
+  currency          String   @default("usd")
+  taxLabel          String   @default("Tax")
   // Payment terms
   defaultDepositPercent     Int @default(50)
   balanceDueDaysBeforeEvent Int @default(30)
@@ -846,6 +849,7 @@ model Quote {
   contractTemplateId      String?
   paymentType             String          @default("full")
   depositPercent          Int             @default(50)
+  currency                String          @default("usd")
   portalToken             String          @unique @default(cuid())
   createdAt               DateTime        @default(now())
   updatedAt               DateTime        @updatedAt

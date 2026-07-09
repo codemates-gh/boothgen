@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
+import { fmtCents } from '@/lib/utils';
 import { prisma } from '@/lib/prisma/client';
 import { stripe } from '@/lib/stripe';
 import { sendPaymentConfirmationEmail } from '@/lib/email/send';
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: { portalToken:
 
   // Reconcile invoice against Stripe if webhook hasn't fired yet
   let rawInvoice = event.invoices[0] || null;
-  const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+  const fmt = (c: number) => fmtCents(c, invoice?.currency ?? 'usd');
   const companyName = event.tenant.branding?.companyName ?? event.tenant.name;
   const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
   const portalUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com') + '/portal/' + params.portalToken + '?tab=invoice';

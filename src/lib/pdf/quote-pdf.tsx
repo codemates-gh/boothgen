@@ -1,5 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { fmtCents } from '@/lib/utils';
 
 const S = StyleSheet.create({
   page:      { fontFamily: 'Helvetica', fontSize: 10, color: '#111827', padding: 48 },
@@ -24,10 +25,12 @@ const S = StyleSheet.create({
   footer:    { position: 'absolute', bottom: 32, left: 48, right: 48, fontSize: 8, color: '#9ca3af', textAlign: 'center' },
 });
 
-const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(c / 100);
+const makeFmt = (cur: string) => (c: number) => fmtCents(c, cur);
 const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '—';
 
 export function QuotePDF({ quote, branding }: { quote: any; branding: any }) {
+  const fmt = makeFmt(quote.currency ?? branding?.currency ?? 'usd');
+  const taxLabel = branding?.taxLabel || 'Tax';
   return (
     <Document title={`Quote ${quote.quoteNumber}`}>
       <Page size="A4" style={S.page}>
@@ -97,7 +100,7 @@ export function QuotePDF({ quote, branding }: { quote: any; branding: any }) {
           )}
           {(quote.taxAmountCents ?? 0) > 0 && (
             <View style={S.totalRow}>
-              <Text style={S.totalLbl}>Tax</Text>
+              <Text style={S.totalLbl}>{taxLabel}</Text>
               <Text style={S.totalVal}>{fmt(quote.taxAmountCents)}</Text>
             </View>
           )}

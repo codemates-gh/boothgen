@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
+import { fmtCents } from '@/lib/utils';
 import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma/client';
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest) {
               await triggerAutomation({ tenantId: inv.tenantId, eventId: inv.eventId, trigger: 'PAYMENT_RECEIVED' });
             }
             if (inv.event?.client) {
-              const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+              const fmt = (c: number) => fmtCents(c, invoice.currency ?? 'usd');
               const companyName = inv.tenant.branding?.companyName ?? inv.tenant.name;
               const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
               // Skip hardcoded confirmation if an active automation rule covers PAYMENT_RECEIVED

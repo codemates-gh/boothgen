@@ -26,7 +26,7 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
   const branding = inv.tenant.branding;
   const companyName = branding?.companyName ?? inv.tenant.name;
   const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
-  const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+  const fmt = (c: number) => fmtCents(c, invoice.currency ?? 'usd');
 
   // Use earliest unpaid milestone due date, fall back to invoice-level dueDate
   const milestoneDate = inv.PaymentMilestone[0]?.dueDate;

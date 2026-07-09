@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { requireTenantSession } from '@/lib/auth/session';
+import { fmtCents } from '@/lib/utils';
 import { prisma } from '@/lib/prisma/client';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -156,7 +157,7 @@ export default async function DashboardPage() {
     return d;
   };
 
-  const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+  const fmt = (c: number) => fmtCents(c, (tenant as any)?.branding?.currency ?? 'usd');
   const conversionRate = totalLeads > 0 ? Math.round((totalBooked / totalLeads) * 100) : 0;
 
   const stats = [

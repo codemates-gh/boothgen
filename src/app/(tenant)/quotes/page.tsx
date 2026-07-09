@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { fmtCents } from '@/lib/utils';
 import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,7 +10,6 @@ import { Plus, ArrowRight, FileText, Trash2, Info } from 'lucide-react';
 import { format } from 'date-fns';
 
 const QC: Record<string, any> = { DRAFT: 'default', SENT: 'info', VIEWED: 'warning', ACCEPTED: 'success', DECLINED: 'danger', EXPIRED: 'default' };
-const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
 const EDITABLE = ['DRAFT', 'SENT', 'VIEWED', 'DECLINED', 'EXPIRED'];
 const STATUSES = ['ALL', 'DRAFT', 'SENT', 'VIEWED', 'ACCEPTED', 'DECLINED', 'EXPIRED'];
 
@@ -84,7 +84,7 @@ export default function QuotesPage() {
                     <td className="px-6 py-4 font-semibold text-sm">{q.quoteNumber}</td>
                     <td className="px-6 py-4 text-sm">{q.client?.firstName} {q.client?.lastName}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{q.event?.title}</td>
-                    <td className="px-6 py-4 text-sm font-medium">{fmt(q.totalCents)}</td>
+                    <td className="px-6 py-4 text-sm font-medium">{fmtCents(q.totalCents, q.currency ?? 'usd')}</td>
                     <td className="px-6 py-4"><Badge variant={QC[q.status]}>{q.status}</Badge></td>
                     <td className="px-6 py-4 text-sm text-gray-500">{format(new Date(q.createdAt), 'MMM d, yyyy')}</td>
                     <td className="px-6 py-4">

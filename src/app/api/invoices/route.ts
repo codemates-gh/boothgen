@@ -21,8 +21,12 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { eventId, lineItems, taxRatePercent, dueDate, depositDueDate, balanceDueDate, notes, paymentType, depositPercent } = body;
   if (!eventId) return NextResponse.json({ error: 'Event required' }, { status: 400 });
-  const event = await prisma.event.findFirst({ where: { id: eventId, tenantId: session.tenantId } });
+  const [event, branding] = await Promise.all([
+    prisma.event.findFirst({ where: { id: eventId, tenantId: session.tenantId } }),
+    prisma.tenantBranding.findUnique({ where: { tenantId: session.tenantId }, select: { currency: true } }),
+  ]);
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+  const currency = branding?.currency ?? 'usd';
   const count = await prisma.invoice.count({ where: { tenantId: session.tenantId } });
   const invoiceNumber = 'INV-' + String(count + 1).padStart(4, '0');
   const items = lineItems || [];
@@ -41,7 +45,7 @@ export async function POST(req: NextRequest) {
   const invoice = await prisma.invoice.create({
     data: {
       tenantId: session.tenantId, eventId, clientId: event.clientId,
-      invoiceNumber, subtotalCents: subtotal, taxAmountCents: tax, totalCents: total,
+      invoiceNumber, currency, subtotalCents: subtotal, taxAmountCents: tax, totalCents: total,
       balanceDueCents: total, amountPaidCents: 0,
       dueDate: fullDueDate,
       notes: notes || null, status: 'DRAFT',

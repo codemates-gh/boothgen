@@ -1,5 +1,6 @@
 
 import { inngest } from './client';
+import { fmtCents } from '@/lib/utils';
 import { prisma } from '@/lib/prisma/client';
 import { sendEmail, sendDesignReadyEmail, sendDesignDecisionEmail, sendPaymentReminderEmail, sendGalleryDeletionReminderEmail, sendDesignApprovalReminderEmail } from '@/lib/email/send';
 import { triggerAutomation, scheduleEventDateAutomations, executeAutomation, notifyAdminOfFailure } from './trigger';
@@ -415,7 +416,7 @@ export const sendOverduePaymentReminders = inngest.createFunction(
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
     const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
     const adminEmail = process.env.SUPER_ADMIN_EMAIL ?? 'codemates@gmail.com';
-    const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+    const fmt = (c: number) => fmtCents(c, ms?.invoice?.currency ?? branding?.currency ?? 'usd');
 
     let sent = 0;
     let failed = 0;
@@ -490,7 +491,7 @@ export const notifyPaymentMilestoneDue = inngest.createFunction(
     const companyName = branding?.companyName ?? event.tenant.name;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
     const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
-    const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+    const fmt = (c: number) => fmtCents(c, ms?.invoice?.currency ?? branding?.currency ?? 'usd');
 
     await sendPaymentReminderEmail({
       to: event.client.email,
