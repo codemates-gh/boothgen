@@ -1,3 +1,4 @@
+import { fmtCents } from '@/lib/utils';
 
 export type MergeCtx = {
   client: { first_name: string; last_name: string; full_name: string; email: string; phone?: string; company?: string };
@@ -40,7 +41,7 @@ export function buildCtx(params: {
 }): MergeCtx {
   const { format } = require('date-fns');
   const { client, event, invoice, contract, quote, branding, gallery, appUrl } = params;
-  const fmt = (cents: number, cur = 'usd') => new Intl.NumberFormat('en-US', { style: 'currency', currency: cur.toUpperCase() }).format(cents / 100);
+  const fmt = (cents: number, cur = 'usd') => fmtCents(cents, cur);
   return {
     client: { first_name: client.firstName, last_name: client.lastName, full_name: client.firstName + ' ' + client.lastName, email: client.email, phone: client.phone ?? undefined, company: client.company ?? undefined },
     event: { title: event.title, date: format(event.eventDate, 'EEEE, MMMM d, yyyy'), time: event.startTime ? format(event.startTime, 'h:mm a') + (event.endTime ? ' – ' + format(event.endTime, 'h:mm a') : '') : undefined, start_time: event.startTime ? format(event.startTime, 'h:mm a') : undefined, end_time: event.endTime ? format(event.endTime, 'h:mm a') : undefined, venue_name: event.venueName ?? undefined, venue_address: [event.venueAddress, event.venueCity, event.venueState].filter(Boolean).join(', ') || undefined, venue_city: event.venueCity ?? undefined, venue_state: event.venueState ?? undefined, venue_zip: event.venuePostalCode ?? undefined, package_name: event.packageName ?? undefined, guest_count: event.guestCount?.toString() },

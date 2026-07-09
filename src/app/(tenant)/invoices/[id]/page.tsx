@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, Bell, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import MilestonesCard from './MilestonesCard';
+import { fmtCents } from '@/lib/utils';
 
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
 
@@ -76,6 +77,7 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
             milestones={(inv as any).PaymentMilestone}
             isAdmin={isAdmin}
             isPro={isPro}
+            currency={inv.currency ?? 'usd'}
           />
         )}
       </div>

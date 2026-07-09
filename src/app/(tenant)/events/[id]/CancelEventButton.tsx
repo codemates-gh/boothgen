@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Ban } from 'lucide-react';
+import { fmtCents } from '@/lib/utils';
 
 type RefundOption = 'none' | 'deposit' | 'all';
 
@@ -11,12 +12,10 @@ interface Props {
   status: string;
   depositPaidCents: number;
   totalPaidCents: number;
+  currency?: string;
 }
 
-const fmt = (cents: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(cents / 100);
-
-export default function CancelEventButton({ eventId, status, depositPaidCents, totalPaidCents }: Props) {
+export default function CancelEventButton({ eventId, status, depositPaidCents, totalPaidCents, currency = 'usd' }: Props) {
   const [open, setOpen] = useState(false);
   const [refundOption, setRefundOption] = useState<RefundOption>('none');
   const [loading, setLoading] = useState(false);
@@ -85,7 +84,7 @@ export default function CancelEventButton({ eventId, status, depositPaidCents, t
           <span>
             <span className="font-medium">Refund deposit</span>
             {depositPaidCents > 0
-              ? <span className="block text-gray-500 text-xs">Return {fmt(depositPaidCents)} to client</span>
+              ? <span className="block text-gray-500 text-xs">Return {fmtCents(depositPaidCents, currency)} to client</span>
               : <span className="block text-gray-500 text-xs">No deposit collected</span>}
           </span>
         </label>
@@ -103,7 +102,7 @@ export default function CancelEventButton({ eventId, status, depositPaidCents, t
           <span>
             <span className="font-medium">Refund all payments</span>
             {totalPaidCents > 0
-              ? <span className="block text-gray-500 text-xs">Return {fmt(totalPaidCents)} to client</span>
+              ? <span className="block text-gray-500 text-xs">Return {fmtCents(totalPaidCents, currency)} to client</span>
               : <span className="block text-gray-500 text-xs">No payments collected</span>}
           </span>
         </label>

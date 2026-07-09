@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { fmtCents } from '@/lib/utils';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
@@ -13,17 +14,16 @@ const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''
 );
 
-const fmt = (c: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
-
 function Checkout({
   amountCents,
   brandColor,
   returnUrl,
+  currency = 'usd',
 }: {
   amountCents: number;
   brandColor: string;
   returnUrl: string;
+  currency?: string;
 }) {
   const stripe     = useStripe();
   const elements   = useElements();
@@ -62,7 +62,7 @@ function Checkout({
       >
         {busy
           ? <><Loader2 className="w-4 h-4 animate-spin" />Processing…</>
-          : <><Lock className="w-4 h-4" />Pay {fmt(amountCents)}</>}
+          : <><Lock className="w-4 h-4" />Pay {fmtCents(amountCents, currency)}</>}
       </button>
       <p className="text-xs text-center text-gray-400 flex items-center justify-center gap-1">
         <Lock className="w-3 h-3" /> Secured by Stripe
@@ -77,12 +77,14 @@ export function InvoicePaymentForm({
   amountCents,
   brandColor,
   returnUrl,
+  currency = 'usd',
 }: {
   invoiceId:   string;
   milestoneId?: string;
   amountCents: number;
   brandColor:  string;
   returnUrl:   string;
+  currency?:   string;
 }) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [fetchErr,     setFetchErr]     = useState<string | null>(null);
@@ -128,6 +130,7 @@ export function InvoicePaymentForm({
         amountCents={amountCents}
         brandColor={brandColor}
         returnUrl={returnUrl}
+        currency={currency}
       />
     </Elements>
   );

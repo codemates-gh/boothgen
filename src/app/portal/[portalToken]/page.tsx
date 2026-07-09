@@ -16,8 +16,7 @@ interface PortalData {
   templateDesigns: any[];
 }
 
-const fmt = (c: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
+import { fmtCents } from '@/lib/utils';
 
 export default function ClientPortalPage() {
   const { portalToken } = useParams<{ portalToken: string }>();
@@ -104,6 +103,9 @@ export default function ClientPortalPage() {
   const designUnlocked = invoicePaid || eventBooked;
   const latestDesign   = data?.templateDesigns?.[0] ?? null;
   const designDone     = latestDesign?.status === 'APPROVED';
+
+  const portalCurrency = data?.invoice?.currency ?? data?.quote?.currency ?? 'usd';
+  const fmt = (c: number) => fmtCents(c, portalCurrency);
 
   const allTabs: { id: Tab; label: string; icon: any; locked: boolean; done: boolean }[] = [
     { id: 'quote',    label: 'Quote',    icon: FileText, locked: false,              done: quoteAccepted  },
@@ -615,6 +617,7 @@ export default function ClientPortalPage() {
                         amountCents={payAmountCents}
                         brandColor={brandColor}
                         returnUrl={paymentReturnUrl}
+                        currency={portalCurrency}
                       />
                       <button
                         onClick={() => setShowPayment(null)}

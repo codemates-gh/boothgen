@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { fmtCents } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,14 +18,12 @@ interface Milestone {
   status: string;
 }
 
-const fmt = (c: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(c / 100);
-
-export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin, isPro }: {
+export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin, isPro, currency = 'usd' }: {
   invoiceId: string;
   milestones: Milestone[];
   isAdmin?: boolean;
   isPro?: boolean;
+  currency?: string;
 }) {
   const [milestones, setMilestones] = useState(initial);
   const [editing, setEditing] = useState<string | null>(null);
@@ -105,7 +104,7 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
               </div>
 
               <div className="flex items-center gap-3 flex-shrink-0">
-                <p className="font-semibold text-sm">{fmt(m.amountCents)}</p>
+                <p className="font-semibold text-sm">{fmtCents(m.amountCents, currency)}</p>
                 <Badge variant={MC[m.status]}>{m.status.replace('_', ' ')}</Badge>
 
                 {/* Mark Paid externally — admin only, plan-gated */}

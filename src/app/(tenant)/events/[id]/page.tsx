@@ -115,7 +115,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
                 )}
                 <MarkAsLostButton eventId={event.id} status={event.status} />
                 <ReinstateEventButton eventId={event.id} status={event.status} />
-                <CancelEventButton eventId={event.id} status={event.status} depositPaidCents={depositPaidCents} totalPaidCents={totalPaidCents} />
+                <CancelEventButton eventId={event.id} status={event.status} depositPaidCents={depositPaidCents} totalPaidCents={totalPaidCents} currency={branding?.currency ?? 'usd'} />
                 <DeleteEventButton eventId={event.id} hasInvoices={event.invoices.length > 0} hasContracts={event.contracts.length > 0} />
               </div>
             </div>

@@ -4,6 +4,19 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.43.2] — 2026-07-09
+
+### Fixed
+- **Canadian (CAD) currency shown correctly everywhere** — resolved 5 remaining hardcoded USD spots:
+  - `MilestonesCard` now accepts a `currency` prop (passed from invoice detail page) — payment schedule amounts format in the invoice's currency
+  - `CancelEventButton` now accepts a `currency` prop (passed from events page branding) — refund amounts display in the operator's currency
+  - `PaymentForm` (Stripe Elements) now accepts a `currency` prop — "Pay $X" button shows correct currency symbol
+  - Client portal page — amounts on quote, invoice, and payment button now read `invoice.currency ?? quote.currency`
+  - `merge-tags.ts` — email merge tags (`{{invoice.total}}`, `{{quote.total}}`) now use locale-aware `fmtCents` instead of hardcoded `en-US`
+- **Invoice detail page** — added missing `fmtCents` import (was referenced but not imported)
+
+---
+
 ## [2.43.1] — 2026-07-09
 
 ### Changed
