@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.42.4] — 2026-07-09
+
+### Changed
+- **TopBar logo**: removed the small rounded box — logo now renders at full topbar height (`h-10`, `w-auto`) so it scales naturally with the image's aspect ratio
+
+---
+
 ## [2.42.3] — 2026-07-09
 
 ### Fixed

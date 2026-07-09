@@ -70,9 +70,7 @@ export function TopBar({ title }: { title: string }) {
           )}
           <NotificationBell />
           {logoUrl ? (
-            <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 ml-1 border border-gray-100">
-              <Image src={logoUrl} alt="Company logo" width={32} height={32} className="w-full h-full object-contain" />
-            </div>
+            <Image src={logoUrl} alt="Company logo" width={120} height={40} className="h-10 w-auto flex-shrink-0 ml-2 object-contain" unoptimized />
           ) : (
             <div className="w-8 h-8 rounded-full bg-[#784BD1] flex items-center justify-center text-white text-[11px] font-semibold flex-shrink-0 ml-1">
               {userInitials}
