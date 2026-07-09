@@ -23,7 +23,18 @@ export default function BrandingSettingsPage() {
   useEffect(() => {
     fetch('/api/settings/branding').then(r => r.json()).then(d => {
       if (d && !d.error) {
-        setForm(p => ({ ...p, ...d }));
+        setForm(p => ({
+          ...p,
+          companyName:       d.companyName       ?? '',
+          primaryColor:      d.primaryColor      ?? '#F97316',
+          secondaryColor:    d.secondaryColor    ?? '#EA6100',
+          replyToEmail:      d.replyToEmail      ?? '',
+          supportPhone:      d.supportPhone      ?? '',
+          websiteUrl:        d.websiteUrl        ?? '',
+          businessAddress:   d.businessAddress   ?? '',
+          invoiceFooterText: d.invoiceFooterText ?? '',
+          emailHeaderHtml:   d.emailHeaderHtml   ?? '',
+        }));
         setLogoUrl(d.logoUrl ?? null);
       }
     });
@@ -35,6 +46,12 @@ export default function BrandingSettingsPage() {
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 3000);
   }
 
+  async function removeLogo() {
+    await fetch('/api/settings/branding', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ logoUrl: null }) });
+    setLogoUrl(null);
+    window.dispatchEvent(new CustomEvent('branding:logo-updated', { detail: { logoUrl: null } }));
+  }
+
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -44,8 +61,12 @@ export default function BrandingSettingsPage() {
       fd.append('logo', file);
       const res = await fetch('/api/settings/branding/logo', { method: 'POST', body: fd });
       const data = await res.json();
-      if (res.ok) setLogoUrl(data.url);
-      else alert('Upload failed: ' + (data.error || 'Unknown error'));
+      if (res.ok) {
+        setLogoUrl(data.url);
+        window.dispatchEvent(new CustomEvent('branding:logo-updated', { detail: { logoUrl: data.url } }));
+      } else {
+        alert('Upload failed: ' + (data.error || 'Unknown error'));
+      }
     } catch (err) {
       alert('Upload failed. Check browser console for details.');
       console.error('[LOGO_UPLOAD]', err);
@@ -77,10 +98,17 @@ export default function BrandingSettingsPage() {
               <div className="space-y-2">
                 <p className="text-sm text-gray-600">Upload a file or paste a URL. PNG or SVG recommended.</p>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-                <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploadingLogo}>
-                  <Upload className="w-3.5 h-3.5 mr-1.5" />
-                  {uploadingLogo ? 'Uploading...' : logoUrl ? 'Replace File' : 'Upload File'}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploadingLogo}>
+                    <Upload className="w-3.5 h-3.5 mr-1.5" />
+                    {uploadingLogo ? 'Uploading...' : logoUrl ? 'Replace' : 'Upload File'}
+                  </Button>
+                  {logoUrl && (
+                    <Button variant="ghost" size="sm" className="text-[#E2445C] hover:text-[#CC3A52] hover:bg-red-50" onClick={removeLogo}>
+                      Remove
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
             <div>
@@ -96,8 +124,8 @@ export default function BrandingSettingsPage() {
                   variant="outline"
                   size="sm"
                   onClick={async () => {
-                    if (!logoUrl) return;
-                    await fetch('/api/settings/branding', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ logoUrl }) });
+                    await fetch('/api/settings/branding', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ logoUrl: logoUrl || null }) });
+                    window.dispatchEvent(new CustomEvent('branding:logo-updated', { detail: { logoUrl: logoUrl || null } }));
                     setSaved(true); setTimeout(() => setSaved(false), 2000);
                   }}
                 >

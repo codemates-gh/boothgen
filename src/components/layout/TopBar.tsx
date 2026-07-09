@@ -15,8 +15,17 @@ export function TopBar({ title }: { title: string }) {
   useEffect(() => {
     fetch('/api/settings/branding')
       .then(r => r.json())
-      .then(d => { if (d && !d.error && d.logoUrl) setLogoUrl(d.logoUrl); })
+      .then(d => { if (d && !d.error) setLogoUrl(d.logoUrl || ''); })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    function handler(e: Event) {
+      const url = (e as CustomEvent<{ logoUrl: string | null }>).detail.logoUrl;
+      setLogoUrl(url || '');
+    }
+    window.addEventListener('branding:logo-updated', handler);
+    return () => window.removeEventListener('branding:logo-updated', handler);
   }, []);
 
   useEffect(() => {

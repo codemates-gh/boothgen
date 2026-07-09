@@ -20,7 +20,7 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json();
   const { companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, businessAddress, invoiceFooterText, emailHeaderHtml, logoUrl, defaultDepositPercent, balanceDueDaysBeforeEvent, fullPaymentIfWithinDays, leadFormConfig } = body;
   const updateData: any = { companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, businessAddress, invoiceFooterText, emailHeaderHtml };
-  if (logoUrl !== undefined) updateData.logoUrl = logoUrl;
+  if (logoUrl !== undefined) updateData.logoUrl = logoUrl || null;
   if (defaultDepositPercent !== undefined) updateData.defaultDepositPercent = parseInt(defaultDepositPercent);
   if (balanceDueDaysBeforeEvent !== undefined) updateData.balanceDueDaysBeforeEvent = parseInt(balanceDueDaysBeforeEvent);
   if (fullPaymentIfWithinDays !== undefined) updateData.fullPaymentIfWithinDays = parseInt(fullPaymentIfWithinDays);

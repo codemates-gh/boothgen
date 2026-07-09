@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.42.3] — 2026-07-09
+
+### Fixed
+- **Logo persistence bug**: uploading a logo and then clicking the main Settings Save button was clearing the logo — caused by `setForm(...d)` spreading `logoUrl: null` into the form state, which the PATCH then sent and overwrote the DB. Fixed by loading only the form-specific fields into form state; `logoUrl` is now managed separately and never included in the general settings save body
+- **PATCH handler**: `logoUrl` empty string is now treated as `null` (clears logo cleanly)
+
+### Added
+- **Remove logo button**: appears next to the upload button when a logo is set — allows operators to revert to unbranded initials
+- **Live TopBar update**: uploading, removing, or saving a logo URL now updates the TopBar logo instantly via a `branding:logo-updated` window event, without requiring a page refresh
+
+---
+
 ## [2.42.2] — 2026-07-09
 
 ### Changed
