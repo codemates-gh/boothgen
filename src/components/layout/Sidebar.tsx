@@ -103,7 +103,6 @@ export function Sidebar() {
 
   const displayName = companyName || session?.tenant?.name || 'Loading...';
   const isTeamMember = session?.tenantRole === 'TEAM_MEMBER';
-  const initials = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
 
   const teamNav: NavItem[] = teamMemberAccess
     .map(id => TEAM_NAV_MAP[id])
@@ -134,9 +133,7 @@ export function Sidebar() {
       )}>
         <div className="px-4 py-4 border-b border-white/10 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#0085FF] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 tracking-wide">
-              {initials}
-            </div>
+            <BoothGeniusIcon size={32} />
             <p className="text-white font-semibold text-sm leading-tight truncate flex-1">{displayName}</p>
             <button onClick={close} className="lg:hidden text-white/50 hover:text-white" aria-label="Close menu">
               <X className="w-4 h-4" />
@@ -180,14 +177,9 @@ export function Sidebar() {
             </>
           )}
           {session?.user && (
-            <div className="flex items-center gap-3 px-3 py-2 mb-1">
-              <div className="w-7 h-7 rounded-full bg-monday-purple flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
-                {(session.user.name ?? 'U').split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white text-xs font-medium truncate">{session.user.name}</p>
-                <p className="text-sidebar-text text-[10px] truncate">{session.user.email}</p>
-              </div>
+            <div className="px-3 py-2 mb-1">
+              <p className="text-white text-xs font-medium truncate">{session.user.name}</p>
+              <p className="text-sidebar-text text-[10px] truncate">{session.user.email}</p>
             </div>
           )}
           <button

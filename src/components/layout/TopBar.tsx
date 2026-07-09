@@ -4,11 +4,20 @@ import { useSession } from 'next-auth/react';
 import { NotificationBell } from './NotificationBell';
 import { SearchModal } from './SearchModal';
 import { Search } from 'lucide-react';
+import Image from 'next/image';
 
 export function TopBar({ title }: { title: string }) {
   const { data: session } = useSession();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string>('');
   const isTeamMember = session?.tenantRole === 'TEAM_MEMBER';
+
+  useEffect(() => {
+    fetch('/api/settings/branding')
+      .then(r => r.json())
+      .then(d => { if (d && !d.error && d.logoUrl) setLogoUrl(d.logoUrl); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (isTeamMember) return;
@@ -51,9 +60,15 @@ export function TopBar({ title }: { title: string }) {
             </>
           )}
           <NotificationBell />
-          <div className="w-8 h-8 rounded-full bg-[#784BD1] flex items-center justify-center text-white text-[11px] font-semibold flex-shrink-0 ml-1 cursor-pointer">
-            {userInitials}
-          </div>
+          {logoUrl ? (
+            <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 ml-1 border border-gray-100">
+              <Image src={logoUrl} alt="Company logo" width={32} height={32} className="w-full h-full object-contain" />
+            </div>
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-[#784BD1] flex items-center justify-center text-white text-[11px] font-semibold flex-shrink-0 ml-1">
+              {userInitials}
+            </div>
+          )}
         </div>
       </header>
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}

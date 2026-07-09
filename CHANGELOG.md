@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.42.1] — 2026-07-09
+
+### Changed
+- **Sidebar top-left**: replaced company initials square with the Booth Genius logo icon
+- **TopBar top-right**: shows operator's uploaded logo (from branding settings) instead of initials; falls back to initials circle if no logo uploaded
+- **Sidebar bottom-left**: removed purple initials circle from user profile — now just shows name and email text
+
+---
+
 ## [2.42.0] — 2026-07-09
 
 ### Changed
