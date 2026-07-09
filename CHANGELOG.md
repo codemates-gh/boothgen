@@ -4,6 +4,21 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.44.0] — 2026-07-09
+
+### Added
+- **Super Admin → Analytics tab** — new growth and usage intelligence dashboard:
+  - **KPI cards**: Total Operators, Active This Month, Paying Operators, Total Invoice Volume Processed
+  - **Growth card**: new signups this month vs last month with % change indicator
+  - **Activation Funnel**: % of all operators who created an event, sent an invoice, received a payment, connected Stripe, and customized branding
+  - **Feature Adoption**: horizontal bar chart showing % of operators using Quotes, Contracts, Galleries, Automations, and Lead Capture
+  - **At-Risk Operators**: paying operators with zero activity in the last 30 days, with last login age
+  - **Per-Operator Activity Table**: sortable by last login, total events, or join date; shows plan, features used, and login recency color-coded (green < 7 days, yellow < 30, red > 30)
+- **Last login tracking for email/password users** — `lastLoginAt` is now stamped on every credentials sign-in (was already tracked for Google OAuth logins)
+- New `/api/super-admin/analytics` route backing the dashboard
+
+---
+
 ## [2.43.2] — 2026-07-09
 
 ### Fixed

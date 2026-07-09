@@ -14,8 +14,9 @@ import BlogManager from './BlogManager';
 import SuperAdminSignOut from './SuperAdminSignOut';
 import EmailActivityLog from './EmailActivityLog';
 import SuperAdminTabs from './SuperAdminTabs';
+import AnalyticsDashboard from './AnalyticsDashboard';
 
-const VALID_TABS = ['overview', 'operators', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
+const VALID_TABS = ['overview', 'analytics', 'operators', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
 type Tab = typeof VALID_TABS[number];
 
 const TENANT_BADGE: Record<string, 'warning' | 'success' | 'danger' | 'default'> = {
@@ -161,6 +162,17 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
               initialCap={settingsMap.early_adopter_cap ?? '50'}
               proSubscriberCount={proSubscriberCount}
             />
+          </>
+        )}
+
+        {/* ANALYTICS */}
+        {tab === 'analytics' && (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
+              <p className="text-sm text-gray-500 mt-1">Activation funnel, feature adoption, at-risk operators, and per-operator activity.</p>
+            </div>
+            <AnalyticsDashboard />
           </>
         )}
 

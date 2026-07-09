@@ -35,6 +35,7 @@ export const authOptions: NextAuthOptions = {
         if (account.provider === 'credentials' && user) {
           const dbUser = await prisma.user.findUnique({ where: { email: user.email! } });
           if (dbUser) {
+            await prisma.user.update({ where: { id: dbUser.id }, data: { lastLoginAt: new Date() } });
             token.userId = dbUser.id;
             token.globalRole = dbUser.globalRole;
             await refreshTenant(token);
