@@ -3,7 +3,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 export function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
 const CURRENCY_LOCALE: Record<string, string> = {
-  usd: 'en-US', cad: 'en-CA', gbp: 'en-GB', eur: 'en-IE', aud: 'en-AU', nzd: 'en-NZ',
+  usd: 'en-US', cad: 'en-CA',
 };
 export function fmtCents(cents: number, currency = 'usd') {
   const cur = currency.toLowerCase();

@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.43.1] — 2026-07-09
+
+### Changed
+- **Currency selector scoped to USD and CAD only** — GBP, EUR, AUD, and NZD options removed from Settings → Branding until those markets are fully supported; `fmtCents` locale map trimmed to match
+
+---
+
 ## [2.43.0] — 2026-07-09
 
 ### Added

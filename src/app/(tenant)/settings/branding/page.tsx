@@ -148,10 +148,6 @@ export default function BrandingSettingsPage() {
               <Select value={form.currency} onChange={e => set('currency', e.target.value)}>
                 <option value="usd">USD — US Dollar ($)</option>
                 <option value="cad">CAD — Canadian Dollar ($)</option>
-                <option value="gbp">GBP — British Pound (£)</option>
-                <option value="eur">EUR — Euro (€)</option>
-                <option value="aud">AUD — Australian Dollar ($)</option>
-                <option value="nzd">NZD — New Zealand Dollar ($)</option>
               </Select>
               <p className="text-xs text-gray-400 mt-1">Applied to all new quotes, invoices, and client payments.</p>
             </div>
