@@ -26,12 +26,23 @@ export const metadata: Metadata = {
   },
 };
 
+async function getCadRate(): Promise<number | null> {
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD', { next: { revalidate: 3600 } });
+    const data = await res.json();
+    return data?.rates?.CAD ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function getPricing() {
-  const [settings, proSubscriberCount] = await Promise.all([
+  const [settings, proSubscriberCount, cadRate] = await Promise.all([
     prisma.systemSetting.findMany({
       where: { key: { in: ['price_display_monthly', 'commission_percentage', 'early_adopter_cap'] } },
     }),
     prisma.stripeSubscription.count({ where: { plan: 'MONTHLY', status: 'ACTIVE' } }),
+    getCadRate(),
   ]);
   const map = Object.fromEntries(settings.map(s => [s.key, s.value]));
   const commissionPct = parseFloat(map.commission_percentage ?? '1.5');
@@ -39,7 +50,8 @@ async function getPricing() {
   const earlyAdopterCap = parseInt(map.early_adopter_cap ?? '50') || 50;
   const spotsRemaining = Math.max(0, earlyAdopterCap - proSubscriberCount);
   const subscriptionsOpen = earlyAdopterCap === 0 || proSubscriberCount < earlyAdopterCap;
-  return { commissionPct, proMonthlyPrice, earlyAdopterCap, proSubscriberCount, spotsRemaining, subscriptionsOpen };
+  const cadEquivalent = cadRate ? Math.ceil(proMonthlyPrice * cadRate) : null;
+  return { commissionPct, proMonthlyPrice, earlyAdopterCap, proSubscriberCount, spotsRemaining, subscriptionsOpen, cadEquivalent };
 }
 
 const FEATURES = [
@@ -56,7 +68,7 @@ const FEATURES = [
 ];
 
 export default async function PricingPage() {
-  const { commissionPct, proMonthlyPrice, earlyAdopterCap, spotsRemaining, subscriptionsOpen } = await getPricing();
+  const { commissionPct, proMonthlyPrice, earlyAdopterCap, spotsRemaining, subscriptionsOpen, cadEquivalent } = await getPricing();
 
   const pctDisplay = commissionPct % 1 === 0 ? `${commissionPct}` : `${commissionPct}`;
 
@@ -131,6 +143,9 @@ export default async function PricingPage() {
                 <span className="text-gray-400 mb-1">/month</span>
               </div>
               <p className="text-green-600 font-bold text-lg">0% per booking — keep it all</p>
+              {cadEquivalent && (
+                <p className="text-xs text-gray-400 mt-1">≈ CA${cadEquivalent}/month for Canadian operators</p>
+              )}
               <p className="text-gray-500 text-sm mt-2">One flat rate. No per-booking cuts. This rate is locked in for life as long as you stay subscribed.</p>
             </div>
 
@@ -214,6 +229,7 @@ export default async function PricingPage() {
           <div className="bg-gray-100 rounded-xl p-6 text-xs text-gray-500 leading-relaxed">
             <p className="font-semibold text-gray-600 mb-2">Payment Processing Disclosure</p>
             <p>
+              Booth Genius subscription fees are charged in <strong>USD</strong>. Canadian operators are billed the USD amount and their card issuer applies the conversion; the CA$ equivalent shown above is approximate based on the current exchange rate and updates daily.{' '}
               All booking payments processed through Booth Genius are subject to Stripe's standard payment processing fee of <strong>2.9% + $0.30 per transaction</strong>. This fee is charged by Stripe directly and applies to <strong>both the Free and Pro plans</strong>. It is separate from and in addition to Booth Genius platform pricing. On the Free plan, Stripe's fee and the Booth Genius {pctDisplay}% platform fee are both deducted from each booking. On the Pro plan, only Stripe's fee applies per transaction — Booth Genius does not take a per-booking cut. Booth Genius is not a bank and does not hold funds; all payments are processed and held by Stripe.
             </p>
           </div>

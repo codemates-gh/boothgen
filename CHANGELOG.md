@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.44.1] — 2026-07-09
+
+### Added
+- **Pricing page: live CAD equivalent** — Pro plan now shows `≈ CA$X/month for Canadian operators` using a live USD→CAD rate fetched from open.er-api.com (updates every hour via Next.js revalidation, hidden if the API is unavailable)
+- **Pricing disclosure** updated to clarify subscriptions are charged in USD and the CAD figure is approximate
+
+---
+
 ## [2.44.0] — 2026-07-09
 
 ### Added
