@@ -21,14 +21,14 @@ const CAT_DESC: Record<string,string> = {
 };
 import { fmtCents } from '@/lib/utils';
 
-type Pkg = { id: string; name: string; description: string | null; priceCents: number; category: string; isActive: boolean };
+type Pkg = { id: string; name: string; description: string | null; priceCents: number; corporatePriceCents: number | null; category: string; isActive: boolean };
 
 export default function PackagesPage() {
   const [currency, setCurrency] = useState('usd');
   const [pkgs, setPkgs] = useState<Pkg[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Pkg | null>(null);
-  const [form, setForm] = useState({ name:'', description:'', price:'', category:'package' });
+  const [form, setForm] = useState({ name:'', description:'', price:'', corporatePrice:'', category:'package' });
   const [saving, setSaving] = useState(false);
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
@@ -43,19 +43,20 @@ export default function PackagesPage() {
 
   function openCreate() {
     setEditing(null);
-    setForm({ name:'', description:'', price:'', category:'package' });
+    setForm({ name:'', description:'', price:'', corporatePrice:'', category:'package' });
     setShowModal(true);
   }
 
   function openEdit(p: Pkg) {
     setEditing(p);
-    setForm({ name: p.name, description: p.description ?? '', price: (p.priceCents/100).toFixed(2), category: p.category });
+    setForm({ name: p.name, description: p.description ?? '', price: (p.priceCents/100).toFixed(2), corporatePrice: p.corporatePriceCents != null ? (p.corporatePriceCents/100).toFixed(2) : '', category: p.category });
     setShowModal(true);
   }
 
   async function save() {
     setSaving(true);
-    const body = { name: form.name, description: form.description || null, priceCents: Math.round(parseFloat(form.price||'0')*100), category: form.category };
+    const corpCents = form.corporatePrice ? Math.round(parseFloat(form.corporatePrice) * 100) : null;
+    const body = { name: form.name, description: form.description || null, priceCents: Math.round(parseFloat(form.price||'0')*100), corporatePriceCents: corpCents, category: form.category };
     if (editing) {
       await fetch('/api/settings/packages/' + editing.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     } else {
@@ -102,13 +103,14 @@ export default function PackagesPage() {
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[480px]">
-                  <thead><tr className="border-b bg-gray-50 text-xs font-medium text-gray-500 uppercase"><th className="text-left px-6 py-3">Name</th><th className="text-left px-6 py-3">Description</th><th className="text-right px-6 py-3">Price</th><th className="px-6 py-3"></th></tr></thead>
+                  <thead><tr className="border-b bg-gray-50 text-xs font-medium text-gray-500 uppercase"><th className="text-left px-6 py-3">Name</th><th className="text-left px-6 py-3">Description</th><th className="text-right px-6 py-3">Consumer Price</th><th className="text-right px-6 py-3">Corporate Price</th><th className="px-6 py-3"></th></tr></thead>
                   <tbody>
                     {items.map(p => (
                       <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50">
                         <td className="px-6 py-3"><p className="font-medium text-sm">{p.name}</p><span className={'text-xs px-2 py-0.5 rounded-full font-medium ' + (CAT_COLOR[p.category] ?? 'bg-gray-100 text-gray-600')}>{CATS.find(c=>c[0]===p.category)?.[1] ?? p.category}</span></td>
                         <td className="px-6 py-3 text-sm text-gray-500">{p.description ?? '—'}</td>
                         <td className="px-6 py-3 text-right font-semibold text-sm">{fmtCents(p.priceCents, currency)}</td>
+                        <td className="px-6 py-3 text-right text-sm">{p.corporatePriceCents != null ? <span className="font-semibold text-indigo-700">{fmtCents(p.corporatePriceCents, currency)}</span> : <span className="text-gray-300">—</span>}</td>
                         <td className="px-6 py-3">
                           <div className="flex gap-1 justify-end">
                             <Button size="sm" variant="ghost" onClick={() => openEdit(p)}><Edit2 className="w-3 h-3"/></Button>
@@ -148,8 +150,13 @@ export default function PackagesPage() {
             <Textarea value={form.description} onChange={e => set('description', e.target.value)} placeholder="What's included..."/>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Price ($) *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Consumer Price ($) *</label>
             <Input type="number" step="0.01" min="0" value={form.price} onChange={e => set('price', e.target.value)} placeholder="1200.00"/>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Corporate Price ($) <span className="text-gray-400 font-normal">— optional</span></label>
+            <p className="text-xs text-gray-400 mb-1.5">Applied automatically on quotes for corporate clients</p>
+            <Input type="number" step="0.01" min="0" value={form.corporatePrice} onChange={e => set('corporatePrice', e.target.value)} placeholder="1500.00"/>
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>

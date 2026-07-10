@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await req.json();
-  const { eventId, lineItems, notes, terms, taxRatePercent, validUntil, discountCents, discountLabel, couponId, contractTemplateId, paymentType, depositPercent } = body;
+  const { eventId, lineItems, notes, terms, taxRatePercent, validUntil, discountCents, discountLabel, couponId, contractTemplateId, paymentType, depositPercent, isCorporate } = body;
   if (!eventId) return NextResponse.json({ error: 'Event required' }, { status: 400 });
   const [event, branding] = await Promise.all([
     prisma.event.findFirst({ where: { id: eventId, tenantId: session.tenantId }, include: { client: true } }),
@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
       contractTemplateId: contractTemplateId || null,
       paymentType: paymentType || 'full',
       depositPercent: depositPercent ?? 50,
+      isCorporate: isCorporate ?? false,
       lineItems: { create: items.map((li: any, i: number) => ({ description: li.description, quantity: li.quantity || 1, unitCents: li.unitCents || 0, totalCents: li.totalCents || 0, sortOrder: i })) },
     },
     include: { lineItems: true },

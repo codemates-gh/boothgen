@@ -9,9 +9,10 @@ export async function GET() {
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { name: true, email: true },
+    select: { name: true, email: true, passwordHash: true },
   });
-  return NextResponse.json(user);
+  if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  return NextResponse.json({ name: user.name, email: user.email, hasPassword: !!user.passwordHash });
 }
 
 export async function PATCH(req: NextRequest) {

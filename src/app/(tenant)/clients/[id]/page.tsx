@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, Trash2, Calendar, ArrowRight, Plus } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Calendar, ArrowRight, Plus, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
@@ -22,12 +22,14 @@ export default function ClientDetailPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isCorporate, setIsCorporate] = useState(false);
   const [form, setForm] = useState({ firstName:'', lastName:'', email:'', phone:'', company:'', addressLine1:'', city:'', state:'', postalCode:'', notes:'' });
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
     fetch('/api/clients/' + id).then(r => r.json()).then(d => {
       setClient(d.client); setEvents(d.events ?? []);
+      setIsCorporate(d.client.isCorporate ?? false);
       setForm({ firstName: d.client.firstName ?? '', lastName: d.client.lastName ?? '', email: d.client.email ?? '', phone: d.client.phone ?? '', company: d.client.company ?? '', addressLine1: d.client.addressLine1 ?? '', city: d.client.city ?? '', state: d.client.state ?? '', postalCode: d.client.postalCode ?? '', notes: d.client.notes ?? '' });
       setLoading(false);
     });
@@ -35,7 +37,7 @@ export default function ClientDetailPage() {
 
   async function save() {
     setSaving(true);
-    await fetch('/api/clients/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+    await fetch('/api/clients/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, isCorporate }) });
     setSaving(false);
   }
 
@@ -59,7 +61,7 @@ export default function ClientDetailPage() {
         <Link href="/clients" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Clients</Link>
 
         <Card>
-          <CardHeader><div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between"><CardTitle>Client Details</CardTitle>
+          <CardHeader><div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between"><div className="flex items-center gap-2"><CardTitle>Client Details</CardTitle>{isCorporate && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700"><Building2 className="w-3 h-3"/>Corporate</span>}</div>
             <div className="flex flex-wrap gap-2">
               <Button onClick={save} disabled={saving}><Save className="w-4 h-4 mr-1"/>{saving ? 'Saving...' : 'Save'}</Button>
               {!confirmDelete
@@ -81,6 +83,17 @@ export default function ClientDetailPage() {
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
               <Textarea value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Internal notes about this client..." className="resize-none h-24"/>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <div className={`relative w-10 h-6 rounded-full transition-colors ${isCorporate ? 'bg-indigo-600' : 'bg-gray-200'}`} onClick={() => setIsCorporate(v => !v)}>
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${isCorporate ? 'translate-x-4' : 'translate-x-0'}`}/>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Corporate Client</p>
+                  <p className="text-xs text-gray-400">Corporate pricing applies to all quotes for this client</p>
+                </div>
+              </label>
             </div>
           </CardContent>
         </Card>

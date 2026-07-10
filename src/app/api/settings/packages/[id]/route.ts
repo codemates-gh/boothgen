@@ -10,7 +10,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json();
   const pkg = await prisma.servicePackage.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
   if (!pkg) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  const updated = await prisma.servicePackage.update({ where: { id: params.id }, data: body });
+  const { name, description, priceCents, corporatePriceCents, category, isActive, sortOrder } = body;
+  const updated = await prisma.servicePackage.update({ where: { id: params.id }, data: { name, description, priceCents, corporatePriceCents: corporatePriceCents ?? null, category, isActive, sortOrder } });
   return NextResponse.json(updated);
 }
 

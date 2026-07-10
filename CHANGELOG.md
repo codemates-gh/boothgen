@@ -4,6 +4,22 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.45.0] — 2026-07-10
+
+### Added
+- **Corporate / Consumer pricing** — operators can now set a separate corporate price per package and mark individual clients as "Corporate":
+  - **Packages settings**: new "Corporate Price" field next to the standard price; shows as a separate column in the table (indigo color)
+  - **Client detail**: new "Corporate Client" toggle with visual badge; saved on the client record so all future quotes inherit the correct tier automatically
+  - **Clients list**: corporate badge shown next to client name for quick identification
+  - **Quote builder**: detects corporate flag from the selected event's client; auto-fills corporate prices when adding packages from the quick-add panel; package buttons turn indigo when corporate pricing is active; "Override to consumer pricing" checkbox for edge cases (corporate client booking a personal event); `isCorporate` flag stored on the quote record
+  - **Quote detail**: "Corporate" badge shown alongside the status badge when the quote used corporate pricing
+- **Password reset in Settings → Profile** — users who signed up with email/password now see a "Change Password" card with current password verification, new password, and confirm new password fields; Google OAuth accounts (no password) see no password section
+
+### Changed
+- Schema: `ServicePackage` gains `corporatePriceCents Int?`; `Client` gains `isCorporate Boolean @default(false)`; `Quote` gains `isCorporate Boolean @default(false)`
+
+---
+
 ## [2.44.1] — 2026-07-09
 
 ### Added

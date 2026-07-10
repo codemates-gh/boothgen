@@ -19,7 +19,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const client = await prisma.client.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
   if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const body = await req.json();
-  const updated = await prisma.client.update({ where: { id: params.id }, data: { firstName: body.firstName, lastName: body.lastName, email: body.email, phone: body.phone || null, company: body.company || null, addressLine1: body.addressLine1 || null, city: body.city || null, state: body.state || null, postalCode: body.postalCode || null, notes: body.notes || null } });
+  const updated = await prisma.client.update({ where: { id: params.id }, data: { firstName: body.firstName, lastName: body.lastName, email: body.email, phone: body.phone || null, company: body.company || null, addressLine1: body.addressLine1 || null, city: body.city || null, state: body.state || null, postalCode: body.postalCode || null, notes: body.notes || null, isCorporate: body.isCorporate ?? client.isCorporate } });
   return NextResponse.json(updated);
 }
 

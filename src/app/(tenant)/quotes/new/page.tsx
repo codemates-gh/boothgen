@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { Plus, Trash2, AlertCircle, Tag, X } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, Tag, X, Building2 } from 'lucide-react';
 import { Suspense } from 'react';
 
 interface LineItem { description: string; quantity: number; unitPrice: string; }
@@ -48,6 +48,8 @@ function QuoteNewForm() {
   const [discountFixed, setDiscountFixed] = useState('');
   const [selectedCouponId, setSelectedCouponId] = useState('');
 
+  const [clientIsCorporate, setClientIsCorporate] = useState(false);
+  const [overrideToConsumer, setOverrideToConsumer] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -64,8 +66,10 @@ function QuoteNewForm() {
   }, []);
 
   useEffect(() => {
-    if (!selectedEvent) { setForceFullPayment(false); return; }
+    if (!selectedEvent) { setForceFullPayment(false); setClientIsCorporate(false); setOverrideToConsumer(false); return; }
     const ev = events.find(e => e.id === selectedEvent);
+    setClientIsCorporate(ev?.client?.isCorporate ?? false);
+    setOverrideToConsumer(false);
     if (!ev?.eventDate) { setForceFullPayment(false); return; }
     const daysUntil = Math.floor((new Date(ev.eventDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     if (daysUntil <= fullPaymentDays) {
@@ -79,9 +83,11 @@ function QuoteNewForm() {
   }, [selectedEvent, events, fullPaymentDays, balanceDueDays]);
 
   function addFromPackage(pkg: any) {
+    const useCorporate = clientIsCorporate && !overrideToConsumer && pkg.corporatePriceCents != null;
+    const cents = useCorporate ? pkg.corporatePriceCents : pkg.priceCents;
     setItems(prev => [...prev.filter(i => i.description.trim() || i.unitPrice), {
       description: pkg.name + (pkg.description ? ' — ' + pkg.description : ''),
-      quantity: 1, unitPrice: (pkg.priceCents / 100).toFixed(2),
+      quantity: 1, unitPrice: (cents / 100).toFixed(2),
     }]);
   }
   function addItem() { setItems(i => [...i, { description: '', quantity: 1, unitPrice: '' }]); }
@@ -145,6 +151,7 @@ function QuoteNewForm() {
         couponId: discountMode === 'coupon' ? (selectedCouponId || null) : null,
         validUntil: validUntil || null, notes: notes || null, terms: terms || null,
         contractTemplateId: contractTemplateId || null, paymentType, depositPercent,
+        isCorporate: clientIsCorporate && !overrideToConsumer,
       }),
     });
     const data = await res.json();
@@ -159,13 +166,26 @@ function QuoteNewForm() {
         <form onSubmit={submit} className="space-y-6">
           <Card>
             <CardHeader><CardTitle>Event</CardTitle></CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               <Select value={selectedEvent} onChange={e => setSelectedEvent(e.target.value)}>
                 <option value="">— Select Event —</option>
                 {events.map(ev => (
                   <option key={ev.id} value={ev.id}>{ev.title} — {ev.client?.firstName} {ev.client?.lastName}</option>
                 ))}
               </Select>
+              {clientIsCorporate && (
+                <div className="flex items-center justify-between bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-indigo-600" />
+                    <span className="text-sm font-semibold text-indigo-700">Corporate Client</span>
+                    <span className="text-xs text-indigo-500">— corporate prices will be applied</span>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-indigo-600 font-medium">
+                    <input type="checkbox" checked={overrideToConsumer} onChange={e => setOverrideToConsumer(e.target.checked)} className="rounded" />
+                    Override to consumer pricing
+                  </label>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -186,14 +206,18 @@ function QuoteNewForm() {
                     <div key={key}>
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">{label}</p>
                       <div className="flex flex-wrap gap-2">
-                        {items.map((pkg: any) => (
-                          <button key={pkg.id} type="button" onClick={() => addFromPackage(pkg)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-sm hover:border-brand hover:text-brand transition-colors text-left">
-                            <Plus className="w-3 h-3 flex-shrink-0" />
-                            <span className="font-medium">{pkg.name}</span>
-                            <span className="text-gray-400">${(pkg.priceCents / 100).toFixed(2)}</span>
-                          </button>
-                        ))}
+                        {items.map((pkg: any) => {
+                          const useCorp = clientIsCorporate && !overrideToConsumer && pkg.corporatePriceCents != null;
+                          const displayCents = useCorp ? pkg.corporatePriceCents : pkg.priceCents;
+                          return (
+                            <button key={pkg.id} type="button" onClick={() => addFromPackage(pkg)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm transition-colors text-left ${useCorp ? 'border-indigo-200 bg-indigo-50 hover:border-indigo-400 hover:text-indigo-700' : 'border-gray-200 bg-white hover:border-brand hover:text-brand'}`}>
+                              <Plus className="w-3 h-3 flex-shrink-0" />
+                              <span className="font-medium">{pkg.name}</span>
+                              <span className={useCorp ? 'text-indigo-500' : 'text-gray-400'}>${(displayCents / 100).toFixed(2)}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}

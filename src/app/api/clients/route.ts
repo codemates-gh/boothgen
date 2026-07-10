@@ -9,7 +9,7 @@ export async function GET() {
   if (!session?.tenantId) return NextResponse.json([], { status: 200 });
   const clients = await prisma.client.findMany({
     where: { tenantId: session.tenantId },
-    select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+    select: { id: true, firstName: true, lastName: true, email: true, phone: true, isCorporate: true },
     orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     take: 500,
   });

@@ -5,7 +5,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Send, Trash2, ArrowLeft, ExternalLink, Edit2, RotateCcw, FilePlus, Eye, X, Download } from 'lucide-react';
+import { Send, Trash2, ArrowLeft, ExternalLink, Edit2, RotateCcw, FilePlus, Eye, X, Download, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 
@@ -213,7 +213,14 @@ export default function QuoteDetailPage() {
                 <CardTitle>{quote.quoteNumber}</CardTitle>
                 {quote.event && <p className="text-sm text-gray-500 mt-1">{quote.event.title}</p>}
               </div>
-              <Badge variant={QC[quote.status]}>{quote.status}</Badge>
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                {quote.isCorporate && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+                    <Building2 className="w-3 h-3" />Corporate
+                  </span>
+                )}
+                <Badge variant={QC[quote.status]}>{quote.status}</Badge>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">

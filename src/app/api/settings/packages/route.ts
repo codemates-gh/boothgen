@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await req.json();
-  const { name, description, priceCents, category } = body;
+  const { name, description, priceCents, corporatePriceCents, category } = body;
   if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 });
-  const pkg = await prisma.servicePackage.create({ data: { tenantId: session.tenantId, name, description: description || null, priceCents: priceCents || 0, category: category || 'package' } });
+  const pkg = await prisma.servicePackage.create({ data: { tenantId: session.tenantId, name, description: description || null, priceCents: priceCents || 0, corporatePriceCents: corporatePriceCents ?? null, category: category || 'package' } });
   return NextResponse.json(pkg, { status: 201 });
 }
