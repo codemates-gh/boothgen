@@ -106,8 +106,8 @@ export default function PackagesPage() {
                   <thead><tr className="border-b bg-gray-50 text-xs font-medium text-gray-500 uppercase">
                     <th className="text-left px-6 py-3 w-[22%]">Name</th>
                     <th className="text-left px-6 py-3">Description</th>
-                    <th className="text-right px-6 py-3 w-[14%] whitespace-nowrap">Consumer Price</th>
-                    <th className="text-right px-6 py-3 w-[14%] whitespace-nowrap">Corporate Price</th>
+                    <th className="text-right px-4 py-3 w-[14%]">Consumer Price</th>
+                    <th className="text-right px-4 py-3 w-[14%]">Corporate Price</th>
                     <th className="px-4 py-3 w-[72px]"></th>
                   </tr></thead>
                   <tbody>
