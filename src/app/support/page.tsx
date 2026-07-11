@@ -159,7 +159,10 @@ Click "Add discount or coupon" in the line items area. Choose:
 - **$** — fixed dollar amount off
 - **Coupon Code** — select a pre-created code from Settings → Coupons
 
-The discount appears as a clearly labeled line on the client's quote.`,
+The discount appears as a clearly labeled line on the client's quote.
+
+**Corporate Client Pricing**
+If the event's client is flagged as "Corporate" in their client record, the quote builder detects this automatically. A banner appears confirming corporate pricing is active, package quick-add buttons display the corporate price (in indigo), and clicking them fills in the corporate rate. An "Override to consumer pricing" checkbox is available for edge cases. See "Corporate Client Pricing" under Settings for setup details.`,
   },
 
   // ─── CONTRACTS ──────────────────────────────────────────────────────────────
@@ -675,13 +678,53 @@ Below the stats row is a 5-day weather forecast showing conditions for your busi
 Go to Settings → Packages → New Package. Fill in:
 - **Name** — e.g. "3-Hour Booth Rental"
 - **Description** — Optional. If provided, it's appended to the line item description in quotes (e.g. "3-Hour Booth Rental — Includes attendant, props, and digital copies")
-- **Price** — The base price in dollars
+- **Consumer Price** — The standard price for individual/consumer clients
+- **Corporate Price** — Optional. The higher rate charged to corporate clients. If left blank, corporate clients are quoted the consumer price for that package.
+
+**Consumer vs. Corporate Pricing**
+Each package can carry two prices: a consumer price and a corporate price. When you build a quote for a client flagged as "Corporate," the corporate price fills in automatically when you click the quick-add button for that package. If no corporate price is set for a package, the consumer price is used instead as a fallback.
+
+See "Corporate Client Pricing" under Settings for full details on how to flag clients and apply corporate rates.
 
 **Using Packages in Quotes**
-When creating or editing a quote, packages appear as clickable buttons at the top of the line items section. Clicking a package adds it as a line item. You can then adjust the quantity or price for that specific quote.
+When creating or editing a quote, packages appear as clickable buttons at the top of the line items section. For corporate clients, the buttons turn indigo and show the corporate price. Clicking a package adds it as a line item at the correct price. You can still edit the unit price manually after adding.
 
 **Editing & Deleting**
 Packages can be edited at any time. Changes to a package only affect new quotes — existing quotes are not retroactively updated.`,
+  },
+  {
+    id: 'settings-corporate-pricing',
+    category: 'Settings',
+    categoryIcon: '⚙️',
+    title: 'Corporate Client Pricing',
+    slug: 'corporate-pricing',
+    content: `Corporate clients often have larger budgets, different requirements, and expect higher-tier pricing. Booth Genius lets you set a corporate price on each package and flag individual clients so the right rate applies automatically every time.
+
+**Step 1 — Set Corporate Prices on Packages**
+Go to Settings → Packages. When creating or editing any package, you'll see two price fields:
+- **Consumer Price** — Your standard rate for weddings, birthdays, social events, etc.
+- **Corporate Price** — Your rate for company events, office parties, product launches, etc.
+
+Corporate price is optional per package. If you leave it blank, that package uses the consumer price for everyone.
+
+**Step 2 — Flag a Client as Corporate**
+Open the client record (Clients → select a client). Scroll to the bottom of the Client Details form. Toggle "Corporate Client" on. Save. The client now shows a purple "Corporate" badge in the client list and on their detail page.
+
+This flag is permanent on the client record — it applies to all future quotes for that client automatically. You only need to set it once.
+
+**Step 3 — Build a Quote**
+When creating a new quote, select an event linked to a corporate client. A blue banner appears: "Corporate Client — corporate prices will be applied." Package quick-add buttons turn indigo and display the corporate price. Clicking them adds the line item at the corporate rate.
+
+**Override for Edge Cases**
+If a corporate client is booking a personal event (e.g. an employee's birthday party) and you want to use consumer pricing, check "Override to consumer pricing" in the banner. The package buttons return to standard pricing for that quote only. The client's corporate flag is unchanged.
+
+**Corporate Badge on Quotes**
+Quotes built with corporate pricing show a purple "Corporate" badge next to the status badge on the quote detail page. This makes it easy to confirm which pricing tier was used when reviewing sent quotes.
+
+**Important Notes**
+- Corporate pricing applies at quote creation time. If you change a package's corporate price later, existing quotes are not updated.
+- The `isCorporate` flag is stored on each quote record for reference, even if the client's flag is later changed.
+- There are no separate catalogs — the same packages are used for both tiers, just with different prices.`,
   },
   {
     id: 'settings-billing',
@@ -746,8 +789,13 @@ Your display name appears in the sidebar navigation and on your account. Update 
 **Email Address**
 Your login email is shown but cannot be changed from this screen. If you need to change your login email, contact support@boothgen.com.
 
+**Changing Your Password**
+If your account uses email/password sign-in, a "Change Password" section appears below your profile details. Enter your current password to verify your identity, then enter and confirm your new password (minimum 8 characters). Click "Update Password" to save.
+
+This section is hidden for accounts that sign in with Google — Google accounts don't have a Booth Genius password to change. To update your Google account password, do so through your Google account settings.
+
 **Note for Team Members**
-Each team member has their own profile. Team members log in with their own email and password and can update their own display name from their Settings → Profile page.`,
+Each team member has their own profile. Team members log in with their own email and password and can update their own display name and password from their Settings → Profile page.`,
   },
   {
     id: 'settings-checklists',
@@ -876,7 +924,16 @@ A: Chrome, Safari, Firefox, and Edge — all current versions. Internet Explorer
 A: Email us at support@boothgen.com. You can also use the AI chat assistant on this page for instant answers to common questions.
 
 **Q: Does Booth Genius have AI features?**
-A: Yes — two of them. The AI Support Assistant is a chatbot built into your dashboard and this support page. Click the orange chat bubble in the bottom-right corner to ask any question about the platform and get an instant answer. The AI Email Drafting tool is in the Lead detail page: open a lead, go to the Compose tab, and click "Draft with AI." It reads the client's name, event details, and inquiry message and writes a ready-to-edit email reply for you.`,
+A: Yes — two of them. The AI Support Assistant is a chatbot built into your dashboard and this support page. Click the orange chat bubble in the bottom-right corner to ask any question about the platform and get an instant answer. The AI Email Drafting tool is in the Lead detail page: open a lead, go to the Compose tab, and click "Draft with AI." It reads the client's name, event details, and inquiry message and writes a ready-to-edit email reply for you.
+
+**Q: How do I charge corporate clients more than regular clients?**
+A: Use the Corporate Pricing feature. First, add a "Corporate Price" to each package in Settings → Packages. Then open the client record and toggle "Corporate Client" on. From that point, every new quote for that client will automatically use the corporate prices when you quick-add packages. If a corporate client is booking something personal and you want standard pricing, check "Override to consumer pricing" in the quote builder. See "Corporate Client Pricing" in Settings for full details.
+
+**Q: Can I change my password from inside the app?**
+A: Yes — if your account uses email/password sign-in. Go to Settings → Profile. A "Change Password" section appears below your name and email. Enter your current password to verify, then set a new password (minimum 8 characters). If you signed up with Google, this section is hidden — change your password through your Google account settings instead.
+
+**Q: A corporate client is booking a personal event. How do I use consumer pricing for just that one quote?**
+A: When building the quote, select the event. The "Corporate Client" banner will appear. Check "Override to consumer pricing" — the package buttons immediately switch back to standard rates for that quote only. The client's corporate flag on their record is not changed.`,
   },
   // ─── AI FEATURES ────────────────────────────────────────────────────────────
   {
@@ -1081,7 +1138,7 @@ const CATEGORIES = [
   { label: 'Event Checklists', icon: '✅', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', desc: 'Day-of task lists, templates, progress' },
   { label: 'Dashboard', icon: '🏠', color: 'bg-violet-50 border-violet-200 text-violet-700', desc: 'Stats, attention alerts, activity' },
   { label: 'Workflows', icon: '🔄', color: 'bg-cyan-50 border-cyan-200 text-cyan-700', desc: 'End-to-end booking walkthroughs' },
-  { label: 'Settings', icon: '⚙️', color: 'bg-gray-50 border-gray-200 text-gray-700', desc: 'Packages, billing, checklists, profile' },
+  { label: 'Settings', icon: '⚙️', color: 'bg-gray-50 border-gray-200 text-gray-700', desc: 'Packages, billing, checklists, profile, corporate pricing' },
   { label: 'AI Features', icon: '🤖', color: 'bg-purple-50 border-purple-200 text-purple-700', desc: 'AI chatbot, email drafting, smart tools' },
   { label: 'FAQ', icon: '❓', color: 'bg-rose-50 border-rose-200 text-rose-700', desc: 'Quick answers to common questions' },
 ];
