@@ -102,15 +102,21 @@ export default function PackagesPage() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[480px]">
-                  <thead><tr className="border-b bg-gray-50 text-xs font-medium text-gray-500 uppercase"><th className="text-left px-6 py-3">Name</th><th className="text-left px-6 py-3">Description</th><th className="text-right px-6 py-3">Consumer Price</th><th className="text-right px-6 py-3">Corporate Price</th><th className="px-6 py-3"></th></tr></thead>
+                <table className="w-full min-w-[560px] table-fixed">
+                  <thead><tr className="border-b bg-gray-50 text-xs font-medium text-gray-500 uppercase">
+                    <th className="text-left px-6 py-3 w-[22%]">Name</th>
+                    <th className="text-left px-6 py-3">Description</th>
+                    <th className="text-right px-6 py-3 w-[14%] whitespace-nowrap">Consumer Price</th>
+                    <th className="text-right px-6 py-3 w-[14%] whitespace-nowrap">Corporate Price</th>
+                    <th className="px-4 py-3 w-[72px]"></th>
+                  </tr></thead>
                   <tbody>
                     {items.map(p => (
                       <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50">
                         <td className="px-6 py-3"><p className="font-medium text-sm">{p.name}</p><span className={'text-xs px-2 py-0.5 rounded-full font-medium ' + (CAT_COLOR[p.category] ?? 'bg-gray-100 text-gray-600')}>{CATS.find(c=>c[0]===p.category)?.[1] ?? p.category}</span></td>
                         <td className="px-6 py-3 text-sm text-gray-500">{p.description ?? '—'}</td>
-                        <td className="px-6 py-3 text-right font-semibold text-sm">{fmtCents(p.priceCents, currency)}</td>
-                        <td className="px-6 py-3 text-right text-sm">{p.corporatePriceCents != null ? <span className="font-semibold text-indigo-700">{fmtCents(p.corporatePriceCents, currency)}</span> : <span className="text-gray-300">—</span>}</td>
+                        <td className="px-6 py-3 text-right font-semibold text-sm whitespace-nowrap">{fmtCents(p.priceCents, currency)}</td>
+                        <td className="px-6 py-3 text-right text-sm whitespace-nowrap">{p.corporatePriceCents != null ? <span className="font-semibold text-indigo-700">{fmtCents(p.corporatePriceCents, currency)}</span> : <span className="text-gray-300">—</span>}</td>
                         <td className="px-6 py-3">
                           <div className="flex gap-1 justify-end">
                             <Button size="sm" variant="ghost" onClick={() => openEdit(p)}><Edit2 className="w-3 h-3"/></Button>
