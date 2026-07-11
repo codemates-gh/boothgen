@@ -26,8 +26,9 @@ Booth Genius is an all-in-one CRM for photo booth operators. It replaces separat
 - From an event, you can create quotes, invoices, access the client portal link, upload gallery photos, and log notes.
 
 ### Clients
-- Each client record stores name, email, phone, and address.
+- Each client record stores name, email, phone, address, and a Corporate flag.
 - Clients are linked to events, quotes, and invoices.
+- To mark a client as corporate: open the client detail page, scroll to the bottom, and toggle "Corporate Client" on. This flag persists on the record and applies to all future quotes automatically.
 
 ### Quotes & Proposals
 - Create a quote from an event. Add line items manually or from saved Packages (Settings → Packages).
@@ -37,6 +38,7 @@ Booth Genius is an all-in-one CRM for photo booth operators. It replaces separat
 - Send the quote via email — client receives a portal link.
 - Client opens their portal and can Accept the quote with a typed digital signature.
 - On acceptance, a Contract is auto-generated and sent for signing.
+- Corporate pricing: if the event's client is flagged as Corporate, the quote builder automatically shows and applies corporate prices when quick-adding packages. An indigo "Corporate Client" banner appears. An "Override to consumer pricing" checkbox is available for one-off exceptions. A purple "Corporate" badge appears on the quote detail page.
 
 ### Contracts & E-Signatures
 - Contracts are generated from templates (Settings → Contracts). Create custom contract templates with merge tags like {{client_name}}, {{event_date}}, {{total_amount}}.
@@ -86,6 +88,17 @@ Booth Genius is an all-in-one CRM for photo booth operators. It replaces separat
 - Coupon types: Percentage off (%) or Fixed Amount off ($).
 - Set optional max uses and expiry date. Toggle active/inactive.
 - Apply a coupon when creating or editing a quote — the discount line appears on the client's portal.
+
+### Corporate vs Consumer Pricing
+- Each package in Settings → Packages has two optional price fields: Consumer Price (standard) and Corporate Price (higher rate for business clients).
+- If no corporate price is set for a package, it falls back to the consumer price for everyone.
+- Flag a client as Corporate from their client detail page (toggle at the bottom of the form).
+- When building a quote for a corporate client, the system auto-detects the flag and fills corporate prices. You can override to consumer pricing for any single quote without changing the client's flag.
+
+### Profile & Password
+- Settings → Profile: update your display name. Email cannot be changed.
+- If you signed up with email/password (not Google), a "Change Password" section appears. Enter your current password, then your new password (minimum 8 characters), then confirm it.
+- Google OAuth accounts do not have a Booth Genius password — the Change Password section is hidden for them.
 
 ### Branding
 - Settings → Branding: Upload your logo, set primary color, company name, email reply-to, support phone, and website URL.
@@ -151,6 +164,15 @@ A: The discount appears as a line item on the quote in the client portal, clearl
 
 **Q: How do automated emails work?**
 A: Go to Automation in the sidebar. Create a rule by choosing a trigger event (e.g. "Quote Accepted"), set optional delay (e.g. send immediately or wait N days), and select an email template. The system sends the email automatically when the trigger fires.
+
+**Q: How does consumer vs corporate pricing work?**
+A: Booth Genius has built-in corporate pricing. Go to Settings → Packages and add a Corporate Price alongside the standard Consumer Price for any package. Then open the client record and toggle "Corporate Client" on. When you build a quote for that client, corporate prices fill in automatically from the package quick-add buttons. You can override to consumer pricing for any individual quote using the checkbox that appears in the quote builder. The client's corporate flag stays set for all future quotes.
+
+**Q: How do I change my password?**
+A: Go to Settings → Profile. If your account uses email/password sign-in, a "Change Password" section appears — enter your current password, your new password, and confirm it. If you signed in with Google, this section is not shown; change your password through Google account settings instead.
+
+**Q: Can a corporate client get consumer pricing for a personal event?**
+A: Yes. When building the quote, check "Override to consumer pricing" in the corporate banner that appears. That quote uses consumer rates. The client's corporate flag is unchanged for future quotes.
 
 OUTPUT RULES (follow exactly):
 - Never use markdown. No asterisks, no bold (**text**), no headers (#), no bullet dashes. Use plain sentences only. Numbered steps are OK (1. 2. 3.).
