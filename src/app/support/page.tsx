@@ -723,7 +723,7 @@ Quotes built with corporate pricing show a purple "Corporate" badge next to the 
 
 **Important Notes**
 - Corporate pricing applies at quote creation time. If you change a package's corporate price later, existing quotes are not updated.
-- The `isCorporate` flag is stored on each quote record for reference, even if the client's flag is later changed.
+- The "isCorporate" flag is stored on each quote record for reference, even if the client's flag is later changed.
 - There are no separate catalogs — the same packages are used for both tiers, just with different prices.`,
   },
   {
