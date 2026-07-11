@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { ArrowLeft, Save, Send, ArrowRight, CheckCircle, RefreshCw, FileText, Sparkles } from 'lucide-react';
+import { ArrowLeft, Save, Send, ArrowRight, CheckCircle, RefreshCw, FileText, Sparkles, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -130,6 +130,8 @@ type Lead = {
   notes: string | null;
   status: string;
   convertedToEventId: string | null;
+  clientId: string | null;
+  clientIsCorporate: boolean;
   createdAt: string;
   customValues: { label: string; value: string }[];
   messages: LeadMessage[];
@@ -153,6 +155,7 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
   const [branding, setBranding] = useState<Branding>({});
   const [drafting, setDrafting] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
+  const [isCorporate, setIsCorporate] = useState(initial.clientIsCorporate);
   const [statusOpen, setStatusOpen] = useState(false);
   const threadEndRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLDivElement>(null);
@@ -212,6 +215,13 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
         status: lead.status,
       }),
     });
+    if (initial.clientId) {
+      await fetch(`/api/clients/${initial.clientId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isCorporate }),
+      });
+    }
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -366,6 +376,25 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
               <Field label="Last Name" value={lead.lastName} onChange={v => setLead(l => ({ ...l, lastName: v }))} />
               <Field label="Email" value={lead.email} onChange={v => setLead(l => ({ ...l, email: v }))} type="email" />
               <Field label="Phone" value={lead.phone ?? ''} onChange={v => setLead(l => ({ ...l, phone: v }))} />
+              <div className="sm:col-span-2 pt-1">
+                <div className={`flex items-center justify-between rounded-xl px-4 py-3 border ${isCorporate ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50 border-gray-200'}`}>
+                  <div className="flex items-center gap-2">
+                    <Building2 className={`w-4 h-4 ${isCorporate ? 'text-indigo-600' : 'text-gray-400'}`} />
+                    <div>
+                      <p className={`text-sm font-medium ${isCorporate ? 'text-indigo-800' : 'text-gray-700'}`}>Corporate Client</p>
+                      {!initial.clientId && <p className="text-xs text-gray-400 mt-0.5">Saved when this lead is converted to an event</p>}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => initial.clientId ? setIsCorporate(v => !v) : undefined}
+                    disabled={!initial.clientId}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isCorporate ? 'bg-indigo-600' : 'bg-gray-300'} ${!initial.clientId ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isCorporate ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+              </div>
             </CardContent>
           </Card>
 

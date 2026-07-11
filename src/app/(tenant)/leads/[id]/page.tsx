@@ -12,6 +12,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
     include: {
       messages: { orderBy: { sentAt: 'asc' } },
       customValues: { include: { field: { select: { label: true, fieldType: true } } }, orderBy: { field: { sortOrder: 'asc' } } },
+      client: { select: { id: true, isCorporate: true } },
     },
   });
   if (!lead) notFound();
@@ -36,6 +37,8 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
     notes: lead.notes,
     status: lead.status,
     convertedToEventId: lead.convertedToEventId,
+    clientId: lead.clientId ?? null,
+    clientIsCorporate: lead.client?.isCorporate ?? false,
     createdAt: lead.createdAt.toISOString(),
     customValues: lead.customValues.map(v => ({ label: v.field.label, value: v.value })),
     messages: lead.messages.map(m => ({

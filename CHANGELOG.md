@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.45.1] — 2026-07-10
+
+### Added
+- **Corporate toggle on Inquiry Detail page** — operators can now toggle "Corporate Client" directly from the Lead detail page (Details tab → Contact Information card) without navigating to the Clients page; the toggle is disabled with a note until the lead is converted to a client
+
+---
+
 ## [2.45.0] — 2026-07-10
 
 ### Added
