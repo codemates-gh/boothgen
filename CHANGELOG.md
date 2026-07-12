@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.45.6] — 2026-07-12
+
+### Changed
+- **Pricing page disclosure**: added accurate Canadian operator note — Stripe's 1.5% international card fee only applies to cards issued outside Canada (not "non-US" cards), and does not apply to typical Canadian-client bookings
+
+---
+
 ## [2.45.5] — 2026-07-12
 
 ### Changed

@@ -246,9 +246,12 @@ export default async function PricingPage() {
         <div className="max-w-3xl mx-auto">
           <div className="bg-gray-100 rounded-xl p-6 text-xs text-gray-500 leading-relaxed">
             <p className="font-semibold text-gray-600 mb-2">Payment Processing Disclosure</p>
-            <p>
+            <p className="mb-3">
               Booth Genius subscription fees are charged in <strong>USD</strong>. Canadian operators are billed the USD amount and their card issuer applies the conversion; the CA$ equivalent shown above is approximate based on the current exchange rate and updates daily.{' '}
               All booking payments processed through Booth Genius are subject to Stripe's standard payment processing fee of <strong>2.9% + $0.30 per transaction</strong>. This fee is charged by Stripe directly and applies to <strong>both the Free and Pro plans</strong>. It is separate from and in addition to Booth Genius platform pricing. On the Free plan, Stripe's fee and the Booth Genius {pctDisplay}% platform fee are both deducted from each booking. On the Pro plan, only Stripe's fee applies per transaction — Booth Genius does not take a per-booking cut. Booth Genius is not a bank and does not hold funds; all payments are processed and held by Stripe.
+            </p>
+            <p>
+              <strong className="text-gray-600">Note for Canadian operators:</strong> When you connect your Stripe account, it is domiciled in Canada. Payments from Canadian-issued cards carry no international card fee. However, if one of your clients pays with a card issued outside Canada (for example, a US or international card), Stripe may apply an additional <strong>1.5% international card fee</strong> on top of the standard 2.9% + $0.30. This is a Stripe fee charged directly to your account — it is not a Booth Genius fee and does not apply to the vast majority of Canadian-client bookings.
             </p>
           </div>
         </div>
