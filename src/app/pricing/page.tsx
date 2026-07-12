@@ -193,7 +193,10 @@ export default async function PricingPage() {
               ))}
               <li className="flex items-start gap-2.5 text-sm font-semibold text-orange-700">
                 <Lock className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
-                Rate locked in for life
+                <span>
+                  Rate locked in for life
+                  <span className="block text-xs font-normal text-orange-500 mt-0.5">For early adopters only — limited spots</span>
+                </span>
               </li>
             </ul>
 

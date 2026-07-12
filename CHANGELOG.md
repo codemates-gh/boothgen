@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.45.5] — 2026-07-12
+
+### Changed
+- **Pricing page**: "Rate locked in for life" now includes a sub-note "For early adopters only — limited spots"
+
+---
+
 ## [2.45.4] — 2026-07-12
 
 ### Changed
