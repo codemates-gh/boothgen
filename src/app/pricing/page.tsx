@@ -54,17 +54,20 @@ async function getPricing() {
   return { commissionPct, proMonthlyPrice, earlyAdopterCap, proSubscriberCount, spotsRemaining, subscriptionsOpen, cadEquivalent };
 }
 
-const FEATURES = [
+const FREE_FEATURES = [
   'Lead & inquiry management',
   'Event & booking management',
   'Invoicing with milestone payments',
   'Digital contracts & e-signatures',
   'Client payment portal',
   'Automated follow-up emails',
-  'Photo gallery with access codes',
   'Calendar & availability management',
   'Embed booking form on your website',
   'Stripe-powered secure payments',
+];
+
+const PRO_ONLY_FEATURES = [
+  'Photo gallery with access codes',
 ];
 
 export default async function PricingPage() {
@@ -111,9 +114,15 @@ export default async function PricingPage() {
             </div>
 
             <ul className="space-y-3 mb-8">
-              {FEATURES.map(f => (
+              {FREE_FEATURES.map(f => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-gray-700">
                   <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                  {f}
+                </li>
+              ))}
+              {PRO_ONLY_FEATURES.map(f => (
+                <li key={f} className="flex items-start gap-2.5 text-sm text-gray-400 line-through">
+                  <span className="w-4 h-4 mt-0.5 shrink-0 text-center leading-none text-gray-300 font-bold">✕</span>
                   {f}
                 </li>
               ))}
@@ -170,10 +179,16 @@ export default async function PricingPage() {
             )}
 
             <ul className="space-y-3 mb-8">
-              {FEATURES.map(f => (
+              {FREE_FEATURES.map(f => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-gray-700">
                   <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
                   {f}
+                </li>
+              ))}
+              {PRO_ONLY_FEATURES.map(f => (
+                <li key={f} className="flex items-start gap-2.5 text-sm font-semibold text-orange-700">
+                  <Check className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+                  <span>{f} <span className="ml-1 text-[10px] font-bold uppercase tracking-wide bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">Pro</span></span>
                 </li>
               ))}
               <li className="flex items-start gap-2.5 text-sm font-semibold text-orange-700">
@@ -216,9 +231,9 @@ export default async function PricingPage() {
       <section className="pb-12 px-4">
         <div className="max-w-2xl mx-auto text-center bg-white rounded-2xl border border-gray-200 p-8">
           <Zap className="w-8 h-8 text-orange-500 mx-auto mb-3" />
-          <h2 className="text-lg font-bold text-gray-900 mb-2">Every feature. Both plans.</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-2">Almost everything. Both plans.</h2>
           <p className="text-gray-500 text-sm">
-            We don't lock features behind paywalls. Both Free and Pro include everything Booth Genius has to offer — the only difference is how you pay. Choose based on your volume, not your budget.
+            Leads, quotes, contracts, invoices, payments, automation, and your client portal are all included on both plans. The only Pro-exclusive feature is the <strong className="text-gray-700">photo gallery</strong> — client photo delivery after the event. Choose your plan based on volume and whether you deliver galleries.
           </p>
         </div>
       </section>

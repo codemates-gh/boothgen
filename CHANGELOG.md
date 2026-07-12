@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.45.3] — 2026-07-12
+
+### Changed
+- **Pricing page feature lists corrected** — Photo gallery is now shown as a Pro-exclusive feature; Free plan displays it struck-through with an ✕; Pro plan highlights it with an orange "Pro" badge; bottom callout updated from "Every feature. Both plans." to accurately reflect the gallery-only distinction
+
+---
+
 ## [2.45.2] — 2026-07-12
 
 ### Added
