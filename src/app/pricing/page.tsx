@@ -67,7 +67,7 @@ const FREE_FEATURES = [
 ];
 
 const PRO_ONLY_FEATURES = [
-  'Photo gallery with access codes',
+  'Post-event photo gallery with access codes',
 ];
 
 export default async function PricingPage() {
@@ -233,7 +233,7 @@ export default async function PricingPage() {
           <Zap className="w-8 h-8 text-orange-500 mx-auto mb-3" />
           <h2 className="text-lg font-bold text-gray-900 mb-2">Almost everything. Both plans.</h2>
           <p className="text-gray-500 text-sm">
-            Leads, quotes, contracts, invoices, payments, automation, and your client portal are all included on both plans. The only Pro-exclusive feature is the <strong className="text-gray-700">photo gallery</strong> — client photo delivery after the event. Choose your plan based on volume and whether you deliver galleries.
+            Leads, quotes, contracts, invoices, payments, automation, and your client portal are all included on both plans. The only Pro-exclusive feature is the <strong className="text-gray-700">post-event photo gallery</strong> — uploading event photos for clients to view, download, and share after the event. Choose your plan based on volume and whether you deliver galleries.
           </p>
         </div>
       </section>

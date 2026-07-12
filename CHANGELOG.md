@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.45.4] — 2026-07-12
+
+### Changed
+- **Pricing page**: renamed "Photo gallery with access codes" → "Post-event photo gallery with access codes" on both the feature list and the bottom callout for clarity
+
+---
+
 ## [2.45.3] — 2026-07-12
 
 ### Changed
