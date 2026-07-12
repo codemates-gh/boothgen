@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import WeatherWidget from '@/components/dashboard/WeatherWidget';
 import DismissableSection, { type DismissRow } from '@/components/dashboard/DismissableSection';
+import { GetStartedChecklist } from '@/components/dashboard/GetStartedChecklist';
 import Link from 'next/link';
 import {
   Calendar, Users, DollarSign, TrendingUp, Plus, ArrowRight, Inbox,
@@ -48,11 +49,14 @@ export default async function DashboardPage() {
     noDesignEvents,
     // BOOKED/IN_PROGRESS events within 30 days with zero designs uploaded
     noDesignAtAll,
+    packageCount,
+    leadCount,
+    quoteCount,
   ] = await Promise.all([
     prisma.event.findMany({ where: { tenantId, eventDate: { gte: now }, status: { notIn: ['CANCELLED', 'COMPLETED', 'ARCHIVED', 'LOST'] } }, include: { client: true }, orderBy: { eventDate: 'asc' }, take: 8 }),
     prisma.client.count({ where: { tenantId } }),
     prisma.leadSubmission.count({ where: { tenantId, createdAt: { gte: monthStart } } }),
-    prisma.tenant.findUnique({ where: { id: tenantId }, include: { branding: true } }),
+    prisma.tenant.findUnique({ where: { id: tenantId }, include: { branding: true, stripeConnect: true } }),
     prisma.payment.aggregate({ where: { tenantId, paidAt: { gte: monthStart } }, _sum: { amountCents: true } }),
     prisma.event.aggregate({ where: { tenantId, status: { in: ['BOOKED', 'IN_PROGRESS'] } }, _sum: { estimatedValueCents: true } }),
     prisma.invoice.aggregate({ where: { tenantId, status: { notIn: ['PAID', 'CANCELLED'] }, balanceDueCents: { gt: 0 } }, _sum: { balanceDueCents: true } }),
@@ -114,6 +118,10 @@ export default async function DashboardPage() {
       orderBy: { eventDate: 'asc' },
       take: 10,
     }),
+    // Get-started checklist counts
+    prisma.servicePackage.count({ where: { tenantId } }),
+    prisma.leadSubmission.count({ where: { tenantId } }),
+    prisma.quote.count({ where: { tenantId } }),
   ]);
 
   // Deduplicate milestone results to one entry per invoice (earliest overdue/due-soon milestone wins)
@@ -158,6 +166,14 @@ export default async function DashboardPage() {
   };
 
   const fmt = (c: number) => fmtCents(c, (tenant as any)?.branding?.currency ?? 'usd');
+
+  const checklistSteps = [
+    { label: 'Upload your logo', description: 'Add your brand to the client portal and outgoing emails', href: '/settings/branding', done: !!tenant?.branding?.logoUrl },
+    { label: 'Add a service package', description: 'Create your first package so you can build quotes quickly', href: '/settings/packages', done: packageCount > 0 },
+    { label: 'Connect Stripe', description: 'Accept card payments from clients directly to your account', href: '/settings/billing', done: tenant?.stripeConnect?.chargesEnabled === true },
+    { label: 'Capture your first lead', description: 'Embed the inquiry form on your website to start getting leads', href: '/settings/embed', done: leadCount > 0 },
+    { label: 'Send your first quote', description: 'Create an event, build a quote, and send it to a client', href: '/quotes/new', done: quoteCount > 0 },
+  ];
   const conversionRate = totalLeads > 0 ? Math.round((totalBooked / totalLeads) * 100) : 0;
 
   const stats = [
@@ -280,6 +296,9 @@ export default async function DashboardPage() {
             <Link href="/settings/billing"><Button size="sm">Upgrade Plan</Button></Link>
           </div>
         )}
+
+        {/* Get Started checklist — auto-hides when all steps complete */}
+        <GetStartedChecklist steps={checklistSteps} />
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">

@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.46.0] — 2026-07-12
+
+### Added
+- **Dashboard "Get Started" checklist** — 5-step onboarding progress card shown to new operators until all steps are complete: upload logo, add a service package, connect Stripe, capture first lead, send first quote; includes a progress bar and links directly to the relevant settings page for each step; auto-hides once all 5 steps are done
+
+---
+
 ## [2.45.6] — 2026-07-12
 
 ### Changed
