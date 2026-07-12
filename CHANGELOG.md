@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.45.2] — 2026-07-12
+
+### Added
+- **New operator signup notification** — super admin receives an email at `SUPER_ADMIN_NOTIFY_EMAIL` whenever a new operator completes onboarding (creates their tenant); email includes company name, owner name, email, slug, and a direct link to the super admin console
+
+---
+
 ## [2.45.1] — 2026-07-10
 
 ### Added
