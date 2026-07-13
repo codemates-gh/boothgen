@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.46.1] — 2026-07-13
+
+### Fixed
+- **Blog not appearing in super admin or public blog**: 9 MDX posts seeded into the database; `outputFileTracingIncludes` moved out of `experimental` block and expanded to cover all blog-related API routes (`file-source`, `override`, `[id]`)
+
+---
+
 ## [2.46.0] — 2026-07-12
 
 ### Added
