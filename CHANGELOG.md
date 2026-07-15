@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.46.3] — 2026-07-14
+
+### Fixed
+- **`/api/status` contradictory response**: `lastError` was pulling from all-time failure history while `errors24h` counted only the last 24h — now both use the same `since24h` window so they can never contradict; also parses `errorMessage` JSON to extract the human-readable `.message` field instead of returning a raw stringified object; `lastError` is always `null` when `errors24h` is 0
+
+---
+
 ## [2.46.2] — 2026-07-14
 
 ### Fixed

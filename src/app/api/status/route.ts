@@ -35,8 +35,9 @@ export async function GET() {
         prisma.tenant.count({ where: { createdAt: { gte: since24h } } }),
         // Stripe connected = chargesEnabled on linked StripeConnectAccount
         prisma.stripeConnectAccount.count({ where: { chargesEnabled: true } }),
+        // Same 24h window as the count — keeps errors24h and lastError consistent
         prisma.automationExecution.findFirst({
-          where: { status: "FAILED" },
+          where: { status: "FAILED", createdAt: { gte: since24h } },
           orderBy: { createdAt: "desc" },
           select: { errorMessage: true, createdAt: true },
         }),
@@ -45,6 +46,18 @@ export async function GET() {
     // Suspended operators are a business concern, not a platform outage —
     // only failed automation executions (a real technical failure) affect overall status.
     const overallStatus: "operational" | "degraded" | "down" = failedEmails24h > 0 ? "degraded" : "operational";
+
+    // errorMessage may be a JSON string like {"name":"...","message":"..."} — extract the
+    // human-readable part. Fall back to the raw string if it isn't valid JSON.
+    function parseErrorMessage(raw: string | null | undefined): string | null {
+      if (!raw) return null;
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed?.message ?? parsed?.name ?? raw;
+      } catch {
+        return raw;
+      }
+    }
 
     const buildInfo = await fetch(
       new URL("/build-info.json", process.env.NEXT_PUBLIC_SITE_URL || "https://boothgenius.com")
@@ -56,7 +69,8 @@ export async function GET() {
       NextResponse.json({
         status: overallStatus,
         errors24h: failedEmails24h,
-        lastError: lastFailedExecution?.errorMessage ?? null,
+        // null when errors24h is 0 — no contradiction between the two fields
+        lastError: failedEmails24h > 0 ? parseErrorMessage(lastFailedExecution?.errorMessage) : null,
         lastDeploy: buildInfo?.builtAt ?? null,
         uptimePct: null,
         newSignups24h: newOperators24h,
