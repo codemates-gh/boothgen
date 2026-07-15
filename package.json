@@ -57,5 +57,9 @@
     "tailwindcss": "^3.4.0",
     "ts-node": "^10.9.0",
     "typescript": "^5.4.0"
+  },
+  "scripts": {
+  "prebuild": "node scripts/write-build-info.js",
+  "build": "next build"
   }
 }
