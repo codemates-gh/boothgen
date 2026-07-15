@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.46.2] — 2026-07-14
+
+### Fixed
+- **`/api/status` runtime error**: route was querying non-existent `Operator` and `EmailLog` models; corrected to `Tenant` (with uppercase enum values `ACTIVE`/`TRIAL`/`SUSPENDED`), `StripeConnectAccount.chargesEnabled` for Stripe count, and `AutomationExecution` (status `FAILED`) as the error signal; catch block hardened to never expose raw Prisma errors publicly
+
+---
+
 ## [2.46.1] — 2026-07-13
 
 ### Fixed

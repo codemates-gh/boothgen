@@ -19,24 +19,31 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const [total, active, trial, suspended, failedEmails24h, newOperators24h, stripeConnected, lastFailedEmail] =
+    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const [total, active, trial, suspended, failedEmails24h, newOperators24h, stripeConnected, lastFailedExecution] =
       await Promise.all([
-        prisma.operator.count(),
-        prisma.operator.count({ where: { status: "active" } }),
-        prisma.operator.count({ where: { status: "trial" } }),
-        prisma.operator.count({ where: { status: "suspended" } }),
-        prisma.emailLog.count({
-          where: { status: "failed", createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+        // Tenant = operator account
+        prisma.tenant.count(),
+        prisma.tenant.count({ where: { status: "ACTIVE" } }),
+        prisma.tenant.count({ where: { status: "TRIAL" } }),
+        prisma.tenant.count({ where: { status: "SUSPENDED" } }),
+        // AutomationExecution is the nearest real-time error signal (no dedicated error log)
+        prisma.automationExecution.count({
+          where: { status: "FAILED", createdAt: { gte: since24h } },
         }),
-        prisma.operator.count({
-          where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+        prisma.tenant.count({ where: { createdAt: { gte: since24h } } }),
+        // Stripe connected = chargesEnabled on linked StripeConnectAccount
+        prisma.stripeConnectAccount.count({ where: { chargesEnabled: true } }),
+        prisma.automationExecution.findFirst({
+          where: { status: "FAILED" },
+          orderBy: { createdAt: "desc" },
+          select: { errorMessage: true, createdAt: true },
         }),
-        prisma.operator.count({ where: { stripeConnected: true } }),
-        prisma.emailLog.findFirst({ where: { status: "failed" }, orderBy: { createdAt: "desc" } }),
       ]);
 
     // Suspended operators are a business concern, not a platform outage —
-    // only failed emails (a real technical failure) affect overall status.
+    // only failed automation executions (a real technical failure) affect overall status.
     const overallStatus: "operational" | "degraded" | "down" = failedEmails24h > 0 ? "degraded" : "operational";
 
     const buildInfo = await fetch(
@@ -49,7 +56,7 @@ export async function GET() {
       NextResponse.json({
         status: overallStatus,
         errors24h: failedEmails24h,
-        lastError: lastFailedEmail ? `Email failed: ${lastFailedEmail.subject}` : null,
+        lastError: lastFailedExecution?.errorMessage ?? null,
         lastDeploy: buildInfo?.builtAt ?? null,
         uptimePct: null,
         newSignups24h: newOperators24h,
@@ -62,7 +69,7 @@ export async function GET() {
         ],
       })
     );
-  } catch (err) {
+  } catch (_err) {
     return withCors(
       NextResponse.json({ status: "down", errors24h: null, lastError: "Status check failed to run", metrics: [] })
     );
