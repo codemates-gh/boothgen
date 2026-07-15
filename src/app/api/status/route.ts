@@ -13,7 +13,7 @@
 //     a Sentry API call (keep the token server-side, same as here).
 
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma"; // adjust import to your actual Prisma client path
+import { prisma } from "@/lib/prisma/client"; // adjust import to your actual Prisma client path
 
 export const dynamic = "force-dynamic";
 
