@@ -4,7 +4,7 @@ import { fmtCents } from '@/lib/utils';
 import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma/client';
-import { sendPaymentConfirmationEmail, sendHostNotificationEmail } from '@/lib/email/send';
+import { sendPaymentConfirmationEmail, sendHostNotificationEmail, sendEmail } from '@/lib/email/send';
 import { triggerAutomation } from '@/lib/inngest/trigger';
 import type Stripe from 'stripe';
 
@@ -135,6 +135,104 @@ export async function POST(req: NextRequest) {
               }
             }
           }
+        }
+        break;
+      }
+
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.metadata?.source !== 'founding_member') break;
+
+        const tier        = parseInt(session.metadata.founding_tier ?? '1') || 1;
+        const paymentEmail = session.metadata.founding_email ?? session.customer_details?.email ?? '';
+        const name        = session.metadata.founding_name ?? '';
+        const company     = session.metadata.founding_company ?? '';
+        const paymentId   = typeof session.payment_intent === 'string' ? session.payment_intent : null;
+        const amountCents = session.amount_total ?? 0;
+        const setupToken  = crypto.randomUUID();
+        const appUrl      = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'https://boothgen.com';
+
+        // Idempotent — skip if session already processed
+        const existing = await prisma.foundingMember.findUnique({ where: { stripeSessionId: session.id } });
+        if (existing) break;
+
+        await prisma.foundingMember.create({
+          data: {
+            paymentEmail,
+            name:           name || null,
+            company:        company || null,
+            tier,
+            amountCents,
+            stripeSessionId: session.id,
+            stripePaymentId: paymentId,
+            setupToken,
+            status:         'PAID',
+          },
+        });
+
+        const setupUrl = `${appUrl}/lifetime/setup?token=${setupToken}`;
+        const firstName = name ? name.split(' ')[0] : 'there';
+
+        sendEmail(
+          paymentEmail,
+          'You\'re a Founding Member — set up your Booth Genius account',
+          `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
+<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:20px;margin:0 0 24px;text-align:center">
+  <p style="font-size:28px;margin:0 0 8px">🎉</p>
+  <h2 style="font-size:22px;color:#111827;margin:0 0 6px;font-weight:800">Welcome to Booth Genius, ${firstName}!</h2>
+  <p style="color:#6b7280;font-size:14px;margin:0">You're officially a Founding Member.</p>
+</div>
+
+<p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px">Your payment went through — zero monthly fees, zero commission cuts, full Pro access, forever. This is the best deal Booth Genius will ever offer, and you locked it in.</p>
+
+<p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 24px">Click the button below to create your Booth Genius account. You can use any email and any name — it doesn't need to match what you paid with.</p>
+
+<p style="text-align:center;margin:0 0 24px">
+  <a href="${setupUrl}" style="background:#f97316;color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;display:inline-block">
+    Set Up My Account →
+  </a>
+</p>
+
+<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:0 0 24px">
+  <p style="margin:0 0 8px;font-size:13px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">What you have access to</p>
+  <ul style="margin:0;padding:0 0 0 16px;color:#374151;font-size:14px;line-height:1.8">
+    <li>Full Pro features — leads, quotes, contracts, invoices</li>
+    <li>Post-event photo gallery with client access codes</li>
+    <li>Automated follow-up emails</li>
+    <li>Stripe payment processing for your clients</li>
+    <li>Founding Member badge in your account</li>
+    <li>Direct line to me — reply to this email anytime</li>
+  </ul>
+</div>
+
+<p style="color:#6b7280;font-size:13px;line-height:1.6;margin:0 0 24px">
+  <strong>This setup link is for you only.</strong> If you have any trouble, just reply to this email — I'll help you directly.<br><br>
+  — Geoffrey<br>Founder, Booth Genius
+</p>
+
+<div style="border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">
+  <p style="color:#9ca3af;font-size:11px;margin:0">Questions? Reply to this email or visit <a href="${appUrl}/support" style="color:#f97316">${appUrl}/support</a></p>
+</div>
+</div>`,
+        ).catch(e => console.error('[stripe-webhook] founding setup email error:', e));
+
+        // Notify super admin
+        const notifyEmail = process.env.SUPER_ADMIN_NOTIFY_EMAIL;
+        if (notifyEmail) {
+          sendEmail(
+            notifyEmail,
+            `New Founding Member — Round ${tier} — ${name || paymentEmail}`,
+            `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
+<h2 style="font-size:20px;color:#111827;margin:0 0 16px">New Founding Member Payment</h2>
+<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin:0 0 24px">
+  <p style="margin:0 0 6px;font-weight:700;color:#111827;font-size:16px">${name || '(Name not provided)'}</p>
+  <p style="margin:0 0 4px;color:#374151;font-size:14px;">Email: ${paymentEmail}</p>
+  <p style="margin:0 0 4px;color:#374151;font-size:14px;">Company: ${company || '—'}</p>
+  <p style="margin:0 0 4px;color:#374151;font-size:14px;">Round: ${tier} · Amount: $${amountCents / 100}</p>
+</div>
+<p style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">Booth Genius internal notification</p>
+</div>`,
+          ).catch(e => console.error('[stripe-webhook] founding admin notify error:', e));
         }
         break;
       }

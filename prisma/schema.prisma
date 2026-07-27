@@ -167,6 +167,7 @@ enum SubscriptionPlan {
   FREE_TRIAL
   MONTHLY
   ANNUAL
+  LIFETIME
 }
 
 enum SubscriptionStatus {
@@ -1052,6 +1053,24 @@ model LeadCustomValue {
 
   @@unique([submissionId, fieldId])
   @@map("lead_custom_values")
+}
+
+model FoundingMember {
+  id               String    @id @default(cuid())
+  paymentEmail     String
+  name             String?
+  company          String?
+  tier             Int       @default(1)
+  amountCents      Int       @default(30000)
+  stripeSessionId  String?   @unique
+  stripePaymentId  String?
+  setupToken       String?   @unique
+  setupTokenUsedAt DateTime?
+  status           String    @default("PENDING")
+  tenantId         String?   @unique
+  createdAt        DateTime  @default(now())
+
+  @@map("founding_members")
 }
 
 model BlogPost {

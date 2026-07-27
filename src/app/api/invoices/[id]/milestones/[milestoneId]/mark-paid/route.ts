@@ -11,7 +11,7 @@ export async function POST(_: NextRequest, { params }: { params: { id: string; m
 
   // Plan gate: only MONTHLY or ANNUAL subscribers can mark payments as externally paid
   const subscription = await prisma.stripeSubscription.findUnique({ where: { tenantId: session.tenantId } });
-  const isPro = subscription?.plan === 'MONTHLY' || subscription?.plan === 'ANNUAL';
+  const isPro = subscription?.plan === 'MONTHLY' || subscription?.plan === 'ANNUAL' || subscription?.plan === 'LIFETIME';
   if (!isPro) {
     return NextResponse.json({ error: 'Upgrade required', upgradeRequired: true }, { status: 403 });
   }

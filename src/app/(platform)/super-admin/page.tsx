@@ -15,8 +15,9 @@ import SuperAdminSignOut from './SuperAdminSignOut';
 import EmailActivityLog from './EmailActivityLog';
 import SuperAdminTabs from './SuperAdminTabs';
 import AnalyticsDashboard from './AnalyticsDashboard';
+import FoundingMembersCard from './FoundingMembersCard';
 
-const VALID_TABS = ['overview', 'analytics', 'operators', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
+const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
 type Tab = typeof VALID_TABS[number];
 
 const TENANT_BADGE: Record<string, 'warning' | 'success' | 'danger' | 'default'> = {
@@ -29,7 +30,7 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
     ? searchParams.tab as Tab
     : 'overview';
 
-  const [tenants, totalUsers, totalEvents, allSettings, failedCounts, failedTotal, proSubscriberCount] = await Promise.all([
+  const [tenants, totalUsers, totalEvents, allSettings, failedCounts, failedTotal, proSubscriberCount, foundingSettings, foundingMembers] = await Promise.all([
     prisma.tenant.findMany({
       take: 100, orderBy: { createdAt: 'desc' },
       include: {
@@ -47,6 +48,8 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
     prisma.automationExecution.groupBy({ by: ['tenantId'], where: { status: 'FAILED' }, _count: { id: true } }).catch(() => []),
     prisma.automationExecution.count({ where: { status: 'FAILED' } }).catch(() => 0),
     prisma.stripeSubscription.count({ where: { plan: 'MONTHLY', status: 'ACTIVE' } }).catch(() => 0),
+    prisma.systemSetting.findMany({ where: { key: { in: ['founding_enabled', 'founding_round', 'founding_spots_limit'] } } }).catch(() => []),
+    prisma.foundingMember.findMany({ orderBy: { createdAt: 'desc' }, select: { id: true, paymentEmail: true, name: true, company: true, tier: true, amountCents: true, status: true, createdAt: true } }).catch(() => []),
   ]);
 
   const failedMap = Object.fromEntries((failedCounts as any[]).map((f: any) => [f.tenantId, f._count.id]));
@@ -161,6 +164,20 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
             <EarlyAdopterCard
               initialCap={settingsMap.early_adopter_cap ?? '50'}
               proSubscriberCount={proSubscriberCount}
+            />
+          </>
+        )}
+
+        {/* FOUNDING MEMBERS */}
+        {tab === 'founding' && (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Founding Members</h1>
+              <p className="text-sm text-gray-500 mt-1">Control the promotion, manage spot availability, and view all founding member payments.</p>
+            </div>
+            <FoundingMembersCard
+              initialSettings={Object.fromEntries((foundingSettings as any[]).map((s: any) => [s.key, s.value]))}
+              initialMembers={(foundingMembers as any[]).map((m: any) => ({ ...m, createdAt: m.createdAt.toISOString() }))}
             />
           </>
         )}

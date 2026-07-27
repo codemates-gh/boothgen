@@ -22,6 +22,7 @@ export async function hasProAccess(tenantId: string): Promise<boolean> {
     select: { plan: true, status: true },
   });
   if (!sub) return false;
+  if (sub.plan === 'LIFETIME') return true;
   return (sub.plan === 'MONTHLY' || sub.plan === 'ANNUAL') &&
          (sub.status === 'ACTIVE' || sub.status === 'PAST_DUE');
 }

@@ -21,7 +21,7 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
     prisma.tenant.findUnique({ where: { id: session.tenantId }, include: { branding: true } }),
     prisma.stripeSubscription.findUnique({ where: { tenantId: session.tenantId } }),
   ]);
-  const isPro = subscription?.plan === 'MONTHLY' || subscription?.plan === 'ANNUAL';
+  const isPro = subscription?.plan === 'MONTHLY' || subscription?.plan === 'ANNUAL' || subscription?.plan === 'LIFETIME';
   const inv = await prisma.invoice.findFirst({ where: { id: params.id, tenantId: session.tenantId }, include: { client: true, event: true, lineItems: { orderBy: { sortOrder: 'asc' } }, payments: { orderBy: { paidAt: 'desc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } } });
   if (!inv) notFound();
   const fmt = (c: number) => fmtCents(c, inv.currency ?? 'usd');

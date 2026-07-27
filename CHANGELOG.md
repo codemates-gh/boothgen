@@ -4,6 +4,21 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.47.0] — 2026-07-26
+
+### Added
+- **Founding Member landing page** (`/lifetime`): public marketing page with live spot counter, three-round tier display ($300/$400/$500), full Pro feature list, founding-exclusive perks, 14-day refund guarantee callout, and inline claim form; page reads from `SystemSetting` for real-time spot availability and is not linked from the main nav (private link only)
+- **Stripe checkout flow** (`/api/lifetime/checkout`): validates spot availability against admin-set limit before creating a Stripe checkout session; tier price is set server-side; metadata includes `source: 'founding_member'` for webhook identification
+- **Founding member account setup** (`/lifetime/setup`, `/api/lifetime/setup`): unique setup token emailed after payment; user creates their Booth Genius account with any email independent of their payment email; creates `Tenant` + `User` + `TenantBranding` + `StripeSubscription` (plan: `LIFETIME`) in one transaction
+- **Stripe webhook handler** (`checkout.session.completed`): creates `FoundingMember` DB record, generates setup token, sends personalized setup email (from Geoffrey), and notifies super admin; idempotent on replay
+- **`FoundingMember` Prisma model**: tracks payment email, name, company, tier, amount, Stripe session/payment IDs, setup token, status (`PENDING`/`PAID`/`SETUP_COMPLETE`/`REFUNDED`), and linked tenant
+- **`LIFETIME` plan** added to `SubscriptionPlan` enum; `hasProAccess` returns `true` for LIFETIME tenants; all Pro feature gates updated to include LIFETIME
+- **Super admin Founding Members tab**: controls offer on/off, current round, and spot limit (manual pacing); shows member table with status, tier, and payment amount; live link to `/lifetime`
+- **`/lifetime/success`** page and **`/lifetime/setup`** page with error handling for invalid/used tokens
+- **Founding system settings** seeded: `founding_enabled=true`, `founding_round=1`, `founding_spots_limit=5`
+
+---
+
 ## [2.46.3] — 2026-07-14
 
 ### Fixed
