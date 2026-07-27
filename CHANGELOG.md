@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.47.1] — 2026-07-26
+
+### Fixed
+- **Super admin crash on load**: `prisma.foundingMember` was `undefined` at runtime because Vercel's build cache was serving an old Prisma client without the new model; fixed by merging the duplicate `"scripts"` blocks in `package.json` so `prisma generate && next build` runs correctly and `postinstall: "prisma generate"` is no longer silently overridden
+
+---
+
 ## [2.47.0] — 2026-07-26
 
 ### Added
