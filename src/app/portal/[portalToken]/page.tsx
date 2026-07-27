@@ -324,21 +324,37 @@ export default function ClientPortalPage() {
                     <table className="w-full text-sm mb-6">
                       <thead>
                         <tr className="border-b">
-                          <th className="text-left py-2 text-gray-500 font-medium">Description</th>
-                          <th className="text-right py-2 text-gray-500 font-medium">Qty</th>
-                          <th className="text-right py-2 text-gray-500 font-medium">Price</th>
-                          <th className="text-right py-2 text-gray-500 font-medium">Total</th>
+                          <th className="text-left py-2 pr-4 text-gray-500 font-medium">Description</th>
+                          <th className="text-right py-2 pl-4 text-gray-500 font-medium w-12">Qty</th>
+                          <th className="text-right py-2 pl-4 text-gray-500 font-medium w-24">Price</th>
+                          <th className="text-right py-2 pl-4 text-gray-500 font-medium w-24">Total</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {data.quote.lineItems?.map((li: any) => (
-                          <tr key={li.id} className="border-b last:border-0">
-                            <td className="py-3">{li.description}</td>
-                            <td className="py-3 text-right">{li.quantity}</td>
-                            <td className="py-3 text-right">{fmt(li.unitCents)}</td>
-                            <td className="py-3 text-right font-medium">{fmt(li.totalCents)}</td>
+                        {data.quote.lineItems?.map((li: any) => {
+                          const parts = li.description?.split(/\s*[—–]\s*|\s+-\s+/).map((p: string) => p.trim()).filter(Boolean) ?? [];
+                          const title = parts[0] ?? li.description;
+                          const bullets = parts.slice(1);
+                          return (
+                          <tr key={li.id} className="border-b last:border-0 align-top">
+                            <td className="py-4 pr-4">
+                              <p className="font-medium text-gray-800">{title}</p>
+                              {bullets.length > 0 && (
+                                <ul className="mt-1.5 space-y-0.5">
+                                  {bullets.map((b: string, i: number) => (
+                                    <li key={i} className="flex items-start gap-1.5 text-xs text-gray-500">
+                                      <span className="mt-0.5 shrink-0">•</span>{b}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </td>
+                            <td className="py-4 pl-4 text-right">{li.quantity}</td>
+                            <td className="py-4 pl-4 text-right">{fmt(li.unitCents)}</td>
+                            <td className="py-4 pl-4 text-right font-medium">{fmt(li.totalCents)}</td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                     <div className="text-right space-y-1 text-sm border-t pt-4">

@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.47.8] — 2026-07-27
+
+### Improved
+- **Portal quote layout**: Qty/Price/Total columns now have proper left padding so values no longer run together; line item descriptions split on dash/em-dash separators and rendered as a title + bullet list for readability
+
+---
+
 ## [2.47.7] — 2026-07-27
 
 ### Fixed
