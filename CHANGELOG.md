@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.47.4] — 2026-07-26
+
+### Fixed
+- **Version display in sidebar**: `APP_VERSION` constant was stale at `1.3.0`; updated to match current CHANGELOG version `2.47.3`
+
+---
+
 ## [2.47.3] — 2026-07-26
 
 ### Added
