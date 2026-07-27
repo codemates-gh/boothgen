@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.47.3] — 2026-07-26
+
+### Added
+- **Operator owner details in super admin**: the Operators table now shows each operator's owner name and email (clickable mailto link) beneath the company name; email search also works in the search bar; LIFETIME plan displays as "Founding Member" in the plan column
+
+---
+
 ## [2.47.2] — 2026-07-26
 
 ### Added

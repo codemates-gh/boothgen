@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-type SubscriptionPlan = 'FREE_TRIAL' | 'MONTHLY' | 'ANNUAL';
+type SubscriptionPlan = 'FREE_TRIAL' | 'MONTHLY' | 'ANNUAL' | 'LIFETIME';
 type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'UNPAID' | 'INCOMPLETE' | 'INCOMPLETE_EXPIRED';
 type TenantStatus = 'TRIAL' | 'ACTIVE' | 'SUSPENDED' | 'CANCELLED';
 
@@ -18,6 +18,7 @@ interface Operator {
   status: TenantStatus;
   createdAt: Date;
   branding: { companyName: string | null } | null;
+  memberships: { user: { name: string; email: string } }[];
   stripeSubscription: {
     plan: SubscriptionPlan;
     status: SubscriptionStatus;
@@ -39,8 +40,9 @@ const CS: Record<string, 'default' | 'info' | 'success' | 'warning' | 'danger'> 
 
 const PLAN_LABELS: Record<SubscriptionPlan, string> = {
   FREE_TRIAL: 'Commission',
-  MONTHLY: 'Pro Monthly',
-  ANNUAL: 'Pro Annual',
+  MONTHLY:    'Pro Monthly',
+  ANNUAL:     'Pro Annual',
+  LIFETIME:   'Founding Member',
 };
 
 const STATUS_OPTIONS: { value: TenantStatus; label: string }[] = [
@@ -386,7 +388,9 @@ export function OperatorsTable({ operators, failedMap = {} }: { operators: Opera
       (op.branding?.companyName ?? op.name).toLowerCase().includes(q) ||
       op.slug.toLowerCase().includes(q) ||
       op.status.toLowerCase().includes(q) ||
-      (op.stripeSubscription?.plan ?? 'FREE_TRIAL').toLowerCase().includes(q)
+      (op.stripeSubscription?.plan ?? 'FREE_TRIAL').toLowerCase().includes(q) ||
+      (op.memberships[0]?.user.name ?? '').toLowerCase().includes(q) ||
+      (op.memberships[0]?.user.email ?? '').toLowerCase().includes(q)
     );
   }, [query, operators]);
 
@@ -442,6 +446,14 @@ export function OperatorsTable({ operators, failedMap = {} }: { operators: Opera
                     <td className="px-6 py-4">
                       <p className="font-semibold text-sm">{op.branding?.companyName ?? op.name}</p>
                       <p className="text-xs text-gray-400">/{op.slug}</p>
+                      {op.memberships[0]?.user && (
+                        <div className="mt-1">
+                          <p className="text-xs text-gray-600">{op.memberships[0].user.name}</p>
+                          <a href={`mailto:${op.memberships[0].user.email}`} className="text-xs text-brand hover:underline">
+                            {op.memberships[0].user.email}
+                          </a>
+                        </div>
+                      )}
                       {failedMap[op.id] > 0 && (
                         <span className="inline-flex items-center gap-1 text-xs text-red-600 font-medium mt-0.5">
                           <AlertTriangle className="w-3 h-3" />{failedMap[op.id]} email {failedMap[op.id] === 1 ? 'failure' : 'failures'}
