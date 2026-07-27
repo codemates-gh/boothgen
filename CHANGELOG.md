@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.47.2] — 2026-07-26
+
+### Added
+- **Founding Member badge in sidebar**: operators with a LIFETIME plan see a gold star + "Founding Member" label beneath their name in the app sidebar; fetched server-side in the tenant layout and passed as a prop
+
+---
+
 ## [2.47.1] — 2026-07-26
 
 ### Fixed

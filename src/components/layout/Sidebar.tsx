@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star } from 'lucide-react';
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 import { APP_VERSION } from '@/lib/version';
 
@@ -80,7 +80,7 @@ function NavLink({ href, label, Icon, pro, active, close }: { href: string; labe
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ isFoundingMember }: { isFoundingMember?: boolean }) {
   const path = usePathname();
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
@@ -174,6 +174,12 @@ export function Sidebar() {
             <div className="px-3 py-2 mb-1">
               <p className="text-white text-xs font-medium truncate">{session.user.name}</p>
               <p className="text-sidebar-text text-[10px] truncate">{session.user.email}</p>
+              {isFoundingMember && (
+                <div className="flex items-center gap-1 mt-1.5">
+                  <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 shrink-0" />
+                  <span className="text-[10px] font-bold text-yellow-400 tracking-wide uppercase">Founding Member</span>
+                </div>
+              )}
             </div>
           )}
           <button
