@@ -293,6 +293,8 @@ model TenantBranding {
   defaultDepositPercent     Int @default(50)
   balanceDueDaysBeforeEvent Int @default(30)
   fullPaymentIfWithinDays   Int @default(14)
+  // Onboarding
+  onboardingDismissed Boolean @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

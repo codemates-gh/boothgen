@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.47.5] — 2026-07-26
+
+### Added
+- **Dismissable onboarding checklist**: the "Get Started" card on the dashboard now has an X button; clicking it hides the card permanently (stored in `TenantBranding.onboardingDismissed`) so it never reappears even after page refresh
+
+---
+
 ## [2.47.4] — 2026-07-26
 
 ### Fixed

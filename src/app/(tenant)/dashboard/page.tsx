@@ -297,8 +297,8 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {/* Get Started checklist — auto-hides when all steps complete */}
-        <GetStartedChecklist steps={checklistSteps} />
+        {/* Get Started checklist — auto-hides when all steps complete or dismissed */}
+        <GetStartedChecklist steps={checklistSteps} dismissed={!!(tenant as any)?.branding?.onboardingDismissed} />
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">

@@ -18,7 +18,7 @@ export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await req.json();
-  const { companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, businessAddress, invoiceFooterText, emailHeaderHtml, logoUrl, currency, taxLabel, defaultDepositPercent, balanceDueDaysBeforeEvent, fullPaymentIfWithinDays, leadFormConfig } = body;
+  const { companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, businessAddress, invoiceFooterText, emailHeaderHtml, logoUrl, currency, taxLabel, defaultDepositPercent, balanceDueDaysBeforeEvent, fullPaymentIfWithinDays, leadFormConfig, onboardingDismissed } = body;
   const updateData: any = { companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, businessAddress, invoiceFooterText, emailHeaderHtml };
   if (currency) updateData.currency = currency.toLowerCase();
   if (taxLabel !== undefined) updateData.taxLabel = taxLabel || 'Tax';
@@ -27,6 +27,7 @@ export async function PATCH(req: NextRequest) {
   if (balanceDueDaysBeforeEvent !== undefined) updateData.balanceDueDaysBeforeEvent = parseInt(balanceDueDaysBeforeEvent);
   if (fullPaymentIfWithinDays !== undefined) updateData.fullPaymentIfWithinDays = parseInt(fullPaymentIfWithinDays);
   if (leadFormConfig !== undefined) updateData.leadFormConfig = leadFormConfig;
+  if (onboardingDismissed !== undefined) updateData.onboardingDismissed = Boolean(onboardingDismissed);
   const branding = await prisma.tenantBranding.upsert({
     where: { tenantId: session.tenantId },
     update: updateData,

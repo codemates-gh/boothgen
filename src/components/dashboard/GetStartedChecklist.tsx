@@ -1,21 +1,44 @@
+'use client';
+import { useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle, Circle, ArrowRight } from 'lucide-react';
+import { CheckCircle, Circle, ArrowRight, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type Step = { label: string; description: string; href: string; done: boolean };
 
-export function GetStartedChecklist({ steps }: { steps: Step[] }) {
+export function GetStartedChecklist({ steps, dismissed: initialDismissed }: { steps: Step[]; dismissed?: boolean }) {
+  const [dismissed, setDismissed] = useState(initialDismissed ?? false);
+
   const doneCount = steps.filter(s => s.done).length;
-  if (doneCount === steps.length) return null;
+  if (dismissed || doneCount === steps.length) return null;
 
   const pct = Math.round((doneCount / steps.length) * 100);
+
+  async function handleDismiss() {
+    setDismissed(true);
+    await fetch('/api/settings/branding', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ onboardingDismissed: true }),
+    });
+  }
 
   return (
     <Card className="border-brand/30 bg-white">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between mb-2">
           <CardTitle className="text-base">Get Started</CardTitle>
-          <span className="text-sm text-gray-400">{doneCount} of {steps.length} complete</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-400">{doneCount} of {steps.length} complete</span>
+            <button
+              onClick={handleDismiss}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+              title="Dismiss"
+              aria-label="Dismiss checklist"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
         <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
           <div className="h-full bg-brand rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
