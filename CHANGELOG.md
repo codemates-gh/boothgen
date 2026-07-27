@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.47.7] — 2026-07-27
+
+### Fixed
+- **Quote detail page crash**: `fmtCents` was not imported and `fmt` was defined at module scope where `quote` state is inaccessible — caused a client-side exception on any quote page load; moved `fmt` inside the component and added the missing import
+
+---
+
 ## [2.47.6] — 2026-07-27
 
 ### Changed

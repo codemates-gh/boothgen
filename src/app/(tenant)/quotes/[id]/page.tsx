@@ -8,9 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Send, Trash2, ArrowLeft, ExternalLink, Edit2, RotateCcw, FilePlus, Eye, X, Download, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { fmtCents } from '@/lib/utils';
 
 const QC: Record<string, any> = { DRAFT: 'default', SENT: 'info', VIEWED: 'warning', ACCEPTED: 'success', DECLINED: 'danger', EXPIRED: 'default' };
-const fmt = (c: number) => fmtCents(c, quote.currency ?? 'usd');
 const EDITABLE = ['DRAFT', 'SENT', 'VIEWED', 'DECLINED', 'EXPIRED'];
 
 export default function QuoteDetailPage() {
@@ -141,6 +141,7 @@ export default function QuoteDetailPage() {
     </>
   );
 
+  const fmt = (c: number) => fmtCents(c, quote.currency ?? 'usd');
   const portalUrl = `/portal/${quote.event?.portalToken}?tab=quote`;
   const canEdit = EDITABLE.includes(quote.status);
   const isDraft = quote.status === 'DRAFT';
