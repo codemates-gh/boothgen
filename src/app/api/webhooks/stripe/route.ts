@@ -211,7 +211,7 @@ export async function POST(req: NextRequest) {
 </p>
 
 <div style="border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">
-  <p style="color:#9ca3af;font-size:11px;margin:0">Questions? Reply to this email or visit <a href="${appUrl}/support" style="color:#f97316">${appUrl}/support</a></p>
+  <p style="color:#9ca3af;font-size:11px;margin:0">Questions? Reply to this email, visit <a href="${appUrl}/support" style="color:#f97316">${appUrl}/support</a>, or join the member community at <a href="https://www.facebook.com/groups/boothgenius" style="color:#f97316">facebook.com/groups/boothgenius</a></p>
 </div>
 </div>`,
         ).catch(e => console.error('[stripe-webhook] founding setup email error:', e));

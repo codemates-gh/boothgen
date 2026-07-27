@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.47.6] — 2026-07-27
+
+### Changed
+- **Founding member setup email**: added Facebook community link (`facebook.com/groups/boothgenius`) to the footer alongside the support page link
+
+---
+
 ## [2.47.5] — 2026-07-26
 
 ### Added
