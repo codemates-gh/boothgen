@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.50.0] — 2026-07-29
+
+### Fixed
+- **Operator dashboard**: team members now see only events assigned to them — all financial KPIs (revenue, pipeline, outstanding, clients, leads, conversion rate), Requires Attention alerts, Recent Activity, Recent Leads, and the Get Started checklist are hidden; "Upcoming Events" is scoped to their assigned events and renamed "My Upcoming Events"; Today's Events also filtered to assigned; no "+ New Event" button
+
+### Added
+- **Team member management**: HOST_ADMIN can now change a member's role (shield icon toggles HOST_ADMIN ↔ Team Member) and remove members (trash icon with inline confirmation) directly from Settings → Team; blocked from removing yourself or the last admin
+
+---
+
 ## [2.49.2] — 2026-07-29
 
 ### Improved

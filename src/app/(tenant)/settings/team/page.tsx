@@ -4,15 +4,12 @@ import { prisma } from '@/lib/prisma/client';
 import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Users, Shield } from 'lucide-react';
-import { format } from 'date-fns';
 import { InviteForm } from './InviteForm';
 import { TeamAccessForm } from './TeamAccessForm';
+import { TeamMembersTable } from './TeamMembersTable';
 
 const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
-const RC: Record<string,any> = { HOST_ADMIN:'brand', TEAM_MEMBER:'default' };
-const SC: Record<string,any> = { ACTIVE:'success', INVITED:'info', SUSPENDED:'danger' };
 
 export const ALL_TEAM_MODULES = [
   { id: 'events',   label: 'Events',           desc: 'View and manage assigned events' },
@@ -58,23 +55,18 @@ export default async function TeamSettingsPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><Users className="w-5 h-5"/>Team Members ({tenant?.memberships.length ?? 0})</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Users className="w-5 h-5"/>Team Members ({tenant?.memberships.length ?? 0})</CardTitle>
+            <p className="text-xs text-gray-400 mt-1">Use the shield icon to change a member&apos;s role. Use the trash icon to remove them.</p>
+          </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[480px]">
-                <thead><tr className="border-b bg-gray-50"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Member</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Role</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Joined</th></tr></thead>
-                <tbody>
-                  {tenant?.memberships.map(m => (
-                    <tr key={m.id} className="border-b last:border-0">
-                      <td className="px-6 py-4"><p className="font-medium text-sm">{m.user.name}</p><p className="text-xs text-gray-400">{m.user.email}</p></td>
-                      <td className="px-6 py-4"><Badge variant={RC[m.role]}>{m.role.replace('_',' ')}</Badge></td>
-                      <td className="px-6 py-4"><Badge variant={SC[m.status]}>{m.status}</Badge></td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{m.joinedAt ? format(m.joinedAt,'MMM d, yyyy') : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <TeamMembersTable
+              members={(tenant?.memberships ?? []).map(m => ({
+                ...m,
+                joinedAt: m.joinedAt ? m.joinedAt.toISOString() : null,
+              }))}
+              currentUserId={session.userId}
+            />
           </CardContent>
         </Card>
       </div>

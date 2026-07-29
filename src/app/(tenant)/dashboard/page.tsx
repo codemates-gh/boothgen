@@ -21,142 +21,126 @@ const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', 
 export default async function DashboardPage() {
   const session = await requireTenantSession();
   const tenantId = session.tenantId;
+  const isAdmin  = session.tenantRole === 'HOST_ADMIN';
   const now = new Date();
-  const monthStart   = new Date(now.getFullYear(), now.getMonth(), 1);
-  const sevenDaysOut = new Date(now.getTime() + 7  * 86400_000);
-  const fiveDaysOut  = new Date(now.getTime() + 5  * 86400_000);
+  const monthStart    = new Date(now.getFullYear(), now.getMonth(), 1);
+  const sevenDaysOut  = new Date(now.getTime() + 7  * 86400_000);
+  const fiveDaysOut   = new Date(now.getTime() + 5  * 86400_000);
   const thirtyDaysOut = new Date(now.getTime() + 30 * 86400_000);
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400_000);
-  const threeDaysAgo = new Date(now.getTime() - 3  * 86400_000);
-  const todayStart   = new Date(now); todayStart.setHours(0, 0, 0, 0);
-  const todayEnd     = new Date(now); todayEnd.setHours(23, 59, 59, 999);
+  const threeDaysAgo  = new Date(now.getTime() - 3  * 86400_000);
+  const todayStart    = new Date(now); todayStart.setHours(0, 0, 0, 0);
+  const todayEnd      = new Date(now); todayEnd.setHours(23, 59, 59, 999);
 
-  const [
-    upcomingEvents, totalClients, newLeads, tenant,
-    revenue, bookedPipeline, outstanding, totalLeads, totalBooked,
-    recentLeads,
-    overdueByMilestone, dueSoonByMilestone,
-    pendingContracts,
-    staleLeads,
-    atRiskGalleries,
-    gallerySettings,
-    todayEvents,
-    // Events where ANY design is REVISION_REQUESTED (we post-filter to latest version)
-    eventsWithRevision,
-    // Designs approved in the last 30 days
-    recentlyApproved,
-    // BOOKED/IN_PROGRESS events within 5 days with no approved design
-    noDesignEvents,
-    // BOOKED/IN_PROGRESS events within 30 days with zero designs uploaded
-    noDesignAtAll,
-    packageCount,
-    leadCount,
-    quoteCount,
-  ] = await Promise.all([
-    prisma.event.findMany({ where: { tenantId, eventDate: { gte: now }, status: { notIn: ['CANCELLED', 'COMPLETED', 'ARCHIVED', 'LOST'] } }, include: { client: true }, orderBy: { eventDate: 'asc' }, take: 8 }),
-    prisma.client.count({ where: { tenantId } }),
-    prisma.leadSubmission.count({ where: { tenantId, createdAt: { gte: monthStart } } }),
+  // ── Queries common to both roles ─────────────────────────────────────────────
+  // For team members: scope events to only those assigned to them
+  const assignedFilter = isAdmin ? {} : { assignedToUserId: session.userId };
+
+  const [tenant, upcomingEvents, todayEvents] = await Promise.all([
     prisma.tenant.findUnique({ where: { id: tenantId }, include: { branding: true, stripeConnect: true } }),
-    prisma.payment.aggregate({ where: { tenantId, paidAt: { gte: monthStart } }, _sum: { amountCents: true } }),
-    prisma.event.aggregate({ where: { tenantId, status: { in: ['BOOKED', 'IN_PROGRESS'] } }, _sum: { estimatedValueCents: true } }),
-    prisma.invoice.aggregate({ where: { tenantId, status: { notIn: ['PAID', 'CANCELLED'] }, balanceDueCents: { gt: 0 } }, _sum: { balanceDueCents: true } }),
-    prisma.event.count({ where: { tenantId, status: { not: 'CANCELLED' } } }),
-    prisma.event.count({ where: { tenantId, status: { in: ['BOOKED', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED'] } } }),
-    prisma.leadSubmission.findMany({ where: { tenantId, status: { notIn: ['CONVERTED', 'CLOSED_LOST'] } }, orderBy: { createdAt: 'desc' }, take: 8, select: { id: true, firstName: true, lastName: true, email: true, eventDate: true, eventType: true, status: true, createdAt: true } }),
-    // Overdue milestones — use milestone dueDate since invoice.dueDate is nullable
-    prisma.paymentMilestone.findMany({ where: { tenantId, dueDate: { lt: now }, status: { notIn: ['PAID', 'REFUNDED'] }, invoice: { status: { notIn: ['PAID', 'CANCELLED'] } } }, include: { invoice: { include: { client: { select: { firstName: true, lastName: true } } } } }, orderBy: { dueDate: 'asc' }, take: 20 }),
-    // Milestones due in the next 7 days (not yet paid)
-    prisma.paymentMilestone.findMany({ where: { tenantId, dueDate: { gte: now, lte: sevenDaysOut }, status: { notIn: ['PAID', 'REFUNDED'] }, invoice: { status: { notIn: ['PAID', 'CANCELLED'] } } }, include: { invoice: { include: { client: { select: { firstName: true, lastName: true } } } } }, orderBy: { dueDate: 'asc' }, take: 20 }),
-    // Contracts awaiting any signature
-    prisma.contract.findMany({ where: { tenantId, status: { in: ['SENT_TO_CLIENT', 'CLIENT_SIGNED'] } }, include: { client: { select: { firstName: true, lastName: true } }, event: { select: { title: true } } }, orderBy: { updatedAt: 'desc' }, take: 10 }),
-    // New leads with no contact for 3+ days
-    prisma.leadSubmission.findMany({ where: { tenantId, status: 'NEW', createdAt: { lt: threeDaysAgo } }, select: { id: true, firstName: true, lastName: true, createdAt: true }, orderBy: { createdAt: 'asc' }, take: 10 }),
-    // Galleries that are expired and still have photos (pending deletion)
-    prisma.gallery.findMany({ where: { tenantId, isExpired: true, assets: { some: {} } }, include: { event: { select: { title: true, eventDate: true } }, _count: { select: { assets: true } } }, take: 10 }),
-    prisma.systemSetting.findMany({ where: { key: { in: ['gallery_expire_days', 'gallery_delete_days'] } }, select: { key: true, value: true } }),
-    // Events happening today — only confirmed bookings
-    prisma.event.findMany({ where: { tenantId, eventDate: { gte: todayStart, lte: todayEnd }, status: { in: ['BOOKED', 'IN_PROGRESS'] } }, include: { client: true }, orderBy: { startTime: 'asc' } }),
-    // Events that have at least one REVISION_REQUESTED design — we'll post-filter to latest version only
     prisma.event.findMany({
-      where: { tenantId, templateDesigns: { some: { status: 'REVISION_REQUESTED' } } },
-      include: {
-        client: { select: { firstName: true, lastName: true } },
-        templateDesigns: { orderBy: { version: 'desc' }, take: 1 },
-      },
-      take: 10,
-    }),
-    // Designs approved in the last 30 days — exclude terminal event statuses
-    prisma.templateDesign.findMany({
-      where: {
-        tenantId, status: 'APPROVED', approvedAt: { gte: thirtyDaysAgo },
-        event: { status: { notIn: ['COMPLETED', 'ARCHIVED', 'CANCELLED', 'LOST'] } },
-      },
-      include: { event: { select: { id: true, title: true, client: { select: { firstName: true, lastName: true } } } } },
-      orderBy: { approvedAt: 'desc' },
-      take: 10,
-    }),
-    // BOOKED/IN_PROGRESS events within 5 days with no approved design
-    prisma.event.findMany({
-      where: {
-        tenantId,
-        status: { in: ['BOOKED', 'IN_PROGRESS'] },
-        eventDate: { gte: now, lte: fiveDaysOut },
-        templateDesigns: { none: { status: 'APPROVED' } },
-      },
-      include: { client: { select: { firstName: true, lastName: true } } },
+      where: { tenantId, eventDate: { gte: now }, status: { notIn: ['CANCELLED', 'COMPLETED', 'ARCHIVED', 'LOST'] }, ...assignedFilter },
+      include: { client: true },
       orderBy: { eventDate: 'asc' },
+      take: 8,
     }),
-    // BOOKED/IN_PROGRESS events within 30 days with zero designs uploaded at all
     prisma.event.findMany({
-      where: {
-        tenantId,
-        status: { in: ['BOOKED', 'IN_PROGRESS'] },
-        eventDate: { gte: now, lte: thirtyDaysOut },
-        templateDesigns: { none: {} },
-      },
-      include: { client: { select: { firstName: true, lastName: true } } },
-      orderBy: { eventDate: 'asc' },
-      take: 10,
+      where: { tenantId, eventDate: { gte: todayStart, lte: todayEnd }, status: { in: ['BOOKED', 'IN_PROGRESS'] }, ...assignedFilter },
+      include: { client: true },
+      orderBy: { startTime: 'asc' },
     }),
-    // Get-started checklist counts
-    prisma.servicePackage.count({ where: { tenantId } }),
-    prisma.leadSubmission.count({ where: { tenantId } }),
-    prisma.quote.count({ where: { tenantId } }),
   ]);
 
-  // Deduplicate milestone results to one entry per invoice (earliest overdue/due-soon milestone wins)
+  const fmt = (c: number) => fmtCents(c, (tenant as any)?.branding?.currency ?? 'usd');
+
+  // ── Admin-only queries ────────────────────────────────────────────────────────
+  let totalClients = 0, newLeads = 0, revenue = { _sum: { amountCents: null as number | null } };
+  let bookedPipeline = { _sum: { estimatedValueCents: null as number | null } };
+  let outstanding    = { _sum: { balanceDueCents:     null as number | null } };
+  let totalLeads = 0, totalBooked = 0;
+  let recentLeads:    any[] = [];
+  let overdueByMilestone: any[] = [], dueSoonByMilestone: any[] = [];
+  let pendingContracts: any[] = [], staleLeads: any[] = [], atRiskGalleries: any[] = [];
+  let gallerySettings: any[] = [];
+  let eventsWithRevision: any[] = [], recentlyApproved: any[] = [];
+  let noDesignEvents: any[] = [], noDesignAtAll: any[] = [];
+  let packageCount = 0, leadCount = 0, quoteCount = 0;
+
+  if (isAdmin) {
+    const r = await Promise.all([
+      prisma.client.count({ where: { tenantId } }),
+      prisma.leadSubmission.count({ where: { tenantId, createdAt: { gte: monthStart } } }),
+      prisma.payment.aggregate({ where: { tenantId, paidAt: { gte: monthStart } }, _sum: { amountCents: true } }),
+      prisma.event.aggregate({ where: { tenantId, status: { in: ['BOOKED', 'IN_PROGRESS'] } }, _sum: { estimatedValueCents: true } }),
+      prisma.invoice.aggregate({ where: { tenantId, status: { notIn: ['PAID', 'CANCELLED'] }, balanceDueCents: { gt: 0 } }, _sum: { balanceDueCents: true } }),
+      prisma.event.count({ where: { tenantId, status: { not: 'CANCELLED' } } }),
+      prisma.event.count({ where: { tenantId, status: { in: ['BOOKED', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED'] } } }),
+      prisma.leadSubmission.findMany({ where: { tenantId, status: { notIn: ['CONVERTED', 'CLOSED_LOST'] } }, orderBy: { createdAt: 'desc' }, take: 8, select: { id: true, firstName: true, lastName: true, email: true, eventDate: true, eventType: true, status: true, createdAt: true } }),
+      prisma.paymentMilestone.findMany({ where: { tenantId, dueDate: { lt: now }, status: { notIn: ['PAID', 'REFUNDED'] }, invoice: { status: { notIn: ['PAID', 'CANCELLED'] } } }, include: { invoice: { include: { client: { select: { firstName: true, lastName: true } } } } }, orderBy: { dueDate: 'asc' }, take: 20 }),
+      prisma.paymentMilestone.findMany({ where: { tenantId, dueDate: { gte: now, lte: sevenDaysOut }, status: { notIn: ['PAID', 'REFUNDED'] }, invoice: { status: { notIn: ['PAID', 'CANCELLED'] } } }, include: { invoice: { include: { client: { select: { firstName: true, lastName: true } } } } }, orderBy: { dueDate: 'asc' }, take: 20 }),
+      prisma.contract.findMany({ where: { tenantId, status: { in: ['SENT_TO_CLIENT', 'CLIENT_SIGNED'] } }, include: { client: { select: { firstName: true, lastName: true } }, event: { select: { title: true } } }, orderBy: { updatedAt: 'desc' }, take: 10 }),
+      prisma.leadSubmission.findMany({ where: { tenantId, status: 'NEW', createdAt: { lt: threeDaysAgo } }, select: { id: true, firstName: true, lastName: true, createdAt: true }, orderBy: { createdAt: 'asc' }, take: 10 }),
+      prisma.gallery.findMany({ where: { tenantId, isExpired: true, assets: { some: {} } }, include: { event: { select: { title: true, eventDate: true } }, _count: { select: { assets: true } } }, take: 10 }),
+      prisma.systemSetting.findMany({ where: { key: { in: ['gallery_expire_days', 'gallery_delete_days'] } }, select: { key: true, value: true } }),
+      prisma.event.findMany({ where: { tenantId, templateDesigns: { some: { status: 'REVISION_REQUESTED' } } }, include: { client: { select: { firstName: true, lastName: true } }, templateDesigns: { orderBy: { version: 'desc' }, take: 1 } }, take: 10 }),
+      prisma.templateDesign.findMany({ where: { tenantId, status: 'APPROVED', approvedAt: { gte: thirtyDaysAgo }, event: { status: { notIn: ['COMPLETED', 'ARCHIVED', 'CANCELLED', 'LOST'] } } }, include: { event: { select: { id: true, title: true, client: { select: { firstName: true, lastName: true } } } } }, orderBy: { approvedAt: 'desc' }, take: 10 }),
+      prisma.event.findMany({ where: { tenantId, status: { in: ['BOOKED', 'IN_PROGRESS'] }, eventDate: { gte: now, lte: fiveDaysOut }, templateDesigns: { none: { status: 'APPROVED' } } }, include: { client: { select: { firstName: true, lastName: true } } }, orderBy: { eventDate: 'asc' } }),
+      prisma.event.findMany({ where: { tenantId, status: { in: ['BOOKED', 'IN_PROGRESS'] }, eventDate: { gte: now, lte: thirtyDaysOut }, templateDesigns: { none: {} } }, include: { client: { select: { firstName: true, lastName: true } } }, orderBy: { eventDate: 'asc' }, take: 10 }),
+      prisma.servicePackage.count({ where: { tenantId } }),
+      prisma.leadSubmission.count({ where: { tenantId } }),
+      prisma.quote.count({ where: { tenantId } }),
+    ]);
+    totalClients = r[0] as number;
+    newLeads = r[1] as number;
+    revenue = r[2] as any;
+    bookedPipeline = r[3] as any;
+    outstanding = r[4] as any;
+    totalLeads = r[5] as number;
+    totalBooked = r[6] as number;
+    recentLeads = r[7] as any[];
+    overdueByMilestone = r[8] as any[];
+    dueSoonByMilestone = r[9] as any[];
+    pendingContracts = r[10] as any[];
+    staleLeads = r[11] as any[];
+    atRiskGalleries = r[12] as any[];
+    gallerySettings = r[13] as any[];
+    eventsWithRevision = r[14] as any[];
+    recentlyApproved = r[15] as any[];
+    noDesignEvents = r[16] as any[];
+    noDesignAtAll = r[17] as any[];
+    packageCount = r[18] as number;
+    leadCount = r[19] as number;
+    quoteCount = r[20] as number;
+  }
+
+  // ── Derived values (admin only) ───────────────────────────────────────────────
   const overdueInvoices = (() => {
     const seen = new Set<string>();
     return overdueByMilestone
-      .filter(ms => { const first = !seen.has(ms.invoiceId); seen.add(ms.invoiceId); return first; })
+      .filter((ms: any) => { const first = !seen.has(ms.invoiceId); seen.add(ms.invoiceId); return first; })
       .slice(0, 10)
-      .map(ms => ({ id: ms.invoiceId, client: ms.invoice.client, balanceDueCents: ms.invoice.balanceDueCents, dueDate: ms.dueDate }));
+      .map((ms: any) => ({ id: ms.invoiceId, client: ms.invoice.client, balanceDueCents: ms.invoice.balanceDueCents, dueDate: ms.dueDate }));
   })();
 
   const dueSoonInvoices = (() => {
-    const overdueIds = new Set(overdueInvoices.map(i => i.id));
+    const overdueIds = new Set(overdueInvoices.map((i: any) => i.id));
     const seen = new Set<string>();
     return dueSoonByMilestone
-      .filter(ms => {
+      .filter((ms: any) => {
         if (overdueIds.has(ms.invoiceId)) return false;
         const first = !seen.has(ms.invoiceId); seen.add(ms.invoiceId); return first;
       })
       .slice(0, 10)
-      .map(ms => ({ id: ms.invoiceId, client: ms.invoice.client, balanceDueCents: ms.invoice.balanceDueCents, dueDate: ms.dueDate }));
+      .map((ms: any) => ({ id: ms.invoiceId, client: ms.invoice.client, balanceDueCents: ms.invoice.balanceDueCents, dueDate: ms.dueDate }));
   })();
 
-  // Only alert on events where the LATEST design version is still REVISION_REQUESTED
   const revisionRequested = eventsWithRevision.filter(
-    e => e.templateDesigns[0]?.status === 'REVISION_REQUESTED'
+    (e: any) => e.templateDesigns[0]?.status === 'REVISION_REQUESTED'
   );
-
-  // Days until event for design-missing items
   const daysUntil = (d: Date) => Math.max(0, Math.floor((new Date(d).getTime() - now.getTime()) / 86400_000));
+  const noDesignAtAllIds = new Set(noDesignAtAll.map((e: any) => e.id));
 
-  // Event IDs with zero designs uploaded — used to deduplicate attention list
-  const noDesignAtAllIds = new Set(noDesignAtAll.map(e => e.id));
-
-  const galSettingsMap = Object.fromEntries(gallerySettings.map(s => [s.key, parseInt(s.value) || 0]));
+  const galSettingsMap = Object.fromEntries(gallerySettings.map((s: any) => [s.key, parseInt(s.value) || 0]));
   const galExpireDays  = galSettingsMap['gallery_expire_days']  ?? 30;
   const galDeleteDays  = galSettingsMap['gallery_delete_days']  ?? 30;
   const galleryDeleteDate = (eventDate: Date) => {
@@ -165,29 +149,27 @@ export default async function DashboardPage() {
     return d;
   };
 
-  const fmt = (c: number) => fmtCents(c, (tenant as any)?.branding?.currency ?? 'usd');
-
   const checklistSteps = [
-    { label: 'Upload your logo', description: 'Add your brand to the client portal and outgoing emails', href: '/settings/branding', done: !!tenant?.branding?.logoUrl },
-    { label: 'Add a service package', description: 'Create your first package so you can build quotes quickly', href: '/settings/packages', done: packageCount > 0 },
-    { label: 'Connect Stripe', description: 'Accept card payments from clients directly to your account', href: '/settings/billing', done: tenant?.stripeConnect?.chargesEnabled === true },
+    { label: 'Upload your logo',        description: 'Add your brand to the client portal and outgoing emails', href: '/settings/branding',  done: !!tenant?.branding?.logoUrl },
+    { label: 'Add a service package',   description: 'Create your first package so you can build quotes quickly', href: '/settings/packages', done: packageCount > 0 },
+    { label: 'Connect Stripe',          description: 'Accept card payments from clients directly to your account', href: '/settings/billing',  done: tenant?.stripeConnect?.chargesEnabled === true },
     { label: 'Capture your first lead', description: 'Embed the inquiry form on your website to start getting leads', href: '/settings/embed', done: leadCount > 0 },
-    { label: 'Send your first quote', description: 'Create an event, build a quote, and send it to a client', href: '/quotes/new', done: quoteCount > 0 },
+    { label: 'Send your first quote',   description: 'Create an event, build a quote, and send it to a client', href: '/quotes/new',          done: quoteCount > 0 },
   ];
   const conversionRate = totalLeads > 0 ? Math.round((totalBooked / totalLeads) * 100) : 0;
 
-  const stats = [
-    { label: 'Upcoming Events', value: upcomingEvents.length, icon: Calendar, color: 'text-brand', href: '/events' },
-    { label: 'Total Clients',   value: totalClients,          icon: Users,     color: 'text-blue-500', href: '/clients' },
-    { label: 'New Leads (Month)',value: newLeads,             icon: TrendingUp,color: 'text-purple-500',href: '/leads' },
-    { label: 'Revenue (Month)', value: fmt(revenue._sum.amountCents ?? 0), icon: DollarSign, color: 'text-green-500', href: '/invoices' },
-    { label: 'Booked Pipeline', value: fmt(bookedPipeline._sum.estimatedValueCents ?? 0), icon: TrendingUp, color: 'text-orange-500', href: '/events' },
-    { label: 'Outstanding',     value: fmt(outstanding._sum.balanceDueCents ?? 0), icon: DollarSign, color: 'text-red-500', href: '/invoices' },
-    { label: 'Conversion Rate', value: conversionRate + '%', icon: TrendingUp, color: 'text-teal-500', href: '/events' },
+  const adminStats = [
+    { label: 'Upcoming Events',  value: upcomingEvents.length,                                        icon: Calendar,    color: 'text-brand',        href: '/events' },
+    { label: 'Total Clients',    value: totalClients,                                                  icon: Users,       color: 'text-blue-500',     href: '/clients' },
+    { label: 'New Leads (Month)',value: newLeads,                                                      icon: TrendingUp,  color: 'text-purple-500',   href: '/leads' },
+    { label: 'Revenue (Month)',  value: fmt(revenue._sum.amountCents ?? 0),                            icon: DollarSign,  color: 'text-green-500',    href: '/invoices' },
+    { label: 'Booked Pipeline',  value: fmt(bookedPipeline._sum.estimatedValueCents ?? 0),             icon: TrendingUp,  color: 'text-orange-500',   href: '/events' },
+    { label: 'Outstanding',      value: fmt(outstanding._sum.balanceDueCents ?? 0),                    icon: DollarSign,  color: 'text-red-500',      href: '/invoices' },
+    { label: 'Conversion Rate',  value: conversionRate + '%',                                          icon: TrendingUp,  color: 'text-teal-500',     href: '/events' },
   ];
 
   const attention: DismissRow[] = [
-    ...overdueInvoices.map(inv => ({
+    ...overdueInvoices.map((inv: any) => ({
       id: 'inv-' + inv.id,
       iconName: 'AlertTriangle', iconCls: 'text-red-500',
       rowCls: 'border-l-4 border-red-400 bg-red-50',
@@ -195,7 +177,7 @@ export default async function DashboardPage() {
       detail: `${fmt(inv.balanceDueCents)} past due${inv.dueDate ? ' since ' + format(new Date(new Date(inv.dueDate).toISOString().slice(0,10) + 'T00:00:00'), 'MMM d') : ''}`,
       href: `/invoices/${inv.id}`,
     })),
-    ...atRiskGalleries.map(g => ({
+    ...atRiskGalleries.map((g: any) => ({
       id: 'gal-' + g.id,
       iconName: 'Camera', iconCls: 'text-red-500',
       rowCls: 'border-l-4 border-red-400 bg-red-50',
@@ -203,33 +185,31 @@ export default async function DashboardPage() {
       detail: `${g._count.assets} photo${g._count.assets !== 1 ? 's' : ''} will be permanently deleted on ${format(galleryDeleteDate(g.event.eventDate), 'MMM d, yyyy')}`,
       href: `/gallery/${g.id}`,
     })),
-    ...noDesignAtAll.map(e => {
+    ...noDesignAtAll.map((e: any) => {
       const days = daysUntil(e.eventDate);
       const isUrgent = days <= 5;
       return {
         id: 'nodesign-all-' + e.id,
-        iconName: 'Upload',
-        iconCls: isUrgent ? 'text-red-500' : 'text-amber-500',
+        iconName: 'Upload', iconCls: isUrgent ? 'text-red-500' : 'text-amber-500',
         rowCls: isUrgent ? 'border-l-4 border-red-400 bg-red-50' : 'border-l-4 border-amber-400 bg-amber-50',
         title: `No design uploaded yet — ${e.client.firstName} ${e.client.lastName}`,
         detail: `${e.title} · ${days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`} (${format(new Date(e.eventDate), 'MMM d')}) — upload a template design for client approval`,
         href: `/events/${e.id}/designs`,
       };
     }),
-    ...noDesignEvents.filter(e => !noDesignAtAllIds.has(e.id)).map(e => {
+    ...noDesignEvents.filter((e: any) => !noDesignAtAllIds.has(e.id)).map((e: any) => {
       const days = daysUntil(e.eventDate);
       const isUrgent = days <= 2;
       return {
         id: 'nodesign-' + e.id,
-        iconName: 'Layers',
-        iconCls: isUrgent ? 'text-red-500' : 'text-orange-500',
+        iconName: 'Layers', iconCls: isUrgent ? 'text-red-500' : 'text-orange-500',
         rowCls: isUrgent ? 'border-l-4 border-red-400 bg-red-50' : 'border-l-4 border-orange-400 bg-orange-50',
         title: `Design not approved — ${e.client.firstName} ${e.client.lastName}`,
         detail: `${e.title} · ${days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`} (${format(new Date(e.eventDate), 'MMM d')}) — design must be approved before the event`,
         href: `/events/${e.id}/designs`,
       };
     }),
-    ...revisionRequested.map(e => {
+    ...revisionRequested.map((e: any) => {
       const d = e.templateDesigns[0];
       return {
         id: 'rev-' + e.id,
@@ -240,7 +220,7 @@ export default async function DashboardPage() {
         href: `/events/${e.id}/designs`,
       };
     }),
-    ...pendingContracts.map(c => ({
+    ...pendingContracts.map((c: any) => ({
       id: 'con-' + c.id,
       iconName: 'FileText', iconCls: 'text-orange-500',
       rowCls: 'border-l-4 border-orange-400 bg-orange-50',
@@ -250,7 +230,7 @@ export default async function DashboardPage() {
       detail: c.event?.title ?? c.title,
       href: `/contracts/${c.id}`,
     })),
-    ...dueSoonInvoices.map(inv => ({
+    ...dueSoonInvoices.map((inv: any) => ({
       id: 'due-' + inv.id,
       iconName: 'Clock', iconCls: 'text-yellow-600',
       rowCls: 'border-l-4 border-yellow-400 bg-yellow-50',
@@ -258,7 +238,7 @@ export default async function DashboardPage() {
       detail: `${fmt(inv.balanceDueCents)} due ${inv.dueDate ? format(inv.dueDate, 'MMM d') : ''}`,
       href: `/invoices/${inv.id}`,
     })),
-    ...staleLeads.map(l => ({
+    ...staleLeads.map((l: any) => ({
       id: 'lead-' + l.id,
       iconName: 'Inbox', iconCls: 'text-purple-500',
       rowCls: 'border-l-4 border-purple-400 bg-purple-50',
@@ -268,7 +248,7 @@ export default async function DashboardPage() {
     })),
   ];
 
-  const activityRows: DismissRow[] = recentlyApproved.map(d => ({
+  const activityRows: DismissRow[] = recentlyApproved.map((d: any) => ({
     id: 'act-' + d.id,
     iconName: 'CheckCircle', iconCls: 'text-green-500',
     rowCls: 'border-l-4 border-green-400 bg-green-50',
@@ -289,35 +269,40 @@ export default async function DashboardPage() {
       <TopBar title="Dashboard" />
       <div className="p-4 sm:p-8 space-y-6">
 
-        {/* Trial banner */}
-        {tenant?.status === 'TRIAL' && tenant.trialEndsAt && (
-          <div className="bg-brand-surface border border-brand/20 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
-            <div><p className="font-semibold text-brand-dark">Free Trial Active</p><p className="text-sm text-gray-600">Trial ends {format(tenant.trialEndsAt, 'MMMM d, yyyy')}</p></div>
-            <Link href="/settings/billing"><Button size="sm">Upgrade Plan</Button></Link>
-          </div>
+        {/* ── ADMIN-ONLY SECTIONS ───────────────────────────────────────────── */}
+        {isAdmin && (
+          <>
+            {/* Trial banner */}
+            {tenant?.status === 'TRIAL' && tenant.trialEndsAt && (
+              <div className="bg-brand-surface border border-brand/20 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
+                <div><p className="font-semibold text-brand-dark">Free Trial Active</p><p className="text-sm text-gray-600">Trial ends {format(tenant.trialEndsAt, 'MMMM d, yyyy')}</p></div>
+                <Link href="/settings/billing"><Button size="sm">Upgrade Plan</Button></Link>
+              </div>
+            )}
+
+            {/* Get Started checklist */}
+            <GetStartedChecklist steps={checklistSteps} dismissed={!!(tenant as any)?.branding?.onboardingDismissed} />
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
+              {adminStats.map(s => (
+                <Link key={s.label} href={s.href}>
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between mb-2"><p className="text-sm font-medium text-gray-500">{s.label}</p><s.icon className={'w-5 h-5 ' + s.color} /></div>
+                      <p className="text-2xl font-bold">{s.value}</p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </>
         )}
 
-        {/* Get Started checklist — auto-hides when all steps complete or dismissed */}
-        <GetStartedChecklist steps={checklistSteps} dismissed={!!(tenant as any)?.branding?.onboardingDismissed} />
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
-          {stats.map(s => (
-            <Link key={s.label} href={s.href}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-2"><p className="text-sm font-medium text-gray-500">{s.label}</p><s.icon className={'w-5 h-5 ' + s.color} /></div>
-                  <p className="text-2xl font-bold">{s.value}</p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-
-        {/* Weather */}
+        {/* ── SHARED: Weather ───────────────────────────────────────────────── */}
         <WeatherWidget businessAddress={tenant?.branding?.businessAddress ?? ''} />
 
-        {/* Today's Events */}
+        {/* ── SHARED: Today's Events (filtered to assigned for team members) ── */}
         {todayEvents.length > 0 && (
           <Card className="border-brand/30 bg-brand/5">
             <CardHeader className="pb-3">
@@ -348,43 +333,56 @@ export default async function DashboardPage() {
           </Card>
         )}
 
-        {/* Requires Attention */}
-        {attention.length > 0 ? (
-          <DismissableSection
-            items={attention}
-            storagePrefix="bg_attn_"
-            title="Requires Attention"
-            titleIconName="AlertTriangle"
-            titleIconCls="text-red-500"
-            emptyNode={allClearBanner}
-          />
-        ) : allClearBanner}
+        {/* ── ADMIN-ONLY: Requires Attention & Recent Activity ─────────────── */}
+        {isAdmin && (
+          <>
+            {attention.length > 0 ? (
+              <DismissableSection
+                items={attention}
+                storagePrefix="bg_attn_"
+                title="Requires Attention"
+                titleIconName="AlertTriangle"
+                titleIconCls="text-red-500"
+                emptyNode={allClearBanner}
+              />
+            ) : allClearBanner}
 
-        {/* Recent Activity */}
-        {activityRows.length > 0 && (
-          <DismissableSection
-            items={activityRows}
-            storagePrefix="bg_act_"
-            title="Recent Activity"
-            titleIconName="CheckCircle"
-            titleIconCls="text-green-500"
-            subtitle="last 30 days"
-          />
+            {activityRows.length > 0 && (
+              <DismissableSection
+                items={activityRows}
+                storagePrefix="bg_act_"
+                title="Recent Activity"
+                titleIconName="CheckCircle"
+                titleIconCls="text-green-500"
+                subtitle="last 30 days"
+              />
+            )}
+          </>
         )}
 
-        {/* Upcoming Events */}
+        {/* ── SHARED: Upcoming Events (filtered to assigned for team members) ─ */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Upcoming Events</CardTitle>
-              <Link href="/events/new"><Button size="sm"><Plus className="w-4 h-4 mr-1"/>New Event</Button></Link>
+              <CardTitle>
+                {isAdmin ? 'Upcoming Events' : 'My Upcoming Events'}
+              </CardTitle>
+              {isAdmin && (
+                <Link href="/events/new">
+                  <Button size="sm"><Plus className="w-4 h-4 mr-1"/>New Event</Button>
+                </Link>
+              )}
             </div>
           </CardHeader>
           <CardContent className="p-0">
             {upcomingEvents.length === 0 ? (
               <div className="text-center py-12 text-gray-400">
                 <Calendar className="w-10 h-10 mx-auto mb-3 opacity-40"/>
-                <p>No upcoming events. <Link href="/events/new" className="text-brand hover:underline">Create one</Link></p>
+                <p>
+                  {isAdmin
+                    ? <><span>No upcoming events. </span><Link href="/events/new" className="text-brand hover:underline">Create one</Link></>
+                    : 'No upcoming events assigned to you.'}
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -407,43 +405,45 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Recent Leads */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Recent Leads</CardTitle>
-              <Link href="/leads"><Button variant="outline" size="sm">View All <ArrowRight className="w-3.5 h-3.5 ml-1"/></Button></Link>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {recentLeads.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
-                <Inbox className="w-10 h-10 mx-auto mb-3 opacity-40"/>
-                <p>No leads yet. Share your inquiry form to start collecting leads.</p>
+        {/* ── ADMIN-ONLY: Recent Leads ─────────────────────────────────────── */}
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Recent Leads</CardTitle>
+                <Link href="/leads"><Button variant="outline" size="sm">View All <ArrowRight className="w-3.5 h-3.5 ml-1"/></Button></Link>
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[500px]">
-                  <thead><tr className="border-b"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Name</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Event Date</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Type</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="px-6 py-3"></th></tr></thead>
-                  <tbody>
-                    {recentLeads.map(lead => {
-                      const statusCls: Record<string,string> = { NEW:'bg-blue-50 text-blue-700', CONTACTED:'bg-yellow-50 text-yellow-700', QUOTED:'bg-purple-50 text-purple-700', CONVERTED:'bg-green-50 text-green-700', CLOSED_LOST:'bg-gray-100 text-gray-500' };
-                      return (
-                        <tr key={lead.id} className="border-b last:border-0 hover:bg-gray-50">
-                          <td className="px-6 py-4"><p className="font-medium">{lead.firstName} {lead.lastName}</p><p className="text-xs text-gray-400">{lead.email}</p></td>
-                          <td className="px-6 py-4 text-sm text-gray-700">{lead.eventDate ? format(new Date(lead.eventDate), 'MMM d, yyyy') : '—'}</td>
-                          <td className="px-6 py-4 text-sm text-gray-500">{lead.eventType ?? '—'}</td>
-                          <td className="px-6 py-4"><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusCls[lead.status] ?? 'bg-gray-100 text-gray-500'}`}>{lead.status.replace('_', ' ')}</span></td>
-                          <td className="px-6 py-4 text-right"><Link href={'/leads/' + lead.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent className="p-0">
+              {recentLeads.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <Inbox className="w-10 h-10 mx-auto mb-3 opacity-40"/>
+                  <p>No leads yet. Share your inquiry form to start collecting leads.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[500px]">
+                    <thead><tr className="border-b"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Name</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Event Date</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Type</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="px-6 py-3"></th></tr></thead>
+                    <tbody>
+                      {recentLeads.map((lead: any) => {
+                        const statusCls: Record<string,string> = { NEW:'bg-blue-50 text-blue-700', CONTACTED:'bg-yellow-50 text-yellow-700', QUOTED:'bg-purple-50 text-purple-700', CONVERTED:'bg-green-50 text-green-700', CLOSED_LOST:'bg-gray-100 text-gray-500' };
+                        return (
+                          <tr key={lead.id} className="border-b last:border-0 hover:bg-gray-50">
+                            <td className="px-6 py-4"><p className="font-medium">{lead.firstName} {lead.lastName}</p><p className="text-xs text-gray-400">{lead.email}</p></td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{lead.eventDate ? format(new Date(lead.eventDate), 'MMM d, yyyy') : '—'}</td>
+                            <td className="px-6 py-4 text-sm text-gray-500">{lead.eventType ?? '—'}</td>
+                            <td className="px-6 py-4"><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusCls[lead.status] ?? 'bg-gray-100 text-gray-500'}`}>{lead.status.replace('_', ' ')}</span></td>
+                            <td className="px-6 py-4 text-right"><Link href={'/leads/' + lead.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
       </div>
     </>
