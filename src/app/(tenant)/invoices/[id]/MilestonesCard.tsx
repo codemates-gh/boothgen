@@ -10,12 +10,15 @@ import { Pencil, Check, X, DollarSign, Lock } from 'lucide-react';
 
 const MC: Record<string, any> = { PENDING: 'default', PAID: 'success', OVERDUE: 'danger', REFUNDED: 'warning' };
 
+const PAYMENT_METHODS = ['Cash', 'Check', 'Zelle', 'Venmo', 'PayPal', 'Bank Transfer', 'Other'];
+
 interface Milestone {
   id: string;
   label: string;
   amountCents: number;
-  dueDate: string | Date; // RSC passes Date objects; JSON API passes strings
+  dueDate: string | Date;
   status: string;
+  paymentMethod?: string | null;
 }
 
 export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin, isPro, currency = 'usd' }: {
@@ -30,6 +33,7 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
   const [dateVal, setDateVal] = useState('');
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
   const [confirmPay, setConfirmPay] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -60,11 +64,16 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
   async function markPaid(milestoneId: string) {
     setMarkingPaid(milestoneId);
     setError('');
-    const res = await fetch(`/api/invoices/${invoiceId}/milestones/${milestoneId}/mark-paid`, { method: 'POST' });
+    const res = await fetch(`/api/invoices/${invoiceId}/milestones/${milestoneId}/mark-paid`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentMethod }),
+    });
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
-      setMilestones(ms => ms.map(m => m.id === milestoneId ? { ...m, status: 'PAID' } : m));
+      setMilestones(ms => ms.map(m => m.id === milestoneId ? { ...m, status: 'PAID', paymentMethod } : m));
       setConfirmPay(null);
+      setPaymentMethod('Cash');
     } else {
       setError(data.error || 'Failed to mark as paid');
     }
@@ -77,75 +86,100 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
       <CardContent className="p-0">
         <div className="divide-y">
           {milestones.map(m => (
-            <div key={m.id} className="flex items-center justify-between px-6 py-4 gap-4">
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm">{m.label}</p>
-                {editing === m.id ? (
-                  <div className="flex items-center gap-2 mt-1">
-                    <Input type="date" value={dateVal} onChange={e => setDateVal(e.target.value)} className="h-7 text-xs w-36" />
-                    <Button size="sm" className="h-7 px-2" onClick={() => saveDate(m.id)} disabled={saving}>
-                      <Check className="w-3 h-3" />
-                    </Button>
-                    <button onClick={() => setEditing(null)} className="text-gray-400 hover:text-gray-600">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                    {error && <span className="text-xs text-red-500">{error}</span>}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <p className="text-xs text-gray-400">Due {format(new Date((m.dueDate instanceof Date ? m.dueDate.toISOString() : m.dueDate).slice(0,10) + 'T00:00:00'), 'MMMM d, yyyy')}</p>
-                    {isAdmin && m.status !== 'PAID' && m.status !== 'REFUNDED' && (
-                      <button onClick={() => startEdit(m)} className="text-gray-300 hover:text-gray-500 transition-colors">
-                        <Pencil className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <p className="font-semibold text-sm">{fmtCents(m.amountCents, currency)}</p>
-                <Badge variant={MC[m.status]}>{m.status.replace('_', ' ')}</Badge>
-
-                {/* Mark Paid externally — admin only, plan-gated */}
-                {isAdmin && (m.status === 'PENDING' || m.status === 'OVERDUE') && (
-                  confirmPay === m.id ? (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-gray-500">Mark paid (external)?</span>
-                      <Button
-                        size="sm" className="h-7 px-2 text-xs"
-                        onClick={() => markPaid(m.id)}
-                        disabled={markingPaid === m.id}
-                      >
-                        {markingPaid === m.id ? '…' : 'Yes'}
+            <div key={m.id} className="px-6 py-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm">{m.label}</p>
+                  {editing === m.id ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input type="date" value={dateVal} onChange={e => setDateVal(e.target.value)} className="h-7 text-xs w-36" />
+                      <Button size="sm" className="h-7 px-2" onClick={() => saveDate(m.id)} disabled={saving}>
+                        <Check className="w-3 h-3" />
                       </Button>
-                      <button onClick={() => setConfirmPay(null)} className="text-gray-400 hover:text-gray-600">
+                      <button onClick={() => setEditing(null)} className="text-gray-400 hover:text-gray-600">
                         <X className="w-3.5 h-3.5" />
                       </button>
+                      {error && <span className="text-xs text-red-500">{error}</span>}
                     </div>
-                  ) : isPro ? (
-                    <button
-                      onClick={() => { setConfirmPay(m.id); setError(''); }}
-                      title="Mark as paid externally (cash/check/etc.)"
-                      className="text-gray-300 hover:text-green-600 transition-colors"
-                    >
-                      <DollarSign className="w-4 h-4" />
-                    </button>
                   ) : (
-                    <button
-                      title="Upgrade to a paid plan to mark payments as received externally"
-                      className="text-gray-200 cursor-not-allowed"
-                      onClick={() => setError('Upgrade to a paid plan to mark payments as externally received.')}
-                    >
-                      <Lock className="w-3.5 h-3.5" />
-                    </button>
-                  )
-                )}
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <p className="text-xs text-gray-400">Due {format(new Date((m.dueDate instanceof Date ? m.dueDate.toISOString() : m.dueDate).slice(0,10) + 'T00:00:00'), 'MMMM d, yyyy')}</p>
+                      {isAdmin && m.status !== 'PAID' && m.status !== 'REFUNDED' && (
+                        <button onClick={() => startEdit(m)} className="text-gray-300 hover:text-gray-500 transition-colors">
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {m.status === 'PAID' && m.paymentMethod && (
+                    <p className="text-xs text-green-600 mt-0.5">via {m.paymentMethod}</p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <p className="font-semibold text-sm">{fmtCents(m.amountCents, currency)}</p>
+                  <Badge variant={MC[m.status]}>{m.status.replace('_', ' ')}</Badge>
+
+                  {isAdmin && (m.status === 'PENDING' || m.status === 'OVERDUE') && (
+                    isPro ? (
+                      <button
+                        onClick={() => { setConfirmPay(m.id); setError(''); }}
+                        title="Record payment received"
+                        className="text-gray-300 hover:text-green-600 transition-colors"
+                      >
+                        <DollarSign className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button
+                        title="Upgrade to a paid plan to mark payments as received externally"
+                        className="text-gray-200 cursor-not-allowed"
+                        onClick={() => setError('Upgrade to a paid plan to mark payments as externally received.')}
+                      >
+                        <Lock className="w-3.5 h-3.5" />
+                      </button>
+                    )
+                  )}
+                </div>
               </div>
+
+              {/* Payment method confirm panel */}
+              {confirmPay === m.id && (
+                <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg">
+                  <p className="text-xs font-medium text-gray-700 mb-2">How was this payment received?</p>
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {PAYMENT_METHODS.map(method => (
+                      <button
+                        key={method}
+                        onClick={() => setPaymentMethod(method)}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                          paymentMethod === method
+                            ? 'bg-green-600 text-white border-green-600'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-green-400'
+                        }`}
+                      >
+                        {method}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700"
+                      onClick={() => markPaid(m.id)}
+                      disabled={markingPaid === m.id}
+                    >
+                      {markingPaid === m.id ? 'Saving…' : `Confirm — ${paymentMethod}`}
+                    </Button>
+                    <button onClick={() => { setConfirmPay(null); setPaymentMethod('Cash'); }} className="text-xs text-gray-400 hover:text-gray-600">
+                      Cancel
+                    </button>
+                  </div>
+                  {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+                </div>
+              )}
             </div>
           ))}
         </div>
-        {error && <p className="px-6 pb-4 text-xs text-red-600">{error}</p>}
+        {!confirmPay && error && <p className="px-6 pb-4 text-xs text-red-600">{error}</p>}
       </CardContent>
     </Card>
   );

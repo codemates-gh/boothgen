@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.48.0] — 2026-07-29
+
+### Added
+- **Manual payment recording with method**: clicking the $ icon on a payment milestone now shows a payment method selector (Cash, Check, Zelle, Venmo, PayPal, Bank Transfer, Other) before confirming; method is stored and displayed on the paid row
+- **Add Lead manually**: "Add Lead" button on the Leads page opens a modal to enter name, email, phone, event date, event type, and notes — creates a lead with `source: manual` and opens it directly
+- **Auto-advance on full payment**: invoice automatically advances to PAID and event advances from LEAD/QUOTED to BOOKED when all milestones are recorded (was already wired server-side, now surfaces correctly with payment method in UI)
+
+---
+
 ## [2.47.8] — 2026-07-27
 
 ### Improved

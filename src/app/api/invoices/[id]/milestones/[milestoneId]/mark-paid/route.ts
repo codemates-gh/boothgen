@@ -24,10 +24,13 @@ export async function POST(_: NextRequest, { params }: { params: { id: string; m
   if (milestone.invoiceId !== params.id) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (milestone.status === 'PAID') return NextResponse.json({ error: 'Already paid' }, { status: 400 });
 
+  const body = await _.json().catch(() => ({}));
+  const paymentMethod = typeof body.paymentMethod === 'string' ? body.paymentMethod.trim() : null;
+
   // Mark milestone paid
   await prisma.paymentMilestone.update({
     where: { id: params.milestoneId },
-    data: { status: 'PAID', paidAt: new Date() },
+    data: { status: 'PAID', paidAt: new Date(), ...(paymentMethod ? { paymentMethod } : {}) },
   });
 
   // Recompute invoice totals from all milestones
