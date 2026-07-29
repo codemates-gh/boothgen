@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.48.1] — 2026-07-29
+
+### Added
+- **Add Lead (Custom Form)**: second button on the Leads page opens the operator's own configured lead capture form (including all custom fields from Settings → Lead Capture) in a modal; auto-closes and refreshes the list on successful submission
+
+---
+
 ## [2.48.0] — 2026-07-29
 
 ### Added

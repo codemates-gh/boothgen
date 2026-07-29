@@ -8,6 +8,7 @@ import { Inbox, Mail, Phone, Calendar, Users, MessageSquare, ArrowRight } from '
 import { format } from 'date-fns';
 import Link from 'next/link';
 import AddLeadButton from './AddLeadButton';
+import AddLeadCustomFormButton from './AddLeadCustomFormButton';
 
 const STATUS_COLORS: Record<string, string> = {
   NEW: 'text-blue-600 border-blue-200 bg-blue-50',
@@ -22,6 +23,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default async function LeadsPage() {
   const session = await requireTenantSession();
+  const tenantSlug = session.tenant.slug;
   const leads = await prisma.leadSubmission.findMany({
     where: { tenantId: session.tenantId, status: { notIn: ['CONVERTED', 'CLOSED_LOST'] } },
     orderBy: { createdAt: 'desc' },
@@ -34,7 +36,10 @@ export default async function LeadsPage() {
       <div className="p-4 sm:p-8">
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-500">{leads.length} inquiry{leads.length !== 1 ? 's' : ''}</p>
-          <AddLeadButton />
+          <div className="flex items-center gap-2">
+            <AddLeadButton />
+            <AddLeadCustomFormButton tenantSlug={tenantSlug} />
+          </div>
         </div>
         {leads.length > 0 && (
           <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mb-4">
