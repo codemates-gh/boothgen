@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.51.0] — 2026-07-29
+
+### Updated
+- **Support Center**: updated Team Management article to reflect role change (shield icon) and remove member (trash icon) functionality; added Team Member Dashboard section explaining scoped dashboard view; updated Dashboard article with Team Member View note; added new "Profitability & Analytics" category with three articles — Print Costs / Consumable Profiles, Per-Event Profitability Card, and Analytics Profitability Tab
+- **Main landing page**: added "Profitability Tracking" feature card; updated Team Management feature description to mention dashboard scoping; updated structured data feature list
+
+---
+
 ## [2.50.0] — 2026-07-29
 
 ### Fixed

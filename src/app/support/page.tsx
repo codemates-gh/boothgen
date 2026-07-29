@@ -328,8 +328,11 @@ The gallery tab in the portal shows the total photo count and a photo grid with 
 Go to Settings → Team → Invite Team Member. Enter their name and email address. They'll receive an invitation email with a link to set up their account (create a password and log in). The invite link expires after 48 hours — resend from the Team page if needed.
 
 **Team Member vs. Operator Admin Roles**
-- **Operator Admin** — Full access to all features, settings, billing, and financial data
-- **Team Member** — Limited access controlled by you; cannot see Settings, Billing, or other sensitive areas unless explicitly allowed
+- **Operator Admin (HOST_ADMIN)** — Full access to all features, settings, billing, financial data, analytics, and profitability reports
+- **Team Member** — Limited access; sees only their assigned events, weather, and any sections you enable in Team Member Access
+
+**Changing a Member's Role**
+From Settings → Team, find the member in the Team Members table. Click the shield icon on their row to toggle their role between Team Member and Operator Admin. You cannot change your own role, and you cannot demote the only remaining admin.
 
 **Controlling What Team Members Can See**
 Go to Settings → Team → Team Member Access. Toggle which sections team members can access:
@@ -346,13 +349,16 @@ These settings apply to ALL team members on your account. Changes take effect on
 **What Team Members Cannot Do**
 Regardless of access settings, team members can never:
 - Access Settings, Branding, Billing, or Packages
-- Create, edit, or delete service packages
-- View platform commission settings
-- Manage coupon codes
-- Invite other team members
+- View financial KPIs, revenue, leads, or profit data on the dashboard
+- See profitability, expenses, or cost data on events
+- Access the Analytics → Profitability tab
+- Invite or manage other team members
+
+**Team Member Dashboard**
+When a team member logs in, their dashboard shows only events assigned to them. They see the weather widget and their upcoming and today's events — nothing else. All financial stats, alerts, and recent leads are hidden.
 
 **Removing a Team Member**
-From the Team Members table, click on a member and change their status to Suspended. They will no longer be able to log in.`,
+From the Team Members table, click the trash icon on their row. A confirmation prompt appears inline — click "Yes" to remove or "No" to cancel. You cannot remove yourself or the last remaining admin.`,
   },
 
   // ─── AUTOMATION ─────────────────────────────────────────────────────────────
@@ -662,7 +668,10 @@ A list of your next several events sorted by date, with their status badges. Cli
 Your most recently submitted lead inquiries, with the event date and lead status. Click a lead to open it and respond.
 
 **Weather Widget**
-Below the stats row is a 5-day weather forecast showing conditions for your business location. The widget reads your Business Address from Settings → Branding, geocodes it, and fetches accurate local weather — so if you're based in Laurel, MD, it shows Laurel's forecast rather than wherever your browser's IP happens to resolve. A small note below the widget confirms which source is in use and links directly to Branding Settings if you need to update the address. If no business address has been saved yet, it falls back to IP-based geolocation.`,
+Below the stats row is a 5-day weather forecast showing conditions for your business location. The widget reads your Business Address from Settings → Branding, geocodes it, and fetches accurate local weather — so if you're based in Laurel, MD, it shows Laurel's forecast rather than wherever your browser's IP happens to resolve. A small note below the widget confirms which source is in use and links directly to Branding Settings if you need to update the address. If no business address has been saved yet, it falls back to IP-based geolocation.
+
+**Team Member View**
+When a team member (non-admin) logs in, their dashboard is scoped to only what's relevant to them. They see their assigned upcoming events, today's events, and the weather widget. Financial stats, revenue KPIs, Requires Attention alerts, Recent Activity, and Recent Leads are all hidden. They cannot see events they are not assigned to.`,
   },
 
   // ─── SETTINGS ───────────────────────────────────────────────────────────────
@@ -1087,6 +1096,110 @@ A lead's message thread carries over when you convert the lead to an event — t
 Threads are kept for [[message_retention_months]] months after the event date (for converted events) or [[message_retention_months]] months after the last message date (for unconverted leads). An event booked a year in advance is not pruned until [[message_retention_months]] months after the event itself takes place.`,
   },
 
+  // ─── PRINT COSTS & PROFITABILITY ────────────────────────────────────────────
+  {
+    id: 'settings-print-costs',
+    category: 'Profitability & Analytics',
+    categoryIcon: '💰',
+    title: 'Print Costs — Consumable Profiles',
+    slug: 'print-costs',
+    content: `Consumable profiles let you define the cost per print for your media rolls once and reuse them across all events — so print cost calculations are consistent and automatic.
+
+**Where to Find It**
+Go to Settings → Print Costs (the last tab in the Settings navigation).
+
+**What is a Consumable Profile?**
+A consumable profile stores the cost per print for a specific media type (e.g. "DNP DS620A 4x6" at $0.14/print). When you log print counts on an event, you select a profile and the system calculates print cost automatically: print count × cost per print.
+
+**How to Calculate Cost Per Print**
+Divide the cost of one media roll by the number of prints it yields:
+- DNP DS620A 4x6 ribbon: ~$75 for 550 prints = $0.14/print
+- DNP DS820A 5x7: ~$82 for 460 prints = $0.18/print
+- Mitsubishi CP-D90DW: ~$89 for 640 prints = $0.14/print
+- HiTi S420 4x6: ~$62 for 400 prints = $0.16/print
+
+Prices vary by supplier — use your actual purchase price, not a list price, for the most accurate cost tracking.
+
+**Creating a Profile**
+Click "New Profile." Enter a name (e.g. "DNP DS620A 4x6"), enter the cost per print in dollars (e.g. 0.14), and choose whether to make it your default. Click Save.
+
+**Setting a Default**
+Mark one profile as your default — it pre-selects automatically when logging prints for any event. You can still choose a different profile per event if you used different media.
+
+**Who Can See Costs?**
+Only account admins (HOST_ADMIN) can see cost-per-print data and create or edit profiles. Team members can select a profile name when logging print counts, but the dollar amount is never shown to them.`,
+  },
+  {
+    id: 'events-profitability',
+    category: 'Profitability & Analytics',
+    categoryIcon: '💰',
+    title: 'Per-Event Profitability Card',
+    slug: 'event-profitability',
+    content: `Every event detail page includes a Profitability card where you can log print counts, track expenses, and see whether the event was profitable.
+
+**Who Sees What**
+- **Account Admins (HOST_ADMIN)** — Full profitability card: revenue, print costs, other expenses, net profit, and margin percentage. Starts expanded by default.
+- **Team Members** — Print log only: select media type and enter print count. No dollar amounts are shown.
+
+**Logging Prints (All Users)**
+Scroll to the Profitability section on any event detail page. Select your consumable profile (the media type you used), enter the total print count, and click Save. Admins will see this automatically reflected in the cost calculation.
+
+**For Admins — Full Profitability View**
+The admin view shows four key numbers in a KPI row:
+- **Revenue** — Total from paid payment milestones for this event
+- **Print Cost** — Print count × cost per print from the selected consumable profile
+- **Other Expenses** — Sum of all manually added expense line items
+- **Net Profit** — Revenue minus all costs, with profit margin percentage
+
+**Adding Expenses**
+Click "Add Expense" to record any additional costs. Enter a description, dollar amount, and category:
+- Operator Pay — Payments to staff or contract operators
+- Travel — Gas, tolls, parking, mileage
+- Consumables — Any supplies not covered by the print log
+- Equipment — Rental or depreciation costs
+- Venue — Parking or setup fees at the location
+- Other — Anything that doesn't fit another category
+
+**Tracking Operator Pay**
+To log what an operator was paid for this event, add an expense with category "Operator Pay" and a description like "Maria — operator fee." This is only visible to admins and never shown to team members or clients.
+
+**Privacy**
+All cost figures, expense amounts, and profit data are visible to account admins only. Team members see print log entry only — no dollar amounts, no expenses, no margins.`,
+  },
+  {
+    id: 'analytics-profitability',
+    category: 'Profitability & Analytics',
+    categoryIcon: '💰',
+    title: 'Analytics — Profitability Tab',
+    slug: 'analytics-profitability',
+    content: `The Analytics → Profitability tab gives you a portfolio-level view of how profitable your business is across all events. It is visible to account admins only.
+
+**Accessing the Tab**
+Go to Analytics in the sidebar. If you are an account admin, two tabs appear: Overview and Profitability. Click Profitability.
+
+**Portfolio KPIs**
+Four summary cards across all events:
+- **Total Revenue** — Sum of all paid milestones across your portfolio
+- **Total Costs** — Print costs + all logged expenses across all events
+- **Net Profit** — Revenue minus total costs
+- **Avg Margin** — Average profit margin across events that have cost data
+
+**Profit by Event Chart**
+A bar chart of your most recent 20 events. Green bars = profitable, red bars = loss. Hover over any bar to see the event name and exact figures.
+
+**Per-Event Table**
+A row-by-row breakdown of all events showing: event name, date, revenue, costs, net profit, and margin. A totals footer row sums the full portfolio. Click any event name to go directly to that event's detail page.
+
+**Who Can See This**
+The Profitability tab is hidden entirely from team members. Only HOST_ADMIN users can access cost, expense, and profit data. This is enforced server-side — no amount of URL manipulation will expose it to non-admins.
+
+**Getting the Most from Profitability Analytics**
+- Log print counts on every event so your cost data is complete
+- Add "Operator Pay" expense lines so net profit reflects your true take-home
+- Use the margin column to identify which event types or package tiers are most profitable
+- Compare months or event types by filtering to specific date ranges (via the Overview tab filters)`,
+  },
+
   // ─── IMPORT ─────────────────────────────────────────────────────────────────
   {
     id: 'settings-import',
@@ -1137,6 +1250,7 @@ const CATEGORIES = [
   { label: 'Calendar', icon: '📅', color: 'bg-sky-50 border-sky-200 text-sky-700', desc: 'Monthly view, availability, iCal sync' },
   { label: 'Event Checklists', icon: '✅', color: 'bg-emerald-50 border-emerald-200 text-emerald-700', desc: 'Day-of task lists, templates, progress' },
   { label: 'Dashboard', icon: '🏠', color: 'bg-violet-50 border-violet-200 text-violet-700', desc: 'Stats, attention alerts, activity' },
+  { label: 'Profitability & Analytics', icon: '💰', color: 'bg-green-50 border-green-200 text-green-700', desc: 'Print costs, expenses, profit tracking' },
   { label: 'Workflows', icon: '🔄', color: 'bg-cyan-50 border-cyan-200 text-cyan-700', desc: 'End-to-end booking walkthroughs' },
   { label: 'Settings', icon: '⚙️', color: 'bg-gray-50 border-gray-200 text-gray-700', desc: 'Packages, billing, checklists, profile, corporate pricing' },
   { label: 'AI Features', icon: '🤖', color: 'bg-purple-50 border-purple-200 text-purple-700', desc: 'AI chatbot, email drafting, smart tools' },

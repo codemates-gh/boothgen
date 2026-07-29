@@ -38,8 +38,21 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   const post = await getPost(params.slug);
   if (!post || (post.publishedAt && new Date(post.publishedAt) > new Date())) notFound();
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.description,
+    url: `https://boothgen.com/blog/${post.slug}`,
+    datePublished: post.publishedAt?.toISOString(),
+    image: `/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.description.slice(0, 80))}`,
+    author: { '@type': 'Organization', name: 'Booth Genius', url: 'https://boothgen.com' },
+    publisher: { '@type': 'Organization', name: 'Booth Genius', url: 'https://boothgen.com' },
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <MarketingNav />
       <main className="min-h-screen bg-white">
         <article className="max-w-2xl mx-auto px-4 py-16">

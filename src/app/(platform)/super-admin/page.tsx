@@ -38,6 +38,7 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
         stripeConnect: { select: { onboardingStatus: true, chargesEnabled: true } },
         _count: { select: { events: true } },
         branding: { select: { companyName: true } },
+        memberships: { where: { role: 'HOST_ADMIN' }, take: 1, include: { user: { select: { name: true, email: true } } } },
       },
     }).catch(e => { console.error('[super-admin] tenants query failed:', e); return []; }),
     prisma.user.count().catch(() => 0),
