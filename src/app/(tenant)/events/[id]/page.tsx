@@ -172,6 +172,11 @@ export default async function EventDetailPage({ params }: { params: { id: string
                 {isAdmin && !event.assignedTo && (
                   <p className="text-xs text-gray-400">Select a team member to assign this event.</p>
                 )}
+                {isAdmin && (
+                  <p className="text-xs text-gray-400 border-t pt-2">
+                    To log operator pay, scroll down to the <span className="font-medium text-gray-600">Profitability</span> section and add an expense under &quot;Operator Pay.&quot;
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -284,14 +289,13 @@ export default async function EventDetailPage({ params }: { params: { id: string
           </div>
         )}
 
-        {/* Profitability — HOST_ADMIN only, never visible to team members */}
-        {isAdmin && (
-          <EventProfitability
-            eventId={event.id}
-            revenueCents={totalPaidCents}
-            currency={branding?.currency ?? 'usd'}
-          />
-        )}
+        {/* Profitability (admin) / Print Log (team member) */}
+        <EventProfitability
+          eventId={event.id}
+          isAdmin={isAdmin}
+          revenueCents={totalPaidCents}
+          currency={branding?.currency ?? 'usd'}
+        />
       </div>
     </>
   );

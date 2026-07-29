@@ -6,12 +6,16 @@ import { prisma } from '@/lib/prisma/client';
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session?.tenantId || session.tenantRole !== 'HOST_ADMIN') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const isAdmin = session.tenantRole === 'HOST_ADMIN';
   const profiles = await prisma.consumableProfile.findMany({
-    where: { tenantId: session.tenantId },
+    where: { tenantId: session.tenantId, isActive: true },
     orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+    // Team members only get name/id — no cost data
+    select: isAdmin
+      ? { id: true, name: true, costPerPrintCents: true, isDefault: true, isActive: true, createdAt: true, updatedAt: true }
+      : { id: true, name: true, isDefault: true },
   });
   return NextResponse.json(profiles);
 }

@@ -6,9 +6,14 @@ import { Input } from '@/components/ui/input';
 import { fmtCents } from '@/lib/utils';
 import { TrendingUp, Printer, DollarSign, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
-type Profile = { id: string; name: string; costPerPrintCents: number; isDefault: boolean };
+type Profile = { id: string; name: string; costPerPrintCents?: number; isDefault: boolean };
 type Expense = { id: string; description: string; amountCents: number; category: string };
-type PrintLog = { printCount: number; consumableProfileId: string | null; notes: string | null; consumableProfile: Profile | null } | null;
+type PrintLog = {
+  printCount: number;
+  consumableProfileId: string | null;
+  notes: string | null;
+  consumableProfile: Profile | null;
+} | null;
 
 const CATEGORIES = [
   ['labor', 'Operator Pay'],
@@ -18,12 +23,125 @@ const CATEGORIES = [
   ['other', 'Other'],
 ];
 
-function pct(n: number, d: number) {
-  if (d === 0) return null;
-  return Math.round((n / d) * 100);
+// ─── Team member view: print count only, no cost data ────────────────────────
+function PrintLogOnly({ eventId }: { eventId: string }) {
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [printLog, setPrintLog] = useState<PrintLog>(null);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ printCount: '', consumableProfileId: '', notes: '' });
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    const [logRes, profRes] = await Promise.all([
+      fetch(`/api/events/${eventId}/print-log`),
+      fetch('/api/settings/consumable-profiles'),
+    ]);
+    if (logRes.ok) setPrintLog(await logRes.json());
+    if (profRes.ok) setProfiles(await profRes.json());
+  }, [eventId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  function openEdit() {
+    setForm({
+      printCount: printLog ? String(printLog.printCount) : '0',
+      consumableProfileId: printLog?.consumableProfileId ?? (profiles.find(p => p.isDefault)?.id ?? ''),
+      notes: printLog?.notes ?? '',
+    });
+    setEditing(true);
+  }
+
+  async function save() {
+    setSaving(true);
+    await fetch(`/api/events/${eventId}/print-log`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        printCount: parseInt(form.printCount || '0'),
+        consumableProfileId: form.consumableProfileId || null,
+        notes: form.notes || null,
+      }),
+    });
+    await load();
+    setEditing(false);
+    setSaving(false);
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Printer className="w-4 h-4 text-gray-500" />
+            Print Log
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={openEdit}>
+            {printLog && printLog.printCount > 0 ? 'Edit' : 'Log Prints'}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {editing ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Print Count</label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.printCount}
+                  onChange={e => setForm(f => ({ ...f, printCount: e.target.value }))}
+                  placeholder="0"
+                />
+              </div>
+              {profiles.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Media Kit Used</label>
+                  <select
+                    value={form.consumableProfileId}
+                    onChange={e => setForm(f => ({ ...f, consumableProfileId: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                  >
+                    <option value="">— Not sure —</option>
+                    {profiles.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+              <Input
+                value={form.notes}
+                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Optional notes..."
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
+              <Button size="sm" onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
+            </div>
+          </div>
+        ) : printLog && printLog.printCount > 0 ? (
+          <div className="text-sm text-gray-700">
+            <span className="font-semibold text-lg">{printLog.printCount}</span>
+            <span className="text-gray-500 ml-1">prints</span>
+            {printLog.consumableProfile && (
+              <span className="text-gray-400 text-xs ml-2">via {printLog.consumableProfile.name}</span>
+            )}
+            {printLog.notes && <p className="text-xs text-gray-400 mt-1">{printLog.notes}</p>}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400 italic">No prints logged yet. Tap &quot;Log Prints&quot; after the event.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
-export default function EventProfitability({
+// ─── Admin view: full profitability card ──────────────────────────────────────
+function FullProfitability({
   eventId,
   revenueCents,
   currency,
@@ -37,14 +155,12 @@ export default function EventProfitability({
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [printLog, setPrintLog] = useState<PrintLog>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
-  // Print log editing
   const [editingPrint, setEditingPrint] = useState(false);
   const [printForm, setPrintForm] = useState({ printCount: '', consumableProfileId: '', notes: '' });
   const [savingPrint, setSavingPrint] = useState(false);
 
-  // Expense form
   const [expForm, setExpForm] = useState({ description: '', amount: '', category: 'labor' });
   const [addingExp, setAddingExp] = useState(false);
   const [savingExp, setSavingExp] = useState(false);
@@ -116,8 +232,7 @@ export default function EventProfitability({
   const otherCostCents = expenses.reduce((sum, e) => sum + e.amountCents, 0);
   const totalCostCents = printCostCents + otherCostCents;
   const profitCents = revenueCents - totalCostCents;
-  const marginPct = pct(profitCents, revenueCents);
-
+  const marginPct = revenueCents > 0 ? Math.round((profitCents / revenueCents) * 100) : null;
   const profitColor = profitCents >= 0 ? 'text-emerald-600' : 'text-red-600';
   const marginColor = (marginPct ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600';
 
@@ -126,11 +241,12 @@ export default function EventProfitability({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
-            <TrendingUp className="w-4 h-4 text-indigo-500"/>
-            Profitability <span className="text-xs font-normal text-gray-400 ml-1">(visible to you only)</span>
+            <TrendingUp className="w-4 h-4 text-indigo-500" />
+            Profitability
+            <span className="text-xs font-normal text-gray-400 ml-1">(visible to you only)</span>
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={() => setExpanded(e => !e)}>
-            {expanded ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>}
+            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             {expanded ? 'Collapse' : 'Expand'}
           </Button>
         </div>
@@ -138,10 +254,10 @@ export default function EventProfitability({
         {/* KPI row — always visible */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
           {[
-            { label: 'Revenue', value: fmt(revenueCents), icon: <DollarSign className="w-3.5 h-3.5"/> },
-            { label: 'Total Cost', value: fmt(totalCostCents), icon: <DollarSign className="w-3.5 h-3.5"/> },
-            { label: 'Profit', value: fmt(profitCents), extra: profitColor },
-            { label: 'Margin', value: marginPct !== null ? `${marginPct}%` : '—', extra: marginColor },
+            { label: 'Revenue',    value: fmt(revenueCents) },
+            { label: 'Total Cost', value: fmt(totalCostCents) },
+            { label: 'Profit',     value: fmt(profitCents),                          extra: profitColor },
+            { label: 'Margin',     value: marginPct !== null ? `${marginPct}%` : '—', extra: marginColor },
           ].map(({ label, value, extra }) => (
             <div key={label} className="bg-gray-50 rounded-lg p-3">
               <p className="text-xs text-gray-500 mb-0.5">{label}</p>
@@ -156,7 +272,9 @@ export default function EventProfitability({
           {/* Print Log */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-semibold flex items-center gap-1.5 text-gray-700"><Printer className="w-3.5 h-3.5"/>Print Log</p>
+              <p className="text-sm font-semibold flex items-center gap-1.5 text-gray-700">
+                <Printer className="w-3.5 h-3.5" />Print Log
+              </p>
               <Button variant="ghost" size="sm" onClick={openEditPrint}>
                 {printLog ? 'Edit' : 'Log Prints'}
               </Button>
@@ -168,8 +286,7 @@ export default function EventProfitability({
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Print Count</label>
                     <Input
-                      type="number"
-                      min="0"
+                      type="number" min="0"
                       value={printForm.printCount}
                       onChange={e => setPrintForm(f => ({ ...f, printCount: e.target.value }))}
                       placeholder="0"
@@ -185,7 +302,7 @@ export default function EventProfitability({
                       <option value="">— No profile —</option>
                       {profiles.map(p => (
                         <option key={p.id} value={p.id}>
-                          {p.name} (${(p.costPerPrintCents / 100).toFixed(3)}/print)
+                          {p.name}{p.costPerPrintCents !== undefined ? ` ($${(p.costPerPrintCents / 100).toFixed(3)}/print)` : ''}
                         </option>
                       ))}
                     </select>
@@ -227,7 +344,7 @@ export default function EventProfitability({
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-semibold text-gray-700">Other Expenses</p>
               <Button variant="ghost" size="sm" onClick={() => setAddingExp(a => !a)}>
-                <Plus className="w-3.5 h-3.5 mr-1"/>Add
+                <Plus className="w-3.5 h-3.5 mr-1" />Add
               </Button>
             </div>
 
@@ -247,9 +364,7 @@ export default function EventProfitability({
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Amount ($)</label>
                     <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
+                      type="number" step="0.01" min="0"
                       value={expForm.amount}
                       onChange={e => setExpForm(f => ({ ...f, amount: e.target.value }))}
                       placeholder="0.00"
@@ -279,17 +394,16 @@ export default function EventProfitability({
                   <div key={e.id} className="flex items-center justify-between text-sm px-3 py-2 rounded-lg hover:bg-gray-50 group">
                     <div>
                       <span className="font-medium">{e.description}</span>
-                      <span className="ml-2 text-xs text-gray-400 capitalize">{CATEGORIES.find(c => c[0] === e.category)?.[1] ?? e.category}</span>
+                      <span className="ml-2 text-xs text-gray-400">{CATEGORIES.find(c => c[0] === e.category)?.[1] ?? e.category}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="font-semibold">{fmt(e.amountCents)}</span>
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        variant="ghost" size="sm"
                         onClick={() => deleteExpense(e.id)}
                         className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 p-1"
                       >
-                        <Trash2 className="w-3.5 h-3.5"/>
+                        <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   </div>
@@ -304,7 +418,7 @@ export default function EventProfitability({
             )}
           </div>
 
-          {/* Summary row */}
+          {/* Summary */}
           <div className="border-t pt-4 flex flex-wrap gap-4 text-sm">
             <div><span className="text-gray-500">Print cost:</span> <span className="font-semibold">{fmt(printCostCents)}</span></div>
             <div><span className="text-gray-500">Other expenses:</span> <span className="font-semibold">{fmt(otherCostCents)}</span></div>
@@ -318,4 +432,20 @@ export default function EventProfitability({
       )}
     </Card>
   );
+}
+
+// ─── Exported wrapper ─────────────────────────────────────────────────────────
+export default function EventProfitability({
+  eventId,
+  isAdmin,
+  revenueCents,
+  currency,
+}: {
+  eventId: string;
+  isAdmin: boolean;
+  revenueCents: number;
+  currency: string;
+}) {
+  if (!isAdmin) return <PrintLogOnly eventId={eventId} />;
+  return <FullProfitability eventId={eventId} revenueCents={revenueCents} currency={currency} />;
 }

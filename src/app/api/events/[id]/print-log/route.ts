@@ -6,10 +6,16 @@ import { prisma } from '@/lib/prisma/client';
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
-  if (!session?.tenantId || session.tenantRole !== 'HOST_ADMIN') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const event = await prisma.event.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
+  if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const isAdmin = session.tenantRole === 'HOST_ADMIN';
+  const event = await prisma.event.findFirst({
+    where: {
+      id: params.id,
+      tenantId: session.tenantId,
+      ...(isAdmin ? {} : { assignedToUserId: session.userId }),
+    },
+  });
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const log = await prisma.eventPrintLog.findUnique({
@@ -21,10 +27,16 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
-  if (!session?.tenantId || session.tenantRole !== 'HOST_ADMIN') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const event = await prisma.event.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
+  if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const isAdmin = session.tenantRole === 'HOST_ADMIN';
+  const event = await prisma.event.findFirst({
+    where: {
+      id: params.id,
+      tenantId: session.tenantId,
+      ...(isAdmin ? {} : { assignedToUserId: session.userId }),
+    },
+  });
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const { printCount, consumableProfileId, notes } = await req.json();

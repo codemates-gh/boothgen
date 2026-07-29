@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.49.2] — 2026-07-29
+
+### Improved
+- **Print Log for operators**: team members assigned to an event now see a simple "Print Log" card at the bottom of the event page — they can enter the print count and select which media kit was used, but see zero cost or financial data
+- **Profitability card starts expanded** by default for HOST_ADMIN (no need to manually open it each time)
+- **Assigned To card hint**: admins see a note pointing them to the Profitability section below for logging operator pay
+- Consumable profiles API: GET now returns name/id only to team members (no cost-per-print exposure)
+
+---
+
 ## [2.49.1] — 2026-07-29
 
 ### Improved
