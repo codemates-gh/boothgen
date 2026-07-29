@@ -41,3 +41,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   return NextResponse.json(updated);
 }
+
+export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (session.tenantRole !== 'HOST_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const lead = await prisma.leadSubmission.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
+  if (!lead) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (lead.convertedToEventId) return NextResponse.json({ error: 'Cannot delete a lead that has been converted to an event' }, { status: 400 });
+
+  await prisma.leadSubmission.delete({ where: { id: params.id } });
+  return NextResponse.json({ success: true });
+}

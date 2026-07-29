@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { ArrowLeft, Save, Send, ArrowRight, CheckCircle, RefreshCw, FileText, Sparkles, Building2 } from 'lucide-react';
+import { ArrowLeft, Save, Send, ArrowRight, CheckCircle, RefreshCw, FileText, Sparkles, Building2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -144,6 +144,8 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
   const [saved, setSaved] = useState(false);
   const [sending, setSending] = useState(false);
   const [converting, setConverting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [emailSubject, setEmailSubject] = useState(`Re: Your Photo Booth Inquiry`);
   const [emailBody, setEmailBody] = useState(`<p>Hi ${initial.firstName},</p><p>Thank you for your inquiry! I'd love to learn more about your event.</p><p><br/></p>`);
   const [editorKey, setEditorKey] = useState(0);
@@ -265,6 +267,20 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
     setRefreshing(false);
   }
 
+  async function deleteLead() {
+    setDeleting(true);
+    const res = await fetch(`/api/leads/${lead.id}`, { method: 'DELETE' });
+    if (res.ok) {
+      router.push('/leads');
+      router.refresh();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      alert(d.error || 'Failed to delete lead');
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  }
+
   async function convertToEvent() {
     setConverting(true);
     const res = await fetch(`/api/leads/${lead.id}/convert`, { method: 'POST' });
@@ -348,6 +364,29 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
             <Button onClick={convertToEvent} disabled={converting} size="sm" className="gap-1.5">
               {converting ? 'Converting…' : 'Convert to Event'}
             </Button>
+          )}
+          {!lead.convertedToEventId && (
+            confirmDelete ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Delete this lead?</span>
+                <Button
+                  size="sm" variant="outline"
+                  className="h-8 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                  onClick={deleteLead} disabled={deleting}
+                >
+                  {deleting ? 'Deleting…' : 'Yes, delete'}
+                </Button>
+                <button onClick={() => setConfirmDelete(false)} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="text-gray-300 hover:text-red-500 transition-colors"
+                title="Delete lead"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )
           )}
             </div>
           </div>

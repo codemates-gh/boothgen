@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.48.2] — 2026-07-29
+
+### Added
+- **Delete lead**: trash icon in the lead detail header triggers an inline confirmation ("Delete this lead? / Yes, delete / Cancel") before permanently removing; blocked on leads already converted to an event
+
+---
+
 ## [2.48.1] — 2026-07-29
 
 ### Added
