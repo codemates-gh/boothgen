@@ -20,6 +20,7 @@ import AssignEventButton from './AssignEventButton';
 import EventNotes from './EventNotes';
 import EventChecklist from './EventChecklist';
 import EventMessagePanel from './EventMessagePanel';
+import EventProfitability from './EventProfitability';
 
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger', LOST:'default' };
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
@@ -281,6 +282,15 @@ export default async function EventDetailPage({ params }: { params: { id: string
               clientEmail={event.client.email}
             />
           </div>
+        )}
+
+        {/* Profitability — HOST_ADMIN only, never visible to team members */}
+        {isAdmin && (
+          <EventProfitability
+            eventId={event.id}
+            revenueCents={totalPaidCents}
+            currency={branding?.currency ?? 'usd'}
+          />
         )}
       </div>
     </>

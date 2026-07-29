@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.49.0] — 2026-07-29
+
+### Added
+- **Print Cost & Profitability Analytics** — full feature build (HOST_ADMIN only; zero data visible to team members):
+  - **Consumable Profiles** (Settings → Print Costs): define reusable print-media kits with name + cost-per-print (e.g. $0.18); mark one as default; edit/delete
+  - **Per-event Profitability card** on each event detail page: log print count + select consumable profile, add free-form expenses by category (Operator Pay, Travel, Supplies, Equipment Rental, Other), see revenue vs cost KPIs, expandable to full breakdown
+  - **Analytics → Profitability tab**: portfolio-level KPIs (total revenue, cost, net profit, overall margin), revenue vs cost bar chart (recent 20 events), per-event table with prints, print cost, other expenses, profit, and margin; totals footer row; click event name to go to event detail
+  - 3 new Prisma models: `ConsumableProfile`, `EventPrintLog`, `EventExpense`
+  - API routes: `GET/POST /api/settings/consumable-profiles`, `PATCH/DELETE /api/settings/consumable-profiles/[id]`, `GET/PUT /api/events/[id]/print-log`, `GET/POST /api/events/[id]/expenses`, `DELETE /api/events/[id]/expenses/[expenseId]`, `GET /api/analytics/profitability`
+
+---
+
 ## [2.48.2] — 2026-07-29
 
 ### Added

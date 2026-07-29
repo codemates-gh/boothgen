@@ -8,7 +8,7 @@ import { Select } from '@/components/ui/select';
 import { Copy, Check, ExternalLink, Globe, Save, Plus, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 
-const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import']];
+const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
 
 type FieldType = 'TEXT' | 'TEXTAREA' | 'SELECT';
 interface CustomField { id: string; label: string; fieldType: FieldType; required: boolean; options: string[] | null; isActive: boolean; sortOrder: number }

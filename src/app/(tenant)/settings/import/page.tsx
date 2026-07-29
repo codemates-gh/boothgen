@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { SAMPLE_CSV } from '@/lib/import/parse';
 
-const TABS = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import']];
+const TABS = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
 
 // ── types ─────────────────────────────────────────────────────────────────────
 

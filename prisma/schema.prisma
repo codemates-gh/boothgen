@@ -222,6 +222,9 @@ model Tenant {
   checklistTemplates   ChecklistTemplate[]
   eventChecklistItems  EventChecklistItem[]
   leadMessages         LeadMessage[]
+  consumableProfiles   ConsumableProfile[]
+  eventPrintLogs       EventPrintLog[]
+  eventExpenses        EventExpense[]
 
   @@map("tenants")
 }
@@ -394,6 +397,8 @@ model Event {
   notes                EventNote[]
   checklistItems       EventChecklistItem[]
   messages             LeadMessage[]
+  printLog             EventPrintLog?
+  expenses             EventExpense[]
 
   @@index([tenantId])
   @@index([tenantId, eventDate])
@@ -1088,4 +1093,56 @@ model BlogPost {
   updatedAt   DateTime  @updatedAt
 
   @@map("blog_posts")
+}
+
+model ConsumableProfile {
+  id                String   @id @default(cuid())
+  tenantId          String
+  name              String
+  costPerPrintCents Int
+  isDefault         Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  printLogs EventPrintLog[]
+
+  @@index([tenantId])
+  @@map("consumable_profiles")
+}
+
+model EventPrintLog {
+  id                  String   @id @default(cuid())
+  tenantId            String
+  eventId             String   @unique
+  consumableProfileId String?
+  printCount          Int      @default(0)
+  source              String   @default("manual")
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event             Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  consumableProfile ConsumableProfile? @relation(fields: [consumableProfileId], references: [id])
+
+  @@index([tenantId])
+  @@map("event_print_logs")
+}
+
+model EventExpense {
+  id          String   @id @default(cuid())
+  tenantId    String
+  eventId     String
+  description String
+  amountCents Int
+  category    String   @default("other")
+  createdAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("event_expenses")
 }
