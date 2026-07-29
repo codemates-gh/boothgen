@@ -166,10 +166,38 @@ export default function PrintCostsPage() {
         )}
 
         <Card>
-          <CardHeader><CardTitle className="text-sm">How It Works</CardTitle></CardHeader>
-          <CardContent className="text-sm text-gray-600 space-y-2">
-            <p>On each event's detail page (visible to you only), you can log how many prints were produced and select which consumable kit was used. The system multiplies prints × cost-per-print to compute your print expense.</p>
-            <p>Add additional expenses (operator pay, travel, etc.) per event. The profitability analytics tab shows revenue minus all costs across your portfolio.</p>
+          <CardHeader><CardTitle className="text-sm">How to Calculate Cost Per Print</CardTitle></CardHeader>
+          <CardContent className="text-sm text-gray-600 space-y-3">
+            <p>Divide what you paid for a media kit (paper + ribbon) by the number of prints it yields:</p>
+            <div className="bg-gray-50 rounded-lg px-4 py-3 font-mono text-sm text-gray-800">
+              Cost per print = Kit price ÷ Prints per kit
+            </div>
+            <p className="text-xs text-gray-500">Example: a $60 kit that produces 400 prints = <strong>$0.150 per print</strong>. If you bought a twin-pack ribbon (2 × 400 = 800 prints total), divide the full kit price by 800. Add shipping to the kit price if you want the true landed cost.</p>
+            <div className="border-t pt-3">
+              <p className="font-medium text-gray-700 mb-2 text-xs uppercase tracking-wide">Common yields by printer</p>
+              <table className="w-full text-xs text-gray-600">
+                <thead><tr className="text-gray-400 font-medium"><th className="text-left pb-1">Printer</th><th className="text-left pb-1">Media</th><th className="text-right pb-1">Prints/kit</th></tr></thead>
+                <tbody className="divide-y divide-gray-100">
+                  {[
+                    ['DNP DS620A','4×6','400'],
+                    ['DNP DS620A','5×7','290'],
+                    ['DNP DS820A','4×6','700'],
+                    ['Mitsubishi CP-D90DW','4×6','700'],
+                    ['HiTi S420','4×6','500'],
+                  ].map(([printer, media, prints]) => (
+                    <tr key={printer + media}>
+                      <td className="py-1">{printer}</td>
+                      <td className="py-1">{media}</td>
+                      <td className="py-1 text-right font-medium">{prints}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="text-xs text-gray-400 mt-2">Yields vary by supplier lot — check your kit box or product listing for the exact count.</p>
+            </div>
+            <div className="border-t pt-3 text-xs text-gray-500">
+              <p><strong>How it works:</strong> On each event's detail page (visible to you only) you log how many prints were produced and select which kit was used. The system multiplies prints × cost-per-print to compute your print expense, then adds any other expenses (operator pay, travel, etc.) to show net profit per event and across your portfolio in Analytics → Profitability.</p>
+            </div>
           </CardContent>
         </Card>
       </div>

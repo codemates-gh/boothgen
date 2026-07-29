@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.49.1] — 2026-07-29
+
+### Improved
+- **Settings → Print Costs**: added "How to Calculate Cost Per Print" help card with formula, worked example, common printer yield reference table (DNP DS620A/DS820A, Mitsubishi CP-D90DW, HiTi S420), and tip on twin-pack ribbons and shipping
+
+---
+
 ## [2.49.0] — 2026-07-29
 
 ### Added
