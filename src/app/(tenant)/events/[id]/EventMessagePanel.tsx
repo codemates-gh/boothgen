@@ -12,6 +12,7 @@ interface Props {
   eventDateStr?: string;
   venueName?: string;
   quoteTotal?: string;
+  portalUrl?: string;
   defaultSubject?: string;
 }
 
@@ -58,11 +59,10 @@ function htmlToPlain(html: string): string {
 
 function resolveTags(text: string, ctx: {
   firstName: string; clientName: string; clientEmail: string;
-  eventDateStr?: string; venueName?: string; quoteTotal?: string; branding: Branding;
+  eventDateStr?: string; venueName?: string; quoteTotal?: string; portalUrl?: string; branding: Branding;
 }): string {
-  const sig = ctx.branding.emailHeaderHtml
-    ? ctx.branding.emailHeaderHtml.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
-    : '';
+  // Use DOM-based extraction so <br> and block elements produce actual newlines
+  const sig = ctx.branding.emailHeaderHtml ? htmlToPlain(ctx.branding.emailHeaderHtml) : '';
   return text
     .replace(/\{\{client\.first_name\}\}/g, ctx.firstName)
     .replace(/\{\{client\.full_name\}\}/g, ctx.clientName)
@@ -70,6 +70,7 @@ function resolveTags(text: string, ctx: {
     .replace(/\{\{event\.date\}\}/g, ctx.eventDateStr ?? '')
     .replace(/\{\{event\.venue_name\}\}/g, ctx.venueName ?? '')
     .replace(/\{\{quote\.total\}\}/g, ctx.quoteTotal ?? '')
+    .replace(/\{\{portal\.link\}\}/g, ctx.portalUrl ?? '')
     .replace(/\{\{host\.company_name\}\}/g, ctx.branding.companyName ?? '')
     .replace(/\{\{host\.email\}\}/g, ctx.branding.replyToEmail ?? '')
     .replace(/\{\{host\.phone\}\}/g, ctx.branding.supportPhone ?? '')
@@ -79,7 +80,7 @@ function resolveTags(text: string, ctx: {
 }
 
 export default function EventMessagePanel({
-  eventId, clientName, clientEmail, firstName, eventDateStr, venueName, quoteTotal, defaultSubject,
+  eventId, clientName, clientEmail, firstName, eventDateStr, venueName, quoteTotal, portalUrl, defaultSubject,
 }: Props) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [open, setOpen] = useState(true);
@@ -109,7 +110,7 @@ export default function EventMessagePanel({
     if (!t) return;
     const ctx = {
       firstName: firstName ?? clientName.split(' ')[0],
-      clientName, clientEmail, eventDateStr, venueName, quoteTotal, branding,
+      clientName, clientEmail, eventDateStr, venueName, quoteTotal, portalUrl, branding,
     };
     setSubject(resolveTags(t.subject, ctx));
     setBody(resolveTags(htmlToPlain(t.bodyHtml), ctx));
@@ -231,8 +232,8 @@ export default function EventMessagePanel({
               value={body}
               onChange={e => setBody(e.target.value)}
               placeholder={`Message to ${clientName}…`}
-              rows={5}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 resize-none"
+              rows={8}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 resize-y min-h-[160px]"
             />
             {error && <p className="text-xs text-red-600">{error}</p>}
             {success && <p className="text-xs text-green-600">Message sent.</p>}

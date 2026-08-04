@@ -303,6 +303,7 @@ export default async function EventDetailPage({ params, searchParams }: { params
               eventDateStr={format(event.eventDate, 'EEEE, MMMM d, yyyy')}
               venueName={event.venueName ?? undefined}
               quoteTotal={firstQuote ? fmt(firstQuote.totalCents) : undefined}
+              portalUrl={portalUrl}
               defaultSubject={followUpSubject}
             />
           </div>
