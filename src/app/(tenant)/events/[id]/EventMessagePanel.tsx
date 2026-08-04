@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Send, ChevronDown, ChevronUp, Wand2 } from 'lucide-react';
+import { MessageSquare, Send, ChevronDown, ChevronUp, Wand2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -8,6 +8,11 @@ interface Props {
   eventId: string;
   clientName: string;
   clientEmail: string;
+  firstName?: string;
+  eventDateStr?: string;
+  venueName?: string;
+  quoteTotal?: string;
+  defaultSubject?: string;
 }
 
 interface Msg {
@@ -19,23 +24,96 @@ interface Msg {
   fromEmail: string;
 }
 
-export default function EventMessagePanel({ eventId, clientName, clientEmail }: Props) {
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  bodyHtml: string;
+}
+
+interface Branding {
+  companyName?: string;
+  replyToEmail?: string;
+  supportPhone?: string;
+  websiteUrl?: string;
+  emailHeaderHtml?: string;
+}
+
+const BLOCK_TAGS = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE', 'TR']);
+
+function extractText(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? '';
+  if (node.nodeType !== Node.ELEMENT_NODE) return '';
+  const el = node as Element;
+  if (el.tagName === 'BR') return '\n';
+  const inner = Array.from(el.childNodes).map(extractText).join('');
+  return BLOCK_TAGS.has(el.tagName) ? inner + '\n\n' : inner;
+}
+
+function htmlToPlain(html: string): string {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return extractText(div).replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function resolveTags(text: string, ctx: {
+  firstName: string; clientName: string; clientEmail: string;
+  eventDateStr?: string; venueName?: string; quoteTotal?: string; branding: Branding;
+}): string {
+  const sig = ctx.branding.emailHeaderHtml
+    ? ctx.branding.emailHeaderHtml.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+    : '';
+  return text
+    .replace(/\{\{client\.first_name\}\}/g, ctx.firstName)
+    .replace(/\{\{client\.full_name\}\}/g, ctx.clientName)
+    .replace(/\{\{client\.email\}\}/g, ctx.clientEmail)
+    .replace(/\{\{event\.date\}\}/g, ctx.eventDateStr ?? '')
+    .replace(/\{\{event\.venue_name\}\}/g, ctx.venueName ?? '')
+    .replace(/\{\{quote\.total\}\}/g, ctx.quoteTotal ?? '')
+    .replace(/\{\{host\.company_name\}\}/g, ctx.branding.companyName ?? '')
+    .replace(/\{\{host\.email\}\}/g, ctx.branding.replyToEmail ?? '')
+    .replace(/\{\{host\.phone\}\}/g, ctx.branding.supportPhone ?? '')
+    .replace(/\{\{host\.website\}\}/g, ctx.branding.websiteUrl ?? '')
+    .replace(/\{\{host\.signature\}\}/g, sig)
+    .replace(/\{\{[^}]+\}\}/g, '');
+}
+
+export default function EventMessagePanel({
+  eventId, clientName, clientEmail, firstName, eventDateStr, venueName, quoteTotal, defaultSubject,
+}: Props) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [open, setOpen] = useState(true);
-  const [subject, setSubject] = useState('');
+  const [subject, setSubject] = useState(defaultSubject ?? '');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [rewriting, setRewriting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [branding, setBranding] = useState<Branding>({});
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch(`/api/events/${eventId}/messages`)
       .then(r => r.json())
       .then(d => { if (Array.isArray(d)) setMessages(d); });
+    fetch('/api/automation/email-templates').then(r => r.ok ? r.json() : []).then(setTemplates);
+    fetch('/api/settings/branding').then(r => r.ok ? r.json() : {}).then(setBranding);
   }, [eventId]);
 
+  function applyTemplate(templateId: string) {
+    setSelectedTemplateId(templateId);
+    if (!templateId) return;
+    const t = templates.find(t => t.id === templateId);
+    if (!t) return;
+    const ctx = {
+      firstName: firstName ?? clientName.split(' ')[0],
+      clientName, clientEmail, eventDateStr, venueName, quoteTotal, branding,
+    };
+    setSubject(resolveTags(t.subject, ctx));
+    setBody(resolveTags(htmlToPlain(t.bodyHtml), ctx));
+  }
 
   async function rewriteWithAi() {
     if (!subject.trim() && !body.trim()) { setError('Add a subject or message first.'); return; }
@@ -70,7 +148,9 @@ export default function EventMessagePanel({ eventId, clientName, clientEmail }: 
     } else {
       const msg = await res.json();
       setMessages(m => [...m, msg]);
+      setSubject('');
       setBody('');
+      setSelectedTemplateId('');
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
@@ -80,7 +160,7 @@ export default function EventMessagePanel({ eventId, clientName, clientEmail }: 
 
   return (
     <div className="border border-gray-200 rounded-xl overflow-hidden">
-      {/* Header — always visible */}
+      {/* Header */}
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between px-5 py-4 bg-white hover:bg-gray-50 transition-colors text-left"
@@ -120,7 +200,27 @@ export default function EventMessagePanel({ eventId, clientName, clientEmail }: 
             {messages.length === 0 && (
               <p className="text-xs text-gray-400">No messages yet. Send the first message to {clientEmail}.</p>
             )}
-            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">Attachments sent as replies are not captured in this thread. The outgoing email instructs clients to CC your contact email if they need to share a file.</p>
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+              Attachments sent as replies are not captured in this thread. The outgoing email instructs clients to CC your contact email if they need to share a file.
+            </p>
+
+            {/* Template picker */}
+            {templates.length > 0 && (
+              <div className="flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                <select
+                  value={selectedTemplateId}
+                  onChange={e => applyTemplate(e.target.value)}
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 bg-white"
+                >
+                  <option value="">Load a template…</option>
+                  {templates.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <input
               value={subject}
               onChange={e => setSubject(e.target.value)}
@@ -131,15 +231,19 @@ export default function EventMessagePanel({ eventId, clientName, clientEmail }: 
               value={body}
               onChange={e => setBody(e.target.value)}
               placeholder={`Message to ${clientName}…`}
-              rows={4}
+              rows={5}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 resize-none"
             />
             {error && <p className="text-xs text-red-600">{error}</p>}
             {success && <p className="text-xs text-green-600">Message sent.</p>}
             <div className="flex items-center justify-between">
-              <button type="button" onClick={rewriteWithAi} disabled={rewriting || sending}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-purple-600 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 disabled:opacity-50 transition-colors">
-                <Wand2 className="w-3 h-3"/>{rewriting ? 'Rewriting…' : 'Rewrite with AI'}
+              <button
+                type="button"
+                onClick={rewriteWithAi}
+                disabled={rewriting || sending}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-purple-600 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 disabled:opacity-50 transition-colors"
+              >
+                <Wand2 className="w-3 h-3" />{rewriting ? 'Rewriting…' : 'Rewrite with AI'}
               </button>
               <Button size="sm" onClick={send} disabled={sending || rewriting}>
                 <Send className="w-3.5 h-3.5 mr-1.5" />{sending ? 'Sending…' : 'Send Message'}

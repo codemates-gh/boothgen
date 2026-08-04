@@ -8,7 +8,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Package, ArrowLeft, ExternalLink, FileText, Receipt, Edit2, ClipboardList, Layers, PenLine, MessageSquare } from 'lucide-react';
+import { Calendar, MapPin, Users, Package, ArrowLeft, ExternalLink, FileText, Receipt, Edit2, ClipboardList, Layers, PenLine, MessageSquare, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import DeleteEventButton from './DeleteEventButton';
 import CancelEventButton from './CancelEventButton';
@@ -27,7 +27,7 @@ const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'w
 const CC: Record<string,any> = { DRAFT:'default', SENT_TO_CLIENT:'info', CLIENT_SIGNED:'warning', HOST_SIGNED:'warning', FULLY_EXECUTED:'success', VOIDED:'danger' };
 const QC: Record<string,any> = { DRAFT:'default', SENT:'info', VIEWED:'info', ACCEPTED:'success', DECLINED:'danger', EXPIRED:'default' };
 
-export default async function EventDetailPage({ params }: { params: { id: string } }) {
+export default async function EventDetailPage({ params, searchParams }: { params: { id: string }; searchParams?: { followup?: string } }) {
   const session = await requireTenantSession();
   const isAdmin = session.tenantRole === 'HOST_ADMIN';
 
@@ -74,6 +74,13 @@ export default async function EventDetailPage({ params }: { params: { id: string
   const paidMilestones = allMilestones.filter((m: any) => m.status === 'PAID');
   const depositPaidCents = paidMilestones[0]?.amountCents ?? 0;
   const totalPaidCents = paidMilestones.reduce((sum: number, m: any) => sum + m.amountCents, 0);
+
+  // Follow-up context
+  const firstQuote = event.Quote[0];
+  const hasOpenQuote = event.Quote.some(q => ['SENT', 'VIEWED'].includes(q.status));
+  const showFollowUp = isAdmin && event.status === 'QUOTED' && hasOpenQuote;
+  const isFollowUp = searchParams?.followup === '1';
+  const followUpSubject = isFollowUp ? `Following up on your quote — ${event.title}` : undefined;
   return (
     <>
       <TopBar title={event.title} />
@@ -96,6 +103,13 @@ export default async function EventDetailPage({ params }: { params: { id: string
                 <Link href={'/events/' + event.id + '/edit'}><Button variant="outline" size="sm"><Edit2 className="w-3.5 h-3.5 mr-1.5"/>Edit Event</Button></Link>
                 <a href={portalUrl} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><ExternalLink className="w-3.5 h-3.5 mr-1.5"/>Client Portal</Button></a>
                 <a href="#messages"><Button variant="outline" size="sm"><MessageSquare className="w-3.5 h-3.5 mr-1.5"/>Messages</Button></a>
+                {showFollowUp && (
+                  <Link href={`/events/${event.id}?followup=1#messages`}>
+                    <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white">
+                      <Send className="w-3.5 h-3.5 mr-1.5"/>Send Follow-Up
+                    </Button>
+                  </Link>
+                )}
                 {event.Quote.length > 0 ? (
                   <Link href={'/quotes/' + event.Quote[0].id}><Button size="sm"><ClipboardList className="w-3.5 h-3.5 mr-1.5"/>View Quote</Button></Link>
                 ) : (
@@ -285,6 +299,11 @@ export default async function EventDetailPage({ params }: { params: { id: string
               eventId={event.id}
               clientName={`${event.client.firstName} ${event.client.lastName}`}
               clientEmail={event.client.email}
+              firstName={event.client.firstName}
+              eventDateStr={format(event.eventDate, 'EEEE, MMMM d, yyyy')}
+              venueName={event.venueName ?? undefined}
+              quoteTotal={firstQuote ? fmt(firstQuote.totalCents) : undefined}
+              defaultSubject={followUpSubject}
             />
           </div>
         )}

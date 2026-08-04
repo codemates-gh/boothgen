@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.52.0] — 2026-08-04
+
+### Added
+- **Event messaging — template picker**: compose panel on every event now loads your email templates; selecting one populates subject + body with merge tags resolved (client name, event date, venue, quote total, company name, etc.)
+- **Send Follow-Up button**: QUOTED events with a SENT or VIEWED quote show an orange "Send Follow-Up" button in the event header; clicking it scrolls to the Messages section and pre-fills the subject with "Following up on your quote — [Event Title]"
+- **EventMessagePanel improvements**: branding loaded for full merge tag resolution; `firstName`, `eventDateStr`, `venueName`, `quoteTotal` now passed from event page; post-send clears template selection; textarea expanded to 5 rows
+
+---
+
 ## [2.51.0] — 2026-07-29
 
 ### Updated
