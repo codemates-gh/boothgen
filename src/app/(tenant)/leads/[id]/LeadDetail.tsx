@@ -21,6 +21,7 @@ const LEAD_MERGE_TAGS = [
   { label: 'Event Start Time', value: '{{event.start_time}}' },
   { label: 'Event End Time', value: '{{event.end_time}}' },
   { label: 'Venue Name', value: '{{event.venue_name}}' },
+  { label: 'Portal Link', value: '{{portal.link}}' },
   { label: 'Company Name', value: '{{host.company_name}}' },
   { label: 'Company Email', value: '{{host.email}}' },
   { label: 'Company Phone', value: '{{host.phone}}' },
@@ -65,7 +66,7 @@ function formatTime(t: string | null): string {
   return `${hour}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
-function resolvePlaceholders(text: string, lead: Lead, branding: Branding): string {
+function resolvePlaceholders(text: string, lead: Lead, branding: Branding, portalUrl?: string | null): string {
   const sig = branding.emailHeaderHtml ? htmlToPlainText(branding.emailHeaderHtml).replace(/\n/g, '<br>') : '';
   const eventDate = lead.eventDate
     ? format(new Date(lead.eventDate), 'EEEE, MMMM d, yyyy')
@@ -84,6 +85,7 @@ function resolvePlaceholders(text: string, lead: Lead, branding: Branding): stri
     .replace(/\{\{event\.venue_state\}\}/g, lead.venueState ?? '')
     .replace(/\{\{event\.venue_zip\}\}/g, lead.venuePostalCode ?? '')
     .replace(/\{\{event\.guest_count\}\}/g, lead.guestCount?.toString() ?? '')
+    .replace(/\{\{portal\.link\}\}/g, portalUrl ?? '')
     .replace(/\{\{host\.company_name\}\}/g, branding.companyName ?? '')
     .replace(/\{\{host\.email\}\}/g, branding.replyToEmail ?? '')
     .replace(/\{\{host\.phone\}\}/g, branding.supportPhone ?? '')
@@ -137,7 +139,7 @@ type Lead = {
   messages: LeadMessage[];
 };
 
-export function LeadDetail({ lead: initial }: { lead: Lead }) {
+export function LeadDetail({ lead: initial, portalUrl }: { lead: Lead; portalUrl?: string | null }) {
   const router = useRouter();
   const [lead, setLead] = useState(initial);
   const [saving, setSaving] = useState(false);
@@ -184,7 +186,7 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
   function applyTemplate(id: string) {
     const t = templates.find(t => t.id === id);
     if (!t) return;
-    setEmailSubject(resolvePlaceholders(t.subject, lead, branding));
+    setEmailSubject(resolvePlaceholders(t.subject, lead, branding, portalUrl));
     setEmailBody(t.bodyHtml); // Keep merge tags in the editor; resolve at send time
     setEditorKey(k => k + 1); // Force editor remount so content visually updates
   }
@@ -243,7 +245,7 @@ export function LeadDetail({ lead: initial }: { lead: Lead }) {
     setSending(true);
     // Strip editor's span wrappers around merge tags, then resolve to actual values
     const stripped = emailBody.replace(/<span[^>]+data-tag="([^"]+)"[^>]*>[^<]*<\/span>/g, '$1');
-    const resolvedHtml = resolvePlaceholders(stripped, lead, branding);
+    const resolvedHtml = resolvePlaceholders(stripped, lead, branding, portalUrl);
     const res = await fetch(`/api/leads/${lead.id}/reply`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

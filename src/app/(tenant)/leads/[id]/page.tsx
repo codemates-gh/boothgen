@@ -17,6 +17,18 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
   });
   if (!lead) notFound();
 
+  // Fetch portal URL if this lead has been converted to an event
+  let portalUrl: string | null = null;
+  if (lead.convertedToEventId) {
+    const event = await prisma.event.findUnique({
+      where: { id: lead.convertedToEventId },
+      select: { portalToken: true },
+    });
+    if (event?.portalToken) {
+      portalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/portal/${event.portalToken}`;
+    }
+  }
+
   const serialized = {
     id: lead.id,
     firstName: lead.firstName,
@@ -56,7 +68,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
   return (
     <>
       <TopBar title="Inquiry Detail" />
-      <LeadDetail lead={serialized} />
+      <LeadDetail lead={serialized} portalUrl={portalUrl} />
     </>
   );
 }

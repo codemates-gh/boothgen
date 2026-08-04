@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.52.1] — 2026-08-04
+
+### Added
+- **Lead compose — {{portal.link}} support**: lead detail compose tab now resolves `{{portal.link}}` to the client's portal URL when the lead has been converted to an event; tag added to the merge tag picker so it's discoverable; for non-converted leads the tag resolves to empty (portal not yet created)
+
+---
+
 ## [2.52.0] — 2026-08-04
 
 ### Added
