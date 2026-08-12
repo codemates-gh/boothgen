@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
-import { Pencil, Check, X, DollarSign, Lock } from 'lucide-react';
+import { Pencil, Check, X, DollarSign, Lock, Undo2 } from 'lucide-react';
 
 const MC: Record<string, any> = { PENDING: 'default', PAID: 'success', OVERDUE: 'danger', REFUNDED: 'warning' };
 
@@ -32,6 +32,7 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
   const [editing, setEditing] = useState<string | null>(null);
   const [dateVal, setDateVal] = useState('');
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
+  const [undoing, setUndoing] = useState<string | null>(null);
   const [confirmPay, setConfirmPay] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [saving, setSaving] = useState(false);
@@ -59,6 +60,19 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
       setError(d.error || 'Failed to save');
     }
     setSaving(false);
+  }
+
+  async function undoPayment(milestoneId: string) {
+    setUndoing(milestoneId);
+    setError('');
+    const res = await fetch(`/api/invoices/${invoiceId}/milestones/${milestoneId}/unmark-paid`, { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      setMilestones(ms => ms.map(m => m.id === milestoneId ? { ...m, status: 'PENDING', paymentMethod: null } : m));
+    } else {
+      setError(data.error || 'Failed to undo payment');
+    }
+    setUndoing(null);
   }
 
   async function markPaid(milestoneId: string) {
@@ -120,6 +134,16 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
                   <p className="font-semibold text-sm">{fmtCents(m.amountCents, currency)}</p>
                   <Badge variant={MC[m.status]}>{m.status.replace('_', ' ')}</Badge>
 
+                  {isAdmin && m.status === 'PAID' && !m.paymentMethod?.startsWith('stripe') && (
+                    <button
+                      onClick={() => undoPayment(m.id)}
+                      disabled={undoing === m.id}
+                      title="Undo this payment"
+                      className="text-gray-300 hover:text-orange-500 transition-colors disabled:opacity-40"
+                    >
+                      <Undo2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   {isAdmin && (m.status === 'PENDING' || m.status === 'OVERDUE') && (
                     isPro ? (
                       <button

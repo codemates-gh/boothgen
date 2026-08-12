@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { fmtCents } from '@/lib/utils';
 import { format } from 'date-fns';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Undo2 } from 'lucide-react';
 
 const IC: Record<string, any> = { DRAFT: 'default', SENT: 'info', PARTIALLY_PAID: 'warning', PAID: 'success', OVERDUE: 'danger', CANCELLED: 'danger' };
 const MC: Record<string, any> = { PENDING: 'default', PAID: 'success', REFUNDED: 'default' };
@@ -36,19 +36,30 @@ interface Props {
   invoices: InvoiceData[];
 }
 
-function MilestoneRow({ milestone, invoiceId, currency, onPaid }: {
+function MilestoneRow({ milestone, invoiceId, currency, onUpdate }: {
   milestone: Milestone;
   invoiceId: string;
   currency: string;
-  onPaid: (milestoneId: string, invoiceStatus: string) => void;
+  onUpdate: (milestoneId: string, milestoneStatus: string, invoiceStatus: string) => void;
 }) {
   const fmt = (c: number) => fmtCents(c, currency);
   const [expanded, setExpanded] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Credit Card');
   const [loading, setLoading] = useState(false);
+  const [undoing, setUndoing] = useState(false);
   const [error, setError] = useState('');
 
   const isPaid = milestone.status === 'PAID';
+
+  async function undoPayment() {
+    setUndoing(true);
+    setError('');
+    const res = await fetch(`/api/invoices/${invoiceId}/milestones/${milestone.id}/unmark-paid`, { method: 'POST' });
+    const d = await res.json();
+    if (res.ok) onUpdate(milestone.id, 'PENDING', d.invoiceStatus);
+    else setError(d.error || 'Failed to undo payment');
+    setUndoing(false);
+  }
 
   async function markPaid() {
     setLoading(true);
@@ -60,7 +71,7 @@ function MilestoneRow({ milestone, invoiceId, currency, onPaid }: {
     });
     const d = await res.json();
     if (res.ok) {
-      onPaid(milestone.id, d.invoiceStatus);
+      onUpdate(milestone.id, 'PAID', d.invoiceStatus);
       setExpanded(false);
     } else {
       if (d.upgradeRequired) setError('PRO plan required to mark payments as paid.');
@@ -81,7 +92,17 @@ function MilestoneRow({ milestone, invoiceId, currency, onPaid }: {
             : `Due ${format(new Date(milestone.dueDate), 'MMM d, yyyy')}`}
         </span>
         {isPaid ? (
-          <Badge variant="success" className="text-xs">{milestone.paymentMethod ?? 'Paid'}</Badge>
+          <div className="flex items-center gap-1.5">
+            <Badge variant="success" className="text-xs">{milestone.paymentMethod ?? 'Paid'}</Badge>
+            <button
+              onClick={undoPayment}
+              disabled={undoing}
+              title="Undo payment"
+              className="text-gray-300 hover:text-orange-500 transition-colors disabled:opacity-40"
+            >
+              <Undo2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         ) : (
           <button
             onClick={() => setExpanded(e => !e)}
@@ -114,12 +135,12 @@ function MilestoneRow({ milestone, invoiceId, currency, onPaid }: {
 export default function EventInvoicePanel({ invoices }: Props) {
   const [invoiceData, setInvoiceData] = useState<InvoiceData[]>(invoices);
 
-  function handleMilestonePaid(invoiceId: string, milestoneId: string, newInvoiceStatus: string) {
+  function handleMilestoneUpdate(invoiceId: string, milestoneId: string, newMilestoneStatus: string, newInvoiceStatus: string) {
     setInvoiceData(prev => prev.map(inv => {
       if (inv.id !== invoiceId) return inv;
       const updatedMilestones = inv.milestones.map(m =>
         m.id === milestoneId
-          ? { ...m, status: 'PAID', paidAt: new Date().toISOString() }
+          ? { ...m, status: newMilestoneStatus, paidAt: newMilestoneStatus === 'PAID' ? new Date().toISOString() : null, paymentMethod: newMilestoneStatus === 'PAID' ? m.paymentMethod : null }
           : m
       );
       const newBalance = updatedMilestones
@@ -151,7 +172,7 @@ export default function EventInvoicePanel({ invoices }: Props) {
                 milestone={m}
                 invoiceId={inv.id}
                 currency={inv.currency ?? 'usd'}
-                onPaid={(milestoneId, invoiceStatus) => handleMilestonePaid(inv.id, milestoneId, invoiceStatus)}
+                onUpdate={(milestoneId, milestoneStatus, invoiceStatus) => handleMilestoneUpdate(inv.id, milestoneId, milestoneStatus, invoiceStatus)}
               />
             ))}
           </div>
