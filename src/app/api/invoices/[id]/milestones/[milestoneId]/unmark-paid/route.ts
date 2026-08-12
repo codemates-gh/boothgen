@@ -21,8 +21,8 @@ export async function POST(_: NextRequest, { params }: { params: { id: string; m
   if (milestone.invoiceId !== params.id) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (milestone.status !== 'PAID') return NextResponse.json({ error: 'Milestone is not marked as paid' }, { status: 400 });
 
-  // Stripe-paid milestones cannot be undone here — they require a refund in Stripe
-  if (milestone.stripePaymentIntentId) {
+  // Block undo only for payments actually collected via Stripe (has a Stripe intent but no manual paymentMethod override)
+  if (milestone.stripePaymentIntentId && !milestone.paymentMethod) {
     return NextResponse.json({ error: 'This payment was collected via Stripe and cannot be undone here. Issue a refund from your Stripe dashboard.' }, { status: 400 });
   }
 
