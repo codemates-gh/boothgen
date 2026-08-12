@@ -4,6 +4,22 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.53.0] — 2026-08-12
+
+### Fixed
+- **Invoice send**: `fmtCents` not imported and wrong variable name (`invoice` → `inv`) caused a crash when sending invoices manually — formatted total in the email would have thrown a ReferenceError
+- **Invoice remind**: same `fmtCents`/variable bug in the payment reminder route — formatted amount due would have crashed
+- **Quote send**: same bug in quote send route — formatted total in the quote email would have crashed
+- **Stripe webhook (payment confirmation)**: same `fmtCents`/variable bug in the payment-received handler
+- **Inngest cron (payment reminders)**: `fmt` was defined before `ms` and `branding` were in scope (used before the for-loop), moved inside the loop
+- **Notifications API**: `m.lead` accessed without null check, added optional chaining
+
+### Added
+- **Manual workflow advancement — Quote**: "Mark as Accepted" button on SENT/VIEWED quotes lets HOST_ADMINs accept a quote on behalf of the client (used when accepted via phone, email, or in-person). Sets quote to ACCEPTED, event to BOOKED, and creates a Contract DRAFT if one doesn't already exist. New API: `POST /api/quotes/[id]/mark-accepted`
+- **Manual workflow advancement — Contract**: "Mark as Executed" button on any non-executed, non-voided contract lets HOST_ADMINs mark it fully executed without a drawn signature (used when signed in-person or via DocuSign). Sets status to FULLY_EXECUTED, backfills signature timestamps, auto-creates the invoice from the accepted quote (same logic as client portal signing), and fires BOOKING_CONFIRMED/CONTRACT_EXECUTED automations. New API: `POST /api/contracts/[id]/mark-executed`
+
+---
+
 ## [2.52.1] — 2026-08-04
 
 ### Added

@@ -82,9 +82,9 @@ export async function GET() {
     ...replies.map(m => ({
       id: 'reply-' + m.id,
       type: 'reply',
-      title: `${m.lead.firstName} ${m.lead.lastName} replied`,
+      title: `${m.lead?.firstName} ${m.lead?.lastName} replied`,
       body: m.bodyText ? m.bodyText.slice(0, 80) : 'New message',
-      href: `/leads/${m.lead.id}`,
+      href: `/leads/${m.lead?.id}`,
       createdAt: m.sentAt,
     })),
     ...bookings.map(e => ({

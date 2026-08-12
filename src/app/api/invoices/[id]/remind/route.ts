@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 import { sendPaymentReminderEmail } from '@/lib/email/send';
+import { fmtCents } from '@/lib/utils';
 
 const APP = process.env.NEXT_PUBLIC_APP_URL!;
 
@@ -26,7 +27,7 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
   const branding = inv.tenant.branding;
   const companyName = branding?.companyName ?? inv.tenant.name;
   const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
-  const fmt = (c: number) => fmtCents(c, invoice.currency ?? 'usd');
+  const fmt = (c: number) => fmtCents(c, inv.currency ?? 'usd');
 
   // Use earliest unpaid milestone due date, fall back to invoice-level dueDate
   const milestoneDate = inv.PaymentMilestone[0]?.dueDate;

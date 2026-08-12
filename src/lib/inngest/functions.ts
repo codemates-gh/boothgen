@@ -416,8 +416,6 @@ export const sendOverduePaymentReminders = inngest.createFunction(
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
     const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
     const adminEmail = process.env.SUPER_ADMIN_EMAIL ?? 'codemates@gmail.com';
-    const fmt = (c: number) => fmtCents(c, ms?.invoice?.currency ?? branding?.currency ?? 'usd');
-
     let sent = 0;
     let failed = 0;
     for (const ms of overdue) {
@@ -425,6 +423,7 @@ export const sendOverduePaymentReminders = inngest.createFunction(
       if (!event) continue;
       const branding = event.tenant.branding;
       const companyName = branding?.companyName ?? event.tenant.name;
+      const fmt = (c: number) => fmtCents(c, ms.invoice.currency ?? 'usd');
       const isOverdue = new Date(ms.dueDate).toISOString().split('T')[0] < todayUTCStr;
       try {
         await sendPaymentReminderEmail({

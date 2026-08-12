@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 import { triggerAutomation } from '@/lib/inngest/trigger';
 import { sendQuoteLink } from '@/lib/email/send';
+import { fmtCents } from '@/lib/utils';
 
 export async function POST(_: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -38,7 +39,7 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
   const fromAddress = companyName ? `${companyName} <${emailFrom}>` : emailFrom;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
   const portalUrl = appUrl + '/portal/' + q.event.portalToken + '?tab=quote';
-  const fmt = (c: number) => fmtCents(c, quote.currency ?? 'usd');
+  const fmt = (c: number) => fmtCents(c, q.currency ?? 'usd');
 
   // Skip hardcoded email if an active automation rule covers QUOTE_SENT
   const hasQuoteRule = await prisma.automationRule.count({

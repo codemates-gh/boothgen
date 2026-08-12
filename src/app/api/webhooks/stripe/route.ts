@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
               await triggerAutomation({ tenantId: inv.tenantId, eventId: inv.eventId, trigger: 'PAYMENT_RECEIVED' });
             }
             if (inv.event?.client) {
-              const fmt = (c: number) => fmtCents(c, invoice.currency ?? 'usd');
+              const fmt = (c: number) => fmtCents(c, inv.currency ?? 'usd');
               const companyName = inv.tenant.branding?.companyName ?? inv.tenant.name;
               const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
               // Skip hardcoded confirmation if an active automation rule covers PAYMENT_RECEIVED

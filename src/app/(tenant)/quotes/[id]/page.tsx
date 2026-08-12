@@ -5,7 +5,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Send, Trash2, ArrowLeft, ExternalLink, Edit2, RotateCcw, FilePlus, Eye, X, Download, Building2 } from 'lucide-react';
+import { Send, Trash2, ArrowLeft, ExternalLink, Edit2, RotateCcw, FilePlus, Eye, X, Download, Building2, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { fmtCents } from '@/lib/utils';
@@ -29,6 +29,7 @@ export default function QuoteDetailPage() {
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState('');
   const [previewing, setPreviewing] = useState(false);
+  const [markingAccepted, setMarkingAccepted] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -120,6 +121,22 @@ export default function QuoteDetailPage() {
     setGenerating(false);
   }
 
+  async function markAccepted() {
+    if (!confirm('Mark this quote as accepted? This will book the event and create a contract draft — use this when the client accepted outside the portal (phone, email, in-person, etc.).')) return;
+    setMarkingAccepted(true);
+    const res = await fetch(`/api/quotes/${id}/mark-accepted`, { method: 'POST' });
+    if (res.ok) {
+      const d = await res.json();
+      setQuote((q: any) => ({ ...q, status: 'ACCEPTED' }));
+      if (d.contractCreated) setHasContract(true);
+      alert('Quote marked as accepted. Event is now BOOKED' + (d.contractCreated ? ' and a contract draft was created.' : '.'));
+    } else {
+      const d = await res.json().catch(() => ({}));
+      alert(d.error || 'Failed to mark as accepted');
+    }
+    setMarkingAccepted(false);
+  }
+
   async function deleteQuote() {
     if (!confirm('Delete this quote? This cannot be undone.')) return;
     setDeleting(true);
@@ -166,6 +183,12 @@ export default function QuoteDetailPage() {
               <Button onClick={sendQuote} disabled={sending}>
                 <Send className="w-4 h-4 mr-1.5" />
                 {sending ? 'Sending...' : 'Send to Client'}
+              </Button>
+            )}
+            {(quote.status === 'SENT' || quote.status === 'VIEWED') && (
+              <Button variant="outline" onClick={markAccepted} disabled={markingAccepted} className="text-green-700 border-green-200 hover:bg-green-50">
+                <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                {markingAccepted ? 'Processing...' : 'Mark as Accepted'}
               </Button>
             )}
             {!isDraft && canEdit && (

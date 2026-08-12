@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma/client';
 import { sendInvoiceLink } from '@/lib/email/send';
 import { triggerAutomation } from '@/lib/inngest/trigger';
 import { inngest } from '@/lib/inngest/client';
+import { fmtCents } from '@/lib/utils';
 const APP = process.env.NEXT_PUBLIC_APP_URL!;
 
 export async function POST(_: NextRequest, { params }: { params: { id: string } }) {
@@ -19,7 +20,7 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
   });
   if (!inv) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
   const portalUrl = inv.event ? APP + '/portal/' + (inv.event as any).portalToken : APP;
-  const fmt = (c: number) => fmtCents(c, invoice.currency ?? 'usd');
+  const fmt = (c: number) => fmtCents(c, inv.currency ?? 'usd');
   // Skip hardcoded email if an active automation rule covers INVOICE_SENT
   const hasInvoiceRule = inv.eventId
     ? await prisma.automationRule.count({ where: { tenantId: session.tenantId, trigger: 'INVOICE_SENT', isActive: true, actionType: 'EMAIL' } }) > 0

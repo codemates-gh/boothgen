@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SignatureCanvas } from '@/components/contracts/SignatureCanvas';
-import { ArrowLeft, Send, Lock, Download, PenLine, Pen, Type } from 'lucide-react';
+import { ArrowLeft, Send, Lock, Download, PenLine, Pen, Type, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
 import { useRef, useCallback } from 'react';
@@ -24,6 +24,7 @@ export default function ContractDetailPage() {
   const [typedName, setTypedName] = useState('');
   const [signing, setSigning] = useState(false);
   const [sending, setSending] = useState(false);
+  const [markingExecuted, setMarkingExecuted] = useState(false);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const renderTypedSig = useCallback((name: string) => {
@@ -55,6 +56,18 @@ export default function ContractDetailPage() {
     setSigning(false);
   }
 
+  async function markExecuted() {
+    if (!confirm('Mark this contract as fully executed? Use this when both parties signed outside the portal (in person, DocuSign, etc.). This cannot be undone.')) return;
+    setMarkingExecuted(true);
+    const res = await fetch('/api/contracts/' + id + '/mark-executed', { method: 'POST' });
+    const d = await res.json();
+    if (res.ok) {
+      setContract((c: any) => ({ ...c, status: 'FULLY_EXECUTED', clientSignedAt: c.clientSignedAt ?? new Date().toISOString(), hostSignedAt: c.hostSignedAt ?? new Date().toISOString() }));
+      alert('Contract marked as fully executed.' + (d.invoiceCreated ? ' An invoice has been automatically created.' : ''));
+    } else alert(d.error);
+    setMarkingExecuted(false);
+  }
+
   async function sendToClient() {
     setSending(true);
     const res = await fetch('/api/contracts/' + id + '/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiryDays: 14 }) });
@@ -79,6 +92,12 @@ export default function ContractDetailPage() {
           <div className="flex flex-wrap items-center gap-3"><h2 className="text-xl sm:text-2xl font-bold">{contract.title}</h2><Badge variant={CC[contract.status]}>{(contract.status ?? '').replace(/_/g,' ')}</Badge></div>
           <div className="flex flex-wrap gap-2">
             {canSend && <Button variant="outline" onClick={sendToClient} disabled={sending}><Send className="w-4 h-4 mr-1"/>{sending ? 'Sending...' : 'Send to Client'}</Button>}
+            {contract.status !== 'FULLY_EXECUTED' && contract.status !== 'VOIDED' && (
+              <Button variant="outline" onClick={markExecuted} disabled={markingExecuted} className="text-green-700 border-green-200 hover:bg-green-50">
+                <CheckCircle2 className="w-4 h-4 mr-1"/>
+                {markingExecuted ? 'Processing...' : 'Mark as Executed'}
+              </Button>
+            )}
             <a href={contract.pdfUrl ?? `/api/contracts/${contract.id}/pdf`} target="_blank" rel="noopener noreferrer"><Button variant="outline"><Download className="w-4 h-4 mr-1"/>Download PDF</Button></a>
           </div>
         </div>
