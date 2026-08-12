@@ -554,12 +554,28 @@ export default function ClientPortalPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.invoice.lineItems?.map((li: any) => (
-                        <tr key={li.id} className="border-b last:border-0">
-                          <td className="py-3">{li.description}</td>
-                          <td className="py-3 text-right font-medium">{fmt(li.totalCents)}</td>
-                        </tr>
-                      ))}
+                      {data.invoice.lineItems?.map((li: any) => {
+                        const parts = li.description?.split(/\s*[—–]\s*|\s+-\s+/).map((p: string) => p.trim()).filter(Boolean) ?? [];
+                        const title = parts[0] ?? li.description;
+                        return (
+                          <tr key={li.id} className="border-b last:border-0">
+                            <td className="py-3 align-top">
+                              <span className="font-medium">{title.replace(/\s*—$/, '')}</span>
+                              {parts.length > 1 && (
+                                <ul className="mt-1 space-y-0.5 text-gray-500 text-xs">
+                                  {parts.slice(1).map((p: string, i: number) => (
+                                    <li key={i} className="flex items-start gap-1.5">
+                                      <span className="text-gray-400 flex-shrink-0 mt-px">·</span>
+                                      <span>{p}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </td>
+                            <td className="py-3 text-right font-medium align-top">{fmt(li.totalCents)}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
 
