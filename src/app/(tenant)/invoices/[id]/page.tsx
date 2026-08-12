@@ -15,16 +15,16 @@ import { fmtCents } from '@/lib/utils';
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
 
 function DescriptionCell({ text }: { text: string }) {
-  const parts = text.split(/ - | — /);
+  const parts = text.split(/\s*[—–]\s*|\s+-\s+/).map(p => p.trim()).filter(Boolean);
   if (parts.length <= 1) return <span>{text}</span>;
   return (
     <div>
-      <span className="font-medium">{parts[0].replace(/ —$/, '').trim()}</span>
+      <span className="font-medium">{parts[0]}</span>
       <ul className="mt-1 space-y-0.5 text-gray-600 text-xs">
-        {parts.slice(1).filter(p => p.trim()).map((p, i) => (
+        {parts.slice(1).map((p, i) => (
           <li key={i} className="flex items-start gap-1.5">
             <span className="text-gray-400 flex-shrink-0 mt-px">·</span>
-            <span>{p.trim()}</span>
+            <span>{p}</span>
           </li>
         ))}
       </ul>
