@@ -25,6 +25,9 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
   if (contract.status === 'FULLY_EXECUTED') return NextResponse.json({ error: 'Already fully executed' }, { status: 400 });
   if (contract.status === 'VOIDED') return NextResponse.json({ error: 'Voided contracts cannot be executed' }, { status: 400 });
 
+  const body = await _.json().catch(() => ({}));
+  const signingNote = typeof body.signingNote === 'string' ? body.signingNote.trim() || null : null;
+
   const now = new Date();
   let invoiceCreated = false;
 
@@ -35,6 +38,7 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
         status: 'FULLY_EXECUTED',
         clientSignedAt: contract.clientSignedAt ?? now,
         hostSignedAt: contract.hostSignedAt ?? now,
+        ...(signingNote ? { signingNote } : {}),
       },
     });
 

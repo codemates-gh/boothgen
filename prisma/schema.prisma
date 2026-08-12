@@ -550,6 +550,7 @@ model Contract {
   contentHash         String?
   voidedAt            DateTime?
   voidedReason        String?
+  signingNote         String?
   expiresAt           DateTime?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
@@ -918,6 +919,7 @@ model PaymentMilestone {
   dueDate               DateTime
   status                PaymentMilestoneStatus @default(PENDING)
   paidAt                DateTime?
+  paymentMethod         String?
   stripePaymentIntentId String?
   lastReminderSentAt    DateTime?
   createdAt             DateTime               @default(now())

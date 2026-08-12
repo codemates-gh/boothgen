@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.54.0] — 2026-08-12
+
+### Added
+- **Event page section order**: Quotes → Contracts → Invoices (was Quotes → Invoices → Contracts), matching the natural workflow
+- **Inline invoice mark-paid on event page**: each payment milestone now shows a "Mark Paid" button with a dropdown for payment method (Credit Card, Bank Transfer, Check, Other); balance and status update instantly on the page without navigating away; PRO plan required
+- **Contract signing note**: "Mark as Executed" button now opens an inline form with an optional free-text field ("How was it signed?"); note is saved to the contract and displayed in the contract detail; stored in new `signingNote` column on the Contract table
+- **Schema**: added `paymentMethod String?` to `PaymentMilestone` and `signingNote String?` to `Contract`
+
+---
+
 ## [2.53.0] — 2026-08-12
 
 ### Fixed

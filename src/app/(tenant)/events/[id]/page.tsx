@@ -21,6 +21,7 @@ import EventNotes from './EventNotes';
 import EventChecklist from './EventChecklist';
 import EventMessagePanel from './EventMessagePanel';
 import EventProfitability from './EventProfitability';
+import EventInvoicePanel from './EventInvoicePanel';
 
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger', LOST:'default' };
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
@@ -228,18 +229,7 @@ export default async function EventDetailPage({ params, searchParams }: { params
           </Card>
         )}
 
-        {/* Invoices & Contracts — admin only */}
-        {isAdmin && event.invoices.length > 0 && (
-          <Card>
-            <CardHeader><div className="flex items-center justify-between"><CardTitle>Invoices</CardTitle><Link href={'/invoices/new?eventId=' + event.id}><Button variant="outline" size="sm">Add Invoice</Button></Link></div></CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[480px]"><thead><tr className="border-b"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Invoice</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Total</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Balance</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="px-6 py-3"></th></tr></thead>
-                <tbody>{event.invoices.map(inv => (<tr key={inv.id} className="border-b last:border-0"><td className="px-6 py-3 text-sm font-medium">{inv.invoiceNumber}</td><td className="px-6 py-3 text-sm">{fmt(inv.totalCents)}</td><td className="px-6 py-3 text-sm">{fmt(inv.balanceDueCents)}</td><td className="px-6 py-3"><Badge variant={IC[inv.status]}>{inv.status}</Badge></td><td className="px-6 py-3 text-right"><Link href={'/invoices/' + inv.id}><Button variant="ghost" size="sm">View</Button></Link></td></tr>))}</tbody></table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Contracts — admin only */}
         {isAdmin && event.contracts.length > 0 && (
           <Card>
             <CardHeader><div className="flex items-center justify-between"><CardTitle>Contracts</CardTitle><Link href={'/contracts/new?eventId=' + event.id}><Button variant="outline" size="sm">Add Contract</Button></Link></div></CardHeader>
@@ -251,6 +241,35 @@ export default async function EventDetailPage({ params, searchParams }: { params
             </CardContent>
           </Card>
         )}
+
+        {/* Invoices — admin only, with inline mark-paid per milestone */}
+        {isAdmin && event.invoices.length > 0 && (
+          <Card>
+            <CardHeader><div className="flex items-center justify-between"><CardTitle>Invoices</CardTitle><Link href={'/invoices/new?eventId=' + event.id}><Button variant="outline" size="sm">Add Invoice</Button></Link></div></CardHeader>
+            <CardContent className="p-0">
+              <EventInvoicePanel
+                invoices={event.invoices.map(inv => ({
+                  id: inv.id,
+                  invoiceNumber: inv.invoiceNumber,
+                  totalCents: inv.totalCents,
+                  balanceDueCents: inv.balanceDueCents,
+                  status: inv.status,
+                  currency: (inv as any).currency ?? branding?.currency ?? 'usd',
+                  milestones: ((inv as any).PaymentMilestone ?? []).map((m: any) => ({
+                    id: m.id,
+                    label: m.label,
+                    amountCents: m.amountCents,
+                    dueDate: m.dueDate instanceof Date ? m.dueDate.toISOString() : m.dueDate,
+                    status: m.status,
+                    paidAt: m.paidAt instanceof Date ? m.paidAt.toISOString() : (m.paidAt ?? null),
+                    paymentMethod: m.paymentMethod ?? null,
+                  })),
+                }))}
+              />
+            </CardContent>
+          </Card>
+        )}
+
         {isAdmin && event.invoices.length === 0 && event.contracts.length === 0 && (
           <div className="flex flex-wrap gap-3">
             <Link href={'/invoices/new?eventId=' + event.id}><Button variant="outline"><Receipt className="w-4 h-4 mr-2"/>Create Invoice</Button></Link>

@@ -25,6 +25,8 @@ export default function ContractDetailPage() {
   const [signing, setSigning] = useState(false);
   const [sending, setSending] = useState(false);
   const [markingExecuted, setMarkingExecuted] = useState(false);
+  const [showExecuteForm, setShowExecuteForm] = useState(false);
+  const [signingNote, setSigningNote] = useState('');
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const renderTypedSig = useCallback((name: string) => {
@@ -57,13 +59,17 @@ export default function ContractDetailPage() {
   }
 
   async function markExecuted() {
-    if (!confirm('Mark this contract as fully executed? Use this when both parties signed outside the portal (in person, DocuSign, etc.). This cannot be undone.')) return;
     setMarkingExecuted(true);
-    const res = await fetch('/api/contracts/' + id + '/mark-executed', { method: 'POST' });
+    const res = await fetch('/api/contracts/' + id + '/mark-executed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ signingNote: signingNote.trim() || null }),
+    });
     const d = await res.json();
     if (res.ok) {
-      setContract((c: any) => ({ ...c, status: 'FULLY_EXECUTED', clientSignedAt: c.clientSignedAt ?? new Date().toISOString(), hostSignedAt: c.hostSignedAt ?? new Date().toISOString() }));
-      alert('Contract marked as fully executed.' + (d.invoiceCreated ? ' An invoice has been automatically created.' : ''));
+      setContract((c: any) => ({ ...c, status: 'FULLY_EXECUTED', clientSignedAt: c.clientSignedAt ?? new Date().toISOString(), hostSignedAt: c.hostSignedAt ?? new Date().toISOString(), signingNote: signingNote.trim() || null }));
+      setShowExecuteForm(false);
+      if (d.invoiceCreated) alert('Contract executed. An invoice has been automatically created.');
     } else alert(d.error);
     setMarkingExecuted(false);
   }
@@ -93,14 +99,36 @@ export default function ContractDetailPage() {
           <div className="flex flex-wrap gap-2">
             {canSend && <Button variant="outline" onClick={sendToClient} disabled={sending}><Send className="w-4 h-4 mr-1"/>{sending ? 'Sending...' : 'Send to Client'}</Button>}
             {contract.status !== 'FULLY_EXECUTED' && contract.status !== 'VOIDED' && (
-              <Button variant="outline" onClick={markExecuted} disabled={markingExecuted} className="text-green-700 border-green-200 hover:bg-green-50">
-                <CheckCircle2 className="w-4 h-4 mr-1"/>
-                {markingExecuted ? 'Processing...' : 'Mark as Executed'}
+              <Button variant="outline" onClick={() => setShowExecuteForm(f => !f)} className="text-green-700 border-green-200 hover:bg-green-50">
+                <CheckCircle2 className="w-4 h-4 mr-1"/>Mark as Executed
               </Button>
             )}
             <a href={contract.pdfUrl ?? `/api/contracts/${contract.id}/pdf`} target="_blank" rel="noopener noreferrer"><Button variant="outline"><Download className="w-4 h-4 mr-1"/>Download PDF</Button></a>
           </div>
         </div>
+        {showExecuteForm && contract.status !== 'FULLY_EXECUTED' && contract.status !== 'VOIDED' && (
+          <div className="border border-green-200 bg-green-50 rounded-xl p-4 space-y-3">
+            <p className="text-sm font-medium text-green-800">Mark as Fully Executed</p>
+            <p className="text-xs text-green-700">Use this when both parties signed outside the portal — in person, DocuSign, or another tool. An invoice will be created automatically if one doesn&apos;t exist.</p>
+            <div>
+              <label className="block text-xs font-medium text-green-800 mb-1">How was it signed? <span className="font-normal text-green-600">(optional)</span></label>
+              <input
+                type="text"
+                value={signingNote}
+                onChange={e => setSigningNote(e.target.value)}
+                placeholder="e.g. Signed in person at venue, DocuSign sent via email…"
+                className="w-full border border-green-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-400/40"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={markExecuted} disabled={markingExecuted} className="bg-green-600 hover:bg-green-700 text-white">
+                <CheckCircle2 className="w-4 h-4 mr-1.5"/>{markingExecuted ? 'Processing…' : 'Confirm — Mark Executed'}
+              </Button>
+              <Button variant="outline" onClick={() => setShowExecuteForm(false)}>Cancel</Button>
+            </div>
+          </div>
+        )}
+
         {contract.status === 'CLIENT_SIGNED' && (
           <div className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl p-4">
             <PenLine className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -115,6 +143,12 @@ export default function ContractDetailPage() {
           <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-400 mb-1">Client Signed</p><p className="font-medium">{contract.clientSignedAt ? new Date(contract.clientSignedAt).toLocaleDateString() : 'Pending'}</p></div>
           <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-400 mb-1">Operator Signed</p><p className="font-medium">{contract.hostSignedAt ? new Date(contract.hostSignedAt).toLocaleDateString() : 'Pending'}</p></div>
         </div>
+        {contract.signingNote && (
+          <div className="bg-gray-50 rounded-lg px-4 py-3 text-sm">
+            <p className="text-xs text-gray-400 mb-0.5">Signing Note</p>
+            <p className="text-gray-700">{contract.signingNote}</p>
+          </div>
+        )}
         <Card>
           <CardHeader><CardTitle>Contract Content</CardTitle></CardHeader>
           <CardContent>
