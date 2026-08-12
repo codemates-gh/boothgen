@@ -14,6 +14,24 @@ import { fmtCents } from '@/lib/utils';
 
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
 
+function DescriptionCell({ text }: { text: string }) {
+  const parts = text.split(/ - | — /);
+  if (parts.length <= 1) return <span>{text}</span>;
+  return (
+    <div>
+      <span className="font-medium">{parts[0].replace(/ —$/, '').trim()}</span>
+      <ul className="mt-1 space-y-0.5 text-gray-600 text-xs">
+        {parts.slice(1).filter(p => p.trim()).map((p, i) => (
+          <li key={i} className="flex items-start gap-1.5">
+            <span className="text-gray-400 flex-shrink-0 mt-px">·</span>
+            <span>{p.trim()}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default async function InvoiceDetailPage({ params, searchParams }: { params: { id: string }; searchParams?: { reminded?: string } }) {
   const session = await requireTenantSession();
   const isAdmin = session.tenantRole === 'HOST_ADMIN';
@@ -58,7 +76,7 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[400px]">
                 <thead><tr className="border-b bg-gray-50"><th className="text-left px-6 py-3 font-medium text-gray-500">Description</th><th className="text-right px-6 py-3 font-medium text-gray-500">Qty</th><th className="text-right px-6 py-3 font-medium text-gray-500">Unit</th><th className="text-right px-6 py-3 font-medium text-gray-500">Total</th></tr></thead>
-                <tbody>{inv.lineItems.map(li => (<tr key={li.id} className="border-b last:border-0"><td className="px-6 py-3">{li.description}</td><td className="px-6 py-3 text-right">{li.quantity}</td><td className="px-6 py-3 text-right">{fmt(li.unitCents)}</td><td className="px-6 py-3 text-right font-medium">{fmt(li.totalCents)}</td></tr>))}</tbody>
+                <tbody>{inv.lineItems.map(li => (<tr key={li.id} className="border-b last:border-0"><td className="px-6 py-4"><DescriptionCell text={li.description} /></td><td className="px-6 py-4 text-right align-top">{li.quantity}</td><td className="px-6 py-4 text-right align-top">{fmt(li.unitCents)}</td><td className="px-6 py-4 text-right align-top font-medium">{fmt(li.totalCents)}</td></tr>))}</tbody>
               </table>
             </div>
             <div className="px-6 py-4 border-t text-right space-y-1 text-sm">
