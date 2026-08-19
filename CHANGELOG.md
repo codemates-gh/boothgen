@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.54.1] — 2026-08-19
+
+### Fixed
+- **Invoice PDF — unit price showing $NaN**: `InvoicePDF` was referencing `li.unitPriceCents` which doesn't exist on the `InvoiceLineItem` model; corrected to `li.unitCents` (the actual Prisma field name); the Amount column was unaffected
+
+---
+
 ## [2.54.0] — 2026-08-12
 
 ### Added
