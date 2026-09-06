@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.55.0] — 2026-09-06
+
+### Improved
+- **Embed inquiry form — date picker**: replaced the native browser `<input type="date">` with a flatpickr calendar popout; blocked/unavailable dates are fetched server-side at render time and shown as greyed-out/unselectable in the picker rather than triggering an error after selection; past dates are also disabled; selected date highlights in the operator's brand color; works on mobile without the native picker override
+
+---
+
 ## [2.54.1] — 2026-08-19
 
 ### Fixed

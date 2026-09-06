@@ -80,6 +80,13 @@ export async function GET(
   const cfg: Required<LeadFormConfig> = { ...DEFAULTS, ...((tenant.branding?.leadFormConfig ?? {}) as LeadFormConfig) };
   const heading = cfg.heading.replace('{{company}}', co);
 
+  // Fetch blackout dates server-side so flatpickr can disable them upfront
+  const blackoutRows = await prisma.blackoutDate.findMany({
+    where: { tenantId: tenant.id },
+    select: { date: true },
+  });
+  const blockedDates = JSON.stringify(blackoutRows.map(r => r.date.toISOString().slice(0, 10)));
+
   const css = [
     '*{box-sizing:border-box;margin:0;padding:0}',
     ':root{--p:' + pc + ';--pd:' + pd + '}',
@@ -98,7 +105,6 @@ export async function GET(
     '.btn:hover{background:var(--pd)}',
     '.btn:disabled{opacity:.65;cursor:not-allowed}',
     '.errbox{padding:10px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#dc2626;font-size:13px;margin-top:14px;display:none}',
-    '.datewarn{padding:8px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#dc2626;font-size:12px;margin-top:6px;display:none}',
     '.succ{display:none;text-align:center;padding:40px 20px}',
     '.succ-icon{width:60px;height:60px;background:var(--p);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}',
     '.succ h2{font-size:20px;margin-bottom:8px}',
@@ -131,7 +137,13 @@ export async function GET(
     '<meta charset="UTF-8"/>' +
     '<meta name="viewport" content="width=device-width,initial-scale=1.0"/>' +
     '<title>' + heading + '</title>' +
-    '<style>' + css + '</style>' +
+    '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"/>' +
+    '<style>' + css + [
+      '.flatpickr-input{cursor:pointer}',
+      '.flatpickr-day.selected,.flatpickr-day.selected:hover{background:var(--p);border-color:var(--p)}',
+      '.flatpickr-day.today{border-color:var(--p)}',
+      '.flatpickr-day.today:hover{background:var(--p);border-color:var(--p);color:#fff}',
+    ].join('') + '</style>' +
     '</head>' +
     '<body>' +
     '<div class="hdr">' + logo + '<h1>' + heading + '</h1></div>' +
@@ -144,7 +156,7 @@ export async function GET(
     '<div><label>Email <span class="req">*</span></label><input type="email" name="email" autocomplete="email" required/></div>' +
     (cfg.showPhone ? '<div><label>Phone' + (cfg.requirePhone ? ' <span class="req">*</span>' : '') + '</label><input type="tel" name="phone" autocomplete="tel"/></div>' : '') +
     (cfg.showCompany ? '<div class="full"><label>Company / Organization</label><input type="text" name="company" autocomplete="organization" placeholder="Acme Corp (optional)"/></div>' : '') +
-    (cfg.showEventDate ? '<div><label>Event Date' + (cfg.requireEventDate ? ' <span class="req">*</span>' : '') + '</label><input type="date" name="eventDate" id="eventDate"/><div class="datewarn" id="dateWarn">Sorry, we\'re not available on this date. Please choose another date.</div></div>' : '') +
+    (cfg.showEventDate ? '<div class="full"><label>Event Date' + (cfg.requireEventDate ? ' <span class="req">*</span>' : '') + '</label><input type="text" name="eventDate" id="eventDate" placeholder="Select a date…" readonly/></div>' : '') +
     (cfg.showEventType ? '<div><label>Event Type</label><select name="eventType"><option value="">-- Select --</option><option>Wedding</option><option>Corporate Event</option><option>Birthday Party</option><option>Quincea\xf1era / Sweet 16</option><option>Graduation</option><option>Holiday Party</option><option>Other</option></select></div>' : '') +
     (cfg.showTimes ? '<div><label>Start Time</label><input type="time" name="startTime"/></div>' : '') +
     (cfg.showTimes ? '<div><label>End Time</label><input type="time" name="endTime"/></div>' : '') +
@@ -165,33 +177,26 @@ export async function GET(
     '<h2>' + cfg.successHeading + '</h2>' +
     '<p>' + cfg.successMessage + '</p>' +
     '</div>' +
+    '<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>' +
     '<script>(function(){' +
     'function sh(){window.parent.postMessage({type:"pbcrm:resize",height:document.body.scrollHeight},"*")}' +
     'sh();' +
     'new ResizeObserver(sh).observe(document.body);' +
-    'var AVAIL_API="/api/public/' + params.tenantSlug + '/availability";' +
-    'var dateBlocked=false;' +
     '(function(){' +
     'var di=document.getElementById("eventDate");' +
-    'var dw=document.getElementById("dateWarn");' +
-    'var sb=document.getElementById("sb");' +
-    'if(!di||!dw)return;' +
-    'di.addEventListener("change",async function(){' +
-    'var v=di.value;' +
-    'if(!v){dw.style.display="none";dateBlocked=false;return;}' +
-    'try{' +
-    'var r=await fetch(AVAIL_API+"?date="+v);' +
-    'var j=await r.json();' +
-    'dateBlocked=!j.available;' +
-    'dw.style.display=dateBlocked?"block":"none";' +
-    'sb.disabled=dateBlocked;' +
-    '}catch(e){dateBlocked=false;}' +
-    'sh();' +
+    'if(!di)return;' +
+    'flatpickr(di,{' +
+    'dateFormat:"Y-m-d",' +
+    'minDate:"today",' +
+    'disable:' + blockedDates + ',' +
+    'disableMobile:false,' +
+    'onReady:function(){sh();},' +
+    'onChange:function(){sh();},' +
+    'onClose:function(){sh();},' +
     '});' +
     '})();' +
     'var REQ=' + JSON.stringify(req2fields) + ';' +
     'document.getElementById("f").addEventListener("submit",async function(e){' +
-    'if(dateBlocked){e.preventDefault();return;}' +
     'e.preventDefault();' +
     'var eb=document.getElementById("eb"),sb=document.getElementById("sb");' +
     'eb.style.display="none";' +
