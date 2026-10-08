@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.55.1] — 2026-09-06
+
+### Added
+- **Delete DRAFT contract**: HOST_ADMIN can now delete a contract while it's still in DRAFT status — a "Delete" button appears in the action bar, clicking it shows an inline red confirmation panel before permanently removing it; only DRAFT contracts can be deleted (sent/signed/executed contracts are blocked at the API level)
+
+---
+
 ## [2.55.0] — 2026-09-06
 
 ### Improved

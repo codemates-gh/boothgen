@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SignatureCanvas } from '@/components/contracts/SignatureCanvas';
-import { ArrowLeft, Send, Lock, Download, PenLine, Pen, Type, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Send, Lock, Download, PenLine, Pen, Type, CheckCircle2, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
 import { useRef, useCallback } from 'react';
@@ -27,6 +27,8 @@ export default function ContractDetailPage() {
   const [markingExecuted, setMarkingExecuted] = useState(false);
   const [showExecuteForm, setShowExecuteForm] = useState(false);
   const [signingNote, setSigningNote] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const renderTypedSig = useCallback((name: string) => {
@@ -74,6 +76,14 @@ export default function ContractDetailPage() {
     setMarkingExecuted(false);
   }
 
+  async function deleteContract() {
+    setDeleting(true);
+    const res = await fetch('/api/contracts/' + id, { method: 'DELETE' });
+    const d = await res.json();
+    if (res.ok) router.push('/contracts');
+    else { alert(d.error); setDeleting(false); setShowDeleteConfirm(false); }
+  }
+
   async function sendToClient() {
     setSending(true);
     const res = await fetch('/api/contracts/' + id + '/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiryDays: 14 }) });
@@ -104,6 +114,11 @@ export default function ContractDetailPage() {
               </Button>
             )}
             <a href={contract.pdfUrl ?? `/api/contracts/${contract.id}/pdf`} target="_blank" rel="noopener noreferrer"><Button variant="outline"><Download className="w-4 h-4 mr-1"/>Download PDF</Button></a>
+            {contract.status === 'DRAFT' && (
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(f => !f)} className="text-red-600 border-red-200 hover:bg-red-50">
+                <Trash2 className="w-4 h-4 mr-1"/>Delete
+              </Button>
+            )}
           </div>
         </div>
         {showExecuteForm && contract.status !== 'FULLY_EXECUTED' && contract.status !== 'VOIDED' && (
@@ -125,6 +140,19 @@ export default function ContractDetailPage() {
                 <CheckCircle2 className="w-4 h-4 mr-1.5"/>{markingExecuted ? 'Processing…' : 'Confirm — Mark Executed'}
               </Button>
               <Button variant="outline" onClick={() => setShowExecuteForm(false)}>Cancel</Button>
+            </div>
+          </div>
+        )}
+
+        {showDeleteConfirm && contract.status === 'DRAFT' && (
+          <div className="border border-red-200 bg-red-50 rounded-xl p-4 space-y-3">
+            <p className="text-sm font-medium text-red-800">Delete this contract?</p>
+            <p className="text-xs text-red-700">This will permanently delete the draft. This cannot be undone.</p>
+            <div className="flex gap-2">
+              <Button onClick={deleteContract} disabled={deleting} className="bg-red-600 hover:bg-red-700 text-white">
+                <Trash2 className="w-4 h-4 mr-1.5"/>{deleting ? 'Deleting…' : 'Yes, Delete'}
+              </Button>
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
             </div>
           </div>
         )}
