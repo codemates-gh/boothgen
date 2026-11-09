@@ -8,3 +8,7 @@ node_modules/
 .env.local
 .vercel
 .env*
+
+# Build artifacts
+tsconfig.tsbuildinfo
+public/build-info.json
