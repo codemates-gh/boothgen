@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.60.1] — 2026-11-05
+
+### Fixed
+- **Contract PDF formatting**: List items (`<li>`) were collapsed into run-on text — now rendered as `• bullet` entries on separate lines. Section headings (`<h1-6>`) now render bold in the PDF instead of unstyled text. Both the Download PDF and the signed/locked PDF generator are fixed
+
+---
+
 ## [2.60.0] — 2026-11-05
 
 ### Added

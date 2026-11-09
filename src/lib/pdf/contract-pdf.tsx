@@ -11,6 +11,7 @@ const S = StyleSheet.create({
   partyName:  { fontSize: 11, fontFamily: 'Helvetica-Bold' },
   divider:    { borderBottomWidth: 1, borderColor: '#e5e7eb', marginVertical: 16 },
   bodyLabel:  { fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#9ca3af', textTransform: 'uppercase', marginBottom: 10 },
+  heading:    { fontSize: 10.5, fontFamily: 'Helvetica-Bold', marginTop: 10, marginBottom: 2, color: '#111827' },
   para:       { marginBottom: 8, lineHeight: 1.5, color: '#374151' },
   sigBlock:   { marginTop: 32, flexDirection: 'row', gap: 40 },
   sig:        { flex: 1 },
@@ -22,21 +23,53 @@ const S = StyleSheet.create({
   footer:     { position: 'absolute', bottom: 32, left: 48, right: 48, fontSize: 8, color: '#9ca3af', textAlign: 'center' },
 });
 
-function stripHtml(html: string): string {
+type PdfBlock = { type: 'h' | 'p'; text: string };
+
+function cleanText(html: string): string {
   return html
-    .replace(/<\/?(p|div|br|h[1-6])[^>]*>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?(p|div)[^>]*>/gi, '\n')
     .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/&#39;/g, "'").replace(/&quot;/g, '"')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+function parseToBlocks(html: string): PdfBlock[] {
+  // Convert list markup to plain-text bullets before any other processing
+  const withBullets = html
+    .replace(/<\/?(?:ul|ol)[^>]*>/gi, '')
+    .replace(/<li[^>]*>/gi, '\n• ')
+    .replace(/<\/li>/gi, '');
+
+  // Split around heading tags so we can render them bold
+  const tokens = withBullets.split(/(<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>)/gi);
+  const blocks: PdfBlock[] = [];
+
+  for (const tok of tokens) {
+    if (!tok.trim()) continue;
+    const hMatch = tok.match(/^<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>$/i);
+    if (hMatch) {
+      const text = cleanText(hMatch[1]);
+      if (text) blocks.push({ type: 'h', text });
+    } else {
+      const text = cleanText(tok);
+      if (!text) continue;
+      for (const seg of text.split('\n\n')) {
+        const s = seg.trim();
+        if (s) blocks.push({ type: 'p', text: s });
+      }
+    }
+  }
+
+  return blocks;
 }
 
 const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
 const fmtDateTime = (d: any) => d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
 
 export function ContractPDF({ contract, branding }: { contract: any; branding: any }) {
-  const content = contract.renderedContent ? stripHtml(contract.renderedContent) : '';
-  const paragraphs = content.split('\n\n').filter(Boolean);
+  const blocks = contract.renderedContent ? parseToBlocks(contract.renderedContent) : [];
 
   const isFullySigned = contract.status === 'FULLY_EXECUTED';
 
@@ -66,9 +99,11 @@ export function ContractPDF({ contract, branding }: { contract: any; branding: a
         <View style={S.divider} />
 
         <Text style={S.bodyLabel}>Agreement Terms</Text>
-        {paragraphs.map((p: string, i: number) => (
-          <Text key={i} style={S.para}>{p}</Text>
-        ))}
+        {blocks.map((block, i) =>
+          block.type === 'h'
+            ? <Text key={i} style={S.heading}>{block.text}</Text>
+            : <Text key={i} style={S.para}>{block.text}</Text>
+        )}
 
         <View style={S.divider} />
 
