@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { newDeviceToken } from '@/lib/genie/auth';
 import { GENIE_SETTINGS_DEFAULTS } from '@/lib/genie/bundle';
+import { encryptSecret } from '@/lib/crypto/secrets';
 
 export const SAMPLE_SHA = '9f2c0e5c3b1a4d6e8f7a9b0c1d2e3f405162738495a6b7c8d9e0f1a2b3c4d5e6';
 
@@ -22,7 +23,10 @@ export async function resetDb() {
   await prisma.tenant.deleteMany({ where: { slug: { startsWith: 'genie-test-' } } });
 }
 
-export async function seedTenant(opts: { genieEnabled?: boolean; pro?: boolean } = {}) {
+export const TWILIO_SID = 'AC' + 'a'.repeat(32);
+export const TWILIO_TOKEN = 'tenant-auth-token';
+
+export async function seedTenant(opts: { genieEnabled?: boolean; pro?: boolean; messaging?: boolean } = {}) {
   const tenant = await prisma.tenant.create({
     data: {
       name: 'Genie Test ' + randomUUID().slice(0, 6),
@@ -34,6 +38,14 @@ export async function seedTenant(opts: { genieEnabled?: boolean; pro?: boolean }
       }),
     },
   });
+  if (opts.messaging !== false) {
+    await prisma.genieMessagingConfig.create({
+      data: {
+        tenantId: tenant.id, twilioAccountSid: TWILIO_SID, twilioAuthTokenEnc: encryptSecret(TWILIO_TOKEN), twilioMessagingServiceSid: 'MG' + 'b'.repeat(32),
+        emailProvider: 'resend', emailFromName: 'Snap Co', emailFromAddress: 'photos@snap.test', resendApiKeyEnc: encryptSecret('re_tenant_key'),
+      },
+    });
+  }
   const client = await prisma.client.create({ data: { tenantId: tenant.id, firstName: 'Ana', lastName: 'Rivera', email: randomUUID() + '@example.com' } });
   return { tenant, client };
 }
