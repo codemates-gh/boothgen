@@ -1302,6 +1302,9 @@ model EventGenieSettings {
   initialCountdownSeconds      Int     @default(5)
   betweenShotsCountdownSeconds Int     @default(3)
   showPerShotPreview           Boolean @default(true)
+  allowPerShotRetake           Boolean @default(true)
+  perShotPreviewSeconds        Int     @default(2)
+  allowReviewRetake            Boolean @default(false)
   retakesPerShot               Int     @default(1)
   idleTimeoutSeconds           Int     @default(60)
 
