@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, PutBucketCorsCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutBucketCorsCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const r2 = new S3Client({
@@ -45,4 +45,19 @@ export async function setR2CorsPolicy(allowedOrigins: string[]): Promise<void> {
       ],
     },
   }));
+}
+
+// Size of an uploaded object, or null when it does not exist
+export async function headR2Object(key: string): Promise<{ bytes: number } | null> {
+  try {
+    const res = await r2.send(new HeadObjectCommand({ Bucket: BUCKET, Key: key }));
+    return { bytes: res.ContentLength ?? 0 };
+  } catch (err: any) {
+    if (err?.name === 'NotFound' || err?.$metadata?.httpStatusCode === 404) return null;
+    throw err;
+  }
+}
+
+export function r2PublicUrl(key: string): string {
+  return PUBLIC_URL + '/' + key;
 }
