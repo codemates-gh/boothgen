@@ -298,9 +298,10 @@ model TenantBranding {
   websiteUrl        String?
   businessAddress   String?
   leadFormConfig    Json?
-  // Currency & tax
+  // Currency, tax & regional
   currency          String   @default("usd")
   taxLabel          String   @default("Tax")
+  country           String?
   // Payment terms
   defaultDepositPercent     Int @default(50)
   balanceDueDaysBeforeEvent Int @default(30)

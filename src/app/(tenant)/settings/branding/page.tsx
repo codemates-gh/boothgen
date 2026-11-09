@@ -13,7 +13,7 @@ import { Camera, Upload } from 'lucide-react';
 const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['booth-templates','Booth Templates'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
 
 export default function BrandingSettingsPage() {
-  const [form, setForm] = useState({ companyName:'', primaryColor:'#F97316', secondaryColor:'#EA6100', replyToEmail:'', supportPhone:'', websiteUrl:'', businessAddress:'', invoiceFooterText:'', emailHeaderHtml:'', currency:'usd', taxLabel:'Tax' });
+  const [form, setForm] = useState({ companyName:'', primaryColor:'#F97316', secondaryColor:'#EA6100', replyToEmail:'', supportPhone:'', websiteUrl:'', businessAddress:'', invoiceFooterText:'', emailHeaderHtml:'', currency:'usd', taxLabel:'Tax', country:'' });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -37,6 +37,7 @@ export default function BrandingSettingsPage() {
           emailHeaderHtml:   d.emailHeaderHtml   ?? '',
           currency:          d.currency          ?? 'usd',
           taxLabel:          d.taxLabel          ?? 'Tax',
+          country:           d.country           ?? '',
         }));
         setLogoUrl(d.logoUrl ?? null);
       }
@@ -155,6 +156,15 @@ export default function BrandingSettingsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Tax Label</label>
               <Input value={form.taxLabel} onChange={e => set('taxLabel', e.target.value)} placeholder="Tax" className="max-w-[180px]" />
               <p className="text-xs text-gray-400 mt-1">Shown on quotes and invoices — e.g. Tax, GST, HST, VAT.</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+              <Select value={form.country} onChange={e => set('country', e.target.value)} className="max-w-[280px]">
+                <option value="">Not specified (Province / State)</option>
+                <option value="CA">Canada — Province &amp; Postal Code</option>
+                <option value="US">United States — State &amp; Zip Code</option>
+              </Select>
+              <p className="text-xs text-gray-400 mt-1">Sets address field labels on forms and the client inquiry widget.</p>
             </div>
             <div className="flex justify-end"><Button onClick={save} disabled={saving}>{saving ? 'Saving...' : saved ? '✓ Saved' : 'Save Changes'}</Button></div>
           </CardContent>

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { addressLabels } from '@/lib/utils';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,10 +32,12 @@ export default function NewEventPage() {
     packageName: '', guestCount: '', internalNotes: '', status: 'LEAD', estimatedValueCents: '',
   });
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const [country, setCountry] = useState<string | null>(null);
 
-  // Load clients list for existing-client mode
+  // Load clients list and branding (for address labels) on mount
   useEffect(() => {
     fetch('/api/clients').then(r => r.json()).then(setClients).catch(() => {});
+    fetch('/api/settings/branding').then(r => r.json()).then(b => setCountry(b.country ?? null)).catch(() => {});
   }, []);
 
   // When preload clientId is set, find and lock that client
@@ -213,8 +216,8 @@ export default function NewEventPage() {
               <div className="sm:col-span-2">{F('venueName', 'Venue Name', 'text', 'The Grand Ballroom')}</div>
               <div className="sm:col-span-2">{F('venueAddress', 'Street Address', 'text', '123 Main St')}</div>
               {F('venueCity', 'City', 'text', 'Austin')}
-              {F('venueState', 'State', 'text', 'TX')}
-              {F('venuePostalCode', 'Zip Code', 'text', '78701')}
+              {F('venueState', addressLabels(country).stateLabel, 'text', addressLabels(country).statePh)}
+              {F('venuePostalCode', addressLabels(country).postalLabel, 'text', addressLabels(country).postalPh)}
               <div></div>
             </CardContent>
           </Card>

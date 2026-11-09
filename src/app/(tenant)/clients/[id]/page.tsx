@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Save, Trash2, Calendar, ArrowRight, Plus, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { fmtEventDate } from '@/lib/utils';
+import { fmtEventDate, addressLabels } from '@/lib/utils';
 
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger' };
 
@@ -25,13 +25,18 @@ export default function ClientDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isCorporate, setIsCorporate] = useState(false);
   const [form, setForm] = useState({ firstName:'', lastName:'', email:'', phone:'', company:'', addressLine1:'', city:'', state:'', postalCode:'', notes:'' });
+  const [country, setCountry] = useState<string | null>(null);
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
-    fetch('/api/clients/' + id).then(r => r.json()).then(d => {
+    Promise.all([
+      fetch('/api/clients/' + id).then(r => r.json()),
+      fetch('/api/settings/branding').then(r => r.json()),
+    ]).then(([d, b]) => {
       setClient(d.client); setEvents(d.events ?? []);
       setIsCorporate(d.client.isCorporate ?? false);
       setForm({ firstName: d.client.firstName ?? '', lastName: d.client.lastName ?? '', email: d.client.email ?? '', phone: d.client.phone ?? '', company: d.client.company ?? '', addressLine1: d.client.addressLine1 ?? '', city: d.client.city ?? '', state: d.client.state ?? '', postalCode: d.client.postalCode ?? '', notes: d.client.notes ?? '' });
+      setCountry(b.country ?? null);
       setLoading(false);
     });
   }, [id]);
@@ -79,8 +84,8 @@ export default function ClientDetailPage() {
             {F('company','Company / Organization')}
             <div className="sm:col-span-2">{F('addressLine1','Address')}</div>
             {F('city','City')}
-            {F('state','State')}
-            {F('postalCode','Zip Code')}
+            {F('state', addressLabels(country).stateLabel)}
+            {F('postalCode', addressLabels(country).postalLabel)}
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
               <Textarea value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Internal notes about this client..." className="resize-none h-24"/>
