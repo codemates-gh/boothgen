@@ -241,6 +241,7 @@ model Tenant {
   genieShares          GenieShare[]
   geniePrintReports    GeniePrintReport[]
   genieTemplates       EventGenieTemplate[]
+  genieMessaging       GenieMessagingConfig?
 
   // Genie paid add-on entitlement (super admin toggle until billing exists)
   genieEnabled          Boolean   @default(false)
@@ -1437,4 +1438,39 @@ model EventGenieTemplate {
 
   @@index([eventId])
   @@map("event_genie_templates")
+}
+
+// Tenant-owned providers for Genie guest shares (never BoothGen's platform accounts).
+// *Enc columns hold AES-256-GCM ciphertext from src/lib/crypto/secrets.ts.
+model GenieMessagingConfig {
+  id       String @id @default(cuid())
+  tenantId String @unique
+
+  // SMS: tenant's Twilio account; Messaging Service SID preferred, else From number
+  twilioAccountSid          String?
+  twilioAuthTokenEnc        String?
+  twilioMessagingServiceSid String?
+  twilioFromNumber          String?
+  smsTestedAt               DateTime?
+  smsTestError              String?
+
+  // Email: "resend" | "smtp" | null
+  emailProvider    String?
+  emailFromName    String?
+  emailFromAddress String?
+  resendApiKeyEnc  String?
+  smtpHost         String?
+  smtpPort         Int?
+  smtpSecurity     String? // "tls" | "starttls" | "none"
+  smtpUsername     String?
+  smtpPasswordEnc  String?
+  emailTestedAt    DateTime?
+  emailTestError   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("genie_messaging_configs")
 }

@@ -6,6 +6,7 @@ import { sendEmail, sendDesignReadyEmail, sendDesignDecisionEmail, sendPaymentRe
 import { triggerAutomation, scheduleEventDateAutomations, executeAutomation, notifyAdminOfFailure } from './trigger';
 import { deleteFromR2, r2KeyFromUrl } from '@/lib/storage/r2';
 import { deleteTenant } from '@/lib/tenant/cleanup';
+import { prepareShare, deliverShare, recordShareResult, markShareFailed } from '@/lib/genie/shares';
 
 export const processAutomation = inngest.createFunction(
   {
@@ -694,5 +695,31 @@ export const autoCompleteEvents = inngest.createFunction(
     });
     console.log(`[AUTO_COMPLETE] Marked ${count} past events as COMPLETED`);
     return { completed: count };
+  }
+);
+
+// Genie guest share (SMS / email) through the tenant's own provider. Queued by /api/genie/*; the event id
+// dedupes repeats. Steps memoise the send so a retry after a successful send doesn't text the guest twice.
+export const sendGenieShare = inngest.createFunction(
+  {
+    id: 'send-genie-share',
+    retries: 4,
+    onFailure: async ({ event, error }) => {
+      const shareId = (event.data as any).event?.data?.shareId as string | undefined;
+      if (shareId) await markShareFailed(shareId, error.message).catch(e => console.error('[GENIE_SHARE_ON_FAILURE]', e));
+    },
+  },
+  { event: 'genie/share.send' },
+  async ({ event: evt, step }) => {
+    const { shareId } = evt.data as { shareId: string };
+    const prepared = await step.run('prepare', () => prepareShare(shareId));
+    if (!prepared.ready) return { skipped: prepared.reason };
+    const result = await step.run('send', async () => {
+      const r = await deliverShare(prepared);
+      if (!r.ok && r.retryable) throw new Error(r.error);
+      return r;
+    });
+    await step.run('record', () => recordShareResult(shareId, result));
+    return result;
   }
 );

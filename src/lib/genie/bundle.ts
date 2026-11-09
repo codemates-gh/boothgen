@@ -1,7 +1,11 @@
 import { createHash } from 'crypto';
-import type { Event, EventGenieSettings, EventGenieTemplate, Gallery, Prisma } from '@prisma/client';
+import type { Event, EventGenieSettings, EventGenieTemplate, Gallery, GenieMessagingConfig, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import type { StoredLayout } from './schemas';
+import { galleryUrl, sessionUrl } from './urls';
+import { emailConfigured, smsConfigured } from './messaging';
+
+export { appUrl, galleryUrl, sessionUrl } from './urls';
 
 export const BUNDLE_SCHEMA_VERSION = '1.0';
 const VALID_AFTER_END_MS = 24 * 3600 * 1000;
@@ -13,18 +17,6 @@ export const GENIE_SETTINGS_DEFAULTS = {
   emailBody: 'Hi {{firstName}},\n\nThanks for stopping by the booth! Your photos: {{link}}',
   smsConsentText: 'I agree to receive one text message with my photos. Msg & data rates may apply.',
 };
-
-export function appUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com').replace(/\/$/, '');
-}
-
-export function galleryUrl(gallery: Pick<Gallery, 'clientToken'>): string {
-  return `${appUrl()}/g/${gallery.clientToken}`;
-}
-
-export function sessionUrl(gallery: Pick<Gallery, 'clientToken'>, publicToken: string): string {
-  return `${galleryUrl(gallery)}/s/${publicToken}`;
-}
 
 // The event's gallery, created on first Genie use (same shape as the gallery page's auto-create)
 export async function ensureGallery(event: Pick<Event, 'id' | 'tenantId' | 'title'>): Promise<Gallery> {
@@ -89,7 +81,7 @@ export type BundleResult =
   | { ok: true; bundle: Record<string, unknown>; bundleVersion: number }
   | { ok: false; status: 404 | 409; code: string; error: string };
 
-function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, bundleVersion: number) {
+function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, bundleVersion: number) {
   return {
     schemaVersion: BUNDLE_SCHEMA_VERSION,
     bundleVersion,
@@ -124,8 +116,9 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
       filters: settings.filters,
     },
     sharing: {
-      smsEnabled: settings.smsEnabled,
-      emailEnabled: settings.emailEnabled,
+      // A channel is only offered when the tenant's own provider for it is set up
+      smsEnabled: settings.smsEnabled && smsConfigured(messaging),
+      emailEnabled: settings.emailEnabled && emailConfigured(messaging),
       qrEnabled: settings.qrEnabled,
       guestLinkScope: settings.guestLinkScope,
       smsBody: settings.smsBody,
@@ -160,7 +153,8 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
   if (event.genieTemplates.length === 0) return { ok: false, status: 409, code: 'no_templates', error: 'The event has no Genie templates yet' };
 
   const gallery = await ensureGallery(event);
-  let bundle = assemble(event, settings, gallery, settings.bundleVersion);
+  const messaging = await prisma.genieMessagingConfig.findUnique({ where: { tenantId } });
+  let bundle = assemble(event, settings, gallery, messaging, settings.bundleVersion);
   const hash = contentHash(bundle);
 
   for (let attempt = 0; settings.bundleHash !== hash && attempt < 3; attempt++) {

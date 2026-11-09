@@ -5,6 +5,7 @@ import { authenticateDevice, findDeviceEvent, genieError, isUniqueViolation, rea
 import { ensureGallery } from '@/lib/genie/bundle';
 import { dispatchReadyShares, ensureGenieSession } from '@/lib/genie/sessions';
 import { ShareJob, firstIssue } from '@/lib/genie/schemas';
+import { emailConfigured, getMessagingConfig, smsConfigured } from '@/lib/genie/messaging';
 
 const E164 = /^\+[1-9]\d{6,14}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -32,8 +33,12 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
 
   const settings = await prisma.eventGenieSettings.findUnique({ where: { eventId: event.id } });
   if (!settings) return genieError(422, 'not_configured', 'Genie settings have not been set up for this event');
-  if ((body.channel === 'sms' && !settings.smsEnabled) || (body.channel === 'email' && !settings.emailEnabled)) {
-    return genieError(422, 'channel_disabled', `${body.channel === 'sms' ? 'Text' : 'Email'} sharing is turned off for this event`);
+  const messaging = await getMessagingConfig(auth.tenant.id);
+  const enabled = body.channel === 'sms'
+    ? settings.smsEnabled && smsConfigured(messaging)
+    : settings.emailEnabled && emailConfigured(messaging);
+  if (!enabled) {
+    return genieError(422, 'channel_disabled', `${body.channel === 'sms' ? 'Text' : 'Email'} sharing is turned off or not set up for this account`);
   }
 
   const gallery = await ensureGallery(event);

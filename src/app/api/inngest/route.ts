@@ -21,6 +21,7 @@ import {
   notifyHostDesignDeadline,
   sendDesignApprovalReminders,
   autoCompleteEvents,
+  sendGenieShare,
 } from '@/lib/inngest/functions';
 
 const handler = serve({
@@ -45,6 +46,7 @@ const handler = serve({
     notifyHostDesignDeadline,
     sendDesignApprovalReminders,
     autoCompleteEvents,
+    sendGenieShare,
   ],
   signingKey: process.env.INNGEST_SIGNING_KEY,
 });
