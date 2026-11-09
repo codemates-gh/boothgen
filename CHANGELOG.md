@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.60.0] — 2026-11-05
+
+### Added
+- **Pay in Full on client portal**: Payment Schedule section now shows a "Pay [total]" button below the individual milestone rows when two or more milestones are unpaid and a balance is due — clients can pay the entire remaining balance in one transaction instead of paying each milestone separately
+- **Full-payment webhook marks milestones PAID**: When a client pays in full (no milestone ID in the payment intent), the Stripe webhook now also marks all remaining individual milestones as PAID so the portal UI stays consistent
+
+---
+
 ## [2.59.0] — 2026-10-28
 
 ### Security

@@ -91,6 +91,11 @@ export async function POST(req: NextRequest) {
                 stripePaymentIntentId: pi.id,
               },
             });
+            // Mark any remaining milestones as PAID (e.g. client paid in full)
+            await prisma.paymentMilestone.updateMany({
+              where: { invoiceId, status: { not: 'PAID' } },
+              data: { status: 'PAID', paidAt: new Date() },
+            });
             // Advance event to BOOKED on full payment
             if (inv.eventId) {
               await prisma.event.updateMany({
