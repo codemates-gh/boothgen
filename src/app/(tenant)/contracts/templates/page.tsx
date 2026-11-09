@@ -10,36 +10,42 @@ import Link from 'next/link';
 import EmailTemplateEditor from '@/components/email/EmailTemplateEditor';
 
 const CONTRACT_TAGS = [
-  { label: 'Client First Name', value: '{{client.first_name}}' },
-  { label: 'Client Full Name', value: '{{client.full_name}}' },
-  { label: 'Client Email', value: '{{client.email}}' },
-  { label: 'Client Phone', value: '{{client.phone}}' },
-  { label: 'Event Title', value: '{{event.title}}' },
-  { label: 'Event Date', value: '{{event.date}}' },
-  { label: 'Event Start Time', value: '{{event.start_time}}' },
-  { label: 'Event End Time', value: '{{event.end_time}}' },
-  { label: 'Venue Name', value: '{{event.venue_name}}' },
-  { label: 'Venue Address', value: '{{event.venue_address}}' },
-  { label: 'Venue City', value: '{{event.venue_city}}' },
-  { label: 'Venue State', value: '{{event.venue_state}}' },
-  { label: 'Venue Zip Code', value: '{{event.venue_zip}}' },
-  { label: 'Package Name', value: '{{event.package_name}}' },
-  { label: 'Guest Count', value: '{{event.guest_count}}' },
-  { label: 'Invoice Total', value: '{{invoice.total}}' },
-  { label: 'Retainer Amount', value: '{{invoice.retainer_amount}}' },
-  { label: 'Balance Due', value: '{{invoice.balance_due}}' },
-  { label: 'Due Date', value: '{{invoice.due_date}}' },
-  { label: 'Company Name', value: '{{host.company_name}}' },
-  { label: 'Company Email', value: '{{host.email}}' },
-  { label: 'Company Phone', value: '{{host.phone}}' },
-  { label: 'Company Website', value: '{{host.website}}' },
-  { label: 'Email Signature', value: '{{host.signature}}' },
-  { label: 'Today\'s Date', value: '{{today}}' },
+  { group: 'Client', label: 'Client First Name', value: '{{client.first_name}}' },
+  { group: 'Client', label: 'Client Last Name', value: '{{client.last_name}}' },
+  { group: 'Client', label: 'Client Full Name', value: '{{client.full_name}}' },
+  { group: 'Client', label: 'Client Email', value: '{{client.email}}' },
+  { group: 'Client', label: 'Client Phone', value: '{{client.phone}}' },
+  { group: 'Client', label: 'Client Company', value: '{{client.company}}' },
+  { group: 'Client', label: 'Client Address', value: '{{client.address}}' },
+  { group: 'Client', label: 'Client City', value: '{{client.city}}' },
+  { group: 'Client', label: 'Client State', value: '{{client.state}}' },
+  { group: 'Client', label: 'Client Zip', value: '{{client.zip}}' },
+  { group: 'Event', label: 'Event Title', value: '{{event.title}}' },
+  { group: 'Event', label: 'Event Date', value: '{{event.date}}' },
+  { group: 'Event', label: 'Event Start Time', value: '{{event.start_time}}' },
+  { group: 'Event', label: 'Event End Time', value: '{{event.end_time}}' },
+  { group: 'Event', label: 'Venue Name', value: '{{event.venue_name}}' },
+  { group: 'Event', label: 'Venue Address', value: '{{event.venue_address}}' },
+  { group: 'Event', label: 'Venue City', value: '{{event.venue_city}}' },
+  { group: 'Event', label: 'Venue State', value: '{{event.venue_state}}' },
+  { group: 'Event', label: 'Venue Zip Code', value: '{{event.venue_zip}}' },
+  { group: 'Event', label: 'Package Name', value: '{{event.package_name}}' },
+  { group: 'Event', label: 'Guest Count', value: '{{event.guest_count}}' },
+  { group: 'Invoice', label: 'Invoice Total', value: '{{invoice.total}}' },
+  { group: 'Invoice', label: 'Retainer Amount', value: '{{invoice.retainer_amount}}' },
+  { group: 'Invoice', label: 'Balance Due', value: '{{invoice.balance_due}}' },
+  { group: 'Invoice', label: 'Due Date', value: '{{invoice.due_date}}' },
+  { group: 'Host & Company', label: 'Company Name', value: '{{host.company_name}}' },
+  { group: 'Host & Company', label: 'Company Email', value: '{{host.email}}' },
+  { group: 'Host & Company', label: 'Company Phone', value: '{{host.phone}}' },
+  { group: 'Host & Company', label: 'Company Website', value: '{{host.website}}' },
+  { group: 'Host & Company', label: 'Email Signature', value: '{{host.signature}}' },
+  { group: 'General', label: "Today's Date", value: '{{today.date}}' },
 ];
 
 const DEFAULT_CONTRACT = `<h2 style="text-align:center">EVENT SERVICES AGREEMENT</h2>
 
-<p>This Agreement is entered into between <strong>{{host.company_name}}</strong> ("Company") and <strong>{{client.full_name}}</strong> ("Client") as of {{today}}.</p>
+<p>This Agreement is entered into between <strong>{{host.company_name}}</strong> ("Company") and <strong>{{client.full_name}}</strong> ("Client") as of {{today.date}}.</p>
 
 <h3>1. Event Details</h3>
 <p>
@@ -174,7 +180,7 @@ export default function ContractTemplatesPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Contract Body *</label>
-            <EmailTemplateEditor value={body} onChange={setBody}/>
+            <EmailTemplateEditor value={body} onChange={setBody} mergeTags={CONTRACT_TAGS}/>
             <p className="text-xs text-gray-400 mt-1">Use the "Insert Variable" dropdown to add merge tags. Switch to HTML mode for advanced formatting.</p>
           </div>
           <div className="flex justify-end gap-3">

@@ -1,7 +1,7 @@
 import { fmtCents } from '@/lib/utils';
 
 export type MergeCtx = {
-  client: { first_name: string; last_name: string; full_name: string; email: string; phone?: string; company?: string };
+  client: { first_name: string; last_name: string; full_name: string; email: string; phone?: string; company?: string; address?: string; city?: string; state?: string; zip?: string };
   event: { title: string; date: string; time?: string; start_time?: string; end_time?: string; venue_name?: string; venue_address?: string; venue_city?: string; venue_state?: string; venue_zip?: string; package_name?: string; guest_count?: string };
   invoice: { number?: string; total?: string; balance_due?: string; retainer_amount?: string; due_date?: string; payment_link?: string };
   contract: { link?: string; expiry?: string; title?: string };
@@ -9,6 +9,7 @@ export type MergeCtx = {
   host: { company_name: string; email?: string; phone?: string; website?: string; signature?: string };
   portal: { link: string };
   gallery: { password?: string; link?: string };
+  today: { date: string };
 };
 /** Strip editor merge-tag span wrappers, keeping only the inner text or resolved tag value. */
 export function stripMergeTagSpans(html: string): string {
@@ -30,7 +31,7 @@ export function parseMergeTags(tpl: string, ctx: MergeCtx, showMissing = false):
   });
 }
 export function buildCtx(params: {
-  client: { firstName: string; lastName: string; email: string; phone?: string | null; company?: string | null };
+  client: { firstName: string; lastName: string; email: string; phone?: string | null; company?: string | null; addressLine1?: string | null; city?: string | null; state?: string | null; postalCode?: string | null };
   event: { title: string; eventDate: Date; startTime?: Date | null; endTime?: Date | null; venueName?: string | null; venueAddress?: string | null; venueCity?: string | null; venueState?: string | null; venuePostalCode?: string | null; packageName?: string | null; guestCount?: number | null; portalToken?: string | null };
   invoice?: { invoiceNumber: string; totalCents: number; balanceDueCents: number; retainerAmountCents?: number | null; dueDate?: Date | null; currency?: string } | null;
   contract?: { clientToken: string; title: string; expiresAt?: Date | null } | null;
@@ -43,7 +44,7 @@ export function buildCtx(params: {
   const { client, event, invoice, contract, quote, branding, gallery, appUrl } = params;
   const fmt = (cents: number, cur = 'usd') => fmtCents(cents, cur);
   return {
-    client: { first_name: client.firstName, last_name: client.lastName, full_name: client.firstName + ' ' + client.lastName, email: client.email, phone: client.phone ?? undefined, company: client.company ?? undefined },
+    client: { first_name: client.firstName, last_name: client.lastName, full_name: client.firstName + ' ' + client.lastName, email: client.email, phone: client.phone ?? undefined, company: client.company ?? undefined, address: [client.addressLine1, client.city, client.state, client.postalCode].filter(Boolean).join(', ') || undefined, city: client.city ?? undefined, state: client.state ?? undefined, zip: client.postalCode ?? undefined },
     event: { title: event.title, date: format(event.eventDate, 'EEEE, MMMM d, yyyy'), time: event.startTime ? format(event.startTime, 'h:mm a') + (event.endTime ? ' – ' + format(event.endTime, 'h:mm a') : '') : undefined, start_time: event.startTime ? format(event.startTime, 'h:mm a') : undefined, end_time: event.endTime ? format(event.endTime, 'h:mm a') : undefined, venue_name: event.venueName ?? undefined, venue_address: [event.venueAddress, event.venueCity, event.venueState].filter(Boolean).join(', ') || undefined, venue_city: event.venueCity ?? undefined, venue_state: event.venueState ?? undefined, venue_zip: event.venuePostalCode ?? undefined, package_name: event.packageName ?? undefined, guest_count: event.guestCount?.toString() },
     invoice: invoice ? { number: invoice.invoiceNumber, total: fmt(invoice.totalCents, invoice.currency), balance_due: fmt(invoice.balanceDueCents, invoice.currency), retainer_amount: invoice.retainerAmountCents ? fmt(invoice.retainerAmountCents, invoice.currency) : undefined, due_date: invoice.dueDate ? format(invoice.dueDate, 'MMMM d, yyyy') : undefined, payment_link: appUrl + '/portal/' + (event.portalToken ?? '') } : {},
     contract: contract ? { link: appUrl + '/portal/' + contract.clientToken, expiry: contract.expiresAt ? format(contract.expiresAt, 'MMMM d, yyyy') : undefined, title: contract.title } : {},
@@ -51,5 +52,6 @@ export function buildCtx(params: {
     host: { company_name: branding.companyName ?? 'Your Company', email: branding.replyToEmail ?? undefined, phone: branding.supportPhone ?? undefined, website: branding.websiteUrl ?? undefined, signature: branding.emailHeaderHtml ? branding.emailHeaderHtml.replace(/\n/g, '<br>') : undefined },
     portal: { link: appUrl + '/portal/' + (event.portalToken ?? '') },
     gallery: { password: gallery?.accessCode ?? undefined, link: gallery?.clientToken ? appUrl + '/g/' + gallery.clientToken : undefined },
+    today: { date: format(new Date(), 'MMMM d, yyyy') },
   };
 }

@@ -8,36 +8,43 @@ import {
 } from 'lucide-react';
 
 const MERGE_TAGS = [
-  { label: 'Client First Name', value: '{{client.first_name}}' },
-  { label: 'Client Full Name', value: '{{client.full_name}}' },
-  { label: 'Client Email', value: '{{client.email}}' },
-  { label: 'Client Phone', value: '{{client.phone}}' },
-  { label: 'Event Title', value: '{{event.title}}' },
-  { label: 'Event Date', value: '{{event.date}}' },
-  { label: 'Event Start Time', value: '{{event.start_time}}' },
-  { label: 'Event End Time', value: '{{event.end_time}}' },
-  { label: 'Venue Name', value: '{{event.venue_name}}' },
-  { label: 'Venue Address', value: '{{event.venue_address}}' },
-  { label: 'Venue City', value: '{{event.venue_city}}' },
-  { label: 'Venue State', value: '{{event.venue_state}}' },
-  { label: 'Venue Zip Code', value: '{{event.venue_zip}}' },
-  { label: 'Package Name', value: '{{event.package_name}}' },
-  { label: 'Guest Count', value: '{{event.guest_count}}' },
-  { label: 'Invoice Total', value: '{{invoice.total}}' },
-  { label: 'Invoice Balance Due', value: '{{invoice.balance_due}}' },
-  { label: 'Invoice Due Date', value: '{{invoice.due_date}}' },
-  { label: 'Contract Link', value: '{{contract.link}}' },
-  { label: 'Portal Link', value: '{{portal.link}}' },
-  { label: 'Company Name', value: '{{host.company_name}}' },
-  { label: 'Company Email', value: '{{host.email}}' },
-  { label: 'Company Phone', value: '{{host.phone}}' },
-  { label: 'Company Website', value: '{{host.website}}' },
-  { label: 'Email Signature', value: '{{host.signature}}' },
-  { label: 'Gallery Password', value: '{{gallery.password}}' },
-  { label: 'Gallery Link', value: '{{gallery.link}}' },
+  { group: 'Client', label: 'Client First Name', value: '{{client.first_name}}' },
+  { group: 'Client', label: 'Client Last Name', value: '{{client.last_name}}' },
+  { group: 'Client', label: 'Client Full Name', value: '{{client.full_name}}' },
+  { group: 'Client', label: 'Client Email', value: '{{client.email}}' },
+  { group: 'Client', label: 'Client Phone', value: '{{client.phone}}' },
+  { group: 'Client', label: 'Client Company', value: '{{client.company}}' },
+  { group: 'Client', label: 'Client Address', value: '{{client.address}}' },
+  { group: 'Client', label: 'Client City', value: '{{client.city}}' },
+  { group: 'Client', label: 'Client State', value: '{{client.state}}' },
+  { group: 'Client', label: 'Client Zip', value: '{{client.zip}}' },
+  { group: 'Event', label: 'Event Title', value: '{{event.title}}' },
+  { group: 'Event', label: 'Event Date', value: '{{event.date}}' },
+  { group: 'Event', label: 'Event Start Time', value: '{{event.start_time}}' },
+  { group: 'Event', label: 'Event End Time', value: '{{event.end_time}}' },
+  { group: 'Event', label: 'Venue Name', value: '{{event.venue_name}}' },
+  { group: 'Event', label: 'Venue Address', value: '{{event.venue_address}}' },
+  { group: 'Event', label: 'Venue City', value: '{{event.venue_city}}' },
+  { group: 'Event', label: 'Venue State', value: '{{event.venue_state}}' },
+  { group: 'Event', label: 'Venue Zip Code', value: '{{event.venue_zip}}' },
+  { group: 'Event', label: 'Package Name', value: '{{event.package_name}}' },
+  { group: 'Event', label: 'Guest Count', value: '{{event.guest_count}}' },
+  { group: 'Invoice', label: 'Invoice Total', value: '{{invoice.total}}' },
+  { group: 'Invoice', label: 'Balance Due', value: '{{invoice.balance_due}}' },
+  { group: 'Invoice', label: 'Invoice Due Date', value: '{{invoice.due_date}}' },
+  { group: 'Host & Company', label: 'Company Name', value: '{{host.company_name}}' },
+  { group: 'Host & Company', label: 'Company Email', value: '{{host.email}}' },
+  { group: 'Host & Company', label: 'Company Phone', value: '{{host.phone}}' },
+  { group: 'Host & Company', label: 'Company Website', value: '{{host.website}}' },
+  { group: 'Host & Company', label: 'Email Signature', value: '{{host.signature}}' },
+  { group: 'Links', label: 'Contract Link', value: '{{contract.link}}' },
+  { group: 'Links', label: 'Portal Link', value: '{{portal.link}}' },
+  { group: 'Links', label: 'Gallery Link', value: '{{gallery.link}}' },
+  { group: 'Links', label: 'Gallery Password', value: '{{gallery.password}}' },
+  { group: 'General', label: "Today's Date", value: '{{today.date}}' },
 ];
 
-interface MergeTag { label: string; value: string }
+interface MergeTag { label: string; value: string; group?: string }
 
 interface Props {
   value: string;
@@ -165,6 +172,13 @@ export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeT
       '{{host.phone}}': '(555) 123-4567',
       '{{host.website}}': 'https://yourbusiness.com',
       '{{host.signature}}': 'Warm regards,\nYour Name\nYour Company',
+      '{{client.last_name}}': 'Smith',
+      '{{client.company}}': 'Acme Corp',
+      '{{client.address}}': '123 Main St, Austin, TX 78701',
+      '{{client.city}}': 'Austin',
+      '{{client.state}}': 'TX',
+      '{{client.zip}}': '78701',
+      '{{today.date}}': 'October 8, 2026',
       ...(previewSamplesProp ?? {}),
     };
     // Replace full <span data-tag="{{...}}">...</span> elements inserted by the visual editor
@@ -233,14 +247,20 @@ export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeT
             Insert Variable <ChevronDown className="w-3 h-3"/>
           </button>
           {showVars && (
-            <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 max-h-64 overflow-y-auto">
-              {mergeTags.map(t => (
-                <button key={t.value} type="button" onClick={() => insertVar(t.value)}
-                  className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">
-                  <p className="font-medium text-gray-700">{t.label}</p>
-                  <p className="text-xs font-mono text-brand">{t.value}</p>
-                </button>
-              ))}
+            <div className="absolute top-full left-0 mt-1 w-60 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 max-h-80 overflow-y-auto">
+              {mergeTags.map((t, i) => {
+                const showHeader = t.group && (i === 0 || mergeTags[i - 1].group !== t.group);
+                return (
+                  <div key={t.value}>
+                    {showHeader && <p className="px-4 pt-3 pb-1 text-xs font-bold text-gray-400 uppercase tracking-wide">{t.group}</p>}
+                    <button type="button" onClick={() => insertVar(t.value)}
+                      className="w-full text-left px-4 py-1.5 hover:bg-gray-50 text-sm">
+                      <p className="font-medium text-gray-700">{t.label}</p>
+                      <p className="text-xs font-mono text-brand">{t.value}</p>
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SignatureCanvas } from '@/components/contracts/SignatureCanvas';
-import { ArrowLeft, Send, Lock, Download, PenLine, Pen, Type, CheckCircle2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Send, Lock, Download, PenLine, Pen, Type, CheckCircle2, Trash2, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
 import { useRef, useCallback } from 'react';
+import EmailTemplateEditor from '@/components/email/EmailTemplateEditor';
 
 const CC: Record<string, any> = { DRAFT:'default', SENT_TO_CLIENT:'info', CLIENT_SIGNED:'warning', HOST_SIGNED:'warning', FULLY_EXECUTED:'success', VOIDED:'danger' };
 
@@ -29,6 +30,10 @@ export default function ContractDetailPage() {
   const [signingNote, setSigningNote] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editBody, setEditBody] = useState('');
+  const [saving, setSaving] = useState(false);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const renderTypedSig = useCallback((name: string) => {
@@ -84,6 +89,27 @@ export default function ContractDetailPage() {
     else { alert(d.error); setDeleting(false); setShowDeleteConfirm(false); }
   }
 
+  function openEditor() {
+    setEditTitle(contract.title);
+    setEditBody(contract.renderedContent ?? '');
+    setShowEditor(true);
+  }
+
+  async function saveEdit() {
+    setSaving(true);
+    const res = await fetch('/api/contracts/' + id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: editTitle.trim(), renderedContent: editBody }),
+    });
+    const d = await res.json();
+    if (res.ok) {
+      setContract((c: any) => ({ ...c, title: d.title, renderedContent: d.renderedContent }));
+      setShowEditor(false);
+    } else alert(d.error);
+    setSaving(false);
+  }
+
   async function sendToClient() {
     setSending(true);
     const res = await fetch('/api/contracts/' + id + '/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiryDays: 14 }) });
@@ -114,6 +140,11 @@ export default function ContractDetailPage() {
               </Button>
             )}
             <a href={contract.pdfUrl ?? `/api/contracts/${contract.id}/pdf`} target="_blank" rel="noopener noreferrer"><Button variant="outline"><Download className="w-4 h-4 mr-1"/>Download PDF</Button></a>
+            {contract.status === 'DRAFT' && (
+              <Button variant="outline" onClick={openEditor}>
+                <Pencil className="w-4 h-4 mr-1"/>Edit
+              </Button>
+            )}
             {contract.status === 'DRAFT' && (
               <Button variant="outline" onClick={() => setShowDeleteConfirm(f => !f)} className="text-red-600 border-red-200 hover:bg-red-50">
                 <Trash2 className="w-4 h-4 mr-1"/>Delete
@@ -177,6 +208,35 @@ export default function ContractDetailPage() {
             <p className="text-gray-700">{contract.signingNote}</p>
           </div>
         )}
+        {showEditor && contract.status === 'DRAFT' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Pencil className="w-4 h-4"/>Edit Contract</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Contract Title</label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={e => setEditTitle(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Contract Body</label>
+                <EmailTemplateEditor value={editBody} onChange={setEditBody}/>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={saveEdit} disabled={saving || !editTitle.trim()}>
+                  {saving ? 'Saving…' : 'Save Changes'}
+                </Button>
+                <Button variant="outline" onClick={() => setShowEditor(false)}>Cancel</Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader><CardTitle>Contract Content</CardTitle></CardHeader>
           <CardContent>

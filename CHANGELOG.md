@@ -4,6 +4,39 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.55.4] — 2026-10-08
+
+### Added
+- **Client address merge tags**: `{{client.address}}` (full formatted address), `{{client.city}}`, `{{client.state}}`, `{{client.zip}}` — available in both contract and email template variable pickers
+
+### Fixed
+- **Edit contract — merge tags not resolving**: saving a DRAFT contract edit now runs merge tag substitution (today's date, client fields, event details, etc.) before storing — tags inserted via "Insert Variable" in the editor now resolve correctly instead of saving as literal `{{tag}}` text
+
+---
+
+## [2.55.3] — 2026-10-08
+
+### Added
+- **Edit DRAFT contract**: HOST_ADMIN can now edit a DRAFT contract's title and body before sending — an "Edit" button appears in the action bar, clicking it reveals an inline rich-text editor pre-filled with the current contract content; changes are saved via PATCH and reflected immediately; only DRAFT status contracts can be edited
+
+---
+
+## [2.55.2] — 2026-10-08
+
+### Added
+- **`{{today.date}}` merge tag**: contracts and email templates can now use `{{today.date}}` to insert today's date (formatted as "Month D, YYYY") — useful in agreement language like "entered into as of {{today.date}}"; the tag is resolved at the moment the contract or email is generated
+- **`{{client.company}}` merge tag**: client company/organization name is now available in the variable picker for both contract templates and email templates; the field was already stored in the client record but was missing from the picker
+- **`{{client.last_name}}` merge tag**: added to both contract and email template pickers (was always in context but not listed)
+
+### Improved
+- **Grouped variable picker**: the "Insert Variable" dropdown in the template editor now organizes tags into labeled sections — Client, Event, Invoice, Host & Company, Links, General — making it easier to find the right tag; contract templates get a contract-specific subset of tags
+- **Contract template editor now uses contract-specific tags**: the variable picker on the Contract Templates page previously showed the default email tag list; it now correctly shows the contract-only set (includes Retainer Amount, omits portal/gallery links)
+
+### Fixed
+- **`{{today}}` was broken in existing contracts**: the picker listed `{{today}}` but the merge context never populated it; all references have been updated to `{{today.date}}` (the new correct format) and the default contract template has been updated accordingly
+
+---
+
 ## [2.55.1] — 2026-09-06
 
 ### Added
