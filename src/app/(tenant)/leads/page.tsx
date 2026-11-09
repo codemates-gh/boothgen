@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Inbox, Mail, Phone, Calendar, Users, MessageSquare, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
+import { fmtEventDate } from '@/lib/utils';
 import Link from 'next/link';
 import AddLeadButton from './AddLeadButton';
 import AddLeadCustomFormButton from './AddLeadCustomFormButton';
@@ -84,7 +85,7 @@ export default async function LeadsPage() {
                         {lead.eventDate && (
                           <div className="flex items-center gap-2">
                             <Calendar className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                            <span>{format(new Date(lead.eventDate), 'MMM d, yyyy')}</span>
+                            <span>{fmtEventDate(lead.eventDate)}</span>
                             {lead.eventType && <span className="text-gray-400">· {lead.eventType}</span>}
                           </div>
                         )}

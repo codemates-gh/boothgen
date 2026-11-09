@@ -60,7 +60,7 @@ export default function InvoicesPage() {
                     </td></tr>
                   )}
                   {visible.map((inv: any) => (
-                    <tr key={inv.id} className="border-b last:border-0 hover:bg-gray-50">
+                    <tr key={inv.id} className="border-b last:border-0 hover:bg-gray-50 cursor-pointer" onClick={() => window.location.href = '/invoices/' + inv.id}>
                       <td className="px-6 py-4"><p className="font-semibold text-sm">{inv.invoiceNumber}</p>{inv.event && <p className="text-xs text-gray-400">{inv.event.title}</p>}</td>
                       <td className="px-6 py-4 text-sm">{inv.client?.firstName} {inv.client?.lastName}</td>
                       <td className="px-6 py-4 text-sm font-medium">{fmtCents(inv.totalCents, inv.currency ?? 'usd')}</td>
@@ -71,7 +71,7 @@ export default function InvoicesPage() {
                           return d ? format(new Date(String(d).slice(0,10) + 'T00:00:00'), 'MMM d') : '—';
                         })()}</td>
                       <td className="px-6 py-4"><Badge variant={IC[inv.status]}>{inv.status}</Badge></td>
-                      <td className="px-6 py-4 text-right"><Link href={'/invoices/' + inv.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
+                      <td className="px-6 py-4 text-right"><ArrowRight className="w-4 h-4 text-gray-400 ml-auto"/></td>
                     </tr>
                   ))}
                 </tbody>

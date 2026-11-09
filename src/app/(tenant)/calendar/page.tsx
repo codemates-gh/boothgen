@@ -8,6 +8,7 @@ import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   addDays, isSameMonth, isSameDay, addMonths, subMonths, parseISO,
 } from 'date-fns';
+import { parseEventDate } from '@/lib/utils';
 
 const STATUS_COLORS: Record<string, string> = {
   LEAD:        'bg-blue-100 text-blue-800',
@@ -69,13 +70,13 @@ export default function CalendarPage() {
   const byDate = new Map<string, any[]>();
   for (const ev of events) {
     if (!ev.eventDate) continue;
-    const key = format(new Date(ev.eventDate), 'yyyy-MM-dd');
+    const key = format(parseEventDate(ev.eventDate), 'yyyy-MM-dd');
     if (!byDate.has(key)) byDate.set(key, []);
     byDate.get(key)!.push({ ...ev, _type: 'event' });
   }
   for (const lead of leads) {
     if (!lead.eventDate || lead.convertedToEventId) continue; // skip converted leads — already shown as events
-    const key = format(new Date(lead.eventDate), 'yyyy-MM-dd');
+    const key = format(parseEventDate(lead.eventDate), 'yyyy-MM-dd');
     if (!byDate.has(key)) byDate.set(key, []);
     byDate.get(key)!.push({ ...lead, _type: 'lead' });
   }

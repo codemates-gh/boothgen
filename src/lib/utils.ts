@@ -14,4 +14,13 @@ export function fmtDate(d: Date | string, fmt = 'MMM d, yyyy') {
   const { format } = require('date-fns');
   return format(new Date(d), fmt);
 }
+// Use for date-only fields (eventDate, etc.) — avoids UTC midnight rolling to prior day in local TZ
+export function parseEventDate(d: Date | string): Date {
+  const iso = d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10);
+  return new Date(iso + 'T12:00:00');
+}
+export function fmtEventDate(d: Date | string, fmt = 'MMM d, yyyy') {
+  const { format } = require('date-fns');
+  return format(parseEventDate(d), fmt);
+}
 export function slugify(s: string) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }

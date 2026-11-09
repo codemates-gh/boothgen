@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, FileText, Settings, PenLine, Info } from 'lucide-react';
 import { format } from 'date-fns';
+import { ClickableRow } from '@/components/ui/ClickableRow';
 
 const CC: Record<string,any> = { DRAFT:'default', SENT_TO_CLIENT:'info', CLIENT_SIGNED:'warning', HOST_SIGNED:'warning', FULLY_EXECUTED:'success', VOIDED:'danger' };
 
@@ -72,7 +73,7 @@ export default async function ContractsPage() {
                 <thead><tr className="border-b bg-gray-50"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Title</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Client</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Created</th><th className="px-6 py-3"></th></tr></thead>
                 <tbody>
                   {contracts.map(c => (
-                    <tr key={c.id} className={`border-b last:border-0 hover:bg-gray-50 ${c.status === 'CLIENT_SIGNED' ? 'bg-amber-50/50' : ''}`}>
+                    <ClickableRow key={c.id} href={'/contracts/' + c.id} className={`border-b last:border-0 ${c.status === 'CLIENT_SIGNED' ? 'bg-amber-50/50' : ''}`}>
                       <td className="px-6 py-4">
                         <p className="font-semibold text-sm">{c.title}</p>
                         {c.event && <p className="text-xs text-gray-400">{c.event.title}</p>}
@@ -86,13 +87,11 @@ export default async function ContractsPage() {
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">{format(c.createdAt,'MMM d, yyyy')}</td>
                       <td className="px-6 py-4 text-right">
-                        <Link href={'/contracts/' + c.id}>
-                          <Button variant={c.status === 'CLIENT_SIGNED' ? 'default' : 'ghost'} size="sm">
-                            {c.status === 'CLIENT_SIGNED' ? 'Sign Now' : <ArrowRight className="w-4 h-4"/>}
-                          </Button>
-                        </Link>
+                        {c.status === 'CLIENT_SIGNED'
+                          ? <Button variant="default" size="sm">Sign Now</Button>
+                          : <ArrowRight className="w-4 h-4 text-gray-400 ml-auto"/>}
                       </td>
-                    </tr>
+                    </ClickableRow>
                   ))}
                 </tbody>
               </table>

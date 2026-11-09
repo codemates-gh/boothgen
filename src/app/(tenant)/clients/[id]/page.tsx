@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Save, Trash2, Calendar, ArrowRight, Plus, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { fmtEventDate } from '@/lib/utils';
 
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger' };
 
@@ -114,7 +115,7 @@ export default function ClientDetailPage() {
                   {events.map((ev: any) => (
                     <tr key={ev.id} className="border-b last:border-0 hover:bg-gray-50">
                       <td className="px-6 py-3 font-medium text-sm">{ev.title}</td>
-                      <td className="px-6 py-3 text-sm text-gray-600">{format(new Date(ev.eventDate),'MMM d, yyyy')}</td>
+                      <td className="px-6 py-3 text-sm text-gray-600">{fmtEventDate(ev.eventDate)}</td>
                       <td className="px-6 py-3"><Badge variant={SC[ev.status]}>{ev.status.replace('_',' ')}</Badge></td>
                       <td className="px-6 py-3 text-right"><Link href={'/events/' + ev.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
                     </tr>

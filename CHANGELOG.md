@@ -4,6 +4,37 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.58.6] — 2026-10-13
+
+### Fixed
+- **Events, Clients, Contracts list pages crashing**: Server components cannot use `onClick` directly on `<tr>` — React throws "Event handlers cannot be passed to Client Component props." Replaced with a `ClickableRow` client component that wraps the row and handles navigation
+
+---
+
+## [2.58.5] — 2026-10-13
+
+### Fixed
+- **Leads page crash** (`RangeError: Invalid time value`): `parseEventDate` failed when Prisma returned a native `Date` object server-side — `String(date)` produces a locale string, not ISO. Now uses `date.toISOString()` for Date objects and string slicing for serialized strings
+
+### Changed
+- **Clickable rows on Quotes, Invoices, Contracts**: Entire row now tappable — matches Clients, Events, Messages, and Leads. Delete button on Quotes uses `stopPropagation` so it still works independently
+
+---
+
+## [2.58.4] — 2026-10-13
+
+### Changed
+- **Clickable rows on Clients and Events lists**: Entire row is now tappable on mobile — no need to scroll right to hit the arrow. Matches the existing behavior on Messages and Leads
+
+---
+
+## [2.58.3] — 2026-10-13
+
+### Fixed
+- **Event date off-by-one**: Event dates displayed as one day early (e.g. Dec 2 showing as Dec 1) in the client profile, leads list, lead detail, and calendar. Root cause: UTC midnight dates parsed in local US timezones rolled back to the prior evening. Fixed across all display sites with a shared `parseEventDate` / `fmtEventDate` utility that anchors date-only values to local noon
+
+---
+
 ## [2.58.2] — 2026-10-10
 
 ### Changed

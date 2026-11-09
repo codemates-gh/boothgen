@@ -80,7 +80,7 @@ export default function QuotesPage() {
               </tr></thead>
               <tbody>
                 {visible.map(q => (
-                  <tr key={q.id} className="border-b last:border-0 hover:bg-gray-50">
+                  <tr key={q.id} className="border-b last:border-0 hover:bg-gray-50 cursor-pointer" onClick={() => window.location.href = '/quotes/' + q.id}>
                     <td className="px-6 py-4 font-semibold text-sm">{q.quoteNumber}</td>
                     <td className="px-6 py-4 text-sm">{q.client?.firstName} {q.client?.lastName}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{q.event?.title}</td>
@@ -91,7 +91,7 @@ export default function QuotesPage() {
                       <div className="flex items-center justify-end gap-1">
                         {EDITABLE.includes(q.status) && (
                           <button
-                            onClick={() => deleteQuote(q.id)}
+                            onClick={(e) => { e.stopPropagation(); deleteQuote(q.id); }}
                             disabled={deleting === q.id}
                             className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
                             title="Delete quote"
@@ -99,9 +99,7 @@ export default function QuotesPage() {
                             <Trash2 className="w-4 h-4" />
                           </button>
                         )}
-                        <Link href={'/quotes/' + q.id}>
-                          <Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4" /></Button>
-                        </Link>
+                        <ArrowRight className="w-4 h-4 text-gray-400" />
                       </div>
                     </td>
                   </tr>

@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { fmtEventDate } from '@/lib/utils';
 import { ArrowLeft, Save, Send, ArrowRight, CheckCircle, RefreshCw, FileText, Sparkles, Building2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -69,7 +70,7 @@ function formatTime(t: string | null): string {
 function resolvePlaceholders(text: string, lead: Lead, branding: Branding, portalUrl?: string | null): string {
   const sig = branding.emailHeaderHtml ? htmlToPlainText(branding.emailHeaderHtml).replace(/\n/g, '<br>') : '';
   const eventDate = lead.eventDate
-    ? format(new Date(lead.eventDate), 'EEEE, MMMM d, yyyy')
+    ? fmtEventDate(lead.eventDate, 'EEEE, MMMM d, yyyy')
     : '';
   return text
     .replace(/\{\{client\.first_name\}\}/g, lead.firstName)

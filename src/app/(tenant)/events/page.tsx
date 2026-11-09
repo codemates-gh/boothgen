@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Plus, Calendar, ArrowRight, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
+import { ClickableRow } from '@/components/ui/ClickableRow';
 
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger', LOST:'default' };
 
@@ -73,7 +74,7 @@ export default async function EventsPage() {
                 </thead>
                 <tbody>
                   {activeEvents.map(ev => (
-                    <tr key={ev.id} className="border-b last:border-0 hover:bg-gray-50">
+                    <ClickableRow key={ev.id} href={'/events/' + ev.id} className="border-b last:border-0">
                       <td className="px-6 py-4"><p className="font-semibold">{ev.title}</p><p className="text-xs text-gray-400">{ev.venueName ?? ''}</p></td>
                       <td className="px-6 py-4 text-sm">{ev.client.firstName} {ev.client.lastName}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{format(ev.eventDate,'MMM d, yyyy')}</td>
@@ -85,8 +86,8 @@ export default async function EventsPage() {
                             : <span className="text-gray-400">—</span>}
                         </td>
                       )}
-                      <td className="px-6 py-4 text-right"><Link href={'/events/' + ev.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
-                    </tr>
+                      <td className="px-6 py-4 text-right"><ArrowRight className="w-4 h-4 text-gray-400 ml-auto"/></td>
+                    </ClickableRow>
                   ))}
                 </tbody>
               </table>
@@ -112,13 +113,13 @@ export default async function EventsPage() {
                   </thead>
                   <tbody>
                     {doneEvents.map(ev => (
-                      <tr key={ev.id} className="border-b last:border-0 hover:bg-gray-50 opacity-70">
+                      <ClickableRow key={ev.id} href={'/events/' + ev.id} className="border-b last:border-0 opacity-70">
                         <td className="px-6 py-3"><p className="font-medium text-sm">{ev.title}</p><p className="text-xs text-gray-400">{ev.venueName ?? ''}</p></td>
                         <td className="px-6 py-3 text-sm text-gray-500">{ev.client.firstName} {ev.client.lastName}</td>
                         <td className="px-6 py-3 text-sm text-gray-400">{format(ev.eventDate,'MMM d, yyyy')}</td>
                         <td className="px-6 py-3"><Badge variant={SC[ev.status]}>{ev.status.replace('_',' ')}</Badge></td>
-                        <td className="px-6 py-3 text-right"><Link href={'/events/' + ev.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
-                      </tr>
+                        <td className="px-6 py-3 text-right"><ArrowRight className="w-4 h-4 text-gray-400 ml-auto"/></td>
+                      </ClickableRow>
                     ))}
                   </tbody>
                 </table>
