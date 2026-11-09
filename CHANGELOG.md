@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.59.0] — 2026-10-28
+
+### Security
+- **Bot/spam registration protection**: Three-layer defence on the sign-up flow
+  - **Cloudflare Turnstile**: invisible CAPTCHA widget on the sign-up form; server verifies the token before creating any account — blocks automated bots that hit the API directly
+  - **Honeypot field**: hidden `website` input on the register form; bots fill it, server silently returns fake success without creating an account
+  - **IP rate limiting**: max 3 registrations and 3 password-reset requests per IP per 10 minutes — stops burst floods without external infrastructure
+- **Forgot-password rate limiting**: same IP-based limit applied to `/api/auth/forgot-password` to stop the register→immediate-reset spam pattern
+
+---
+
 ## [2.58.6] — 2026-10-13
 
 ### Fixed

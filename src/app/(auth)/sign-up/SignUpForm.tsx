@@ -1,10 +1,18 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Script from 'next/script';
 import { Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
+
+declare global {
+  interface Window {
+    onBoothGenTurnstileSuccess?: (token: string) => void;
+    onBoothGenTurnstileExpired?: () => void;
+  }
+}
 
 interface Props {
   hasTerms: boolean;
@@ -13,12 +21,23 @@ interface Props {
 
 export default function SignUpForm({ hasTerms, hasPrivacy }: Props) {
   const [form, setForm] = useState({ name:'', email:'', password:'', confirm:'' });
+  const [website, setWebsite] = useState(''); // honeypot — bots fill this
+  const [turnstileToken, setTurnstileToken] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  useEffect(() => {
+    window.onBoothGenTurnstileSuccess = (token: string) => setTurnstileToken(token);
+    window.onBoothGenTurnstileExpired = () => setTurnstileToken('');
+    return () => {
+      delete window.onBoothGenTurnstileSuccess;
+      delete window.onBoothGenTurnstileExpired;
+    };
+  }, []);
 
   const pwStrength = form.password.length === 0 ? null : form.password.length < 8 ? 'weak' : form.password.length < 12 ? 'good' : 'strong';
   const strengthColor = { weak: 'bg-red-400', good: 'bg-yellow-400', strong: 'bg-green-500' };
@@ -31,14 +50,17 @@ export default function SignUpForm({ hasTerms, hasPrivacy }: Props) {
     if (form.password !== form.confirm) { setError('Passwords do not match'); return; }
     if (form.password.length < 8) { setError('Password must be at least 8 characters'); return; }
     if (hasLegal && !agreed) { setError('Please accept the Terms of Service and Privacy Policy'); return; }
+    if (!turnstileToken) { setError('Please wait for the security check to complete'); return; }
     setLoading(true); setError('');
-    const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name, email: form.email, password: form.password }) });
+    const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name, email: form.email, password: form.password, website, turnstileToken }) });
     const data = await res.json();
     if (!res.ok) { setError(data.error ?? 'Registration failed'); setLoading(false); return; }
     await signIn('credentials', { email: form.email, password: form.password, callbackUrl: '/onboarding', redirect: true });
   }
 
   return (
+    <>
+    <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="lazyOnload" />
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
@@ -56,6 +78,10 @@ export default function SignUpForm({ hasTerms, hasPrivacy }: Props) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Honeypot — visually hidden, bots fill it, humans don't */}
+          <div style={{ display: 'none' }} aria-hidden="true">
+            <input type="text" name="website" value={website} onChange={e => setWebsite(e.target.value)} tabIndex={-1} autoComplete="off" />
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
             <input type="text" value={form.name} onChange={e => set('name',e.target.value)} placeholder="Jane Smith" required autoComplete="name"
@@ -114,7 +140,16 @@ export default function SignUpForm({ hasTerms, hasPrivacy }: Props) {
             </label>
           )}
 
-          <button type="submit" disabled={loading || !form.name || !form.email || !form.password || !form.confirm || !!(hasLegal && !agreed)}
+          {/* Turnstile widget */}
+          <div
+            className="cf-turnstile"
+            data-sitekey="0x4AAAAAAFpl_nFlWFEcOQ6M"
+            data-callback="onBoothGenTurnstileSuccess"
+            data-expired-callback="onBoothGenTurnstileExpired"
+            data-theme="light"
+          />
+
+          <button type="submit" disabled={loading || !form.name || !form.email || !form.password || !form.confirm || !turnstileToken || !!(hasLegal && !agreed)}
             className="w-full py-2.5 bg-brand hover:bg-brand-dark text-white font-semibold rounded-xl text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2">
             {loading ? 'Creating account...' : 'Create Account'}
           </button>
@@ -141,5 +176,6 @@ export default function SignUpForm({ hasTerms, hasPrivacy }: Props) {
         </p>
       </div>
     </div>
+    </>
   );
 }

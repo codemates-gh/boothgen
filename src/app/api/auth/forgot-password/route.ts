@@ -4,6 +4,26 @@ import { prisma } from '@/lib/prisma/client';
 import { SignJWT } from 'jose';
 import { sendEmail } from '@/lib/email/send';
 
+// In-memory rate limit: 3 reset requests per IP per 10 minutes
+const resetAttempts = new Map<string, { count: number; reset: number }>();
+function checkResetRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = resetAttempts.get(ip);
+  if (!entry || now > entry.reset) {
+    resetAttempts.set(ip, { count: 1, reset: now + 10 * 60 * 1000 });
+    return true;
+  }
+  if (entry.count >= 3) return false;
+  entry.count++;
+  return true;
+}
+
+function getClientIp(req: NextRequest): string {
+  const fwd = req.headers.get('x-forwarded-for');
+  if (fwd) return fwd.split(',')[0].trim();
+  return req.headers.get('x-real-ip') ?? 'unknown';
+}
+
 const DEFAULT_SUBJECT = 'Reset your Booth Genius password';
 const DEFAULT_BODY = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
   <h2 style="font-size:20px;color:#111827">Hi {{user_name}},</h2>
@@ -19,6 +39,10 @@ function renderTemplate(tpl: string, vars: Record<string, string>) {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  if (!checkResetRateLimit(ip))
+    return NextResponse.json({ ok: true }); // silent — don't reveal rate limiting to bots
+
   const { email } = await req.json();
   if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
 
