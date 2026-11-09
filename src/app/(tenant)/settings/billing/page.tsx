@@ -13,7 +13,7 @@ import { UpgradeButton } from './UpgradeButton';
 import { StripeConnectCard } from './StripeConnectCard';
 import { CancelAccountButton } from './CancelAccountButton';
 
-const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['booth-templates','Booth Templates'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
+const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['booth-templates','Booth Templates'],['profile','Profile'],['import','Import'],['print-costs','Print Costs'],['genie','Genie']];
 
 export default async function BillingSettingsPage({ searchParams }: { searchParams?: { upgraded?: string } }) {
   const session = await requireTenantSession();

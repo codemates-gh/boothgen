@@ -8,7 +8,7 @@ import { Modal } from '@/components/ui/modal';
 import Link from 'next/link';
 import { Plus, Edit2, Trash2, Printer, Star } from 'lucide-react';
 
-const TABS = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['booth-templates','Booth Templates'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
+const TABS = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['booth-templates','Booth Templates'],['profile','Profile'],['import','Import'],['print-costs','Print Costs'],['genie','Genie']];
 
 type Profile = {
   id: string;
