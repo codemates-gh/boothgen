@@ -240,7 +240,11 @@ model Tenant {
   genieSessions        GenieSession[]
   genieShares          GenieShare[]
   geniePrintReports    GeniePrintReport[]
+  genieTemplates       EventGenieTemplate[]
 
+  // Genie paid add-on entitlement (super admin toggle until billing exists)
+  genieEnabled          Boolean   @default(false)
+  genieEnabledAt        DateTime?
   // Genie attendant PIN, PBKDF2-SHA256 (see src/lib/genie/pin.ts)
   genieAttendantPinHash String?
 
@@ -425,6 +429,7 @@ model Event {
   genieSessions        GenieSession[]
   genieShares          GenieShare[]
   geniePrintReports    GeniePrintReport[]
+  genieTemplates       EventGenieTemplate[]
 
   @@index([tenantId])
   @@index([tenantId, eventDate])
@@ -973,13 +978,6 @@ model TemplateDesign {
   version      Int                  @default(1)
   revisionNote String?              @db.Text
   approvedAt   DateTime?
-  // Genie print layout: LayoutTemplate minus artwork (slots, size, dpi, format, orientation, renderMode)
-  layout          Json?
-  // Artwork metadata for the Genie bundle, computed on approval (src/lib/genie/artwork.ts)
-  fileSha256      String?
-  fileBytes       Int?
-  fileContentType String?
-  fileHasAlpha    Boolean?
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
 
@@ -1205,8 +1203,9 @@ model BoothDesignTemplate {
   colorVariants Json   @default("[]")
   // JSON: [{id, name, fonts: [{zoneId, fontId, label, fontFamily}]}]
   fontPairings Json    @default("[]")
-  // Genie print layout used to prefill TemplateDesign.layout (same shape)
-  defaultLayout Json?
+  // Genie designer layouts (LayoutTemplate minus id/version); set = shows in the Genie template library
+  layout          Json?
+  alternateLayout Json?
   isPublished Boolean  @default(false)
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
@@ -1290,7 +1289,7 @@ model GeniePairingCode {
   @@map("genie_pairing_codes")
 }
 
-// One row per event: everything in the Genie EventBundle except the template
+// One row per event: everything in the Genie EventBundle except the templates
 model EventGenieSettings {
   id       String @id @default(cuid())
   tenantId String
@@ -1308,8 +1307,13 @@ model EventGenieSettings {
   retakesPerShot               Int     @default(1)
   idleTimeoutSeconds           Int     @default(60)
 
-  // ProcessingStep[]
+  // ProcessingStep[] applied to every photo before the guest's filter
   processing Json @default("[]")
+
+  // FilterConfig
+  guestFiltersEnabled Boolean @default(false)
+  defaultFilterId     String  @default("original")
+  filters             Json    @default("[{\"id\":\"original\",\"name\":\"Original\",\"steps\":[]}]")
 
   // SharingConfig (galleryUrl / sessionUrlTemplate are derived)
   smsEnabled     Boolean @default(true)
@@ -1411,4 +1415,26 @@ model GeniePrintReport {
 
   @@index([eventId])
   @@map("genie_print_reports")
+}
+
+// A template offered at an event (EventTemplate); guests pick in sortOrder
+model EventGenieTemplate {
+  id                String   @id @default(cuid())
+  tenantId          String
+  eventId           String
+  name              String
+  sortOrder         Int      @default(0)
+  version           Int      @default(1)
+  layout            Json // LayoutTemplate minus id/version
+  alternateLayout   Json? // same design, other orientation
+  thumbnail         Json? // RemoteAsset
+  libraryTemplateId String? // BoothDesignTemplate it was copied from
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("event_genie_templates")
 }
