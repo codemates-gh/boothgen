@@ -234,6 +234,15 @@ model Tenant {
   consumableProfiles   ConsumableProfile[]
   eventPrintLogs       EventPrintLog[]
   eventExpenses        EventExpense[]
+  genieDevices         GenieDevice[]
+  geniePairingCodes    GeniePairingCode[]
+  genieSettings        EventGenieSettings[]
+  genieSessions        GenieSession[]
+  genieShares          GenieShare[]
+  geniePrintReports    GeniePrintReport[]
+
+  // Genie attendant PIN, PBKDF2-SHA256 (see src/lib/genie/pin.ts)
+  genieAttendantPinHash String?
 
   @@map("tenants")
 }
@@ -412,6 +421,10 @@ model Event {
   messages             LeadMessage[]
   printLog             EventPrintLog?
   expenses             EventExpense[]
+  genieSettings        EventGenieSettings?
+  genieSessions        GenieSession[]
+  genieShares          GenieShare[]
+  geniePrintReports    GeniePrintReport[]
 
   @@index([tenantId])
   @@index([tenantId, eventDate])
@@ -662,6 +675,7 @@ model Gallery {
   tenant Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   event  Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
   assets GalleryAsset[]
+  genieSessions GenieSession[]
 
   @@map("galleries")
 }
@@ -682,11 +696,17 @@ model GalleryAsset {
   approvalStatus AssetApprovalStatus @default(PENDING)
   clientNotes    String?
   isHero         Boolean             @default(false)
+  // Genie uploads: device-generated id (idempotency key) and the guest session
+  clientId       String?
+  genieSessionId String?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
 
   gallery Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  genieSession GenieSession? @relation(fields: [genieSessionId], references: [id], onDelete: SetNull)
 
+  @@unique([galleryId, clientId])
+  @@index([genieSessionId])
   @@map("gallery_assets")
 }
 
@@ -953,6 +973,13 @@ model TemplateDesign {
   version      Int                  @default(1)
   revisionNote String?              @db.Text
   approvedAt   DateTime?
+  // Genie print layout: LayoutTemplate minus artwork (slots, size, dpi, format, orientation, renderMode)
+  layout          Json?
+  // Artwork metadata for the Genie bundle, computed on approval (src/lib/genie/artwork.ts)
+  fileSha256      String?
+  fileBytes       Int?
+  fileContentType String?
+  fileHasAlpha    Boolean?
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
 
@@ -1178,6 +1205,8 @@ model BoothDesignTemplate {
   colorVariants Json   @default("[]")
   // JSON: [{id, name, fonts: [{zoneId, fontId, label, fontFamily}]}]
   fontPairings Json    @default("[]")
+  // Genie print layout used to prefill TemplateDesign.layout (same shape)
+  defaultLayout Json?
   isPublished Boolean  @default(false)
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
@@ -1219,4 +1248,164 @@ model EventDesignBrief {
 
   @@index([tenantId])
   @@map("event_design_briefs")
+}
+
+// ─── Genie (iPad photo booth app) ────────────────────────────────────────────
+
+model GenieDevice {
+  id         String    @id @default(cuid())
+  tenantId   String
+  name       String
+  model      String?
+  appVersion String?
+  tokenHash  String    @unique
+  prefix     String
+  lastSeenAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pairingCodes GeniePairingCode[]
+  sessions     GenieSession[]
+  printReports GeniePrintReport[]
+
+  @@index([tenantId])
+  @@map("genie_devices")
+}
+
+model GeniePairingCode {
+  id        String    @id @default(cuid())
+  tenantId  String
+  code      String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  deviceId  String?
+  createdAt DateTime  @default(now())
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  device GenieDevice? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@map("genie_pairing_codes")
+}
+
+// One row per event: everything in the Genie EventBundle except the template
+model EventGenieSettings {
+  id       String @id @default(cuid())
+  tenantId String
+  eventId  String @unique
+  timeZone String @default("America/New_York")
+
+  // CaptureConfig
+  shotCount                    Int     @default(3)
+  initialCountdownSeconds      Int     @default(5)
+  betweenShotsCountdownSeconds Int     @default(3)
+  showPerShotPreview           Boolean @default(true)
+  retakesPerShot               Int     @default(1)
+  idleTimeoutSeconds           Int     @default(60)
+
+  // ProcessingStep[]
+  processing Json @default("[]")
+
+  // SharingConfig (galleryUrl / sessionUrlTemplate are derived)
+  smsEnabled     Boolean @default(true)
+  emailEnabled   Boolean @default(true)
+  qrEnabled      Boolean @default(true)
+  guestLinkScope String  @default("own") // "own" | "all"
+  smsBody        String
+  emailSubject   String
+  emailBody      String  @db.Text
+  smsConsentText String
+
+  // PrintingConfig
+  printingEnabled    Boolean @default(true)
+  printMaxCopies     Int     @default(4)
+  printDefaultCopies Int     @default(1)
+
+  // Increases whenever the bundle content changes; bundleHash is the hash it was computed from
+  bundleVersion Int       @default(1)
+  bundleHash    String?
+  lockedAt      DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("event_genie_settings")
+}
+
+model GenieSession {
+  id          String   @id @default(cuid())
+  tenantId    String
+  eventId     String
+  galleryId   String
+  deviceId    String?
+  clientId    String   @unique // session uuid generated on the device
+  publicToken String   @unique // generated on the device; forms the session page link
+  startedAt   DateTime
+  createdAt   DateTime @default(now())
+
+  tenant  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event   Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  gallery Gallery        @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  device  GenieDevice?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  assets  GalleryAsset[]
+  shares  GenieShare[]
+
+  @@index([tenantId])
+  @@index([eventId])
+  @@map("genie_sessions")
+}
+
+model GenieShare {
+  id                String    @id @default(cuid())
+  tenantId          String
+  eventId           String
+  sessionId         String
+  clientId          String    @unique // share id generated on the device
+  channel           String // "sms" | "email"
+  destination       String
+  firstName         String?
+  smsConsentAt      DateTime?
+  smsConsentText    String? // consent copy in effect when the share was accepted
+  status            String    @default("queued") // queued | sent | delivered | failed
+  providerMessageId String?   @unique
+  error             String?
+  requestedAt       DateTime // createdAt from the device
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tenant  Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event   Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  session GenieSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([sessionId])
+  @@map("genie_shares")
+}
+
+// Idempotency record for prints reported to EventPrintLog by a device
+model GeniePrintReport {
+  id              String   @id @default(cuid())
+  tenantId        String
+  eventId         String
+  deviceId        String?
+  clientId        String   @unique // PrintLogEntry.id from the device
+  prints          Int
+  periodStart     DateTime
+  periodEnd       DateTime
+  printCountAfter Int
+  createdAt       DateTime @default(now())
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event  Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  device GenieDevice? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([eventId])
+  @@map("genie_print_reports")
 }
