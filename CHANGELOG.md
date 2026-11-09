@@ -4,6 +4,33 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.60.4] — 2026-11-09
+
+### Fixed
+- **Middleware auth bypass**: `'/'` was in the public-paths list checked with `startsWith`, making every URL appear public and bypassing the login redirect entirely. Fixed by exact-matching `'/'` and prefix-matching all other public paths. Routes that now correctly redirect unauthenticated users: all tenant pages (`/events`, `/clients`, `/leads`, `/invoices`, `/contracts`, `/quotes`, `/dashboard`, `/calendar`, `/analytics`, `/messages`, `/gallery`, `/automation`, `/settings`) and all operator API routes. Marketing pages (`/pricing`, `/blog`, `/contact`, `/privacy`, `/terms`, `/lifetime`), client-facing pages (`/portal`, `/embed`, `/g`), and all public APIs remain accessible without login
+
+---
+
+## [2.60.3] — 2026-11-09
+
+### Added
+- **Country setting in Settings → Branding → Currency & Tax**: New "Country" dropdown (Canada / United States / Not specified) drives address field labels across all forms
+  - Canada → "Province" + "Postal Code" with Canadian placeholders
+  - United States → "State" + "Zip Code" with US placeholders
+  - Not specified → "Province / State" + "Postal Code" (universal, default)
+- Applies to: client edit form, event new/edit forms, and the embeddable inquiry widget
+
+**DB migration required**: `ALTER TABLE tenant_branding ADD COLUMN IF NOT EXISTS country TEXT;`
+
+---
+
+## [2.60.2] — 2026-11-09
+
+### Changed
+- **Canada-friendly address fields**: All "State" labels changed to "Province / State" and all "Zip Code" labels changed to "Postal Code" across the client form, event form, new event form, and the embeddable inquiry widget. Embed form placeholders updated from US examples (MD / 20001) to Canadian examples (ON / M5V 2T6)
+
+---
+
 ## [2.60.1] — 2026-11-05
 
 ### Fixed
