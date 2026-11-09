@@ -1,12 +1,13 @@
 'use client';
 import Link from 'next/link';
-import { LayoutDashboard, Users, CreditCard, Mail, FileText, Settings, BookOpen, BarChart2, Star } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, Mail, FileText, Settings, BookOpen, BarChart2, Star, Layout } from 'lucide-react';
 
 const TABS = [
   { id: 'overview',          label: 'Overview',           icon: LayoutDashboard },
   { id: 'analytics',         label: 'Analytics',          icon: BarChart2 },
   { id: 'operators',         label: 'Operators',          icon: Users },
   { id: 'founding',          label: 'Founding Members',   icon: Star },
+  { id: 'design-templates',  label: 'Design Templates',   icon: Layout },
   { id: 'payment',           label: 'Payment Processing', icon: CreditCard },
   { id: 'email-logs',        label: 'Email Logs',         icon: Mail },
   { id: 'email-templates',   label: 'Email Templates',    icon: FileText },

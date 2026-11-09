@@ -149,6 +149,13 @@ enum TemplateDesignStatus {
   APPROVED
 }
 
+enum DesignBriefStatus {
+  PENDING
+  SUBMITTED
+  IN_DESIGN
+  APPROVED
+}
+
 enum LeadFieldType {
   TEXT
   TEXTAREA
@@ -206,6 +213,8 @@ model Tenant {
   automationExecutions AutomationExecution[]
   galleries            Gallery[]
   templateDesigns      TemplateDesign[]
+  boothDesignTemplates BoothDesignTemplate[]
+  eventDesignBriefs    EventDesignBrief[]
   stripeConnect        StripeConnectAccount?
   stripeSubscription   StripeSubscription?
   apiKeys              TenantApiKey[]
@@ -296,6 +305,9 @@ model TenantBranding {
   defaultDepositPercent     Int @default(50)
   balanceDueDaysBeforeEvent Int @default(30)
   fullPaymentIfWithinDays   Int @default(14)
+  // Design brief feature flags
+  designBriefEnabled  Boolean @default(false)
+  customDesignEnabled Boolean @default(false)
   // Onboarding
   onboardingDismissed Boolean @default(false)
   createdAt         DateTime @default(now())
@@ -391,6 +403,7 @@ model Event {
   contracts            Contract[]
   gallery              Gallery?
   templateDesigns      TemplateDesign[]
+  designBrief          EventDesignBrief?
   automationExecutions AutomationExecution[]
   leadSubmission       LeadSubmission?       @relation("LeadConvertedFrom")
   Quote                Quote[]
@@ -1147,4 +1160,63 @@ model EventExpense {
 
   @@index([eventId])
   @@map("event_expenses")
+}
+
+// BoothGen-managed shared design template library
+model BoothDesignTemplate {
+  id          String   @id @default(cuid())
+  tenantId    String?  // null = BoothGen shared template
+  name        String
+  description String?
+  format      String   // "2x6" | "4x6"
+  orientation String   // "portrait" | "landscape"
+  photoCount  Int      @default(3)
+  thumbnailUrl String? // Layout wireframe image (R2)
+  // JSON: [{id, label, placeholder, maxChars, required, hint?}]
+  textZones    Json    @default("[]")
+  // JSON: [{id, name, colors: {background, text, accent}}]
+  colorVariants Json   @default("[]")
+  // JSON: [{id, name, fonts: [{zoneId, fontId, label, fontFamily}]}]
+  fontPairings Json    @default("[]")
+  isPublished Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant?            @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  briefs EventDesignBrief[]
+
+  @@index([tenantId])
+  @@map("booth_design_templates")
+}
+
+// Client-submitted design preferences for a specific event
+model EventDesignBrief {
+  id         String             @id @default(cuid())
+  tenantId   String
+  eventId    String             @unique
+  templateId String?
+  status     DesignBriefStatus  @default(PENDING)
+  // Text zone values: {zoneId: "text"}
+  textValues             Json?
+  // Selected variant/pairing IDs
+  selectedColorVariantId String?
+  selectedFontPairingId  String?
+  // AI theme fields
+  themeInput             String?
+  themeDirections        Json?   // [{title, description}] x3
+  selectedDirectionIndex Int?
+  isCustomDesign         Boolean @default(false)
+  notes                  String? @db.Text
+  submittedAt            DateTime?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  tenant   Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event    Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  template BoothDesignTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([tenantId])
+  @@map("event_design_briefs")
 }

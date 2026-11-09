@@ -9,7 +9,7 @@ import { InviteForm } from './InviteForm';
 import { TeamAccessForm } from './TeamAccessForm';
 import { TeamMembersTable } from './TeamMembersTable';
 
-const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
+const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['booth-templates','Booth Templates'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
 
 export const ALL_TEAM_MODULES = [
   { id: 'events',   label: 'Events',           desc: 'View and manage assigned events' },

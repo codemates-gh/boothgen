@@ -1,10 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Printer, Layers, AlertCircle, Download, X, Copy } from 'lucide-react';
+import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Printer, Layers, AlertCircle, Download, X, Copy, Palette, Sparkles, PenLine, ArrowLeft as ArrowLeftIcon } from 'lucide-react';
 import { PoweredByBadge } from '@/components/brand/PoweredByBadge';
 import { InvoicePaymentForm } from '@/components/stripe/PaymentForm';
 import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
+
+const FORMAT_LABEL: Record<string, string> = { '2x6': '2"×6" Strip', '4x6': '4"×6" Full Size' };
 
 type Tab = 'quote' | 'contract' | 'invoice' | 'design' | 'gallery';
 
@@ -40,8 +42,25 @@ export default function ClientPortalPage() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
   const galleryOnly = searchParams.get('galleryOnly') === '1';
+  // Design brief state
+  const [designBrief, setDesignBrief] = useState<any>(null);
+  const [briefTemplates, setBriefTemplates] = useState<any[]>([]);
+  const [customDesignEnabled, setCustomDesignEnabled] = useState(false);
+  const [briefStep, setBriefStep] = useState<'gallery' | 'customize' | 'done'>('gallery');
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [selectedColorVariantId, setSelectedColorVariantId] = useState('');
+  const [selectedFontPairingId, setSelectedFontPairingId] = useState('');
+  const [briefText, setBriefText] = useState<Record<string, string>>({});
+  const [briefNotes, setBriefNotes] = useState('');
+  const [themeInput, setThemeInput] = useState('');
+  const [themeDirections, setThemeDirections] = useState<{title: string; description: string}[]>([]);
+  const [selectedDirectionIndex, setSelectedDirectionIndex] = useState<number | null>(null);
+  const [loadingTheme, setLoadingTheme] = useState(false);
+  const [isCustomDesign, setIsCustomDesign] = useState(false);
+  const [submittingBrief, setSubmittingBrief] = useState(false);
+  const [briefSubmitted, setBriefSubmitted] = useState(false);
 
-  useEffect(() => { load(); }, [portalToken]);
+  useEffect(() => { load(); loadBrief(); }, [portalToken]);
 
   // Handle Stripe's redirect back after payment — poll until the webhook has updated the DB
   useEffect(() => {
@@ -72,6 +91,87 @@ export default function ClientPortalPage() {
     const r = await fetch('/api/portal/' + portalToken);
     if (r.ok) { setData(await r.json()); }
     setLoading(false);
+  }
+
+  async function loadBrief() {
+    const r = await fetch('/api/portal/' + portalToken + '/design-brief');
+    if (!r.ok) return;
+    const d = await r.json();
+    if (!d) return;
+    const { brief, templates, customDesignEnabled: cde } = d;
+    setBriefTemplates(templates ?? []);
+    setCustomDesignEnabled(cde ?? false);
+    if (!brief) return;
+    setDesignBrief(brief);
+    if (brief.status !== 'PENDING') {
+      setBriefStep('done');
+      setBriefText(brief.textValues ?? {});
+      setBriefNotes(brief.notes ?? '');
+    }
+    // Inject Google Fonts for all available templates
+    const allFonts: string[] = [];
+    (templates ?? []).forEach((t: any) => {
+      (t.fontPairings ?? []).forEach((p: any) => {
+        (p.fonts ?? []).forEach((f: any) => {
+          const m = f.fontFamily?.match(/'([^']+)'/);
+          if (m) allFonts.push(m[1]);
+        });
+      });
+    });
+    const unique = [...new Set(allFonts)];
+    if (unique.length && typeof document !== 'undefined') {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = `https://fonts.googleapis.com/css2?${unique.map(f => `family=${f.replace(/ /g, '+')}:wght@400;700`).join('&')}&display=swap`;
+      document.head.appendChild(link);
+    }
+  }
+
+  async function getThemeDirections() {
+    if (!themeInput.trim() || !selectedTemplate) return;
+    setLoadingTheme(true);
+    const variant = selectedTemplate.colorVariants?.find((v: any) => v.id === selectedColorVariantId);
+    const pairing = selectedTemplate.fontPairings?.find((p: any) => p.id === selectedFontPairingId);
+    try {
+      const r = await fetch('/api/portal/' + portalToken + '/design-brief/theme', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme: themeInput, templateName: selectedTemplate.name, colorVariantName: variant?.name, fontPairingName: pairing?.name }),
+      });
+      if (r.ok) { const d = await r.json(); setThemeDirections(d.options ?? []); }
+    } catch {}
+    setLoadingTheme(false);
+  }
+
+  async function submitBrief() {
+    setSubmittingBrief(true);
+    try {
+      const r = await fetch('/api/portal/' + portalToken + '/design-brief', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          templateId: selectedTemplate?.id ?? null,
+          selectedColorVariantId: selectedColorVariantId || null,
+          selectedFontPairingId: selectedFontPairingId || null,
+          textValues: briefText,
+          themeInput: themeInput || null,
+          themeDirections: themeDirections.length ? themeDirections : null,
+          selectedDirectionIndex: selectedDirectionIndex ?? null,
+          isCustomDesign,
+          notes: briefNotes,
+        }),
+      });
+      if (r.ok) { setBriefSubmitted(true); setBriefStep('done'); const b = await r.json(); setDesignBrief(b); }
+      else { const d = await r.json().catch(() => ({})); setMessage(d.error || 'Something went wrong. Please try again.'); }
+    } catch { setMessage('Network error. Please try again.'); }
+    setSubmittingBrief(false);
+  }
+
+  function selectTemplate(t: any) {
+    setSelectedTemplate(t);
+    // Auto-select first color variant and font pairing
+    setSelectedColorVariantId(t.colorVariants?.[0]?.id ?? '');
+    setSelectedFontPairingId(t.fontPairings?.[0]?.id ?? '');
+    setBriefStep('customize');
+    setIsCustomDesign(false);
   }
 
   async function unlockGallery() {
@@ -614,6 +714,27 @@ export default function ClientPortalPage() {
                           </div>
                         </div>
                       ))}
+
+                      {/* Pay in Full option — shown when multiple unpaid milestones remain */}
+                      {data.invoice.balanceDueCents > 0 &&
+                       data.invoice.milestones.filter((m: any) => m.status !== 'PAID').length > 1 &&
+                       !showPayment && (
+                        <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-sm text-gray-800">Pay in Full</p>
+                              <p className="text-xs text-gray-400">Pay all remaining balances now</p>
+                            </div>
+                            <button
+                              onClick={() => setShowPayment('full')}
+                              className="text-sm px-4 py-2 rounded-xl text-white font-semibold"
+                              style={{ backgroundColor: brandColor }}
+                            >
+                              Pay {fmt(data.invoice.balanceDueCents)}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -782,12 +903,225 @@ export default function ClientPortalPage() {
         {/* ── DESIGN TAB ───────────────────────────────────────────────────── */}
         {tab === 'design' && (
           <div className="space-y-6">
-            {!latestDesign ? (
+
+            {/* ── STEP 1: Template Gallery ── */}
+            {designBrief && designBrief.status === 'PENDING' && !briefSubmitted && briefStep === 'gallery' && (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-5 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-5 h-5" style={{ color: pc }}/>
+                    <div>
+                      <p className="font-bold text-gray-900">Choose Your Layout</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Select the layout that best fits your event. You'll customize colors, fonts, and text in the next step.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6">
+                  {briefTemplates.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-8">No layouts available yet. Your operator will be in touch.</p>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {briefTemplates.map((t: any) => (
+                        <button key={t.id} onClick={() => selectTemplate(t)}
+                          className="group text-left rounded-2xl border-2 border-gray-200 hover:border-brand overflow-hidden transition-all focus:outline-none focus:ring-2"
+                          style={{ '--tw-ring-color': pc + '66' } as React.CSSProperties}>
+                          {t.thumbnailUrl ? (
+                            <div className="relative">
+                              <img src={t.thumbnailUrl} alt={t.name} className="w-full aspect-[3/2] object-cover"/>
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="bg-black/30 text-white text-[10px] font-bold tracking-widest px-2 py-0.5 rounded rotate-[-25deg] uppercase select-none">Preview</div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="w-full aspect-[3/2] bg-gray-100 flex items-center justify-center">
+                              <Layers className="w-8 h-8 text-gray-300"/>
+                            </div>
+                          )}
+                          <div className="p-3">
+                            <p className="font-semibold text-sm text-gray-900 group-hover:text-brand transition-colors">{t.name}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{FORMAT_LABEL[t.format] ?? t.format} · {t.photoCount} photos</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {customDesignEnabled && (
+                    <div className="mt-6 pt-5 border-t border-gray-100 text-center">
+                      <p className="text-sm text-gray-500 mb-3">Don't see what you're looking for?</p>
+                      <button onClick={() => { setIsCustomDesign(true); setBriefStep('customize'); }}
+                        className="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 hover:border-gray-400 transition-colors">
+                        <PenLine className="w-4 h-4"/>Request a Custom Design
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 2: Customize ── */}
+            {designBrief && designBrief.status === 'PENDING' && !briefSubmitted && briefStep === 'customize' && (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-5 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => setBriefStep('gallery')} className="text-gray-400 hover:text-gray-600">
+                      <ArrowLeftIcon className="w-4 h-4"/>
+                    </button>
+                    <div>
+                      <p className="font-bold text-gray-900">
+                        {isCustomDesign ? 'Custom Design Request' : `Customize: ${selectedTemplate?.name}`}
+                      </p>
+                      {!isCustomDesign && selectedTemplate && (
+                        <p className="text-xs text-gray-500 mt-0.5">{FORMAT_LABEL[selectedTemplate.format] ?? selectedTemplate.format} · {selectedTemplate.orientation} · {selectedTemplate.photoCount} photos</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-8">
+                  {/* Layout thumbnail */}
+                  {!isCustomDesign && selectedTemplate?.thumbnailUrl && (
+                    <div className="relative max-w-xs mx-auto">
+                      <img src={selectedTemplate.thumbnailUrl} alt={selectedTemplate.name} className="w-full rounded-xl border border-gray-200 shadow-sm"/>
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="bg-black/30 text-white text-xs font-bold tracking-widest px-3 py-1 rounded rotate-[-25deg] uppercase select-none">Preview</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Color Variants */}
+                  {!isCustomDesign && (selectedTemplate?.colorVariants ?? []).length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-gray-800 text-sm">Color Palette</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {(selectedTemplate.colorVariants as any[]).map((v: any) => (
+                          <button key={v.id} onClick={() => setSelectedColorVariantId(v.id)}
+                            className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${selectedColorVariantId === v.id ? 'border-brand bg-orange-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                            <div className="flex gap-1.5 flex-shrink-0">
+                              {Object.values(v.colors).map((c: any, i: number) => (
+                                <div key={i} className="w-6 h-6 rounded-full border border-white shadow-sm" style={{ background: c }}/>
+                              ))}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-800">{v.name}</p>
+                              <p className="text-xs text-gray-400 truncate">{Object.values(v.colors).join(' · ')}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Font Pairings */}
+                  {!isCustomDesign && (selectedTemplate?.fontPairings ?? []).length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-gray-800 text-sm">Font Style</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {(selectedTemplate.fontPairings as any[]).map((p: any) => (
+                          <button key={p.id} onClick={() => setSelectedFontPairingId(p.id)}
+                            className={`p-3 rounded-xl border-2 text-left transition-all ${selectedFontPairingId === p.id ? 'border-brand bg-orange-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                            <p className="text-sm font-medium text-gray-800 mb-1.5">{p.name}</p>
+                            <div className="flex flex-wrap gap-2">
+                              {(p.fonts ?? []).slice(0, 2).map((f: any) => (
+                                <span key={f.zoneId} className="text-sm text-gray-500" style={{ fontFamily: f.fontFamily }}>{f.label}</span>
+                              ))}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Text Zones */}
+                  {!isCustomDesign && (selectedTemplate?.textZones ?? []).length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-gray-800 text-sm">Your Text</h3>
+                      {(selectedTemplate.textZones as any[]).map((zone: any) => (
+                        <div key={zone.id}>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {zone.label}{zone.required && <span className="text-red-500 ml-1">*</span>}
+                          </label>
+                          {zone.hint && <p className="text-xs text-gray-400 mb-1.5">{zone.hint}</p>}
+                          <input type="text" value={briefText[zone.id] ?? ''} onChange={e => setBriefText(v => ({ ...v, [zone.id]: e.target.value }))}
+                            maxLength={zone.maxChars} placeholder={zone.placeholder || `Enter ${zone.label.toLowerCase()}…`}
+                            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2"
+                            style={{ '--tw-ring-color': pc + '66' } as React.CSSProperties}/>
+                          <div className="flex justify-end mt-1">
+                            <span className="text-xs text-gray-400">{(briefText[zone.id] ?? '').length}/{zone.maxChars}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Theme Input + AI */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-purple-500"/>
+                      <h3 className="font-semibold text-gray-800 text-sm">Theme <span className="text-gray-400 font-normal text-xs">(optional)</span></h3>
+                    </div>
+                    <p className="text-xs text-gray-500">Describe your event's vibe or theme. Our AI will suggest 3 design directions for your operator to work from.</p>
+                    <div className="flex gap-2">
+                      <input type="text" value={themeInput} onChange={e => setThemeInput(e.target.value)}
+                        placeholder="e.g. Tropical sunset, Elegant black tie, Retro arcade…"
+                        className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2"
+                        style={{ '--tw-ring-color': pc + '66' } as React.CSSProperties}/>
+                      <button onClick={getThemeDirections} disabled={!themeInput.trim() || loadingTheme}
+                        className="px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-all disabled:opacity-50 flex-shrink-0"
+                        style={{ backgroundColor: pc }}>
+                        {loadingTheme ? '…' : 'Suggest'}
+                      </button>
+                    </div>
+                    {themeDirections.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-500 font-medium">Pick the direction that resonates most:</p>
+                        {themeDirections.map((opt, i) => (
+                          <button key={i} onClick={() => setSelectedDirectionIndex(i)}
+                            className={`w-full text-left p-3 rounded-xl border-2 transition-all ${selectedDirectionIndex === i ? 'border-purple-400 bg-purple-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                            <p className="text-sm font-semibold text-gray-800">{String.fromCharCode(65 + i)}. {opt.title}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{opt.description}</p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Notes */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Additional Notes <span className="text-gray-400 font-normal">(optional)</span></label>
+                    <textarea value={briefNotes} onChange={e => setBriefNotes(e.target.value)}
+                      placeholder="Anything else to guide the design — inspiration, must-haves, things to avoid…"
+                      className="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none h-24 focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': pc + '66' } as React.CSSProperties}/>
+                  </div>
+
+                  <button onClick={submitBrief}
+                    disabled={submittingBrief || (!isCustomDesign && (selectedTemplate?.textZones ?? []).some((z: any) => z.required && !briefText[z.id]?.trim()))}
+                    className="w-full py-3 rounded-xl text-white font-bold text-sm transition-all disabled:opacity-50"
+                    style={{ backgroundColor: pc }}>
+                    {submittingBrief ? 'Submitting…' : 'Submit My Design Preferences'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Brief submitted / in progress status */}
+            {(briefStep === 'done' || briefSubmitted) && !latestDesign && (
+              <div className="flex items-start gap-3 p-5 bg-blue-50 rounded-2xl border border-blue-200">
+                <CheckCircle2 className="w-6 h-6 text-blue-500 flex-shrink-0 mt-0.5"/>
+                <div>
+                  <p className="font-semibold text-blue-800">Design preferences received!</p>
+                  <p className="text-sm text-blue-600 mt-1">Your operator is creating your custom design based on your input. You'll receive an email when it's ready for your review.</p>
+                </div>
+              </div>
+            )}
+
+            {/* ── Existing uploaded design approval flow ── */}
+            {!latestDesign && !designBrief ? (
               <div className="text-center py-16 text-gray-400">
                 <Layers className="w-12 h-12 mx-auto mb-4 opacity-30"/>
                 <p>Your template design will appear here once it's ready for review.</p>
               </div>
-            ) : latestDesign.status === 'PENDING_APPROVAL' ? (
+            ) : !latestDesign ? null : latestDesign.status === 'PENDING_APPROVAL' ? (
               <>
                 <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
                   <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
@@ -799,6 +1133,17 @@ export default function ClientPortalPage() {
                   </div>
                   <div className="p-6 space-y-4">
                     <p className="text-sm text-gray-600">Please review the template design file below, then approve it or request changes.</p>
+                    {/* Watermarked preview for images */}
+                    {/\.(jpe?g|png|webp|gif)$/i.test(latestDesign.filename) && (
+                      <div className="relative rounded-xl overflow-hidden border border-gray-200 max-w-sm mx-auto">
+                        <img src={latestDesign.fileUrl} alt="Design preview" className="w-full block"/>
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+                          <span className="text-white/70 text-2xl font-black tracking-widest rotate-[-30deg] border-4 border-white/50 px-4 py-2 rounded uppercase drop-shadow-lg">
+                            Preview
+                          </span>
+                        </div>
+                      </div>
+                    )}
                     <a
                       href={latestDesign.fileUrl}
                       target="_blank"

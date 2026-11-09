@@ -4,6 +4,36 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.57.0] — 2026-10-09
+
+### Changed
+- **Design brief — gallery-first flow**: Completely rebuilt the client design brief experience. Clients now browse a visual thumbnail gallery of layout templates before customizing. The operator no longer assigns a specific template per event — clients pick from the shared library directly in the portal
+- **AI theme directions**: Clients can describe their event theme (e.g. "tropical sunset") and receive 3 distinct AI-generated design direction options (via Gemini, Claude fallback) to choose from — the selected direction is passed to the operator as creative guidance
+- **Shared template library**: Booth design templates are now managed by BoothGen super admin (not per-operator). Published templates appear in the client gallery for all operators. Super admin → Design Templates tab added
+- **Operator settings**: Settings → Booth Templates redesigned as a feature toggle page — operators enable/disable Design Brief and optionally allow clients to request a fully Custom Design
+- **Brief activation simplified**: Operators activate the design brief per event with a single button (no template pre-selection). Client picks the layout from the gallery
+- **Color/font selection upgraded**: Clients pick from named color variant palettes and named font pairings (not per-slot overrides) — cleaner, more curated experience
+
+### Added
+- Super admin Design Templates tab with full CRUD for the shared layout library (publish/unpublish, thumbnail URL, text zones, color variants, font pairings)
+- `PATCH /api/settings/design-brief-settings` — saves `designBriefEnabled` and `customDesignEnabled` per tenant
+- `POST /api/portal/[portalToken]/design-brief/theme` — Gemini AI generates 3 theme direction options; falls back to Claude Haiku
+
+---
+
+## [2.56.0] — 2026-10-08
+
+### Added
+- **Client design brief system**: Operators can now define booth design templates in Settings → Booth Templates, specifying layout format (2"×6" strip / 4"×6" full), orientation, photo count, text zones (labeled input fields with placeholders and character limits), color slots, and a curated set of event-friendly fonts (12 options including Playfair Display, Great Vibes, Montserrat, Bebas Neue, etc.)
+- **Design brief assignment**: From any event's Designs tab, operators can assign a booth template to that event — this activates the client design brief and makes it visible in the client portal
+- **Client portal — Design tab**: Clients now see a "Customize Your Photo Booth Design" form when a template has been assigned; they can enter text for each zone, pick from 5 curated color palettes (Classic Ivory, Modern Black, Blush Rose, Midnight Navy, Sage Green) or choose custom hex colors per slot, select a font per text zone with live preview, and add additional notes; form validates required fields before submission
+- **Operator notification**: Operator receives an email when client submits their design preferences
+- **Operator design brief view**: After client submission, the event's Designs tab shows a structured view of all submitted text, colors, and fonts; operator can mark status as "In Design" or "Brief Complete"
+- **Design preview watermark**: Uploaded design images shown in the client portal display a "PREVIEW" overlay watermark until the design is approved
+- **Settings nav**: "Booth Templates" added to the settings navigation
+
+---
+
 ## [2.55.4] — 2026-10-08
 
 ### Added

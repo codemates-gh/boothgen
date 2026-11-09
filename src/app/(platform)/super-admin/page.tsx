@@ -16,8 +16,9 @@ import EmailActivityLog from './EmailActivityLog';
 import SuperAdminTabs from './SuperAdminTabs';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import FoundingMembersCard from './FoundingMembersCard';
+import DesignTemplatesManager from './DesignTemplatesManager';
 
-const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
+const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
 type Tab = typeof VALID_TABS[number];
 
 const TENANT_BADGE: Record<string, 'warning' | 'success' | 'danger' | 'default'> = {
@@ -246,6 +247,17 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
                 email_template_forgot_password: settingsMap.email_template_forgot_password ?? '',
               }}
             />
+          </>
+        )}
+
+        {/* DESIGN TEMPLATES */}
+        {tab === 'design-templates' && (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Design Templates</h1>
+              <p className="text-sm text-gray-500 mt-1">Manage the shared layout library available to all operators for client design briefs.</p>
+            </div>
+            <DesignTemplatesManager />
           </>
         )}
 

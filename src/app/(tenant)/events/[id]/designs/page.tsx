@@ -5,15 +5,14 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Upload, FileImage, ArrowLeft, CheckCircle2, Clock, MessageSquare, Trash2, Bell } from 'lucide-react';
+import { Upload, FileImage, ArrowLeft, CheckCircle2, Clock, MessageSquare, Trash2, Bell, Palette, ChevronDown, ChevronUp, Sparkles, PenLine } from 'lucide-react';
 import Link from 'next/link';
 
-const STATUS_VARIANT: Record<string, string> = {
-  DRAFT: 'default',
-  PENDING_APPROVAL: 'info',
-  REVISION_REQUESTED: 'warning',
-  APPROVED: 'success',
-};
+const BRIEF_STATUS_VARIANT: Record<string, string> = { PENDING: 'default', SUBMITTED: 'info', IN_DESIGN: 'warning', APPROVED: 'success' };
+const BRIEF_STATUS_LABEL: Record<string, string> = { PENDING: 'Awaiting Client', SUBMITTED: 'Client Submitted', IN_DESIGN: 'In Design', APPROVED: 'Approved' };
+const STATUS_VARIANT: Record<string, string> = { DRAFT: 'default', PENDING_APPROVAL: 'info', REVISION_REQUESTED: 'warning', APPROVED: 'success' };
+
+const FORMAT_LABEL: Record<string, string> = { '2x6': '2"×6" Strip', '4x6': '4"×6" Full Size' };
 
 export default function TemplateDesignsPage() {
   const { id: eventId } = useParams<{ id: string }>();
@@ -23,114 +22,268 @@ export default function TemplateDesignsPage() {
   const [error, setError] = useState('');
   const [reminding, setReminding] = useState<string | null>(null);
   const [reminderSent, setReminderSent] = useState<string | null>(null);
+  const [brief, setBrief] = useState<any>(null);
+  const [briefEnabled, setBriefEnabled] = useState(false);
+  const [showBriefDetails, setShowBriefDetails] = useState(true);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [activating, setActivating] = useState(false);
+  const [portalToken, setPortalToken] = useState('');
 
-  useEffect(() => { load(); }, [eventId]);
+  useEffect(() => { load(); loadBrief(); loadPortalToken(); loadBriefSettings(); }, [eventId]);
 
   async function load() {
     const r = await fetch('/api/events/' + eventId + '/template-designs');
     if (r.ok) setDesigns(await r.json());
   }
+  async function loadBrief() {
+    const r = await fetch('/api/events/' + eventId + '/design-brief');
+    if (r.ok) setBrief(await r.json());
+  }
+  async function loadBriefSettings() {
+    const r = await fetch('/api/settings/design-brief-settings');
+    if (r.ok) { const d = await r.json(); setBriefEnabled(d.designBriefEnabled); }
+  }
+  async function loadPortalToken() {
+    const r = await fetch('/api/events/' + eventId + '/full');
+    if (r.ok) { const d = await r.json(); setPortalToken(d.portalToken ?? ''); }
+  }
+
+  async function activateBrief() {
+    setActivating(true);
+    const res = await fetch('/api/events/' + eventId + '/design-brief', { method: 'POST' });
+    if (res.ok) setBrief(await res.json());
+    setActivating(false);
+  }
+
+  async function updateBriefStatus(status: string) {
+    setUpdatingStatus(true);
+    const res = await fetch('/api/events/' + eventId + '/design-brief', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+    if (res.ok) setBrief(await res.json());
+    setUpdatingStatus(false);
+  }
 
   async function deleteDesign(id: string) {
     if (!confirm('Delete this design version? This cannot be undone.')) return;
     const res = await fetch('/api/template-designs/' + id, { method: 'DELETE' });
-    if (res.ok) {
-      setDesigns(prev => prev.filter(d => d.id !== id));
-    } else {
-      const d = await res.json().catch(() => ({}));
-      setError(d.error || 'Failed to delete design.');
-    }
+    if (res.ok) setDesigns(prev => prev.filter(d => d.id !== id));
+    else { const d = await res.json().catch(() => ({})); setError(d.error || 'Failed to delete design.'); }
   }
 
   async function uploadFile(file: File) {
-    setError('');
-    setUploading(true);
+    setError(''); setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
+      const fd = new FormData(); fd.append('file', file);
       const res = await fetch('/api/events/' + eventId + '/template-designs/upload', { method: 'POST', body: fd });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || 'Upload failed');
-      }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Upload failed'); }
       await load();
-    } catch (err: any) {
-      setError(err.message || 'Upload failed. Please try again.');
-    }
+    } catch (err: any) { setError(err.message || 'Upload failed. Please try again.'); }
     setUploading(false);
   }
 
   async function sendReminder(designId: string) {
     setReminding(designId);
     const res = await fetch('/api/template-designs/' + designId + '/remind', { method: 'POST' });
-    if (res.ok) {
-      setReminderSent(designId);
-      setTimeout(() => setReminderSent(null), 3000);
-    } else {
-      const d = await res.json().catch(() => ({}));
-      setError(d.error || 'Failed to send reminder');
-    }
+    if (res.ok) { setReminderSent(designId); setTimeout(() => setReminderSent(null), 3000); }
+    else { const d = await res.json().catch(() => ({})); setError(d.error || 'Failed to send reminder'); }
     setReminding(null);
   }
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file) uploadFile(file);
+    const file = e.dataTransfer.files[0]; if (file) uploadFile(file);
   }, [eventId]);
 
   const latestDesign = designs[0] ?? null;
-  // Can upload a new version when there's no design, client requested revision, or design is approved and a new version is needed
   const canUpload = !latestDesign || latestDesign.status === 'REVISION_REQUESTED' || latestDesign.status === 'APPROVED';
+
+  // Find selected color variant and font pairing from template data
+  const selectedVariant = brief?.template?.colorVariants?.find((v: any) => v.id === brief.selectedColorVariantId);
+  const selectedPairing = brief?.template?.fontPairings?.find((p: any) => p.id === brief.selectedFontPairingId);
+  const selectedDirection = brief?.themeDirections?.[brief.selectedDirectionIndex];
 
   return (
     <>
       <TopBar title="Template Designs" />
       <div className="p-4 sm:p-8 max-w-4xl space-y-6">
         <Link href={'/events/' + eventId} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
-          <ArrowLeft className="w-4 h-4" />Back to Event
+          <ArrowLeft className="w-4 h-4"/>Back to Event
         </Link>
 
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">{error}</div>
-        )}
+        {/* Design Brief Card */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2"><Palette className="w-4 h-4 text-brand"/>Client Design Brief</CardTitle>
+                {brief && <Badge variant={BRIEF_STATUS_VARIANT[brief.status] as any}>{BRIEF_STATUS_LABEL[brief.status]}</Badge>}
+              </div>
+              {brief && <button onClick={() => setShowBriefDetails(v => !v)} className="text-gray-400 hover:text-gray-600">{showBriefDetails ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>}</button>}
+            </div>
+          </CardHeader>
+          {(!brief || showBriefDetails) && (
+            <CardContent className="space-y-4">
+              {!brief ? (
+                !briefEnabled ? (
+                  <div className="text-sm text-gray-500">
+                    Design brief is not enabled for your account. <Link href="/settings/booth-templates" className="text-brand underline">Enable it in Settings → Booth Templates</Link>.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-600">Activate the design brief to let your client browse layout templates and customize colors, fonts, and text through the portal.</p>
+                    <Button onClick={activateBrief} disabled={activating}>
+                      {activating ? 'Activating…' : 'Activate Design Brief'}
+                    </Button>
+                  </div>
+                )
+              ) : brief.status === 'PENDING' ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600">The design brief is active. Share the portal link so your client can select a layout and customize their preferences.</p>
+                  {portalToken && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
+                      <div className="flex items-center gap-2 mt-1">
+                        <code className="text-xs bg-white px-2 py-1 rounded border border-blue-200 flex-1 truncate">
+                          {typeof window !== 'undefined' ? window.location.origin : ''}/portal/{portalToken}
+                        </code>
+                        <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/portal/${portalToken}`)} className="text-xs text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap">Copy</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    {brief.isCustomDesign ? (
+                      <p className="text-sm text-gray-600 flex items-center gap-1.5"><PenLine className="w-4 h-4 text-purple-500"/>Client requested a <strong>custom design</strong></p>
+                    ) : (
+                      <p className="text-sm text-gray-600">
+                        Template: <strong>{brief.template?.name ?? 'Gallery selection'}</strong>
+                        {brief.template && ` · ${FORMAT_LABEL[brief.template.format] ?? brief.template.format} · ${brief.template.orientation} · ${brief.template.photoCount} photos`}
+                      </p>
+                    )}
+                    <div className="flex gap-2">
+                      {brief.status === 'SUBMITTED' && (
+                        <Button size="sm" onClick={() => updateBriefStatus('IN_DESIGN')} disabled={updatingStatus}>
+                          {updatingStatus ? 'Updating…' : 'Start Designing'}
+                        </Button>
+                      )}
+                      {brief.status === 'IN_DESIGN' && (
+                        <Button size="sm" variant="outline" onClick={() => updateBriefStatus('APPROVED')} disabled={updatingStatus} className="text-green-700 border-green-200 hover:bg-green-50">
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1"/>{updatingStatus ? 'Updating…' : 'Mark Complete'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
 
-        {/* Upload area — shown when a new version can be uploaded */}
+                  {/* Color Variant */}
+                  {selectedVariant && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Color Palette</p>
+                      <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
+                        <div className="flex gap-1.5">
+                          {Object.values(selectedVariant.colors).map((c: any, i: number) => (
+                            <div key={i} className="w-6 h-6 rounded-full border border-gray-200 shadow-sm" style={{ background: c }}/>
+                          ))}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{selectedVariant.name}</p>
+                          <p className="text-xs text-gray-400">{Object.entries(selectedVariant.colors).map(([k, v]) => `${k}: ${v}`).join(' · ')}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Font Pairing */}
+                  {selectedPairing && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Font Style</p>
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-sm font-medium text-gray-800 mb-1.5">{selectedPairing.name}</p>
+                        <div className="flex flex-wrap gap-3">
+                          {selectedPairing.fonts.map((f: any) => (
+                            <div key={f.zoneId} className="text-xs text-gray-500">
+                              <span className="text-gray-400">{f.label}: </span>
+                              <span style={{ fontFamily: f.fontFamily }}>{f.label}</span>
+                              <span className="text-gray-400 ml-1">({f.label})</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Text Values */}
+                  {brief.textValues && Object.keys(brief.textValues).length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Text Content</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {(brief.template?.textZones ?? []).map((zone: any) => {
+                          const val = (brief.textValues as Record<string,string>)[zone.id];
+                          if (!val) return null;
+                          return (
+                            <div key={zone.id} className="bg-gray-50 rounded-lg p-3">
+                              <p className="text-xs text-gray-400 mb-0.5">{zone.label}</p>
+                              <p className="text-sm font-medium text-gray-800">{val}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AI Theme Direction */}
+                  {brief.themeInput && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-purple-500"/>Theme Direction</p>
+                      <div className="bg-purple-50 border border-purple-100 rounded-lg p-3">
+                        <p className="text-xs text-purple-600 mb-1">Client described: <em>"{brief.themeInput}"</em></p>
+                        {selectedDirection && (
+                          <div>
+                            <p className="text-sm font-semibold text-purple-900">{selectedDirection.title}</p>
+                            <p className="text-sm text-purple-800 mt-0.5">{selectedDirection.description}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Notes */}
+                  {brief.notes && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Additional Notes</p>
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-900">{brief.notes}</div>
+                    </div>
+                  )}
+
+                  {brief.submittedAt && (
+                    <p className="text-xs text-gray-400">Submitted {new Date(brief.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
+
+        {error && <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">{error}</div>}
+
         {canUpload && (
           <Card>
-            <CardHeader>
-              <CardTitle>{designs.length === 0 ? 'Upload Design' : 'Upload New Version'}</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>{designs.length === 0 ? 'Upload Design' : 'Upload New Version'}</CardTitle></CardHeader>
             <CardContent>
-              <div
-                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={onDrop}
-                className={
-                  'border-2 border-dashed rounded-xl p-12 text-center transition-colors ' +
-                  (dragOver ? 'border-orange-400 bg-orange-50' : 'border-gray-200 hover:border-gray-300')
-                }
-              >
+              <div onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={onDrop}
+                className={'border-2 border-dashed rounded-xl p-12 text-center transition-colors ' + (dragOver ? 'border-orange-400 bg-orange-50' : 'border-gray-200 hover:border-gray-300')}>
                 {uploading ? (
                   <div className="space-y-2">
-                    <div className="w-8 h-8 border-4 border-orange-400 border-t-transparent rounded-full animate-spin mx-auto" />
+                    <div className="w-8 h-8 border-4 border-orange-400 border-t-transparent rounded-full animate-spin mx-auto"/>
                     <p className="text-sm text-gray-500">Uploading…</p>
                   </div>
                 ) : (
                   <>
-                    <Upload className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+                    <Upload className="w-10 h-10 mx-auto mb-3 text-gray-300"/>
                     <p className="text-gray-600 font-medium">Drop a file here or click to browse</p>
                     <p className="text-xs text-gray-400 mt-1">Images and PDF files supported — uploading automatically sends to client for review</p>
                     <label className="mt-4 inline-block cursor-pointer">
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="image/*,.pdf"
-                        onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(f); }}
-                      />
-                      <span className="mt-4 inline-block px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
-                        Browse File
-                      </span>
+                      <input type="file" className="hidden" accept="image/*,.pdf" onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(f); }}/>
+                      <span className="mt-4 inline-block px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">Browse File</span>
                     </label>
                   </>
                 )}
@@ -139,10 +292,9 @@ export default function TemplateDesignsPage() {
           </Card>
         )}
 
-        {/* Pending approval banner — upload blocked while client is reviewing */}
         {latestDesign?.status === 'PENDING_APPROVAL' && (
           <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-            <Clock className="w-5 h-5 text-blue-500 flex-shrink-0" />
+            <Clock className="w-5 h-5 text-blue-500 flex-shrink-0"/>
             <div>
               <p className="font-semibold text-blue-800">Awaiting client review</p>
               <p className="text-sm text-blue-600">Version {latestDesign.version} has been sent to the client. You can upload a new version once they respond.</p>
@@ -150,7 +302,6 @@ export default function TemplateDesignsPage() {
           </div>
         )}
 
-        {/* Version history */}
         {designs.length > 0 && (
           <Card>
             <CardHeader><CardTitle>Design History</CardTitle></CardHeader>
@@ -160,10 +311,9 @@ export default function TemplateDesignsPage() {
                   <div key={d.id} className="p-5 flex items-start gap-4">
                     <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5 border border-gray-200">
                       {/\.(jpe?g|png|gif|webp)$/i.test(d.filename) ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={d.fileUrl} alt={d.filename} className="w-full h-full object-cover" />
+                        <img src={d.fileUrl} alt={d.filename} className="w-full h-full object-cover"/>
                       ) : (
-                        <FileImage className="w-6 h-6 text-gray-400" />
+                        <FileImage className="w-6 h-6 text-gray-400"/>
                       )}
                       {d.status !== 'APPROVED' && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/30">
@@ -176,65 +326,30 @@ export default function TemplateDesignsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <span className="font-semibold text-sm">Version {d.version}</span>
-                        <Badge variant={STATUS_VARIANT[d.status] as any}>
-                          {d.status.replace(/_/g, ' ')}
-                        </Badge>
-                        {d.approvedAt && (
-                          <span className="text-xs text-green-600">
-                            Approved {new Date(d.approvedAt).toLocaleDateString()}
-                          </span>
-                        )}
+                        <Badge variant={STATUS_VARIANT[d.status] as any}>{d.status.replace(/_/g, ' ')}</Badge>
+                        {d.approvedAt && <span className="text-xs text-green-600">Approved {new Date(d.approvedAt).toLocaleDateString()}</span>}
                       </div>
                       <p className="text-sm text-gray-500 truncate">{d.filename}</p>
                       {d.revisionNote && (
                         <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <MessageSquare className="w-3 h-3 text-amber-600" />
-                            <p className="text-xs font-semibold text-amber-800">Client feedback</p>
-                          </div>
+                          <div className="flex items-center gap-1.5 mb-1"><MessageSquare className="w-3 h-3 text-amber-600"/><p className="text-xs font-semibold text-amber-800">Client feedback</p></div>
                           <p className="text-sm text-amber-700">{d.revisionNote}</p>
                         </div>
                       )}
-                      <p className="text-xs text-gray-400 mt-1.5">
-                        {new Date(d.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </p>
+                      <p className="text-xs text-gray-400 mt-1.5">{new Date(d.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                     </div>
                     <div className="flex-shrink-0 flex flex-col items-end gap-2">
-                      <a
-                        href={d.fileUrl} target="_blank" rel="noopener noreferrer"
-                        className="text-xs text-blue-600 hover:underline"
-                      >
-                        View file ↗
-                      </a>
+                      <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">View file ↗</a>
                       {d.status === 'PENDING_APPROVAL' && (
                         <div className="flex flex-col items-end gap-1.5">
-                          <span className="text-xs text-blue-500 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />Awaiting client
-                          </span>
-                          <button
-                            onClick={() => sendReminder(d.id)}
-                            disabled={reminding === d.id}
-                            className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 font-medium disabled:opacity-50"
-                          >
-                            <Bell className="w-3 h-3" />
-                            {reminderSent === d.id ? 'Sent!' : reminding === d.id ? 'Sending…' : 'Send reminder'}
+                          <span className="text-xs text-blue-500 flex items-center gap-1"><Clock className="w-3 h-3"/>Awaiting client</span>
+                          <button onClick={() => sendReminder(d.id)} disabled={reminding === d.id} className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 font-medium disabled:opacity-50">
+                            <Bell className="w-3 h-3"/>{reminderSent === d.id ? 'Sent!' : reminding === d.id ? 'Sending…' : 'Send reminder'}
                           </button>
                         </div>
                       )}
-                      {d.status === 'APPROVED' && (
-                        <span className="text-xs text-green-600 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" />Approved
-                        </span>
-                      )}
-                      {d.status !== 'APPROVED' && (
-                        <button
-                          onClick={() => deleteDesign(d.id)}
-                          title="Delete this version"
-                          className="text-gray-300 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
+                      {d.status === 'APPROVED' && <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/>Approved</span>}
+                      {d.status !== 'APPROVED' && <button onClick={() => deleteDesign(d.id)} title="Delete this version" className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4"/></button>}
                     </div>
                   </div>
                 ))}
