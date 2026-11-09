@@ -3,9 +3,19 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY!);
 const FROM = process.env.EMAIL_FROM ?? 'noreply@example.com';
 
-export async function sendEmail(to: string, subject: string, html: string, reply_to?: string, from?: string) {
+export async function sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+  reply_to?: string,
+  from?: string,
+  headers?: Record<string, string>,
+) {
   try {
-    const { data, error } = await resend.emails.send({ from: from ?? FROM, to, subject, html, reply_to });
+    const { data, error } = await resend.emails.send({
+      from: from ?? FROM, to, subject, html, reply_to,
+      ...(headers ? { headers } : {}),
+    });
     if (error) throw error;
     return { success: true, id: data?.id };
   } catch (err) {

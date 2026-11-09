@@ -93,12 +93,22 @@ export default function EventMessagePanel({
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [branding, setBranding] = useState<Branding>({});
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [isReply, setIsReply] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch(`/api/events/${eventId}/messages`)
       .then(r => r.json())
-      .then(d => { if (Array.isArray(d)) setMessages(d); });
+      .then(d => {
+        if (Array.isArray(d)) {
+          setMessages(d);
+          if (d.length > 0) {
+            const lastSubject = d[d.length - 1].subject ?? '';
+            const reSubject = lastSubject.startsWith('Re:') ? lastSubject : `Re: ${lastSubject}`;
+            setSubject(prev => prev || reSubject);
+          }
+        }
+      });
     fetch('/api/automation/email-templates').then(r => r.ok ? r.json() : []).then(setTemplates);
     fetch('/api/settings/branding').then(r => r.ok ? r.json() : {}).then(setBranding);
   }, [eventId]);
@@ -149,9 +159,11 @@ export default function EventMessagePanel({
     } else {
       const msg = await res.json();
       setMessages(m => [...m, msg]);
-      setSubject('');
+      const lastSubject = msg.subject ?? '';
+      setSubject(lastSubject.startsWith('Re:') ? lastSubject : `Re: ${lastSubject}`);
       setBody('');
       setSelectedTemplateId('');
+      setIsReply(true);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
@@ -198,7 +210,31 @@ export default function EventMessagePanel({
 
           {/* Compose */}
           <div className="px-5 py-4 space-y-3 bg-white">
-            {messages.length === 0 && (
+            {messages.length > 0 ? (
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  {isReply ? 'Reply' : 'New Message'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isReply) {
+                      setIsReply(false);
+                      setSubject('');
+                    } else {
+                      setIsReply(true);
+                      const lastSubject = messages[messages.length - 1]?.subject ?? '';
+                      setSubject(lastSubject.startsWith('Re:') ? lastSubject : `Re: ${lastSubject}`);
+                    }
+                    setBody('');
+                    setSelectedTemplateId('');
+                  }}
+                  className="text-xs text-brand hover:underline"
+                >
+                  {isReply ? '+ New message instead' : '↩ Reply instead'}
+                </button>
+              </div>
+            ) : (
               <p className="text-xs text-gray-400">No messages yet. Send the first message to {clientEmail}.</p>
             )}
             <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">

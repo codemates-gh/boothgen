@@ -4,6 +4,29 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.58.2] — 2026-10-10
+
+### Changed
+- **New message toggle**: When a thread already exists, a "+ New message instead" link appears next to the Reply label — clicking it clears the subject so you can start a fresh email thread. "↩ Reply instead" switches back
+
+---
+
+## [2.58.1] — 2026-10-10
+
+### Changed
+- **Message reply UX**: Subject field now auto-fills as `Re: [last subject]` when a thread already has messages — no need to type it manually. A "Reply" label appears above the compose form to make it clear that's where replies go
+
+---
+
+## [2.58.0] — 2026-10-10
+
+### Changed
+- **Email replies include conversation history**: Outbound messages sent from the event Messages panel now include the prior thread as a quoted block at the bottom of the email — clients see the full conversation trail in their inbox, just like a standard email reply
+- **Email threading headers**: `In-Reply-To` and `References` headers are now set on outbound replies, so email clients (Gmail, Outlook, Apple Mail) thread them into the same conversation automatically
+- **Inbound message IDs stored**: Resend email IDs are now saved on both inbound and outbound messages, enabling accurate `In-Reply-To` linkage for future replies
+
+---
+
 ## [2.57.0] — 2026-10-09
 
 ### Changed

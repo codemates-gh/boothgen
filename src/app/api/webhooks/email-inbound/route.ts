@@ -143,6 +143,7 @@ export async function POST(req: NextRequest) {
           subject: data.subject ?? '(no subject)',
           bodyText,
           bodyHtml: null,
+          resendId: data.email_id ?? null,
         },
       });
 
@@ -187,6 +188,7 @@ ${preview ? `<p style="color:#374151;background:#f3f4f6;border-left:3px solid #f
           subject: data.subject ?? '(no subject)',
           bodyText,
           bodyHtml: null,
+          resendId: data.email_id ?? null,
         },
       });
 
