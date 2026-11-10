@@ -3,6 +3,8 @@
 //
 //   npm run genie:seed            create/refresh the test tenant, event, templates and a pairing code
 //   npm run genie:seed -- --pair  just issue a new pairing code for the test tenant
+//   npm run genie:seed -- --refresh  regenerate template images for the current NEXT_PUBLIC_APP_URL
+//                                    (keeps the tenant, paired devices and event slots)
 //
 // Asset URLs use NEXT_PUBLIC_APP_URL, so set it to http://<your Mac's LAN IP>:3000 in .env before
 // seeding when an iPad will download the bundle.
@@ -95,6 +97,22 @@ async function main() {
     if (!tenant) throw new Error('Run npm run genie:seed first');
     const pc = await newPairingCode(tenant.id);
     console.log(`Pairing code: ${pc.code} (expires ${pc.expiresAt.toLocaleTimeString()})`);
+    return;
+  }
+
+  if (process.argv.includes('--refresh')) {
+    const tenant = await prisma.tenant.findUnique({ where: { slug: SLUG } });
+    if (!tenant) throw new Error('Run npm run genie:seed first');
+    const { background, overlay } = makeAssets();
+    const templates = await prisma.eventGenieTemplate.findMany({ where: { tenantId: tenant.id } });
+    for (const t of templates) {
+      const layout = { ...t.layout };
+      if (layout.background) layout.background = background;
+      if (layout.overlay) layout.overlay = overlay;
+      await prisma.eventGenieTemplate.update({ where: { id: t.id }, data: { layout, version: { increment: 1 } } });
+    }
+    const devices = await prisma.genieDevice.count({ where: { tenantId: tenant.id, revokedAt: null } });
+    console.log(`Refreshed ${templates.length} template(s) for ${APP_URL}; ${devices} paired device(s) kept.`);
     return;
   }
 
