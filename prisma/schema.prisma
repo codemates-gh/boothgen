@@ -1304,6 +1304,8 @@ model EventGenieSettings {
   tenantId String
   eventId  String @unique
   timeZone String @default("America/New_York")
+  // Genie on/off for this event; off hides it from iPads and the bundle returns 409
+  enabled  Boolean @default(true)
 
   // CaptureConfig
   shotCount                    Int     @default(3)
@@ -1393,6 +1395,7 @@ model GenieShare {
   status            String    @default("queued") // queued | sent | delivered | failed
   providerMessageId String?   @unique
   error             String?
+  attempts          Int       @default(1) // send attempts; "Resend" in BoothGen adds one
   requestedAt       DateTime // createdAt from the device
   sentAt            DateTime?
   deliveredAt       DateTime?

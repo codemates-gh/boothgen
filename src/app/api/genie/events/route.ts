@@ -10,7 +10,8 @@ export async function GET(req: NextRequest) {
   if (auth instanceof NextResponse) return auth;
 
   const events = await prisma.event.findMany({
-    where: { tenantId: auth.tenant.id, status: { in: ['BOOKED', 'IN_PROGRESS'] } },
+    // Events with Genie turned off are hidden from iPads
+    where: { tenantId: auth.tenant.id, status: { in: ['BOOKED', 'IN_PROGRESS'] }, NOT: { genieSettings: { is: { enabled: false } } } },
     orderBy: { eventDate: 'asc' },
     select: {
       id: true, title: true, eventDate: true, status: true,

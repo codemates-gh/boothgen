@@ -8,7 +8,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Package, ArrowLeft, ExternalLink, FileText, Receipt, Edit2, ClipboardList, Layers, PenLine, MessageSquare, Send } from 'lucide-react';
+import { Calendar, MapPin, Users, Package, ArrowLeft, ExternalLink, FileText, Receipt, Edit2, ClipboardList, Layers, PenLine, MessageSquare, Send, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import DeleteEventButton from './DeleteEventButton';
 import CancelEventButton from './CancelEventButton';
@@ -67,6 +67,7 @@ export default async function EventDetailPage({ params, searchParams }: { params
       })
     : [];
   const branding = await prisma.tenantBranding.findUnique({ where: { tenantId: session.tenantId }, select: { currency: true } });
+  const genieEnabled = isAdmin && !!(await prisma.tenant.findUnique({ where: { id: session.tenantId }, select: { genieEnabled: true } }))?.genieEnabled;
   const fmt = (c: number) => fmtCents(c, branding?.currency ?? 'usd');
   const portalUrl = process.env.NEXT_PUBLIC_APP_URL + '/portal/' + event.portalToken;
 
@@ -104,6 +105,7 @@ export default async function EventDetailPage({ params, searchParams }: { params
                 <Link href={'/events/' + event.id + '/edit'}><Button variant="outline" size="sm"><Edit2 className="w-3.5 h-3.5 mr-1.5"/>Edit Event</Button></Link>
                 <a href={portalUrl} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><ExternalLink className="w-3.5 h-3.5 mr-1.5"/>Client Portal</Button></a>
                 <a href="#messages"><Button variant="outline" size="sm"><MessageSquare className="w-3.5 h-3.5 mr-1.5"/>Messages</Button></a>
+                {genieEnabled && <Link href={'/events/' + event.id + '/genie'}><Button variant="outline" size="sm"><Sparkles className="w-3.5 h-3.5 mr-1.5"/>Genie</Button></Link>}
                 {showFollowUp && (
                   <Link href={`/events/${event.id}?followup=1#messages`}>
                     <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white">

@@ -49,6 +49,23 @@ export function bundleValidUntil(event: Pick<Event, 'eventDate' | 'endTime'>, ti
   return new Date(endOfDay + VALID_AFTER_END_MS);
 }
 
+// Midnight at the start of the event day in the event's time zone (eventDate is stored at UTC midnight)
+export function startOfEventDay(eventDate: Date, timeZone: string): Date {
+  const midnight = Date.UTC(eventDate.getUTCFullYear(), eventDate.getUTCMonth(), eventDate.getUTCDate());
+  return new Date(midnight - tzOffsetMs(timeZone, new Date(midnight)));
+}
+
+// The event's Genie setup locks when the event starts: startTime, else the start of the event day
+export function eventLocksAt(event: Pick<Event, 'eventDate' | 'startTime'>, timeZone: string): Date {
+  return event.startTime ?? startOfEventDay(event.eventDate, timeZone);
+}
+
+export function effectiveLockedAt(event: Pick<Event, 'eventDate' | 'startTime'>, settings: Pick<EventGenieSettings, 'lockedAt' | 'timeZone'>, now = new Date()): Date | null {
+  if (settings.lockedAt) return settings.lockedAt;
+  const at = eventLocksAt(event, settings.timeZone);
+  return now >= at ? at : null;
+}
+
 export function isValidTimeZone(tz: string): boolean {
   try {
     new Intl.DateTimeFormat('en-US', { timeZone: tz });
@@ -98,7 +115,7 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
       ...(event.venueName ? { venueName: event.venueName } : {}),
     },
     validUntil: bundleValidUntil(event, settings.timeZone).toISOString(),
-    lockedAt: settings.lockedAt ? settings.lockedAt.toISOString() : null,
+    lockedAt: effectiveLockedAt(event, settings)?.toISOString() ?? null,
     capture: {
       shotCount: settings.shotCount,
       initialCountdownSeconds: settings.initialCountdownSeconds,
@@ -155,6 +172,7 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
   if (!event) return { ok: false, status: 404, code: 'not_found', error: 'Event not found' };
   let settings = event.genieSettings;
   if (!settings) return { ok: false, status: 409, code: 'not_configured', error: 'Genie settings have not been set up for this event' };
+  if (!settings.enabled) return { ok: false, status: 409, code: 'not_configured', error: 'Genie is turned off for this event' };
   if (event.genieTemplates.length === 0) return { ok: false, status: 409, code: 'no_templates', error: 'The event has no Genie templates yet' };
 
   const gallery = await ensureGallery(event);

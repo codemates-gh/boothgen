@@ -5,6 +5,7 @@
 //   npm run genie:seed -- --pair  just issue a new pairing code for the test tenant
 //   npm run genie:seed -- --refresh  regenerate template images for the current NEXT_PUBLIC_APP_URL
 //                                    (keeps the tenant, paired devices and event slots)
+//   npm run genie:seed -- --library  add/refresh the Genie template library (Standard + My templates) only
 //
 // Asset URLs use NEXT_PUBLIC_APP_URL, so set it to http://<your Mac's LAN IP>:3000 in .env before
 // seeding when an iPad will download the bundle.
@@ -91,7 +92,30 @@ async function newPairingCode(tenantId) {
   throw new Error('Could not generate a unique pairing code');
 }
 
+// Template library: one Standard template (BoothGen-managed, tenantId null) and one of the tenant's own.
+// My templates stay unpublished so they never surface as Standard.
+const STANDARD_NAME = 'Genie Dev Standard Strip';
+async function seedLibrary(tenantId, { background, overlay }) {
+  const strip = { format: '2x6', orientation: 'portrait', widthPx: 600, heightPx: 1800, dpi: 300, backgroundColor: '#1F1F3D', overlay, slots: STRIP_SLOTS };
+  const landscape = { format: '4x6', orientation: 'landscape', widthPx: 1800, heightPx: 1200, dpi: 300, backgroundColor: '#F97316', background, slots: LANDSCAPE_SLOTS };
+  await prisma.boothDesignTemplate.deleteMany({ where: { OR: [{ tenantId: null, name: STANDARD_NAME }, { tenantId }] } });
+  await prisma.boothDesignTemplate.create({
+    data: { tenantId: null, name: STANDARD_NAME, description: 'Local test template', format: '2x6', orientation: 'portrait', photoCount: 3, isPublished: true, layout: strip, alternateLayout: landscape },
+  });
+  await prisma.boothDesignTemplate.create({
+    data: { tenantId, name: 'My 4x6 Landscape', format: '4x6', orientation: 'landscape', photoCount: 3, isPublished: false, layout: landscape },
+  });
+}
+
 async function main() {
+  if (process.argv.includes('--library')) {
+    const tenant = await prisma.tenant.findUnique({ where: { slug: SLUG } });
+    if (!tenant) throw new Error('Run npm run genie:seed first');
+    await seedLibrary(tenant.id, makeAssets());
+    console.log('Template library ready: 1 Standard, 1 My template.');
+    return;
+  }
+
   if (process.argv.includes('--pair')) {
     const tenant = await prisma.tenant.findUnique({ where: { slug: SLUG } });
     if (!tenant) throw new Error('Run npm run genie:seed first');
@@ -116,7 +140,9 @@ async function main() {
     return;
   }
 
-  // Start clean: the tenant cascade removes its events, galleries, devices and Genie rows
+  // Start clean: the tenant cascade removes its events, galleries, devices and Genie rows. Its own library
+  // templates go first (deleting the tenant would otherwise leave them ownerless).
+  await prisma.boothDesignTemplate.deleteMany({ where: { tenant: { slug: SLUG } } });
   await prisma.tenant.deleteMany({ where: { slug: SLUG } });
   await prisma.user.deleteMany({ where: { email: LOGIN.email } });
 
@@ -174,6 +200,8 @@ async function main() {
       layout: { format: '2x6', orientation: 'portrait', widthPx: 600, heightPx: 1800, dpi: 300, backgroundColor: '#1F1F3D', overlay, slots: STRIP_SLOTS },
     },
   });
+
+  await seedLibrary(tenant.id, { background, overlay });
 
   const pc = await newPairingCode(tenant.id);
   console.log([

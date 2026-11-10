@@ -90,3 +90,19 @@ export function req(path: string, opts: { method?: string; token?: string; body?
 export function guestSession() {
   return { id: randomUUID(), publicToken: randomUUID().replace(/-/g, '').slice(0, 24), startedAt: '2026-12-12T23:41:05Z' };
 }
+
+// AJV validator for the Genie EventBundle schema (null when the Genie repo isn't on this machine)
+export const GENIE_SHARED_DIR = process.env.GENIE_SHARED_DIR ?? '/Volumes/EXT1TB_Samsung/dev/Genie/shared';
+export async function bundleValidator(): Promise<((b: unknown) => string | null) | null> {
+  const { existsSync, readdirSync, readFileSync } = await import('fs');
+  const path = await import('path');
+  const dir = path.join(GENIE_SHARED_DIR, 'schemas');
+  if (!existsSync(dir)) return null;
+  const { default: Ajv2020 } = await import('ajv/dist/2020');
+  const { default: addFormats } = await import('ajv-formats');
+  const ajv = new Ajv2020({ allErrors: true, strict: true, strictRequired: false });
+  addFormats(ajv);
+  for (const f of readdirSync(dir).filter(f => f.endsWith('.json'))) ajv.addSchema(JSON.parse(readFileSync(path.join(dir, f), 'utf8')));
+  const validate = ajv.getSchema('https://schemas.boothgenius.com/genie/v1/EventBundle.json')!;
+  return b => (validate(b) ? null : ajv.errorsText(validate.errors));
+}
