@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { canEditTemplate, findDesignerTemplate, libraryView } from '@/lib/genie/library';
 import { TemplateBody, prepareTemplate } from '@/lib/genie/designer';
-import { allowedPrefixes } from '@/lib/genie/templateAssets';
+import { allowedPrefixes, deleteUnusedTemplateAssets, templateAssetUrls } from '@/lib/genie/templateAssets';
 
 type P = { params: { templateId: string } };
 
@@ -41,6 +41,9 @@ export async function PUT(req: NextRequest, { params }: P) {
       ...(scope === 'standard' && parsed.data.isPublished !== undefined ? { isPublished: parsed.data.isPublished } : {}),
     },
   });
+  // Images this template no longer uses, unless something else still does
+  const kept = new Set(templateAssetUrls(saved));
+  await deleteUnusedTemplateAssets(templateAssetUrls(t).filter(u => !kept.has(u)));
   return NextResponse.json({ ...libraryView(saved), warnings });
 }
 

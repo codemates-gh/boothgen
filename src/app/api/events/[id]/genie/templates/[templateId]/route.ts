@@ -7,6 +7,7 @@ import { requireGenieAdmin } from '@/lib/genie/admin';
 import { findAdminEvent, isLocked, lockedError, templateView } from '@/lib/genie/eventAdmin';
 import { findLibraryTemplate } from '@/lib/genie/library';
 import { StoredLayout } from '@/lib/genie/schemas';
+import { deleteUnusedTemplateAssets, templateAssetUrls } from '@/lib/genie/templateAssets';
 
 async function load(tenantId: string, eventId: string, templateId: string) {
   const event = await findAdminEvent(tenantId, eventId);
@@ -52,5 +53,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   if (!found) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (isLocked(found.event)) return lockedError();
   await prisma.eventGenieTemplate.delete({ where: { id: found.template.id } });
+  // Designer images only this event copy used (e.g. its library template was deleted or changed since)
+  await deleteUnusedTemplateAssets(templateAssetUrls({ layout: found.template.layout, alternateLayout: found.template.alternateLayout, genieThumbnail: found.template.thumbnail }));
   return NextResponse.json({ ok: true });
 }

@@ -44,3 +44,36 @@ export async function verifyAsset(url: string, prefixes: string[]): Promise<Veri
     info,
   };
 }
+
+// Designer images a template stopped using (replaced background/overlay, old thumbnail) are deleted from R2, but only
+// when no library template and no event template still points at them: copies onto events and duplicates share the
+// same files. Only designer uploads (genie-templates/...) are ever deleted, never client design files.
+export function templateAssetUrls(t: { layout?: unknown; alternateLayout?: unknown; genieThumbnail?: unknown } | null): string[] {
+  if (!t) return [];
+  const urls: string[] = [];
+  for (const l of [t.layout, t.alternateLayout] as any[]) {
+    if (l?.background?.url) urls.push(l.background.url);
+    if (l?.overlay?.url) urls.push(l.overlay.url);
+  }
+  if ((t.genieThumbnail as any)?.url) urls.push((t.genieThumbnail as any).url);
+  return urls;
+}
+
+export async function deleteUnusedTemplateAssets(urls: string[]): Promise<number> {
+  const { prisma } = await import('@/lib/prisma/client');
+  const { deleteFromR2 } = await import('@/lib/storage/r2');
+  let deleted = 0;
+  for (const url of Array.from(new Set(urls))) {
+    const key = keyForUrl(url);
+    if (!key || !key.startsWith('genie-templates/')) continue;
+    const pattern = '%' + url.replace(/[\\%_]/g, m => '\\' + m) + '%';
+    const [{ n }] = await prisma.$queryRaw<{ n: bigint }[]>`
+      SELECT (
+        (SELECT count(*) FROM booth_design_templates WHERE layout::text LIKE ${pattern} OR "alternateLayout"::text LIKE ${pattern} OR "genieThumbnail"::text LIKE ${pattern})
+        + (SELECT count(*) FROM event_genie_templates WHERE layout::text LIKE ${pattern} OR "alternateLayout"::text LIKE ${pattern} OR thumbnail::text LIKE ${pattern})
+      ) AS n`;
+    if (Number(n) > 0) continue;
+    try { await deleteFromR2(key); deleted++; } catch (err) { console.error('[genie] template asset cleanup failed', key, err); }
+  }
+  return deleted;
+}

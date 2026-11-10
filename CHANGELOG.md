@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.61.1] — 2026-11-11
+
+### Changed
+- **Ready for a custom photo domain**: files stored under an earlier storage address (the current r2.dev URL) are still found and deleted after `R2_PUBLIC_URL` moves to a custom domain such as photos.boothgen.com; list old addresses in the new optional `R2_LEGACY_PUBLIC_URLS`. No change until it's set
+- **Genie template images clean up after themselves**: replacing a template's background, overlay or thumbnail deletes the old file from storage once no other template or event still uses it (client design files are never touched)
+
+---
+
 ## [2.61.0] — 2026-11-11
 
 ### Added

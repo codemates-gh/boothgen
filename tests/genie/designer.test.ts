@@ -11,10 +11,11 @@ vi.mock('@/lib/storage/r2', () => ({
   r2KeyForPublicUrl: (u: string) => (u.startsWith('https://media.boothgen.test/') ? u.slice('https://media.boothgen.test/'.length) : null),
   getPresignedUploadUrl: vi.fn(async (k: string) => 'https://r2.test/put/' + k),
   getR2Object: vi.fn(async (k: string) => (store.has(k) ? { body: store.get(k)!, contentType: null } : null)),
-  headR2Object: vi.fn(), uploadToR2: vi.fn(), deleteFromR2: vi.fn(),
+  headR2Object: vi.fn(), uploadToR2: vi.fn(), deleteFromR2: vi.fn(async (k: string) => { store.delete(k); }),
 }));
 
 import { prisma } from '@/lib/prisma/client';
+import { deleteFromR2 } from '@/lib/storage/r2';
 import { readImageInfo } from '@/lib/genie/image';
 import { GET as LIBRARY, POST as CREATE } from '@/app/api/genie-templates/route';
 import { GET as GET_T, PUT as UPDATE, DELETE as REMOVE } from '@/app/api/genie-templates/[templateId]/route';
@@ -22,6 +23,7 @@ import { POST as PRESIGN } from '@/app/api/genie-templates/assets/route';
 import { POST as VERIFY } from '@/app/api/genie-templates/assets/verify/route';
 import { GET as FILE } from '@/app/api/genie-templates/assets/file/route';
 import { POST as ADD_T } from '@/app/api/events/[id]/genie/templates/route';
+import { DELETE as DEL_EVENT_T } from '@/app/api/events/[id]/genie/templates/[templateId]/route';
 import { POST as USE_DESIGN } from '@/app/api/events/[id]/genie/templates/[templateId]/design/route';
 import { GET as DASH, POST as SETUP } from '@/app/api/events/[id]/genie/route';
 import { GET as BUNDLE_PREVIEW } from '@/app/api/events/[id]/genie/bundle/route';
@@ -75,6 +77,7 @@ async function asTenant(opts: { superAdmin?: boolean } = {}) {
 
 beforeEach(async () => {
   store.clear();
+  vi.mocked(deleteFromR2).mockClear();
   await resetDb();
   await prisma.boothDesignTemplate.deleteMany({ where: { name: { startsWith: 'Designer ' } } });
 });
@@ -302,5 +305,36 @@ describe('Event templates: approved design, client pick, thumbnail', () => {
     expect(bundle.templates[0].thumbnail).toEqual({ url: `https://media.boothgen.test/genie-templates/${tenant.id}/thumb.png`, sha256: sha(thumb), contentType: 'image/png', bytes: thumb.length });
     const validate = await bundleValidator();
     if (validate) expect(validate(bundle)).toBeNull();
+  });
+});
+
+describe('Template image cleanup', () => {
+  it('deletes a replaced image only when nothing else uses it', async () => {
+    const { tenant, client } = await asTenant();
+    const v1 = put(`genie-templates/${tenant.id}/v1.png`, png(600, 1800, true));
+    const t = await (await CREATE(json({ name: 'Designer Clean', layout: STRIP({ overlay: v1 }) }))).json();
+
+    // An event uses the template: its copy shares v1
+    const event = await seedEvent(tenant.id, client.id);
+    await ADD_T(json({ libraryTemplateId: t.id }), { params: { id: event.id } });
+    const v2 = put(`genie-templates/${tenant.id}/v2.png`, png(600, 1800, true));
+    expect((await UPDATE(json({ name: 'Designer Clean', layout: STRIP({ overlay: v2 }) }, 'PUT'), tp(t.id))).status).toBe(200);
+    expect(vi.mocked(deleteFromR2)).not.toHaveBeenCalled(); // the event copy still uses v1
+
+    // Replace v2, which nothing else uses
+    const v3 = put(`genie-templates/${tenant.id}/v3.png`, png(600, 1800, true));
+    await UPDATE(json({ name: 'Designer Clean', layout: STRIP({ overlay: v3 }) }, 'PUT'), tp(t.id));
+    expect(vi.mocked(deleteFromR2).mock.calls.map(c => c[0])).toEqual([`genie-templates/${tenant.id}/v2.png`]);
+  });
+
+  it('never deletes client design files', async () => {
+    const { tenant, client } = await asTenant();
+    const event = await seedEvent(tenant.id, client.id);
+    const t = await prisma.eventGenieTemplate.findFirstOrThrow({ where: { eventId: event.id } });
+    store.set(`templates/${tenant.id}/${event.id}/d.png`, png(600, 1800, true));
+    await prisma.templateDesign.create({ data: { tenantId: tenant.id, eventId: event.id, fileUrl: `https://media.boothgen.test/templates/${tenant.id}/${event.id}/d.png`, filename: 'd.png', status: 'APPROVED', version: 1, approvedAt: new Date() } });
+    await USE_DESIGN(json({}), { params: { id: event.id, templateId: t.id } });
+    await DEL_EVENT_T(req('/x', { method: 'DELETE' }), { params: { id: event.id, templateId: t.id } });
+    expect(vi.mocked(deleteFromR2)).not.toHaveBeenCalled();
   });
 });
