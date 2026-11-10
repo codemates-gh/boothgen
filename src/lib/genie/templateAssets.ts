@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'crypto';
-import { getR2Object, r2PublicUrl } from '@/lib/storage/r2';
+import { getR2Object, r2KeyForPublicUrl } from '@/lib/storage/r2';
 import { readImageInfo, type ImageInfo } from './image';
 
 export const TEMPLATE_ASSET_MAX_BYTES = 15 * 1024 * 1024;
@@ -23,9 +23,9 @@ export function allowedPrefixes(scope: Scope, tenantId: string): string[] {
     : [`genie-templates/${tenantId}/`, 'genie-templates/standard/', `templates/${tenantId}/`];
 }
 
+// Accepts the current public address and earlier ones (R2_LEGACY_PUBLIC_URLS)
 export function keyForUrl(url: string): string | null {
-  const base = r2PublicUrl('');
-  return url.startsWith(base) ? url.slice(base.length) : null;
+  return r2KeyForPublicUrl(url);
 }
 
 export type VerifiedAsset = { asset: RemoteAsset; info: ImageInfo };

@@ -8,6 +8,7 @@ vi.mock('@/lib/auth/config', () => ({ authOptions: {} }));
 const store = new Map<string, Buffer>();
 vi.mock('@/lib/storage/r2', () => ({
   r2PublicUrl: (k: string) => 'https://media.boothgen.test/' + k,
+  r2KeyForPublicUrl: (u: string) => (u.startsWith('https://media.boothgen.test/') ? u.slice('https://media.boothgen.test/'.length) : null),
   getPresignedUploadUrl: vi.fn(async (k: string) => 'https://r2.test/put/' + k),
   getR2Object: vi.fn(async (k: string) => (store.has(k) ? { body: store.get(k)!, contentType: null } : null)),
   headR2Object: vi.fn(), uploadToR2: vi.fn(), deleteFromR2: vi.fn(),

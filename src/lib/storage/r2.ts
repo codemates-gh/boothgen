@@ -32,8 +32,21 @@ export async function getPresignedUploadUrl(key: string, contentType: string, co
   );
 }
 
+// Public base URLs files may have been stored under: the current one first, then earlier ones (e.g. the r2.dev
+// address used before a custom domain), from R2_LEGACY_PUBLIC_URLS (comma-separated)
+export function r2PublicBases(): string[] {
+  const legacy = (process.env.R2_LEGACY_PUBLIC_URLS ?? '').split(',').map(s => s.trim().replace(/\/$/, '')).filter(Boolean);
+  return [PUBLIC_URL, ...legacy].filter(Boolean);
+}
+
+// Object key for a stored public URL, or null when the URL isn't one of this bucket's public addresses
+export function r2KeyForPublicUrl(url: string): string | null {
+  for (const base of r2PublicBases()) if (url.startsWith(base + '/')) return url.slice(base.length + 1);
+  return null;
+}
+
 export function r2KeyFromUrl(url: string): string {
-  return url.replace(PUBLIC_URL + '/', '');
+  return r2KeyForPublicUrl(url) ?? url.replace(PUBLIC_URL + '/', '');
 }
 
 export async function setR2CorsPolicy(allowedOrigins: string[]): Promise<void> {
