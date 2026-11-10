@@ -29,7 +29,7 @@ before anything that loses data (never pass `--accept-data-loss`).
 - **Destructive:** none. No DROP, no type changes, no new NOT NULL column without a default.
 - **New columns on existing tables:** `tenants` (genieEnabled default false, genieEnabledAt, genieAttendantPinHash),
   `gallery_assets` (clientId, genieKind, genieSessionId), `booth_design_templates` (layout, alternateLayout,
-  genieThumbnail). Constant defaults → metadata-only on Postgres 11+. (Main's own `tenant_brandings.country`
+  genieThumbnail). Constant defaults → metadata-only on Postgres 11+. (Main's own `tenant_branding.country`
   column from `01b21a3b` is not in this file; if production doesn't have it yet, `db push` adds it too.)
 - **New tables:** 9 `genie_*` / `event_genie_*` tables, empty.
 - **Locking:** `CREATE UNIQUE INDEX gallery_assets(galleryId, clientId)` and the `gallery_assets.genieSessionId`
