@@ -10,8 +10,8 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Info } from 'lucide-react';
-import { Field, Toggle, fmtDate, fmtDateTime } from './parts';
-import GenieTemplates, { EventTemplate, templateMismatch } from './GenieTemplates';
+import { Field, Toggle, fmtDate, fmtDateTime } from '@/components/genie/parts';
+import GenieTemplates, { ApprovedDesign, EventTemplate, templateMismatch } from './GenieTemplates';
 import GenieEventDevices from './GenieEventDevices';
 import GenieShares from './GenieShares';
 
@@ -29,6 +29,7 @@ type Dashboard = {
   event: { id: string; title: string; eventDate: string; startTime: string | null; endTime: string | null };
   settings: Settings | null; lockedAt: string | null; locksAt: string; templates: EventTemplate[];
   providerWarnings: { channel: 'sms' | 'email'; message: string }[]; photosHiddenAt: string; photosDeletedAt: string; designApprovalPending: boolean;
+  approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
 };
 type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing'> & { filters: Omit<Settings['filters'], 'available'> };
 
@@ -242,7 +243,7 @@ export default function EventGeniePage() {
                   </div>
                 </Section>
 
-                <GenieTemplates eventId={eventId} templates={data.templates} shotCount={form.capture.shotCount} locked={locked} onChange={() => { setBundle(null); load(false); }}/>
+                <GenieTemplates eventId={eventId} templates={data.templates} shotCount={form.capture.shotCount} locked={locked} onChange={() => { setBundle(null); load(false); }} approvedDesign={data.approvedDesign} briefTemplate={data.briefTemplate}/>
 
                 <Section icon={Palette} title="Filters" description="Looks guests can pick on the review screen.">
                   <Toggle checked={form.filters.guestFiltersEnabled} disabled={locked} onChange={v => set('filters', { guestFiltersEnabled: v })} label="Let guests choose a filter" hint="Off: every photo uses the default filter."/>

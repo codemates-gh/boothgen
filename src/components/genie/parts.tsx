@@ -1,4 +1,5 @@
 'use client';
+import { useEffect, useState } from 'react';
 
 export type Slot = { id: string; shotIndex: number; x: number; y: number; width: number; height: number; rotationDegrees: number; fit: 'fill' | 'fit' };
 export type RemoteAsset = { url: string; sha256: string; contentType: string; bytes: number };
@@ -33,19 +34,33 @@ export function Field({ label, hint, children }: { label: string; hint?: React.R
   );
 }
 
+// Template artwork as the browser should load it: R2 files go through BoothGen (same origin, works for canvas
+// export and on networks that block the public bucket URL); anything else loads directly.
+export function artUrl(url: string): string {
+  if (typeof window === 'undefined') return url;
+  try { if (new URL(url).origin === window.location.origin) return url; } catch { return url; }
+  return '/api/genie-templates/assets/file?url=' + encodeURIComponent(url);
+}
+
+function ArtImg({ url, className }: { url: string; className: string }) {
+  const [src, setSrc] = useState(() => artUrl(url));
+  useEffect(() => setSrc(artUrl(url)), [url]);
+  return <img src={src} alt="" className={className} onError={() => { if (src !== url) setSrc(url); }}/>;
+}
+
 // Scaled drawing of a layout: background colour/image, numbered photo frames, overlay on top
 export function LayoutPreview({ layout, width = 120 }: { layout: Layout; width?: number }) {
   const scale = width / layout.widthPx;
   return (
     <div className="relative overflow-hidden rounded border border-gray-200 flex-shrink-0" style={{ width, height: layout.heightPx * scale, backgroundColor: layout.backgroundColor }}>
-      {layout.background && <img src={layout.background.url} alt="" className="absolute inset-0 w-full h-full object-cover"/>}
+      {layout.background && <ArtImg url={layout.background.url} className="absolute inset-0 w-full h-full object-cover"/>}
       {layout.slots.map(s => (
         <div key={s.id} className="absolute bg-gray-300/90 border border-white/70 flex items-center justify-center text-[10px] font-semibold text-gray-600"
           style={{ left: s.x * scale, top: s.y * scale, width: s.width * scale, height: s.height * scale, transform: `rotate(${s.rotationDegrees}deg)` }}>
           {s.shotIndex + 1}
         </div>
       ))}
-      {layout.overlay && <img src={layout.overlay.url} alt="" className="absolute inset-0 w-full h-full"/>}
+      {layout.overlay && <ArtImg url={layout.overlay.url} className="absolute inset-0 w-full h-full"/>}
     </div>
   );
 }

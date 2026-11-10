@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
-import { AlertTriangle, GripVertical, ChevronUp, ChevronDown, Trash2, Plus, LayoutTemplate } from 'lucide-react';
-import { Layout, LayoutPreview } from './parts';
+import { AlertTriangle, GripVertical, ChevronUp, ChevronDown, Trash2, Plus, LayoutTemplate, CheckCircle2, Image as ImageIcon } from 'lucide-react';
+import { Layout, LayoutPreview } from '@/components/genie/parts';
 
 export type EventTemplate = {
-  id: string; name: string; sortOrder: number; libraryTemplateId: string | null;
+  id: string; name: string; sortOrder: number; libraryTemplateId: string | null; designId: string | null;
   layout: Layout; alternateLayout: Layout | null; frameCount: number; maxShotIndex: number; alternateAvailable: boolean;
 };
 type LibraryTemplate = { id: string; name: string; description: string | null; scope: 'standard' | 'mine'; layout: Layout; alternateLayout: Layout | null };
@@ -23,8 +23,11 @@ export function templateMismatch(t: EventTemplate, shotCount: number): string | 
   return null;
 }
 
-export default function GenieTemplates({ eventId, templates, shotCount, locked, onChange }: {
+export type ApprovedDesign = { id: string; version: number; filename: string; approvedAt: string | null };
+
+export default function GenieTemplates({ eventId, templates, shotCount, locked, onChange, approvedDesign, briefTemplate }: {
   eventId: string; templates: EventTemplate[]; shotCount: number; locked: boolean; onChange: () => void;
+  approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
 }) {
   const [picking, setPicking] = useState(false);
   const [library, setLibrary] = useState<{ standard: LibraryTemplate[]; mine: LibraryTemplate[] } | null>(null);
@@ -35,6 +38,17 @@ export default function GenieTemplates({ eventId, templates, shotCount, locked, 
   const [dragId, setDragId] = useState<string | null>(null);
   const [order, setOrder] = useState<string[] | null>(null); // while dragging
   const [removing, setRemoving] = useState<EventTemplate | null>(null);
+  const [notice, setNotice] = useState('');
+
+  async function useDesign(t: EventTemplate) {
+    setBusy('design-' + t.id); setError(''); setNotice('');
+    const r = await fetch(`/api/events/${eventId}/genie/templates/${t.id}/design`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const d = await r.json().catch(() => ({}));
+    setBusy(null);
+    if (!r.ok) { setError(d.error || 'Could not use the approved design'); return; }
+    setNotice(`${t.name}: approved design v${approvedDesign?.version} placed ${d.appliedAs === 'overlay' ? 'over' : 'behind'} the photos.${d.warning ? ' ' + d.warning : ''}`);
+    onChange();
+  }
 
   const ordered = order ? order.map(id => templates.find(t => t.id === id)!).filter(Boolean) : templates;
 
@@ -102,6 +116,7 @@ export default function GenieTemplates({ eventId, templates, shotCount, locked, 
       </CardHeader>
       <CardContent className="space-y-3">
         {error && <p className="text-sm text-red-600">{error}</p>}
+        {notice && <p className="text-sm text-green-700">{notice}</p>}
         {templates.length === 0 ? (
           <div className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
             <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>Add at least one template. iPads can&apos;t load this event until it has one.
@@ -125,6 +140,12 @@ export default function GenieTemplates({ eventId, templates, shotCount, locked, 
                     <p className="text-sm font-medium truncate">{t.name}</p>
                     <p className="text-xs text-gray-500">{FORMAT_LABEL[t.layout.format]} {t.layout.orientation} · {t.frameCount} photo{t.frameCount === 1 ? '' : 's'}{t.alternateLayout ? ' · + ' + t.alternateLayout.orientation : ''}</p>
                     {mismatch && <p className="text-xs text-amber-600 flex items-center gap-1 mt-0.5"><AlertTriangle className="w-3 h-3"/>{mismatch}</p>}
+                    {approvedDesign && t.designId === approvedDesign.id && <p className="text-xs text-green-700 flex items-center gap-1 mt-0.5"><CheckCircle2 className="w-3 h-3"/>Uses the approved design (v{approvedDesign.version})</p>}
+                    {approvedDesign && !locked && t.designId !== approvedDesign.id && (
+                      <button className="text-xs text-brand hover:underline mt-0.5 flex items-center gap-1 disabled:opacity-50" disabled={!!busy} onClick={() => useDesign(t)}>
+                        <ImageIcon className="w-3 h-3"/>{busy === 'design-' + t.id ? 'Placing…' : t.designId ? `Update to the newer approved design (v${approvedDesign.version})` : `Use approved design (v${approvedDesign.version})`}
+                      </button>
+                    )}
                   </div>
                   {(t.alternateAvailable || t.alternateLayout) && (
                     <label className={'flex items-center gap-1.5 text-xs text-gray-600 ' + (locked ? 'opacity-50' : 'cursor-pointer')}>
@@ -166,7 +187,7 @@ export default function GenieTemplates({ eventId, templates, shotCount, locked, 
               <div key={t.id} className="border border-gray-200 rounded-lg p-3 flex gap-3">
                 <LayoutPreview layout={t.layout} width={t.layout.widthPx >= t.layout.heightPx ? 96 : 40}/>
                 <div className="min-w-0 flex-1 flex flex-col">
-                  <p className="text-sm font-medium">{t.name}</p>
+                  <p className="text-sm font-medium">{t.name}{briefTemplate?.id === t.id && <Badge variant="info" className="ml-2">Client&apos;s pick</Badge>}</p>
                   <p className="text-xs text-gray-500">{FORMAT_LABEL[t.layout.format]} {t.layout.orientation} · {new Set(t.layout.slots.map(s => s.shotIndex)).size} photos</p>
                   {t.layout.slots.length > 0 && new Set(t.layout.slots.map(s => s.shotIndex)).size !== shotCount && (
                     <Badge variant="warning" className="self-start mt-1">Guests take {shotCount}</Badge>

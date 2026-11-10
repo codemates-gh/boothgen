@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Send, RefreshCw, MessageSquare, Mail } from 'lucide-react';
-import { fmtDateTime } from './parts';
+import { fmtDateTime } from '@/components/genie/parts';
 
 type Share = { id: string; channel: 'sms' | 'email'; destination: string; firstName: string | null; status: string; error: string | null; attempts: number; requestedAt: string; sentAt: string | null; deliveredAt: string | null };
 const STATUS: Record<string, { label: string; variant: any }> = {

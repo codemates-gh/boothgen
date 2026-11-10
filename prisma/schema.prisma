@@ -1210,6 +1210,7 @@ model BoothDesignTemplate {
   // Genie designer layouts (LayoutTemplate minus id/version); set = shows in the Genie template library
   layout          Json?
   alternateLayout Json?
+  genieThumbnail  Json? // RemoteAsset rendered by the designer on save
   isPublished Boolean  @default(false)
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
@@ -1444,6 +1445,7 @@ model EventGenieTemplate {
   alternateLayout   Json? // same design, other orientation
   thumbnail         Json? // RemoteAsset
   libraryTemplateId String? // BoothDesignTemplate it was copied from
+  designId          String? // approved TemplateDesign used as the artwork
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

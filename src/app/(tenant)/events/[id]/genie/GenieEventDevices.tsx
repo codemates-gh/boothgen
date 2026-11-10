@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { Tablet } from 'lucide-react';
-import { fmtDateTime } from './parts';
+import { fmtDateTime } from '@/components/genie/parts';
 
 type Row = { id: string; name: string; model: string | null; appVersion: string | null; lastSeenAt: string | null; revokedAt: string | null; assignedAt: string; releasedAt: string | null };
 

@@ -66,3 +66,15 @@ export async function headR2Object(key: string): Promise<{ bytes: number } | nul
 export function r2PublicUrl(key: string): string {
   return PUBLIC_URL + '/' + key;
 }
+
+// Whole object as a buffer, or null when it does not exist
+export async function getR2Object(key: string): Promise<{ body: Buffer; contentType: string | null } | null> {
+  try {
+    const res = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+    const bytes = await res.Body!.transformToByteArray();
+    return { body: Buffer.from(bytes), contentType: res.ContentType ?? null };
+  } catch (err: any) {
+    if (err?.name === 'NoSuchKey' || err?.$metadata?.httpStatusCode === 404) return null;
+    throw err;
+  }
+}

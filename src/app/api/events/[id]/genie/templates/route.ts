@@ -4,8 +4,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { findAdminEvent, isLocked, lockedError, templateView } from '@/lib/genie/eventAdmin';
-import { findLibraryTemplate } from '@/lib/genie/library';
-import { StoredLayout } from '@/lib/genie/schemas';
+import { copyToEvent, findLibraryTemplate } from '@/lib/genie/library';
 
 const Add = z.object({ libraryTemplateId: z.string().min(1), alternate: z.boolean().optional() }).strict();
 
@@ -22,18 +21,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const lib = await findLibraryTemplate(auth.tenantId, parsed.data.libraryTemplateId);
   if (!lib) return NextResponse.json({ error: 'Template not found' }, { status: 404 });
-  const layout = StoredLayout.safeParse(lib.layout);
-  if (!layout.success) return NextResponse.json({ error: "This template's layout is incomplete. Open it in the designer and save it again." }, { status: 422 });
-  const alternate = parsed.data.alternate && lib.alternateLayout ? StoredLayout.safeParse(lib.alternateLayout) : null;
-  if (alternate && !alternate.success) return NextResponse.json({ error: "This template's alternate layout is incomplete." }, { status: 422 });
-
-  const last = await prisma.eventGenieTemplate.findFirst({ where: { eventId: event.id }, orderBy: { sortOrder: 'desc' }, select: { sortOrder: true } });
-  const t = await prisma.eventGenieTemplate.create({
-    data: {
-      tenantId: auth.tenantId, eventId: event.id, name: lib.name.slice(0, 80), sortOrder: (last?.sortOrder ?? -1) + 1,
-      layout: layout.data, ...(alternate?.success ? { alternateLayout: alternate.data } : {}), libraryTemplateId: lib.id,
-    },
-  });
+  const copied = await copyToEvent(auth.tenantId, event.id, lib, !!parsed.data.alternate);
+  if ('error' in copied) return NextResponse.json({ error: copied.error }, { status: 422 });
+  const t = copied.template;
   return NextResponse.json(templateView(t), { status: 201 });
 }
 

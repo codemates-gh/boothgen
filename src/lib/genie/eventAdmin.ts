@@ -172,6 +172,7 @@ export function templateView(t: EventGenieTemplate) {
     sortOrder: t.sortOrder,
     version: t.version,
     libraryTemplateId: t.libraryTemplateId,
+    designId: t.designId,
     layout,
     alternateLayout: (t.alternateLayout as unknown as StoredLayout | null) ?? null,
     frameCount: frameCount(t.layout),

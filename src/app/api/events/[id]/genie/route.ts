@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
-import { libraryWhere } from '@/lib/genie/library';
+import { briefLibraryTemplate, copyToEvent, libraryWhere } from '@/lib/genie/library';
+import { latestApprovedDesign } from '@/lib/genie/approvedDesign';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { GENIE_SETTINGS_DEFAULTS, designApprovalPending, effectiveLockedAt, eventLocksAt, isValidTimeZone } from '@/lib/genie/bundle';
 import { SettingsPatch, findAdminEvent, lockedError, providerWarnings, settingsUpdateData, settingsView, templateView } from '@/lib/genie/eventAdmin';
@@ -16,11 +17,13 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const event = await findAdminEvent(auth.tenantId, params.id);
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const [templates, messaging, retention, pending] = await Promise.all([
+  const [templates, messaging, retention, pending, approved, briefTemplate] = await Promise.all([
     prisma.eventGenieTemplate.findMany({ where: { eventId: event.id, tenantId: auth.tenantId }, orderBy: { sortOrder: 'asc' } }),
     prisma.genieMessagingConfig.findUnique({ where: { tenantId: auth.tenantId } }),
     getGalleryRetention(),
     designApprovalPending([event.id]),
+    latestApprovedDesign(auth.tenantId, event.id),
+    briefLibraryTemplate(auth.tenantId, event.id),
   ]);
   const libIds = Array.from(new Set(templates.map(t => t.libraryTemplateId).filter((id): id is string => !!id)));
   const withAlternate = new Set((await prisma.boothDesignTemplate.findMany({
@@ -38,6 +41,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     photosHiddenAt: photos.hiddenAt,
     photosDeletedAt: photos.deletedAt,
     designApprovalPending: pending.has(event.id),
+    approvedDesign: approved ? { id: approved.id, version: approved.version, filename: approved.filename, approvedAt: approved.approvedAt } : null,
+    briefTemplate: briefTemplate ? { id: briefTemplate.id, name: briefTemplate.name } : null,
   });
 }
 
@@ -54,6 +59,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (event.genieSettings) return NextResponse.json(settingsView(event.genieSettings));
   try {
     const s = await prisma.eventGenieSettings.create({ data: { tenantId: auth.tenantId, eventId: event.id, timeZone: parsed.data.timeZone, ...GENIE_SETTINGS_DEFAULTS } });
+    // Start with the layout the client picked in their design brief, when it has a Genie layout
+    const picked = await briefLibraryTemplate(auth.tenantId, event.id);
+    if (picked && (await prisma.eventGenieTemplate.count({ where: { eventId: event.id } })) === 0) {
+      await copyToEvent(auth.tenantId, event.id, picked, !!picked.alternateLayout);
+    }
     return NextResponse.json(settingsView(s), { status: 201 });
   } catch (err) {
     if ((err as any)?.code !== 'P2002') throw err;
