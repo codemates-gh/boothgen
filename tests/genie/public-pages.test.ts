@@ -20,9 +20,9 @@ async function seedGallery(opts: { scope?: 'own' | 'all'; published?: boolean; a
   const gallery = await prisma.gallery.create({
     data: { tenantId: tenant.id, eventId: event.id, title: 'G', isPublished: opts.published ?? false, accessCode: opts.accessCode ?? null },
   });
-  const photo = (sessionId: string | null, sortOrder: number) => prisma.galleryAsset.create({
+  const photo = (sessionId: string | null, sortOrder: number, genieKind: string | null = null) => prisma.galleryAsset.create({
     data: {
-      galleryId: gallery.id, genieSessionId: sessionId, clientId: sessionId ? randomUUID() : null, assetType: 'PHOTO',
+      galleryId: gallery.id, genieSessionId: sessionId, clientId: sessionId ? randomUUID() : null, genieKind, assetType: 'PHOTO',
       url: 'https://media.boothgen.test/' + randomUUID() + '.jpg', filename: 'x.jpg', fileSizeBytes: 1, mimeType: 'image/jpeg', sortOrder, approvalStatus: 'APPROVED',
     },
   });
@@ -32,24 +32,27 @@ async function seedGallery(opts: { scope?: 'own' | 'all'; published?: boolean; a
   };
   const mine = await newSession();
   const other = await newSession();
-  const myShot = await photo(mine.id, 2);
-  const myPrint = await photo(mine.id, 0);
-  const otherPhoto = await photo(other.id, 0);
+  const mySheet = await photo(mine.id, 1000, 'print');
+  const myShot = await photo(mine.id, 2, 'shot');
+  const myPrint = await photo(mine.id, 0, 'gallery');
+  const otherPhoto = await photo(other.id, 0, 'gallery');
   const manual = await photo(null, 0);
-  return { gallery, mine, other, myShot, myPrint, otherPhoto, manual };
+  return { gallery, mine, other, mySheet, myShot, myPrint, otherPhoto, manual };
 }
 
 const sessionReq = (token: string, st: string) => getSession(new NextRequest(`https://boothgen.test/api/g/${token}/s/${st}`), { params: { token, sessionToken: st } });
 const galleryReq = (token: string, code?: string) => getGallery(new NextRequest(`https://boothgen.test/api/g/${token}${code ? '?code=' + code : ''}`), { params: { token } });
 
 describe('guest session page', () => {
-  it('shows only that session’s photos, print first, while the gallery is unpublished', async () => {
+  it('shows only that session’s photos, gallery image first, while the gallery is unpublished', async () => {
     const g = await seedGallery();
     const res = await sessionReq(g.gallery.clientToken, g.mine.publicToken);
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.assets.map((a: any) => a.id)).toEqual([g.myPrint.id, g.myShot.id]);
-    expect(json.assets[0].isPrint).toBe(true);
+    expect(json.assets[0].isGallery).toBe(true);
+    // The printer sheet is a download, not a duplicate photo
+    expect(json.printSheetUrl).toBe(g.mySheet.url);
     expect(JSON.stringify(json)).not.toContain(g.otherPhoto.url);
     expect(JSON.stringify(json)).not.toContain(g.manual.url);
   });
@@ -81,7 +84,8 @@ describe('live event gallery (guestLinkScope all)', () => {
     const g = await seedGallery({ scope: 'all' });
     const json = await (await galleryReq(g.gallery.clientToken)).json();
     expect(json.gallery.isLive).toBe(true);
-    expect(json.assets.map((a: any) => a.id).sort()).toEqual([g.myShot.id, g.myPrint.id, g.otherPhoto.id].sort());
+    // Per guest session: gallery image, then shots; printer sheets and manual uploads left out
+    expect(json.assets.map((a: any) => a.id)).toEqual([g.myPrint.id, g.myShot.id, g.otherPhoto.id]);
   });
 
   it('still requires the access code', async () => {
@@ -98,10 +102,11 @@ describe('live event gallery (guestLinkScope all)', () => {
     expect(json.assets).toEqual([]);
   });
 
-  it('shows all approved photos once published, exactly as before', async () => {
+  it('shows all approved photos once published, except Genie printer sheets', async () => {
     const g = await seedGallery({ scope: 'all', published: true });
     const json = await (await galleryReq(g.gallery.clientToken)).json();
     expect(json.gallery.isLive).toBe(false);
+    expect(json.assets.map((a: any) => a.id)).not.toContain(g.mySheet.id);
     expect(json.assets).toHaveLength(4);
   });
 });

@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
       assets: {
         where: { approvalStatus: 'APPROVED' },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-        select: { id: true, url: true, width: true, height: true, sortOrder: true },
+        select: { id: true, url: true, width: true, height: true, genieKind: true },
       },
     },
   });
@@ -29,7 +29,9 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
     branding: session.gallery.tenant.branding,
     isExpired: session.gallery.isExpired,
     galleryUrl: '/g/' + session.gallery.clientToken,
-    // sortOrder 0 is the print; shots follow in order
-    assets: session.gallery.isExpired ? [] : session.assets.map(a => ({ id: a.id, url: a.url, width: a.width, height: a.height, isPrint: a.sortOrder === 0 })),
+    // Gallery image first, then shots; the printer sheet is offered as a download only
+    assets: session.gallery.isExpired ? [] : session.assets.filter(a => a.genieKind !== 'print')
+      .map(a => ({ id: a.id, url: a.url, width: a.width, height: a.height, isGallery: a.genieKind === 'gallery' })),
+    printSheetUrl: session.gallery.isExpired ? null : session.assets.find(a => a.genieKind === 'print')?.url ?? null,
   });
 }

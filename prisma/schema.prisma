@@ -705,6 +705,7 @@ model GalleryAsset {
   // Genie uploads: device-generated id (idempotency key) and the guest session
   clientId       String?
   genieSessionId String?
+  genieKind      String? // "gallery" | "shot" | "print" (printer sheet, archive only)
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
 

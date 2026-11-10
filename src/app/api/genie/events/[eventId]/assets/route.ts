@@ -58,8 +58,9 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
         mimeType: body.contentType,
         width: body.width,
         height: body.height,
-        // Session page order: print first, then shots in order
-        sortOrder: body.kind === 'print' ? 0 : (body.shotIndex ?? 0) + 1,
+        genieKind: body.kind,
+        // Gallery copy first, then shots in order; the printer sheet (archive only) last
+        sortOrder: body.kind === 'gallery' ? 0 : body.kind === 'shot' ? (body.shotIndex ?? 0) + 1 : 1000,
         approvalStatus: 'APPROVED',
       },
     });

@@ -244,6 +244,9 @@ describe('uploads and asset registration', () => {
     expect(j2).toEqual(j1);
     expect(j1.sessionUrl).toContain('/s/' + body.session.publicToken);
     expect(await prisma.galleryAsset.count({ where: { clientId } })).toBe(1);
+    const galleryCopy = uploadBody(await keyPrefix(tenant.id, event.id), body.session, { kind: 'gallery', shotIndex: undefined });
+    expect((await registerAsset(req(`/api/genie/events/${event.id}/assets`, { token, body: galleryCopy }), ev(event.id))).status).toBe(201);
+    expect(await prisma.galleryAsset.findFirstOrThrow({ where: { clientId: galleryCopy.clientId } })).toMatchObject({ genieKind: 'gallery', sortOrder: 0 });
     expect(await prisma.genieSession.count({ where: { clientId: body.session.id } })).toBe(1);
     const gallery = await prisma.gallery.findUniqueOrThrow({ where: { eventId: event.id } });
     expect(gallery.approvalStatus).toBe('PENDING_REVIEW');

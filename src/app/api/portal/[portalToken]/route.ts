@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { fmtCents } from '@/lib/utils';
 import { prisma } from '@/lib/prisma/client';
+import { NOT_PRINT_SHEET } from '@/lib/genie/urls';
 import { stripe } from '@/lib/stripe';
 import { sendPaymentConfirmationEmail } from '@/lib/email/send';
 
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: { portalToken:
       invoices: { include: { lineItems: { orderBy: { sortOrder: 'asc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } }, orderBy: { createdAt: 'desc' }, take: 1 },
       contracts: { orderBy: { createdAt: 'desc' }, take: 1 },
       Quote: { include: { lineItems: { orderBy: { sortOrder: 'asc' } } }, orderBy: { createdAt: 'desc' }, take: 1 },
-      gallery: { include: { assets: { where: { approvalStatus: 'APPROVED' }, orderBy: { createdAt: 'asc' } } } },
+      gallery: { include: { assets: { where: { approvalStatus: 'APPROVED', ...NOT_PRINT_SHEET }, orderBy: { createdAt: 'asc' } } } },
       templateDesigns: { orderBy: { version: 'desc' } },
     },
   });

@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { Camera, Download, Image, AlertCircle } from 'lucide-react';
 import { PoweredByBadge } from '@/components/brand/PoweredByBadge';
 
-type Asset = { id: string; url: string; width: number | null; height: number | null; isPrint: boolean };
+type Asset = { id: string; url: string; width: number | null; height: number | null; isGallery: boolean };
 
 async function downloadFile(url: string, name: string) {
   try {
@@ -57,12 +57,12 @@ export default function GuestSessionPage() {
     </div>
   );
 
-  const { event, branding, assets, isExpired } = data as { event: any; branding: any; assets: Asset[]; isExpired: boolean };
+  const { event, branding, assets, isExpired, printSheetUrl } = data as { event: any; branding: any; assets: Asset[]; isExpired: boolean; printSheetUrl: string | null };
   const pc = branding?.primaryColor || '#F97316';
   const companyName = branding?.companyName || 'Photo Booth Co.';
-  const print = assets.find(a => a.isPrint);
-  const shots = assets.filter(a => !a.isPrint);
-  const fileName = (a: Asset, i: number) => (a.isPrint ? 'photo-strip' : 'photo-' + (i + 1)) + '.jpg';
+  const print = assets.find(a => a.isGallery);
+  const shots = assets.filter(a => !a.isGallery);
+  const fileName = (a: Asset, i: number) => (a.isGallery ? 'photo-booth' : 'photo-' + (i + 1)) + '.jpg';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -128,8 +128,13 @@ export default function GuestSessionPage() {
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm"
                   style={{ backgroundColor: pc }}
                 >
-                  <Download className="w-4 h-4"/>Download Print
+                  <Download className="w-4 h-4"/>Download
                 </button>
+                {printSheetUrl && (
+                  <button onClick={() => downloadFile(printSheetUrl, 'print-sheet.jpg')} className="w-full text-center text-xs text-gray-500 hover:text-gray-700 underline">
+                    Download the printed sheet
+                  </button>
+                )}
               </div>
             )}
 

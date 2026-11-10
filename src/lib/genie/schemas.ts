@@ -29,7 +29,7 @@ export const UploadUrlRequest = z.object({
 export const GalleryUpload = z.object({
   clientId: uuid,
   session: GuestSession,
-  kind: z.enum(['print', 'shot']),
+  kind: z.enum(['gallery', 'print', 'shot']),
   shotIndex: z.number().int().min(0).optional(),
   storageKey: z.string().min(1),
   fileName: z.string(),
