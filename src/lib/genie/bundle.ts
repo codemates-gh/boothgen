@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma/client';
 import type { StoredLayout } from './schemas';
 import { galleryUrl, sessionUrl } from './urls';
 import { emailConfigured, smsConfigured } from './messaging';
+import { galleryRetentionDates, getGalleryRetention, type GalleryRetention } from '@/lib/gallery/retention';
 
 export { appUrl, galleryUrl, sessionUrl } from './urls';
 
@@ -81,7 +82,8 @@ export type BundleResult =
   | { ok: true; bundle: Record<string, unknown>; bundleVersion: number }
   | { ok: false; status: 404 | 409; code: string; error: string };
 
-function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, bundleVersion: number) {
+function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number) {
+  const photos = galleryRetentionDates(event.eventDate, retention);
   return {
     schemaVersion: BUNDLE_SCHEMA_VERSION,
     bundleVersion,
@@ -127,6 +129,9 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
       smsConsentText: settings.smsConsentText,
       galleryUrl: galleryUrl(gallery),
       sessionUrlTemplate: sessionUrl(gallery, '{token}'),
+      // Same lifecycle as the gallery: links stop showing photos, then storage is deleted
+      photosHiddenAt: photos.hiddenAt.toISOString(),
+      photosDeletedAt: photos.deletedAt.toISOString(),
     },
     printing: {
       enabled: settings.printingEnabled,
@@ -153,8 +158,11 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
   if (event.genieTemplates.length === 0) return { ok: false, status: 409, code: 'no_templates', error: 'The event has no Genie templates yet' };
 
   const gallery = await ensureGallery(event);
-  const messaging = await prisma.genieMessagingConfig.findUnique({ where: { tenantId } });
-  let bundle = assemble(event, settings, gallery, messaging, settings.bundleVersion);
+  const [messaging, retention] = await Promise.all([
+    prisma.genieMessagingConfig.findUnique({ where: { tenantId } }),
+    getGalleryRetention(),
+  ]);
+  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion);
   const hash = contentHash(bundle);
 
   for (let attempt = 0; settings.bundleHash !== hash && attempt < 3; attempt++) {

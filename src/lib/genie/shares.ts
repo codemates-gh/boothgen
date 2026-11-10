@@ -1,9 +1,11 @@
 import { prisma } from '@/lib/prisma/client';
+import { galleryRetentionDates, getGalleryRetention } from '@/lib/gallery/retention';
 import { galleryUrl, sessionUrl } from './urls';
 import { getMessagingConfig, sendTenantEmail, sendTenantSms, type SendResult } from './messaging';
 
-export function renderMergeFields(template: string, fields: { firstName?: string | null; eventName: string; link: string }): string {
+export function renderMergeFields(template: string, fields: { firstName?: string | null; eventName: string; link: string; expiresOn?: string }): string {
   return template
+    .replace(/\{\{\s*expiresOn\s*\}\}/g, fields.expiresOn ?? '')
     .replace(/\{\{\s*firstName\s*\}\}/g, fields.firstName?.trim() || 'there')
     .replace(/\{\{\s*eventName\s*\}\}/g, fields.eventName)
     .replace(/\{\{\s*link\s*\}\}/g, fields.link);
@@ -34,7 +36,7 @@ export async function prepareShare(shareId: string): Promise<PreparedShare> {
     where: { id: shareId },
     include: {
       session: { include: { gallery: { select: { clientToken: true } }, _count: { select: { assets: true } } } },
-      event: { select: { title: true, genieSettings: true, tenant: { select: { branding: { select: { primaryColor: true } } } } } },
+      event: { select: { title: true, eventDate: true, genieSettings: true, tenant: { select: { branding: { select: { primaryColor: true } } } } } },
     },
   });
   if (!share) return { ready: false, reason: 'not_found' };
@@ -46,7 +48,10 @@ export async function prepareShare(shareId: string): Promise<PreparedShare> {
   const link = settings.guestLinkScope === 'all'
     ? galleryUrl(share.session.gallery)
     : sessionUrl(share.session.gallery, share.session.publicToken);
-  const fields = { firstName: share.firstName, eventName: share.event.title, link };
+  // {{expiresOn}}: the last day guest links show photos, in the event's time zone (e.g. "Jan 11")
+  const { hiddenAt } = galleryRetentionDates(share.event.eventDate, await getGalleryRetention());
+  const expiresOn = new Date(hiddenAt.getTime() - 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: settings.timeZone });
+  const fields = { firstName: share.firstName, eventName: share.event.title, link, expiresOn };
   const channel = share.channel === 'sms' ? 'sms' : 'email';
   return {
     ready: true,

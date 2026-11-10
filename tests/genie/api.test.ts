@@ -213,6 +213,9 @@ describe('bundle', () => {
     for (const f of readdirSync(dir).filter(f => f.endsWith('.json'))) ajv.addSchema(JSON.parse(readFileSync(path.join(dir, f), 'utf8')));
     const validate = ajv.getSchema('https://schemas.boothgenius.com/genie/v1/EventBundle.json')!;
     expect(validate(bundle), ajv.errorsText(validate.errors)).toBe(true);
+    // Gallery lifecycle with the default 30 + 30 days from the event date (2026-12-12T12:00Z)
+    expect(bundle.sharing.photosHiddenAt).toBe('2027-01-11T12:00:00.000Z');
+    expect(bundle.sharing.photosDeletedAt).toBe('2027-02-10T12:00:00.000Z');
     expect(bundle.templates.map((t: any) => t.name)).toEqual(['Template 1', 'Landscape']);
     expect(bundle.validUntil).toBe('2026-12-14T03:00:00.000Z');
     expect(bundle.sharing.sessionUrlTemplate).toMatch(/^https:\/\/boothgen\.test\/g\/[^/]+\/s\/\{token\}$/);

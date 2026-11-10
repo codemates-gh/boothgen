@@ -1,5 +1,6 @@
 
 import { inngest } from './client';
+import { getGalleryRetention } from '@/lib/gallery/retention';
 import { fmtCents } from '@/lib/utils';
 import { prisma } from '@/lib/prisma/client';
 import { sendEmail, sendDesignReadyEmail, sendDesignDecisionEmail, sendPaymentReminderEmail, sendGalleryDeletionReminderEmail, sendDesignApprovalReminderEmail } from '@/lib/email/send';
@@ -227,17 +228,17 @@ export const expireGalleries = inngest.createFunction(
   { id: 'expire-galleries' },
   { cron: '0 4 * * *' }, // 4 AM UTC daily
   async () => {
-    const setting = await prisma.systemSetting.findUnique({ where: { key: 'gallery_expire_days' } });
-    const expireDays = parseInt(setting?.value ?? '30', 10);
+    const { expireDays } = await getGalleryRetention();
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - expireDays);
 
-    // Find published, non-expired galleries whose event date is before the cutoff
+    // Find non-expired galleries whose event date is before the cutoff: published ones, and any
+    // holding Genie sessions (guest photo links work whether or not the client ever publishes)
     const toExpire = await prisma.gallery.findMany({
       where: {
-        isPublished: true,
         isExpired: false,
         event: { eventDate: { lt: cutoff } },
+        OR: [{ isPublished: true }, { genieSessions: { some: {} } }],
       },
       select: { id: true },
     });
@@ -259,12 +260,7 @@ export const deleteExpiredGalleries = inngest.createFunction(
   { id: 'delete-expired-galleries' },
   { cron: '30 4 * * *' }, // 4:30 AM UTC daily (30 min after expire job)
   async () => {
-    const [expireSetting, deleteSetting] = await Promise.all([
-      prisma.systemSetting.findUnique({ where: { key: 'gallery_expire_days' } }),
-      prisma.systemSetting.findUnique({ where: { key: 'gallery_delete_days' } }),
-    ]);
-    const expireDays = parseInt(expireSetting?.value ?? '30', 10);
-    const deleteDays = parseInt(deleteSetting?.value ?? '30', 10);
+    const { expireDays, deleteDays } = await getGalleryRetention();
     const totalDays = expireDays + deleteDays;
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - totalDays);
@@ -304,12 +300,7 @@ export const sendGalleryDeletionReminders = inngest.createFunction(
   { id: 'send-gallery-deletion-reminders' },
   { cron: '0 10 * * *' }, // 10 AM UTC daily
   async () => {
-    const [expireSetting, deleteSetting] = await Promise.all([
-      prisma.systemSetting.findUnique({ where: { key: 'gallery_expire_days' } }),
-      prisma.systemSetting.findUnique({ where: { key: 'gallery_delete_days' } }),
-    ]);
-    const expireDays = parseInt(expireSetting?.value ?? '30', 10);
-    const deleteDays = parseInt(deleteSetting?.value ?? '30', 10);
+    const { expireDays, deleteDays } = await getGalleryRetention();
     const totalDays  = expireDays + deleteDays;
 
     // Deletion date is eventDate + totalDays. We want galleries deleting in exactly 2 days.
