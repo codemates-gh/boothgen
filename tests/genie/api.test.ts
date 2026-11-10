@@ -325,3 +325,15 @@ describe('print log', () => {
     expect(await prisma.eventPrintLog.findUniqueOrThrow({ where: { eventId: event.id } })).toMatchObject({ printCount: 17, source: 'genie' });
   });
 });
+
+describe('device storage reporting', () => {
+  it('records free/total storage headers and flags low storage', async () => {
+    const { device, token } = await setup();
+    await getConfig(req('/api/genie/config', { token, headers: { 'x-genie-storage-free': String(3 * 1024 ** 3), 'x-genie-storage-total': String(64 * 1024 ** 3) } }));
+    const d = await prisma.genieDevice.findUniqueOrThrow({ where: { id: device.id } });
+    expect(d.storageFreeBytes).toBe(BigInt(3 * 1024 ** 3));
+    const { isLowStorage } = await import('@/lib/genie/auth');
+    expect(isLowStorage(d)).toBe(true);
+    expect(isLowStorage({ storageFreeBytes: BigInt(40 * 1024 ** 3), storageTotalBytes: BigInt(64 * 1024 ** 3) })).toBe(false);
+  });
+});

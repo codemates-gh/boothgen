@@ -1265,6 +1265,10 @@ model GenieDevice {
   prefix     String
   lastSeenAt DateTime?
   revokedAt  DateTime?
+  // Storage reported by the app on each request (X-Genie-Storage-Free / -Total headers)
+  storageFreeBytes   BigInt?
+  storageTotalBytes  BigInt?
+  storageReportedAt  DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 

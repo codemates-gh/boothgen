@@ -21,6 +21,22 @@ export type GenieDeviceAuth = { device: GenieDevice; tenant: Tenant };
 
 const LAST_SEEN_INTERVAL_MS = 60_000;
 
+// Free/total storage the app reports in X-Genie-Storage-Free / X-Genie-Storage-Total (bytes)
+function reportedStorage(req: NextRequest) {
+  const parse = (v: string | null) => (v && /^\d{1,16}$/.test(v) ? BigInt(v) : null);
+  const free = parse(req.headers.get('x-genie-storage-free'));
+  const total = parse(req.headers.get('x-genie-storage-total'));
+  return free === null ? null : { storageFreeBytes: free, storageTotalBytes: total, storageReportedAt: new Date() };
+}
+
+// Shown as "Low storage" on the Genie devices page
+export function isLowStorage(d: { storageFreeBytes: bigint | null; storageTotalBytes: bigint | null }): boolean {
+  if (d.storageFreeBytes === null) return false;
+  const free = Number(d.storageFreeBytes);
+  const total = d.storageTotalBytes ? Number(d.storageTotalBytes) : null;
+  return free < 5 * 1024 ** 3 || (total !== null && free / total < 0.1);
+}
+
 // Resolves the device from its bearer token. Every Genie query must be scoped to auth.tenant.id.
 export async function authenticateDevice(req: NextRequest): Promise<GenieDeviceAuth | NextResponse> {
   const header = req.headers.get('authorization') ?? '';
@@ -36,7 +52,7 @@ export async function authenticateDevice(req: NextRequest): Promise<GenieDeviceA
   if (!device.tenant.genieEnabled) return genieError(403, 'genie_not_enabled', 'Genie is not enabled for this account');
 
   if (!device.lastSeenAt || Date.now() - device.lastSeenAt.getTime() > LAST_SEEN_INTERVAL_MS) {
-    await prisma.genieDevice.update({ where: { id: device.id }, data: { lastSeenAt: new Date() } });
+    await prisma.genieDevice.update({ where: { id: device.id }, data: { lastSeenAt: new Date(), ...reportedStorage(req) } });
   }
   const { tenant, ...rest } = device;
   return { device: rest, tenant };
