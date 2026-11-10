@@ -7,9 +7,10 @@ export function pollDelayMs(waitingMs: number): number {
   return 60_000;
 }
 
-// After this long without a request from the booth's iPad, the booth counts as offline. The app reports in
-// at least every minute while it runs; lastSeenAt itself is written at most once a minute.
-export const BOOTH_OFFLINE_AFTER_MS = 2 * 60_000;
+// After this long without a request from the booth's iPad, the booth counts as offline. Genie sends a heartbeat
+// (GET /api/genie/config) every 60 s while an event is loaded; lastSeenAt is written at most once a minute, so
+// 3 minutes covers the heartbeat, the write interval and one missed beat.
+export const BOOTH_OFFLINE_AFTER_MS = 3 * 60_000;
 
 // "Booth offline" only when nothing has arrived yet and we know which iPad(s) to look at: a guest with
 // photos isn't waiting on the booth, and with no known iPad we can't tell.

@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.61.2] — 2026-11-11
+
+### Changed
+- **Guest page "booth offline" note waits 3 minutes** (was 2) without hearing from the booth's iPad, matching Genie's once-a-minute heartbeat with room for a missed beat
+
+---
+
 ## [2.61.1] — 2026-11-11
 
 ### Changed

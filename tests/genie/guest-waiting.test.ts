@@ -26,10 +26,10 @@ describe('poll schedule', () => {
 describe('booth offline rule', () => {
   const now = new Date('2026-12-12T23:50:00Z');
   const ago = (ms: number) => new Date(now.getTime() - ms);
-  it('is offline only with no photos and an iPad silent for over 2 minutes', () => {
+  it('is offline only with no photos and an iPad silent for over 3 minutes', () => {
     expect(isBoothOffline({ photoCount: 0, lastSeenAt: ago(BOOTH_OFFLINE_AFTER_MS + 1000), now })).toBe(true);
     expect(isBoothOffline({ photoCount: 0, lastSeenAt: null, now })).toBe(true);
-    expect(isBoothOffline({ photoCount: 0, lastSeenAt: ago(90_000), now })).toBe(false);
+    expect(isBoothOffline({ photoCount: 0, lastSeenAt: ago(150_000), now })).toBe(false); // heartbeat + write interval
     expect(isBoothOffline({ photoCount: 1, lastSeenAt: ago(60 * MIN), now })).toBe(false); // photos already here
     expect(isBoothOffline({ photoCount: 0, lastSeenAt: undefined, now })).toBe(false); // no iPad known
   });
