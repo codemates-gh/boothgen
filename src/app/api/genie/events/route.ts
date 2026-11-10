@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { authenticateDevice } from '@/lib/genie/auth';
 import { designApprovalPending } from '@/lib/genie/bundle';
+import { slotStatusForDevice } from '@/lib/genie/slots';
 
 export async function GET(req: NextRequest) {
   const auth = await authenticateDevice(req);
@@ -13,11 +14,12 @@ export async function GET(req: NextRequest) {
     orderBy: { eventDate: 'asc' },
     select: {
       id: true, title: true, eventDate: true, status: true,
-      genieSettings: { select: { bundleVersion: true } },
+      genieSettings: { select: { bundleVersion: true, maxDevices: true } },
       _count: { select: { genieTemplates: true } },
     },
   });
   const pending = await designApprovalPending(events.map(e => e.id));
+  const slots = await slotStatusForDevice(auth.device.id, events.map(e => ({ id: e.id, maxDevices: e.genieSettings?.maxDevices ?? 2 })));
 
   return NextResponse.json({
     events: events.map(e => ({
@@ -28,6 +30,7 @@ export async function GET(req: NextRequest) {
       bundleVersion: e.genieSettings?.bundleVersion ?? 0,
       ready: !!e.genieSettings && e._count.genieTemplates > 0,
       designApprovalPending: pending.has(e.id),
+      ...slots.get(e.id)!,
     })),
   });
 }

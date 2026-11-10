@@ -242,6 +242,7 @@ model Tenant {
   geniePrintReports    GeniePrintReport[]
   genieTemplates       EventGenieTemplate[]
   genieMessaging       GenieMessagingConfig?
+  genieEventDevices    GenieEventDevice[]
 
   // Genie paid add-on entitlement (super admin toggle until billing exists)
   genieEnabled          Boolean   @default(false)
@@ -431,6 +432,7 @@ model Event {
   genieShares          GenieShare[]
   geniePrintReports    GeniePrintReport[]
   genieTemplates       EventGenieTemplate[]
+  genieDevices         GenieEventDevice[]
 
   @@index([tenantId])
   @@index([tenantId, eventDate])
@@ -1270,6 +1272,7 @@ model GenieDevice {
   pairingCodes GeniePairingCode[]
   sessions     GenieSession[]
   printReports GeniePrintReport[]
+  eventSlots   GenieEventDevice[]
 
   @@index([tenantId])
   @@map("genie_devices")
@@ -1331,6 +1334,9 @@ model EventGenieSettings {
   printingEnabled    Boolean @default(true)
   printMaxCopies     Int     @default(4)
   printDefaultCopies Int     @default(1)
+
+  // Devices that may run this event at once (slots claimed on first bundle download)
+  maxDevices Int @default(2)
 
   // Increases whenever the bundle content changes; bundleHash is the hash it was computed from
   bundleVersion Int       @default(1)
@@ -1474,4 +1480,23 @@ model GenieMessagingConfig {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("genie_messaging_configs")
+}
+
+// A device's slot on an event (EventGenieSettings.maxDevices). Released rows keep blocking that device
+// from re-claiming until the operator deletes them; already-captured photos can still upload.
+model GenieEventDevice {
+  id         String    @id @default(cuid())
+  tenantId   String
+  eventId    String
+  deviceId   String
+  assignedAt DateTime  @default(now())
+  releasedAt DateTime?
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event  Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  device GenieDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, deviceId])
+  @@index([deviceId])
+  @@map("genie_event_devices")
 }
