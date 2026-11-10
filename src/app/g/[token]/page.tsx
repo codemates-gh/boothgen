@@ -16,6 +16,13 @@ export default function GallerySharePage() {
 
   useEffect(() => { load(); }, [token]);
 
+  // Live event gallery (Genie): pick up new photos while the event runs
+  useEffect(() => {
+    if (!data?.gallery?.isLive || !data.gallery.galleryUnlocked) return;
+    const timer = setInterval(() => load(code || undefined), 30000);
+    return () => clearInterval(timer);
+  }, [data?.gallery?.isLive, data?.gallery?.galleryUnlocked, code]);
+
   async function load(galleryCode?: string) {
     const url = '/api/g/' + token + (galleryCode ? '?code=' + encodeURIComponent(galleryCode) : '');
     const r = await fetch(url);
@@ -90,7 +97,7 @@ export default function GallerySharePage() {
             <p className="text-lg font-bold text-gray-800 mb-2">Gallery Expired</p>
             <p className="text-sm text-gray-500">The access period for this gallery has ended.</p>
           </div>
-        ) : !gallery.isPublished ? (
+        ) : !gallery.isPublished && !gallery.isLive ? (
           <div className="text-center py-20 text-gray-400">
             <Image className="w-12 h-12 mx-auto mb-4 opacity-30"/>
             <p className="text-lg font-semibold">Gallery not available yet</p>
@@ -128,7 +135,7 @@ export default function GallerySharePage() {
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h1 className="text-xl font-bold text-gray-900">{gallery.title}</h1>
-                <p className="text-sm text-gray-500">{assets.length} photos</p>
+                <p className="text-sm text-gray-500">{assets.length} photos{gallery.isLive && <span className="ml-2 inline-flex items-center gap-1 text-xs font-semibold text-red-500"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"/>Live</span>}</p>
               </div>
               {assets.length > 0 && (
                 <button
