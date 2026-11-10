@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 
 // One guest's Genie session: only that session's photos, independent of the gallery's publish state
+const SESSION_TOKEN = /^[A-Za-z0-9_-]{22,}$/;
+
 export async function GET(_req: NextRequest, { params }: { params: { token: string; sessionToken: string } }) {
   const session = await prisma.genieSession.findUnique({
     where: { publicToken: params.sessionToken },
@@ -21,8 +23,26 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
       },
     },
   });
+  // Genie builds the link offline, so a guest can scan it before the booth has uploaded: for a real gallery and a
+  // well-formed token we haven't seen yet, answer "pending" instead of not found
+  if (!session) {
+    if (!SESSION_TOKEN.test(params.sessionToken)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const gallery = await prisma.gallery.findUnique({
+      where: { clientToken: params.token },
+      select: {
+        isExpired: true,
+        event: { select: { title: true, eventDate: true } },
+        tenant: { select: { branding: { select: { companyName: true, logoUrl: true, primaryColor: true } } } },
+      },
+    });
+    if (!gallery) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json({
+      event: gallery.event, branding: gallery.tenant.branding, isExpired: gallery.isExpired,
+      pending: true, assets: [], printSheetUrl: null,
+    });
+  }
   // The session must belong to the gallery in the link
-  if (!session || session.gallery.clientToken !== params.token) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (session.gallery.clientToken !== params.token) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   return NextResponse.json({
     event: session.gallery.event,

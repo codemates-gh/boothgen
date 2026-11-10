@@ -57,11 +57,20 @@ describe('guest session page', () => {
     expect(JSON.stringify(json)).not.toContain(g.manual.url);
   });
 
+  it('answers "pending" for a well-formed token the booth hasn’t uploaded yet', async () => {
+    const g = await seedGallery();
+    const res = await sessionReq(g.gallery.clientToken, 'NotUploadedYetToken000001');
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ pending: true, assets: [] });
+    expect((await sessionReq('no-such-gallery', 'NotUploadedYetToken000001')).status).toBe(404);
+    expect((await sessionReq(g.gallery.clientToken, 'bad token!')).status).toBe(404);
+  });
+
   it('404s when the session token belongs to a different gallery', async () => {
     const a = await seedGallery();
     const b = await seedGallery();
     expect((await sessionReq(a.gallery.clientToken, b.mine.publicToken)).status).toBe(404);
-    expect((await sessionReq(a.gallery.clientToken, 'nope')).status).toBe(404);
+    expect((await sessionReq(a.gallery.clientToken, 'nope')).status).toBe(404); // malformed
   });
 
   it('returns no photos once the gallery has expired', async () => {

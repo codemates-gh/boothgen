@@ -31,7 +31,7 @@ export default function GuestSessionPage() {
         const d = await r.json();
         setData(d);
         // Photos may still be uploading from the booth; check again until they arrive
-        if (d.assets.length === 0 && !d.isExpired) timer = setTimeout(load, 15000);
+        if (d.assets.length === 0 && !d.isExpired) timer = setTimeout(load, 30000);
       }
       setLoading(false);
     }
@@ -94,7 +94,8 @@ export default function GuestSessionPage() {
           <div className="text-center py-20 text-gray-400">
             <Image className="w-12 h-12 mx-auto mb-4 opacity-30"/>
             <p className="text-lg font-semibold">Your photos are on their way</p>
-            <p className="text-sm mt-2">They&apos;ll appear here as soon as the booth uploads them. This page updates automatically.</p>
+            <p className="text-sm mt-2">The booth is still sending them. Check back in a few minutes — this page will update.</p>
+            <p className="text-xs mt-6">Still nothing after an hour? Ask the event host.</p>
           </div>
         ) : (
           <div className="space-y-6">
