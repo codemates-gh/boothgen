@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Zod mirrors of the Genie wire schemas (Genie repo: shared/schemas/*.json)
 
-// 15 MB per photo; uploads are downscaled copies (~0.3–1 MB)
+// 15 MB per photo (full-size iPad shots ~2–4 MB, Canon 18 MP ~6–9 MB)
 export const GENIE_MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
 
 const uuid = z.string().uuid();
