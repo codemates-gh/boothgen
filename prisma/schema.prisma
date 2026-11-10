@@ -243,6 +243,7 @@ model Tenant {
   genieTemplates       EventGenieTemplate[]
   genieMessaging       GenieMessagingConfig?
   genieEventDevices    GenieEventDevice[]
+  genieDefaults        GenieDefaults?
 
   // Genie paid add-on entitlement (super admin toggle until billing exists)
   genieEnabled          Boolean   @default(false)
@@ -1308,6 +1309,12 @@ model EventGenieSettings {
   timeZone String @default("America/New_York")
   // Genie on/off for this event; off hides it from iPads and the bundle returns 409
   enabled  Boolean @default(true)
+  // Section follows the account's Genie defaults (false) or was customized for this event (true). Existing rows
+  // default to custom so adding defaults never changes an event someone already set up.
+  customTimeZone Boolean @default(true)
+  customCapture  Boolean @default(true)
+  customSharing  Boolean @default(true)
+  customPrinting Boolean @default(true)
 
   // CaptureConfig
   shotCount                    Int     @default(3)
@@ -1494,6 +1501,46 @@ model GenieMessagingConfig {
 
 // A device's slot on an event (EventGenieSettings.maxDevices). Released rows keep blocking that device
 // from re-claiming until the operator deletes them; already-captured photos can still upload.
+// Account-wide Genie defaults: new events start from these, and events whose section isn't customized follow them
+model GenieDefaults {
+  id       String @id @default(cuid())
+  tenantId String @unique
+  timeZone String @default("America/New_York")
+
+  shotCount                    Int     @default(3)
+  initialCountdownSeconds      Int     @default(5)
+  betweenShotsCountdownSeconds Int     @default(3)
+  showPerShotPreview           Boolean @default(true)
+  allowPerShotRetake           Boolean @default(true)
+  perShotPreviewSeconds        Int     @default(2)
+  allowReviewRetake            Boolean @default(false)
+  retakesPerShot               Int     @default(1)
+  idleTimeoutSeconds           Int     @default(60)
+
+  smsEnabled     Boolean @default(true)
+  emailEnabled   Boolean @default(true)
+  qrEnabled      Boolean @default(true)
+  guestLinkScope String  @default("own")
+  smsBody        String
+  emailSubject   String
+  emailBody      String  @db.Text
+  smsConsentText String
+
+  printingEnabled    Boolean @default(true)
+  printMaxCopies     Int     @default(4)
+  printDefaultCopies Int     @default(1)
+
+  // BoothDesignTemplate ids added (in this order) when Genie is set up for an event
+  templateIds Json @default("[]")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("genie_defaults")
+}
+
 model GenieEventDevice {
   id         String    @id @default(cuid())
   tenantId   String

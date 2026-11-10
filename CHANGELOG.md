@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.62.0] — 2026-11-11
+
+### Added
+- **Genie → Event Defaults**: one place for your usual time zone, capture, sharing messages, printing and the templates added to new events. New events start from these
+- **Events follow the defaults until you change them**: on an event's Genie page each of those sections shows "Default" or "Custom for this event" with **Use default**. Changing a default updates every upcoming event still on it (events that have started don't change). Events set up before this release count as custom, so nothing about them changes
+- **Genie → Events**: every upcoming (or past) event's booth setup at a glance: status, templates, iPads, lock time, guest texts and emails with failures
+
+**DB migration required**: new table `genie_defaults` and four columns on `event_genie_settings` — `docs/genie/apply-production-defaults.sql`
+
+---
+
 ## [2.61.3] — 2026-11-11
 
 ### Added

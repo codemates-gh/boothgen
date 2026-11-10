@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send, CalendarCheck, SlidersHorizontal } from 'lucide-react';
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 import { APP_VERSION } from '@/lib/version';
 
@@ -50,6 +50,8 @@ const adminSections: NavSection[] = [
 const genieSection: NavSection = {
   label: 'Genie',
   items: [
+    { href: '/genie/events', label: 'Events', icon: CalendarCheck },
+    { href: '/genie/defaults', label: 'Event Defaults', icon: SlidersHorizontal },
     { href: '/genie/templates', label: 'Templates', icon: LayoutTemplate },
     { href: '/genie/devices', label: 'iPads', icon: Tablet },
     { href: '/settings/genie', label: 'Messaging', icon: Send },

@@ -1,65 +1,41 @@
 'use client';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Info } from 'lucide-react';
+import { ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Field, Toggle, fmtDate, fmtDateTime } from '@/components/genie/parts';
+import { Capture, CaptureFields, DefaultState, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, numbersFilled } from '@/components/genie/SettingsForms';
 import GenieTemplates, { ApprovedDesign, EventTemplate, templateMismatch } from './GenieTemplates';
 import GenieEventDevices from './GenieEventDevices';
 import GenieShares from './GenieShares';
 
-type Capture = {
-  shotCount: number; initialCountdownSeconds: number; betweenShotsCountdownSeconds: number; showPerShotPreview: boolean; allowPerShotRetake: boolean;
-  perShotPreviewSeconds: number; allowReviewRetake: boolean; retakesPerShot: number; idleTimeoutSeconds: number;
-};
 type Settings = {
   enabled: boolean; timeZone: string; bundleVersion: number; maxDevices: number; capture: Capture;
   filters: { guestFiltersEnabled: boolean; defaultFilterId: string; filterIds: string[]; available: { id: string; name: string }[] };
-  sharing: { smsEnabled: boolean; emailEnabled: boolean; qrEnabled: boolean; guestLinkScope: 'own' | 'all'; smsBody: string; emailSubject: string; emailBody: string; smsConsentText: string };
-  printing: { enabled: boolean; maxCopies: number; defaultCopies: number };
+  sharing: Sharing;
+  printing: Printing;
+  custom: { timeZone: boolean; capture: boolean; sharing: boolean; printing: boolean };
 };
 type Dashboard = {
   event: { id: string; title: string; eventDate: string; startTime: string | null; endTime: string | null };
   settings: Settings | null; lockedAt: string | null; locksAt: string; templates: EventTemplate[];
   providerWarnings: { channel: 'sms' | 'email'; message: string }[]; photosHiddenAt: string; photosDeletedAt: string; designApprovalPending: boolean;
   approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
+  defaults: { saved: boolean; timeZone: string };
 };
 type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing'> & { filters: Omit<Settings['filters'], 'available'> };
 
-const MERGE_HELP: [string, string][] = [
-  ['{{firstName}}', "Guest's first name (blank if they skip it)"],
-  ['{{eventName}}', 'Event title'],
-  ['{{link}}', 'Link to their photos (required in texts)'],
-  ['{{expiresOn}}', 'Last day the photos are available, e.g. "Jan 10"'],
-];
 
 function toForm(s: Settings): Form {
   const { available: _a, ...filters } = s.filters;
   return { enabled: s.enabled, timeZone: s.timeZone, capture: { ...s.capture }, filters, sharing: { ...s.sharing }, printing: { ...s.printing } };
 }
 
-function Num({ value, onChange, min, max, disabled }: { value: number; onChange: (n: number) => void; min: number; max: number; disabled?: boolean }) {
-  return <Input type="number" min={min} max={max} value={Number.isNaN(value) ? '' : value} disabled={disabled} onChange={e => onChange(parseInt(e.target.value, 10))} className="w-24"/>;
-}
 
-function Section({ icon: Icon, title, description, children }: { icon: any; title: string; description?: string; children: React.ReactNode }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Icon className="w-4 h-4"/>{title}</CardTitle>
-        {description && <p className="text-sm text-gray-500">{description}</p>}
-      </CardHeader>
-      <CardContent className="space-y-4">{children}</CardContent>
-    </Card>
-  );
-}
 
 export default function EventGeniePage() {
   const { id: eventId } = useParams<{ id: string }>();
@@ -75,7 +51,6 @@ export default function EventGeniePage() {
   const [bundleOpen, setBundleOpen] = useState(false);
   const [bundle, setBundle] = useState<{ json?: unknown; error?: string } | null>(null);
 
-  const timeZones = useMemo(() => { try { return (Intl as any).supportedValuesOf('timeZone') as string[]; } catch { return []; } }, []);
 
   const load = useCallback(async (resetForm = true) => {
     const r = await fetch(`/api/events/${eventId}/genie`);
@@ -85,6 +60,7 @@ export default function EventGeniePage() {
     const d: Dashboard = await r.json();
     setData(d);
     if (resetForm && d.settings) setForm(toForm(d.settings));
+    if (!d.settings) setSetupTz(tz => (d.defaults.saved ? d.defaults.timeZone : tz));
   }, [eventId]);
 
   useEffect(() => { load(); setSetupTz(Intl.DateTimeFormat().resolvedOptions().timeZone); }, [load]);
@@ -105,14 +81,23 @@ export default function EventGeniePage() {
 
   async function save() {
     if (!form) return;
-    const nums = [...Object.values(form.capture), form.printing.maxCopies, form.printing.defaultCopies].filter(v => typeof v === 'number') as number[];
-    if (nums.some(n => !Number.isFinite(n))) { setSaveError('Fill in every number before saving.'); return; }
+    if (!numbersFilled(form.capture, form.printing)) { setSaveError('Fill in every number before saving.'); return; }
     setSaving(true); setSaveError('');
     const r = await fetch(`/api/events/${eventId}/genie`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
     const d = await r.json().catch(() => ({}));
     setSaving(false);
     if (!r.ok) { setSaveError(d.error || 'Could not save'); return; }
     setSavedAt(Date.now());
+    setBundle(null);
+    load();
+  }
+
+  // Puts a section back on the account's Genie defaults
+  async function resetSection(section: 'timeZone' | 'capture' | 'sharing' | 'printing', label: string) {
+    if (!confirm(`Use your Genie defaults for ${label} on this event? Changes you made here for ${label} are replaced, and it follows your defaults from now on.`)) return;
+    setSaveError('');
+    const r = await fetch(`/api/events/${eventId}/genie`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reset: [section] }) });
+    if (!r.ok) { setSaveError((await r.json().catch(() => ({}))).error || 'Could not reset'); return; }
     setBundle(null);
     load();
   }
@@ -174,11 +159,9 @@ export default function EventGeniePage() {
                   <Sparkles className="w-10 h-10 mx-auto text-gray-300"/>
                   <div>
                     <p className="font-medium text-gray-700 mb-1">Set up Genie for this event</p>
-                    <p className="text-sm text-gray-500">Choose the event&apos;s time zone. You can change everything else after.</p>
+                    <p className="text-sm text-gray-500">Starts from your <Link href="/genie/defaults" className="text-brand hover:underline">Genie defaults</Link>. Choose the event&apos;s time zone; you can change everything else after.</p>
                   </div>
-                  <Select value={setupTz} onChange={e => setSetupTz(e.target.value)}>
-                    {(timeZones.includes(setupTz) ? timeZones : [setupTz, ...timeZones]).map(z => <option key={z} value={z}>{z}</option>)}
-                  </Select>
+                  {setupTz && <TimeZoneSelect value={setupTz} onChange={setSetupTz}/>}
                   {saveError && <p className="text-sm text-red-600">{saveError}</p>}
                   <Button onClick={setUp} disabled={settingUp || !setupTz}>{settingUp ? 'Setting up…' : 'Set Up Genie'}</Button>
                 </CardContent>
@@ -195,10 +178,8 @@ export default function EventGeniePage() {
                 <Section icon={Settings2} title="Details">
                   <Toggle checked={form.enabled} disabled={locked} onChange={v => setForm({ ...form, enabled: v })} label="Genie on for this event" hint="Off hides the event from your iPads."/>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <Field label="Time zone">
-                      <Select value={form.timeZone} disabled={locked} onChange={e => setForm({ ...form, timeZone: e.target.value })}>
-                        {(timeZones.includes(form.timeZone) ? timeZones : [form.timeZone, ...timeZones]).map(z => <option key={z} value={z}>{z}</option>)}
-                      </Select>
+                    <Field label="Time zone" hint={<DefaultState custom={data.settings.custom.timeZone} disabled={locked} onReset={() => resetSection('timeZone', 'the time zone')}/>}>
+                      <TimeZoneSelect value={form.timeZone} disabled={locked} onChange={tz => setForm({ ...form, timeZone: tz })}/>
                     </Field>
                     <Field label="Bundle version" hint="Goes up when anything iPads download changes.">
                       <p className="text-sm font-medium h-10 flex items-center">v{data.settings.bundleVersion}</p>
@@ -209,38 +190,16 @@ export default function EventGeniePage() {
                   </div>
                 </Section>
 
-                <Section icon={Camera} title="Capture" description="What guests go through at the booth.">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <Field label="Photos per session" hint="1–10"><Num value={form.capture.shotCount} min={1} max={10} disabled={locked} onChange={n => cap({ shotCount: n })}/></Field>
-                    <Field label="First countdown (sec)" hint="0–10"><Num value={form.capture.initialCountdownSeconds} min={0} max={10} disabled={locked} onChange={n => cap({ initialCountdownSeconds: n })}/></Field>
-                    <Field label="Between photos (sec)" hint="0–10"><Num value={form.capture.betweenShotsCountdownSeconds} min={0} max={10} disabled={locked} onChange={n => cap({ betweenShotsCountdownSeconds: n })}/></Field>
-                  </div>
-                  {mismatched.length > 0 && (
-                    <div className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
-                      <span>Guests take {form.capture.shotCount} photo{form.capture.shotCount === 1 ? '' : 's'}, but {mismatched.map(t => t.name).join(', ')} {mismatched.length === 1 ? 'has' : 'have'} a different number of frames.</span>
-                    </div>
-                  )}
-                  <div className="space-y-3 border-t pt-4">
-                    <Toggle checked={form.capture.showPerShotPreview} disabled={locked} onChange={v => cap({ showPerShotPreview: v })} label="Show each photo after it's taken"/>
-                    {form.capture.showPerShotPreview && (
-                      <div className="ml-[52px] space-y-3">
-                        <Toggle checked={form.capture.allowPerShotRetake} disabled={locked} onChange={v => cap({ allowPerShotRetake: v })} label="Keep / Retake buttons on each photo" hint="Off: the photo shows for a few seconds, then the session continues."/>
-                        {!form.capture.allowPerShotRetake && (
-                          <Field label="Preview seconds" hint="1–10"><Num value={form.capture.perShotPreviewSeconds} min={1} max={10} disabled={locked} onChange={n => cap({ perShotPreviewSeconds: n })}/></Field>
-                        )}
+                <Section icon={Camera} title="Capture" description="What guests go through at the booth."
+                  right={<DefaultState custom={data.settings.custom.capture} disabled={locked} onReset={() => resetSection('capture', 'Capture')}/>}>
+                  <CaptureFields value={form.capture} disabled={locked} onChange={cap}>
+                    {mismatched.length > 0 && (
+                      <div className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
+                        <span>Guests take {form.capture.shotCount} photo{form.capture.shotCount === 1 ? '' : 's'}, but {mismatched.map(t => t.name).join(', ')} {mismatched.length === 1 ? 'has' : 'have'} a different number of frames.</span>
                       </div>
                     )}
-                    <Toggle checked={form.capture.allowReviewRetake} disabled={locked} onChange={v => cap({ allowReviewRetake: v })} label="Retake from the final review" hint="Guests can retake any photo before printing and sharing."/>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-4">
-                    <Field label="Retakes allowed" hint="Per photo with Keep / Retake; per session from the final review. 0–3">
-                      <Num value={form.capture.retakesPerShot} min={0} max={3} disabled={locked} onChange={n => cap({ retakesPerShot: n })}/>
-                    </Field>
-                    <Field label="Idle timeout (sec)" hint="Back to the start screen after no taps. 10–600">
-                      <Num value={form.capture.idleTimeoutSeconds} min={10} max={600} disabled={locked} onChange={n => cap({ idleTimeoutSeconds: n })}/>
-                    </Field>
-                  </div>
+                  </CaptureFields>
                 </Section>
 
                 <GenieTemplates eventId={eventId} templates={data.templates} shotCount={form.capture.shotCount} locked={locked} onChange={() => { setBundle(null); load(false); }} approvedDesign={data.approvedDesign} briefTemplate={data.briefTemplate}/>
@@ -268,39 +227,14 @@ export default function EventGeniePage() {
                   </div>
                 </Section>
 
-                <Section icon={Share2} title="Sharing" description="How guests get their photos from the iPad.">
+                <Section icon={Share2} title="Sharing" description="How guests get their photos from the iPad."
+                  right={<DefaultState custom={data.settings.custom.sharing} disabled={locked} onReset={() => resetSection('sharing', 'Sharing')}/>}>
                   {data.providerWarnings.map(w => (
                     <div key={w.channel} className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                       <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/><span>{w.message} <Link href="/settings/genie" className="underline whitespace-nowrap">Open settings</Link></span>
                     </div>
                   ))}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <Toggle checked={form.sharing.smsEnabled} disabled={locked} onChange={v => set('sharing', { smsEnabled: v })} label="Text message"/>
-                    <Toggle checked={form.sharing.emailEnabled} disabled={locked} onChange={v => set('sharing', { emailEnabled: v })} label="Email"/>
-                    <Toggle checked={form.sharing.qrEnabled} disabled={locked} onChange={v => set('sharing', { qrEnabled: v })} label="QR code"/>
-                  </div>
-                  <Field label="Link opens">
-                    <Select value={form.sharing.guestLinkScope} disabled={locked} onChange={e => set('sharing', { guestLinkScope: e.target.value as 'own' | 'all' })}>
-                      <option value="own">The guest&apos;s own photos</option>
-                      <option value="all">The whole event gallery (live during the event)</option>
-                    </Select>
-                  </Field>
-                  <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
-                    <p className="font-medium text-gray-700 mb-1.5 flex items-center gap-1"><Info className="w-3.5 h-3.5"/>Merge fields</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                      {MERGE_HELP.map(([f, d]) => <p key={f}><code className="font-mono text-gray-800">{f}</code> {d}</p>)}
-                    </div>
-                  </div>
-                  <Field label="Text message" hint={`${form.sharing.smsBody.length}/480`}>
-                    <Textarea rows={3} value={form.sharing.smsBody} disabled={locked} maxLength={480} onChange={e => set('sharing', { smsBody: e.target.value })}/>
-                  </Field>
-                  <Field label="Email subject"><Input value={form.sharing.emailSubject} disabled={locked} maxLength={200} onChange={e => set('sharing', { emailSubject: e.target.value })}/></Field>
-                  <Field label="Email message" hint="A button with the link is added below your message.">
-                    <Textarea rows={5} value={form.sharing.emailBody} disabled={locked} maxLength={5000} onChange={e => set('sharing', { emailBody: e.target.value })}/>
-                  </Field>
-                  <Field label="Text message consent" hint="Guests tick this before they can get a text.">
-                    <Textarea rows={2} value={form.sharing.smsConsentText} disabled={locked} maxLength={500} onChange={e => set('sharing', { smsConsentText: e.target.value })}/>
-                  </Field>
+                  <SharingFields value={form.sharing} disabled={locked} onChange={p => set('sharing', p)}/>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
                     <Field label="Photo links stop working" hint="Follows your gallery expiry setting.">
                       <p className="text-sm font-medium">{fmtDate(data.photosHiddenAt, tz)}</p>
@@ -311,14 +245,9 @@ export default function EventGeniePage() {
                   </div>
                 </Section>
 
-                <Section icon={Printer} title="Printing">
-                  <Toggle checked={form.printing.enabled} disabled={locked} onChange={v => set('printing', { enabled: v })} label="Printing on"/>
-                  {form.printing.enabled && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <Field label="Default copies" hint="1–10"><Num value={form.printing.defaultCopies} min={1} max={10} disabled={locked} onChange={n => set('printing', { defaultCopies: n })}/></Field>
-                      <Field label="Max copies per session" hint="1–10"><Num value={form.printing.maxCopies} min={1} max={10} disabled={locked} onChange={n => set('printing', { maxCopies: n })}/></Field>
-                    </div>
-                  )}
+                <Section icon={Printer} title="Printing"
+                  right={<DefaultState custom={data.settings.custom.printing} disabled={locked} onReset={() => resetSection('printing', 'Printing')}/>}>
+                  <PrintingFields value={form.printing} disabled={locked} onChange={p => set('printing', p)}/>
                 </Section>
 
                 <GenieEventDevices eventId={eventId}/>

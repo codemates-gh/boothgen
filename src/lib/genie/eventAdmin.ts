@@ -92,6 +92,8 @@ export const SettingsPatch = z.object({
     maxCopies: int(1, 10),
     defaultCopies: int(1, 10),
   }).strict().refine(p => p.defaultCopies <= p.maxCopies, { message: 'Default copies must not exceed max copies', path: ['defaultCopies'] }),
+  // Sections to put back on the account defaults (they follow default changes again)
+  reset: z.array(z.enum(['timeZone', 'capture', 'sharing', 'printing'])).min(1),
 }).partial().strict();
 
 export type SettingsPatch = z.infer<typeof SettingsPatch>;
@@ -154,6 +156,8 @@ export function settingsView(s: EventGenieSettings) {
       smsConsentText: s.smsConsentText,
     },
     printing: { enabled: s.printingEnabled, maxCopies: s.printMaxCopies, defaultCopies: s.printDefaultCopies },
+    // Which sections were customized for this event (false = follows the account's Genie defaults)
+    custom: { timeZone: s.customTimeZone, capture: s.customCapture, sharing: s.customSharing, printing: s.customPrinting },
   };
 }
 
