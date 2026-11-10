@@ -5,7 +5,7 @@ import type { GenieMessagingConfig, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { decryptSecret, encryptSecret, maskSecret } from '@/lib/crypto/secrets';
 import { requireGenieAdmin } from '@/lib/genie/admin';
-import { emailConfigured, smsConfigured } from '@/lib/genie/messaging';
+import { FULL_ACCESS_KEY_HINT, checkResendFromDomain, emailConfigured, platformDomainError, smsConfigured } from '@/lib/genie/messaging';
 
 const opt = (s: z.ZodString) => s.optional().or(z.literal('')).transform(v => v || null);
 
@@ -79,6 +79,7 @@ export async function PUT(req: NextRequest) {
   const existing = await prisma.genieMessagingConfig.findUnique({ where: { tenantId: auth.tenantId } });
 
   const data: Prisma.GenieMessagingConfigUncheckedUpdateInput = {};
+  let notice: string | null = null;
   if (sms === null) {
     Object.assign(data, { twilioAccountSid: null, twilioAuthTokenEnc: null, twilioMessagingServiceSid: null, twilioFromNumber: null, smsTestedAt: null, smsTestError: null });
   } else if (sms) {
@@ -97,6 +98,14 @@ export async function PUT(req: NextRequest) {
   } else if (email) {
     if (email.provider === 'resend' && !email.resendApiKey && !existing?.resendApiKeyEnc) return NextResponse.json({ error: 'Enter the Resend API key' }, { status: 400 });
     if (email.provider === 'smtp' && (!email.smtpHost || !email.smtpPort)) return NextResponse.json({ error: 'Enter the SMTP host and port' }, { status: 400 });
+    const blocked = platformDomainError(email.fromAddress);
+    if (blocked) return NextResponse.json({ error: blocked }, { status: 400 });
+    if (email.provider === 'resend') {
+      const key = email.resendApiKey?.trim() || decryptSecret(existing!.resendApiKeyEnc!);
+      const check = await checkResendFromDomain(key, email.fromAddress);
+      if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
+      if (!check.checked) notice = "Saved. Your Resend key can't list domains, so the From domain wasn't checked. Use Send test to confirm it works. " + FULL_ACCESS_KEY_HINT;
+    }
     Object.assign(data, {
       emailProvider: email.provider,
       emailFromName: email.fromName,
@@ -116,5 +125,5 @@ export async function PUT(req: NextRequest) {
     create: { ...(data as Prisma.GenieMessagingConfigUncheckedCreateInput), tenantId: auth.tenantId },
     update: data,
   });
-  return NextResponse.json(view(saved));
+  return NextResponse.json({ ...view(saved), notice });
 }

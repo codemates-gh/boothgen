@@ -53,6 +53,7 @@ export default function GenieSettingsPage() {
   const [email, setEmail] = useState({ provider: 'resend' as 'resend' | 'smtp', fromName: '', fromAddress: '', resendApiKey: '', smtpHost: '', smtpPort: '587', smtpSecurity: 'starttls' as 'tls' | 'starttls' | 'none', smtpUsername: '', smtpPassword: '' });
   const [saving, setSaving] = useState<'sms' | 'email' | null>(null);
   const [saveError, setSaveError] = useState<{ sms?: string; email?: string }>({});
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [testTo, setTestTo] = useState({ sms: '', email: '' });
   const [testing, setTesting] = useState<'sms' | 'email' | null>(null);
   const [testResult, setTestResult] = useState<{ sms: { ok: boolean; error?: string } | null; email: { ok: boolean; error?: string } | null }>({ sms: null, email: null });
@@ -76,13 +77,13 @@ export default function GenieSettingsPage() {
 
   async function save(channel: 'sms' | 'email', remove = false) {
     if (remove && !confirm(`Remove your ${channel === 'sms' ? 'Twilio' : 'email'} settings? Guests won't be able to receive ${channel === 'sms' ? 'texts' : 'emails'} until you set it up again.`)) return;
-    setSaving(channel); setSaveError(e => ({ ...e, [channel]: undefined }));
+    setSaving(channel); setSaveError(e => ({ ...e, [channel]: undefined })); if (channel === 'email') setSaveNotice(null);
     const payload = remove ? { [channel]: null } : channel === 'sms'
       ? { sms: { ...sms, authToken: sms.authToken || undefined } }
       : { email: { ...email, smtpPort: email.provider === 'smtp' ? Number(email.smtpPort) || null : null, resendApiKey: email.resendApiKey || undefined, smtpPassword: email.smtpPassword || undefined } };
     const r = await fetch('/api/settings/genie-messaging', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const d = await r.json().catch(() => ({}));
-    if (r.ok) { apply(d); setTestResult(t => ({ ...t, [channel]: null })); }
+    if (r.ok) { apply(d); setTestResult(t => ({ ...t, [channel]: null })); if (channel === 'email') setSaveNotice(d.notice ?? null); }
     else setSaveError(e => ({ ...e, [channel]: d.error || 'Could not save' }));
     setSaving(null);
   }
@@ -178,7 +179,7 @@ export default function GenieSettingsPage() {
                 </Field>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Field label="From Name"><Input value={email.fromName} onChange={e => setEmail(s => ({ ...s, fromName: e.target.value }))} placeholder="Your company name"/></Field>
-                  <Field label="From Address" hint={email.provider === 'resend' ? 'Must be on a domain verified in your Resend account' : undefined}>
+                  <Field label="From Address" hint={email.provider === 'resend' ? 'Use an address on your own domain, verified in your Resend account. We check this when you save.' : 'Use an address on your own domain.'}>
                     <Input type="email" value={email.fromAddress} onChange={e => setEmail(s => ({ ...s, fromAddress: e.target.value.trim() }))} placeholder="photos@yourdomain.com"/>
                   </Field>
                 </div>
@@ -206,6 +207,7 @@ export default function GenieSettingsPage() {
                   </div>
                 )}
                 {saveError.email && <p className="text-sm text-red-600">{saveError.email}</p>}
+                {saveNotice && <p className="text-sm text-amber-600">{saveNotice}</p>}
                 <div className="flex flex-wrap gap-2">
                   <Button onClick={() => save('email')} disabled={saving === 'email' || !email.fromAddress}>{saving === 'email' ? 'Saving…' : 'Save'}</Button>
                   {config.email.configured && <Button variant="ghost" className="text-[#E2445C] hover:text-[#CC3A52] hover:bg-red-50" onClick={() => save('email', true)}>Remove</Button>}

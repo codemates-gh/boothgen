@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma/client';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { requireGenieAdmin } from '@/lib/genie/admin';
-import { getMessagingConfig, sendTenantEmail, sendTenantSms } from '@/lib/genie/messaging';
+import { decryptSecret } from '@/lib/crypto/secrets';
+import { FULL_ACCESS_KEY_HINT, checkResendFromDomain, getMessagingConfig, sendTenantEmail, sendTenantSms, type SendResult } from '@/lib/genie/messaging';
 
 const Body = z.discriminatedUnion('channel', [
   z.object({ channel: z.literal('sms'), to: z.string().regex(/^\+[1-9]\d{6,14}$/, 'Enter the number in E.164 format, e.g. +14155550123') }),
@@ -24,9 +25,21 @@ export async function POST(req: NextRequest) {
 
   const config = await getMessagingConfig(auth.tenantId);
   const text = 'This is a test message from Genie (Booth Genius). Your ' + (channel === 'sms' ? 'text messages' : 'emails') + ' to guests are set up correctly.';
-  const result = channel === 'sms'
-    ? await sendTenantSms(config, to, text)
-    : await sendTenantEmail(config, to, 'Genie test email', `<div style="font-family:sans-serif;padding:24px"><p>${text}</p></div>`, text);
+  let result: SendResult;
+  if (channel === 'sms') {
+    result = await sendTenantSms(config, to, text);
+  } else {
+    // Resend: check the From domain up front when the key allows listing domains
+    const check = config?.emailProvider === 'resend' && config.resendApiKeyEnc && config.emailFromAddress
+      ? await checkResendFromDomain(decryptSecret(config.resendApiKeyEnc), config.emailFromAddress)
+      : { ok: true as const, checked: true };
+    if (!check.ok) {
+      result = { ok: false, error: check.error, retryable: false };
+    } else {
+      result = await sendTenantEmail(config, to, 'Genie test email', `<div style="font-family:sans-serif;padding:24px"><p>${text}</p></div>`, text);
+      if (!result.ok && !check.checked) result = { ...result, error: `Resend said: ${result.error}. ${FULL_ACCESS_KEY_HINT}` };
+    }
+  }
 
   if (config) {
     await prisma.genieMessagingConfig.update({

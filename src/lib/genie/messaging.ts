@@ -38,12 +38,55 @@ export async function sendTenantSms(c: GenieMessagingConfig | null, to: string, 
   return result.ok ? { ok: true, providerMessageId: result.sid } : { ok: false, error: result.error, retryable: result.retryable };
 }
 
+// Tenants send guest email from their own domain, never the platform's
+const PLATFORM_EMAIL_DOMAINS = ['boothgen.com'];
+
+export const FULL_ACCESS_KEY_HINT = 'Tip: use a Resend API key with full access to have the From domain checked when you save.';
+
+export function emailDomain(address: string): string {
+  return address.slice(address.lastIndexOf('@') + 1).trim().toLowerCase().replace(/\.$/, '');
+}
+
+export function platformDomainError(address: string): string | null {
+  const domain = emailDomain(address);
+  const blocked = PLATFORM_EMAIL_DOMAINS.find(d => domain === d || domain.endsWith('.' + d));
+  return blocked ? `You can't send from ${domain}. Use an address on your own domain.` : null;
+}
+
+export type DomainCheck = { ok: true; checked: boolean } | { ok: false; error: string };
+
+// Asks Resend (with the tenant's key) whether the From domain is verified. Sending-only keys can't
+// list domains (401/403): the check is skipped and Send test reports Resend's own error instead.
+export async function checkResendFromDomain(apiKey: string, address: string): Promise<DomainCheck> {
+  const domain = emailDomain(address);
+  let res: Response;
+  try {
+    res = await fetch('https://api.resend.com/domains', { headers: { Authorization: `Bearer ${apiKey}` }, cache: 'no-store' });
+  } catch {
+    return { ok: true, checked: false };
+  }
+  if (res.status === 401 || res.status === 403) return { ok: true, checked: false };
+  if (!res.ok) return { ok: true, checked: false };
+  const body = await res.json().catch(() => null) as { data?: { name?: string; status?: string }[] } | null;
+  if (!Array.isArray(body?.data)) return { ok: true, checked: false };
+  const match = body.data.find(d => d.name?.toLowerCase() === domain);
+  if (match?.status === 'verified') return { ok: true, checked: true };
+  return {
+    ok: false,
+    error: match
+      ? `${domain} isn't verified in your Resend account yet (status: ${match.status ?? 'unknown'}). Finish verifying it under Resend → Domains, or use an address on a verified domain.`
+      : `${domain} isn't verified in your Resend account. Add it under Resend → Domains, or use an address on a verified domain.`,
+  };
+}
+
 function fromHeader(c: GenieMessagingConfig): string {
   return c.emailFromName ? `${c.emailFromName.replace(/[<>"]/g, '')} <${c.emailFromAddress}>` : c.emailFromAddress!;
 }
 
 export async function sendTenantEmail(c: GenieMessagingConfig | null, to: string, subject: string, html: string, text: string): Promise<SendResult> {
   if (!c || !emailConfigured(c)) return { ok: false, error: 'Email is not set up', retryable: false };
+  const blocked = platformDomainError(c.emailFromAddress!);
+  if (blocked) return { ok: false, error: blocked, retryable: false };
   try {
     if (c.emailProvider === 'resend') {
       const resend = new Resend(decryptSecret(c.resendApiKeyEnc!));
