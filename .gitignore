@@ -12,3 +12,6 @@ node_modules/
 # Build artifacts
 tsconfig.tsbuildinfo
 public/build-info.json
+
+# Genie local seed assets (npm run genie:seed)
+public/genie-seed/
