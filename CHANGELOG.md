@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.61.3] — 2026-11-11
+
+### Added
+- **Genie → Messaging** in the sidebar (Genie accounts only): opens Settings → Genie, where guest texts (Twilio) and emails (Resend/SMTP) are set up
+
+---
+
 ## [2.61.2] — 2026-11-11
 
 ### Changed
