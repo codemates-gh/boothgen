@@ -2,6 +2,9 @@ import { z } from 'zod';
 
 // Zod mirrors of the Genie wire schemas (Genie repo: shared/schemas/*.json)
 
+// 15 MB per photo; uploads are downscaled copies (~0.3–1 MB)
+export const GENIE_MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+
 const uuid = z.string().uuid();
 const dateTime = z.string().datetime({ offset: true });
 const sha256 = z.string().regex(/^[0-9a-f]{64}$/);
@@ -23,7 +26,7 @@ export const UploadUrlRequest = z.object({
   clientId: uuid,
   fileName: z.string().min(1).max(200),
   contentType: z.literal('image/jpeg'),
-  bytes: z.number().int().min(1).max(52428800),
+  bytes: z.number().int().min(1).max(GENIE_MAX_UPLOAD_BYTES),
 }).strict();
 
 export const GalleryUpload = z.object({
@@ -34,7 +37,7 @@ export const GalleryUpload = z.object({
   storageKey: z.string().min(1),
   fileName: z.string(),
   contentType: z.literal('image/jpeg'),
-  bytes: z.number().int().min(1),
+  bytes: z.number().int().min(1).max(GENIE_MAX_UPLOAD_BYTES),
   width: z.number().int().min(1),
   height: z.number().int().min(1),
   sha256,

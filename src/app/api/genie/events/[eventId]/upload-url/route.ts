@@ -18,12 +18,13 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
 
   const parsed = UploadUrlRequest.safeParse(await readJson(req));
   if (!parsed.success) return genieError(400, 'invalid_request', firstIssue(parsed.error));
-  const { clientId, fileName, contentType } = parsed.data;
+  const { clientId, fileName, contentType, bytes } = parsed.data;
 
   const gallery = await ensureGallery(event);
   // Same prefix as gallery uploads; keyed on clientId so a retried request gets the same key
   const storageKey = 'galleries/' + auth.tenant.id + '/' + gallery.id + '/genie-' + clientId + '-' + fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const uploadUrl = await getPresignedUploadUrl(storageKey, contentType);
+  // The size is part of the signature: R2 refuses a PUT of any other length
+  const uploadUrl = await getPresignedUploadUrl(storageKey, contentType, bytes);
   return NextResponse.json({
     uploadUrl,
     storageKey,

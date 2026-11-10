@@ -23,8 +23,13 @@ export async function deleteFromR2(key: string): Promise<void> {
   await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
 
-export async function getPresignedUploadUrl(key: string, contentType: string): Promise<string> {
-  return getSignedUrl(r2, new PutObjectCommand({ Bucket: BUCKET, Key: key, ContentType: contentType }), { expiresIn: 3600 });
+// contentLength, when given, is signed into the URL so the PUT must be exactly that size
+export async function getPresignedUploadUrl(key: string, contentType: string, contentLength?: number): Promise<string> {
+  return getSignedUrl(
+    r2,
+    new PutObjectCommand({ Bucket: BUCKET, Key: key, ContentType: contentType, ...(contentLength ? { ContentLength: contentLength } : {}) }),
+    { expiresIn: 3600, ...(contentLength ? { signableHeaders: new Set(['content-length']) } : {}) },
+  );
 }
 
 export function r2KeyFromUrl(url: string): string {
