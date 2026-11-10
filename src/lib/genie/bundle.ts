@@ -3,7 +3,7 @@ import type { Event, EventGenieSettings, EventGenieTemplate, Gallery, GenieMessa
 import { prisma } from '@/lib/prisma/client';
 import type { StoredLayout } from './schemas';
 import { galleryUrl, sessionUrl } from './urls';
-import { emailConfigured, smsConfigured } from './messaging';
+import { emailUsable, smsConfigured } from './messaging';
 import { galleryRetentionDates, getGalleryRetention, type GalleryRetention } from '@/lib/gallery/retention';
 
 export { appUrl, galleryUrl, sessionUrl } from './urls';
@@ -137,7 +137,7 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
     sharing: {
       // A channel is only offered when the tenant's own provider for it is set up
       smsEnabled: settings.smsEnabled && smsConfigured(messaging),
-      emailEnabled: settings.emailEnabled && emailConfigured(messaging),
+      emailEnabled: settings.emailEnabled && emailUsable(messaging),
       qrEnabled: settings.qrEnabled,
       guestLinkScope: settings.guestLinkScope,
       smsBody: settings.smsBody,

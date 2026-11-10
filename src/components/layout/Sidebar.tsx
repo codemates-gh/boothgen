@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet } from 'lucide-react';
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 import { APP_VERSION } from '@/lib/version';
 
@@ -46,6 +46,14 @@ const adminSections: NavSection[] = [
   },
 ];
 
+// Shown only to tenants with the Genie add-on
+const genieSection: NavSection = {
+  label: 'Genie',
+  items: [
+    { href: '/genie/devices', label: 'iPads', icon: Tablet },
+  ],
+};
+
 // Flat list for team member nav (no sections needed)
 const adminNav: NavItem[] = adminSections.flatMap(s => s.items);
 
@@ -80,7 +88,7 @@ function NavLink({ href, label, Icon, pro, active, close }: { href: string; labe
   );
 }
 
-export function Sidebar({ isFoundingMember }: { isFoundingMember?: boolean }) {
+export function Sidebar({ isFoundingMember, genieEnabled }: { isFoundingMember?: boolean; genieEnabled?: boolean }) {
   const path = usePathname();
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
@@ -143,7 +151,7 @@ export function Sidebar({ isFoundingMember }: { isFoundingMember?: boolean }) {
               );
             })
           ) : (
-            adminSections.map((section, si) => (
+            (genieEnabled ? [...adminSections, genieSection] : adminSections).map((section, si) => (
               <div key={section.label} className={si > 0 ? 'mt-4' : ''}>
                 <p className="pl-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/25">{section.label}</p>
                 {section.items.map(({ href, label, icon: Icon, pro }) => {

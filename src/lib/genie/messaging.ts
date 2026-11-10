@@ -21,6 +21,11 @@ export function emailConfigured(c: GenieMessagingConfig | null): boolean {
   return false;
 }
 
+// Set up and allowed to send: a From address on the platform's domain (saved before that rule) can't send
+export function emailUsable(c: GenieMessagingConfig | null): boolean {
+  return emailConfigured(c) && !platformDomainError(c!.emailFromAddress!);
+}
+
 export async function getMessagingConfig(tenantId: string) {
   return prisma.genieMessagingConfig.findUnique({ where: { tenantId } });
 }

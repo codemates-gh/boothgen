@@ -60,6 +60,8 @@ function view(c: GenieMessagingConfig | null) {
       smtpPasswordMasked: masked(c?.smtpPasswordEnc ?? null),
       testedAt: c?.emailTestedAt ?? null,
       testError: c?.emailTestError ?? null,
+      // A From address saved before the own-domain rule: shown as a problem instead of "Tested"
+      domainError: c?.emailFromAddress ? platformDomainError(c.emailFromAddress) : null,
     },
   };
 }

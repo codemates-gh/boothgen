@@ -16,7 +16,7 @@ type Config = {
   email: {
     configured: boolean; provider: 'resend' | 'smtp' | null; fromName: string; fromAddress: string; resendApiKeyMasked: string | null;
     smtpHost: string; smtpPort: number | null; smtpSecurity: 'tls' | 'starttls' | 'none'; smtpUsername: string; smtpPasswordMasked: string | null;
-    testedAt: string | null; testError: string | null;
+    testedAt: string | null; testError: string | null; domainError: string | null;
   };
 };
 
@@ -30,7 +30,8 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
-function Status({ configured, testedAt, testError }: { configured: boolean; testedAt: string | null; testError: string | null }) {
+function Status({ configured, testedAt, testError, domainError }: { configured: boolean; testedAt: string | null; testError: string | null; domainError?: string | null }) {
+  if (domainError) return <Badge variant="danger">Can&apos;t send</Badge>;
   if (!configured) return <Badge variant="default">Not set up</Badge>;
   if (testError) return <Badge variant="danger">Test failed</Badge>;
   if (testedAt) return <Badge variant="success">Tested</Badge>;
@@ -171,6 +172,12 @@ export default function GenieSettingsPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {config.email.domainError && (
+                  <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
+                    <span>{config.email.domainError} Guests won&apos;t get emails until you save an address on your own domain.</span>
+                  </div>
+                )}
                 <Field label="Provider">
                   <Select value={email.provider} onChange={e => setEmail(s => ({ ...s, provider: e.target.value as 'resend' | 'smtp' }))}>
                     <option value="resend">Resend</option>

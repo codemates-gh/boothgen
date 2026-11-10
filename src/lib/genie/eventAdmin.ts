@@ -189,8 +189,8 @@ export function providerWarnings(c: GenieMessagingConfig | null, sharing: { smsE
   }
   if (sharing.emailEnabled) {
     const domainError = c?.emailFromAddress ? platformDomainError(c.emailFromAddress) : null;
-    if (!emailConfigured(c)) out.push({ channel: 'email', message: 'Emails are hidden on the iPad until you set up email in Settings → Genie.' });
-    else if (domainError) out.push({ channel: 'email', message: domainError + ' Update it in Settings → Genie.' });
+    if (domainError) out.push({ channel: 'email', message: domainError + ' Emails are hidden on the iPad until you change it in Settings → Genie.' });
+    else if (!emailConfigured(c)) out.push({ channel: 'email', message: 'Emails are hidden on the iPad until you set up email in Settings → Genie.' });
     else if (c!.emailTestError) out.push({ channel: 'email', message: 'The last test email failed. Send a new test in Settings → Genie.' });
     else if (!c!.emailTestedAt) out.push({ channel: 'email', message: "Email hasn't been tested yet. Send a test in Settings → Genie." });
   }

@@ -5,7 +5,7 @@ import { authenticateDevice, findDeviceEvent, genieError, isUniqueViolation, rea
 import { ensureGallery } from '@/lib/genie/bundle';
 import { dispatchReadyShares, ensureGenieSession } from '@/lib/genie/sessions';
 import { ShareJob, firstIssue } from '@/lib/genie/schemas';
-import { emailConfigured, getMessagingConfig, smsConfigured } from '@/lib/genie/messaging';
+import { emailUsable, getMessagingConfig, smsConfigured } from '@/lib/genie/messaging';
 
 const E164 = /^\+[1-9]\d{6,14}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
   const messaging = await getMessagingConfig(auth.tenant.id);
   const enabled = body.channel === 'sms'
     ? settings.smsEnabled && smsConfigured(messaging)
-    : settings.emailEnabled && emailConfigured(messaging);
+    : settings.emailEnabled && emailUsable(messaging);
   if (!enabled) {
     return genieError(422, 'channel_disabled', `${body.channel === 'sms' ? 'Text' : 'Email'} sharing is turned off or not set up for this account`);
   }

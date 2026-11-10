@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default async function TenantLayout({ children }: { children: React.ReactNode }) {
   const session = await requireTenantSession();
   const [tenant, chatSetting, subscription] = await Promise.all([
-    prisma.tenant.findUnique({ where: { id: session.tenantId }, select: { status: true, cancelledAt: true } }),
+    prisma.tenant.findUnique({ where: { id: session.tenantId }, select: { status: true, cancelledAt: true, genieEnabled: true } }),
     prisma.systemSetting.findUnique({ where: { key: 'chatbot_enabled' } }),
     prisma.stripeSubscription.findUnique({ where: { tenantId: session.tenantId }, select: { plan: true } }),
   ]);
@@ -26,7 +26,7 @@ export default async function TenantLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-screen bg-[#F5F6F8]">
-      <Sidebar isFoundingMember={isFoundingMember} />
+      <Sidebar isFoundingMember={isFoundingMember} genieEnabled={session.tenantRole === 'HOST_ADMIN' && !!tenant?.genieEnabled} />
       <main className="lg:pl-64 pt-14 lg:pt-16">
         {isCancelled && (
           <div className="bg-red-600 text-white px-4 py-3 text-sm flex flex-wrap items-center justify-between gap-2">
