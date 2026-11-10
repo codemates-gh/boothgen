@@ -18,6 +18,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const body = await req.json();
 
+  // Genie add-on on/off (until billing exists)
+  if (typeof body.genieEnabled === 'boolean') {
+    const tenant = await prisma.tenant.update({
+      where: { id: params.id },
+      data: { genieEnabled: body.genieEnabled, ...(body.genieEnabled ? { genieEnabledAt: new Date() } : {}) },
+      select: { id: true, genieEnabled: true, genieEnabledAt: true },
+    });
+    return NextResponse.json(tenant);
+  }
+
   // Tenant status change (TRIAL / ACTIVE / SUSPENDED / CANCELLED)
   if (body.status) {
     const tenant = await prisma.tenant.update({ where: { id: params.id }, data: { status: body.status } });

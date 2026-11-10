@@ -4,6 +4,24 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.61.0] — 2026-11-11
+
+### Added
+- **Genie (iPad photo booth add-on)** — off by default; turned on per account by a super admin (new **Genie** column in Super Admin → Operators). On for Instant Photo Box and Glamour Style only
+  - **Genie → iPads**: pair an iPad with a 10-minute code, see model, app version, last seen, current event and low storage; rename or remove; attendant PIN
+  - **Genie → Templates**: Standard and My templates; a designer for 4×6 and 2×6 layouts with background/overlay images, photo frames (drag, resize, rotate, align, distribute), alternate orientation, sample-photo preview and thumbnails
+  - **Event → Genie**: turn Genie on per event; capture, templates, filters, sharing messages, printing; iPads on the event (2 max) with release; guest texts and emails with resend; use the client-approved design as the template artwork; the client's design-brief pick is added automatically; locks when the event starts
+  - **Settings → Genie**: guests get texts from the account's own Twilio and emails from its own Resend or SMTP, with Send test; the From address must be on the account's own verified domain
+  - **Guest photo pages**: each guest's own page (or the live event gallery), showing "Uploading your photos…" and filling in as photos arrive, or a calm "booth offline" note
+  - Genie photos follow the gallery's expiry and deletion dates
+
+### Fixed
+- **Middleware public paths now match whole path segments**: `/g` (guest galleries) no longer made `/gallery` or `/genie` public at the middleware
+
+**DB migration required** (applied 2026-11-10): 9 new `genie_*` / `event_genie_*` tables and new nullable/defaulted columns on `tenants`, `gallery_assets` and `booth_design_templates` — see `docs/genie/go-live-schema.sql`. **New env vars**: `SECRETS_ENCRYPTION_KEY` (required, never change), `GENIE_MIN_APP_VERSION`
+
+---
+
 ## [2.60.4] — 2026-11-09
 
 ### Fixed

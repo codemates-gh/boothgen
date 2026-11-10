@@ -16,6 +16,7 @@ interface Operator {
   name: string;
   slug: string;
   status: TenantStatus;
+  genieEnabled: boolean;
   createdAt: Date;
   branding: { companyName: string | null } | null;
   memberships: { user: { name: string; email: string } }[];
@@ -54,6 +55,25 @@ const STATUS_OPTIONS: { value: TenantStatus; label: string }[] = [
 
 type Mode = 'idle' | 'upgrade' | 'status' | 'delete' | 'subscription';
 type SubConfirm = 'cancel-now' | 'refund' | null;
+
+// Genie add-on switch (a paid add-on; set by hand until billing exists)
+function GenieCell({ op }: { op: Operator }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  async function toggle() {
+    const name = op.branding?.companyName ?? op.name;
+    if (!confirm(op.genieEnabled ? `Turn Genie off for ${name}? Their iPads stop syncing and Genie pages hide.` : `Turn Genie on for ${name}?`)) return;
+    setBusy(true);
+    await fetch(`/api/super-admin/tenants/${op.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ genieEnabled: !op.genieEnabled }) });
+    setBusy(false);
+    router.refresh();
+  }
+  return (
+    <button onClick={toggle} disabled={busy} title={op.genieEnabled ? 'Turn Genie off' : 'Turn Genie on'} className="disabled:opacity-50">
+      <Badge variant={op.genieEnabled ? 'success' : 'default'}>{busy ? '…' : op.genieEnabled ? 'On' : 'Off'}</Badge>
+    </button>
+  );
+}
 
 function ActionsCell({ op }: { op: Operator }) {
   const router = useRouter();
@@ -425,6 +445,7 @@ export function OperatorsTable({ operators, failedMap = {} }: { operators: Opera
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Plan</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Stripe</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Genie</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Events</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Joined</th>
                 <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase text-right">Actions</th>
@@ -433,7 +454,7 @@ export function OperatorsTable({ operators, failedMap = {} }: { operators: Opera
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-sm text-gray-400">
+                  <td colSpan={8} className="px-6 py-12 text-center text-sm text-gray-400">
                     {query
                       ? <>No operators match &ldquo;{query}&rdquo;</>
                       : <span>No operators found. <button onClick={() => window.location.reload()} className="text-brand underline">Refresh page</button></span>
@@ -474,6 +495,7 @@ export function OperatorsTable({ operators, failedMap = {} }: { operators: Opera
                         {op.stripeConnect?.onboardingStatus ?? 'NOT_CONNECTED'}
                       </Badge>
                     </td>
+                    <td className="px-6 py-4"><GenieCell op={op}/></td>
                     <td className="px-6 py-4 text-sm text-gray-600">{op._count.events}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {format(op.createdAt, 'MMM d, yyyy')}
