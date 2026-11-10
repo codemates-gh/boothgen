@@ -24,6 +24,15 @@ const config: Config = {
         card: '0 2px 16px rgba(0,0,0,0.06)',
         'card-md': '0 4px 24px rgba(0,0,0,0.08)',
       },
+      // Guest page "uploading" bar and the cloud's gentle lift
+      keyframes: {
+        'upload-slide': { '0%': { transform: 'translateX(-100%)' }, '100%': { transform: 'translateX(300%)' } },
+        'upload-lift': { '0%, 100%': { transform: 'translateY(2px)' }, '50%': { transform: 'translateY(-3px)' } },
+      },
+      animation: {
+        'upload-slide': 'upload-slide 1.6s ease-in-out infinite',
+        'upload-lift': 'upload-lift 2s ease-in-out infinite',
+      },
     },
   },
   plugins: [],

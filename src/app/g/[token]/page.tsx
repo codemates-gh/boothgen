@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Camera, Download, Lock, Image, X, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { PoweredByBadge } from '@/components/brand/PoweredByBadge';
+import { BoothOffline, FadeInImg, UploadingIndicator, useWaitingPoll } from '@/components/genie/GuestWaiting';
 
 export default function GallerySharePage() {
   const { token } = useParams<{ token: string }>();
@@ -16,17 +17,15 @@ export default function GallerySharePage() {
 
   useEffect(() => { load(); }, [token]);
 
-  // Live event gallery (Genie): pick up new photos while the event runs
-  useEffect(() => {
-    if (!data?.gallery?.isLive || !data.gallery.galleryUnlocked) return;
-    const timer = setInterval(() => load(code || undefined), 30000);
-    return () => clearInterval(timer);
-  }, [data?.gallery?.isLive, data?.gallery?.galleryUnlocked, code]);
+  // Live event gallery (Genie): pick up new photos while the event runs, quickly right after new ones arrive
+  useWaitingPoll(() => load(code || undefined), !!data?.gallery?.isLive && !!data.gallery.galleryUnlocked, data?.assets?.length);
 
   async function load(galleryCode?: string) {
     const url = '/api/g/' + token + (galleryCode ? '?code=' + encodeURIComponent(galleryCode) : '');
-    const r = await fetch(url);
-    if (r.ok) setData(await r.json());
+    try {
+      const r = await fetch(url, { cache: 'no-store' });
+      if (r.ok) setData(await r.json());
+    } catch { /* keep what's shown; the next check retries */ }
     setLoading(false);
   }
 
@@ -171,7 +170,7 @@ export default function GallerySharePage() {
                   className="relative group aspect-square rounded-xl overflow-hidden cursor-pointer bg-gray-100"
                   onClick={() => setLightboxIndex(i)}
                 >
-                  <img src={a.url} alt="" className="w-full h-full object-cover"/>
+                  <FadeInImg src={a.url} alt="" className="w-full h-full object-cover"/>
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"/>
                 </div>
               ))}
@@ -193,7 +192,19 @@ export default function GallerySharePage() {
               );
             })()}
 
-            {assets.length === 0 && (
+            {assets.length === 0 && gallery.isLive && gallery.boothOffline ? (
+              <div className="text-center py-16 max-w-sm mx-auto">
+                <BoothOffline/>
+                <p className="font-semibold text-gray-800">The booth is offline right now</p>
+                <p className="text-sm text-gray-500 mt-2">Photos will appear here as soon as it reconnects. Keep or bookmark this link to come back.</p>
+              </div>
+            ) : assets.length === 0 && gallery.isLive ? (
+              <div className="text-center py-16 max-w-sm mx-auto">
+                <UploadingIndicator color={pc}/>
+                <p className="font-semibold text-gray-800">Photos are on their way</p>
+                <p className="text-sm text-gray-500 mt-2">New photos from the booth show up here as they upload.</p>
+              </div>
+            ) : assets.length === 0 && (
               <div className="text-center py-16 text-gray-400">
                 <Image className="w-10 h-10 mx-auto mb-3 opacity-30"/>
                 <p>No photos available yet.</p>

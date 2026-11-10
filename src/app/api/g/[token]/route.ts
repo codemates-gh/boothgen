@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { bundleValidUntil } from '@/lib/genie/bundle';
 import { NOT_PRINT_SHEET } from '@/lib/genie/urls';
+import { isBoothOffline } from '@/lib/genie/guestWaiting';
+import { eventBoothLastSeen } from '@/lib/genie/boothStatus';
 
 // Live view: guests' sessions in the order they arrived, each with its gallery image first, then shots
 function liveOrder<T extends { genieSessionId: string | null; sortOrder: number; createdAt: Date }>(assets: T[]): T[] {
@@ -40,6 +42,14 @@ export async function GET(req: NextRequest, { params }: { params: { token: strin
   const retentionSetting = await prisma.systemSetting.findUnique({ where: { key: 'gallery_expire_days' } });
   const expireDays = parseInt(retentionSetting?.value ?? '30', 10);
 
+  const assets = !galleryUnlocked || gallery.isExpired ? []
+    : gallery.isPublished ? gallery.assets
+    : isLive ? liveOrder(gallery.assets.filter(a => a.genieSessionId))
+    : [];
+  // Live gallery still empty: is the booth reachable?
+  const boothOffline = isLive && galleryUnlocked && assets.length === 0
+    && isBoothOffline({ photoCount: 0, lastSeenAt: await eventBoothLastSeen(gallery.eventId) });
+
   return NextResponse.json({
     gallery: {
       id: gallery.id,
@@ -47,15 +57,13 @@ export async function GET(req: NextRequest, { params }: { params: { token: strin
       isPublished: gallery.isPublished,
       isExpired: gallery.isExpired,
       isLive,
+      boothOffline,
       requiresAccessCode,
       galleryUnlocked,
       expireDays,
     },
     event: { title: gallery.event.title, eventDate: gallery.event.eventDate },
     branding: gallery.tenant.branding,
-    assets: !galleryUnlocked || gallery.isExpired ? []
-      : gallery.isPublished ? gallery.assets
-      : isLive ? liveOrder(gallery.assets.filter(a => a.genieSessionId))
-      : [],
+    assets,
   });
 }

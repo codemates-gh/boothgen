@@ -1,8 +1,10 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Camera, Download, Image, AlertCircle } from 'lucide-react';
+import { Camera, Download, AlertCircle } from 'lucide-react';
 import { PoweredByBadge } from '@/components/brand/PoweredByBadge';
+import { BoothOffline, FadeInImg, UploadingIndicator, useWaitingFor, useWaitingPoll } from '@/components/genie/GuestWaiting';
+import { LONG_WAIT_MS } from '@/lib/genie/guestWaiting';
 
 type Asset = { id: string; url: string; width: number | null; height: number | null; isGallery: boolean };
 
@@ -23,21 +25,20 @@ export default function GuestSessionPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    async function load() {
-      const r = await fetch('/api/g/' + token + '/s/' + sessionToken);
-      if (r.ok) {
-        const d = await r.json();
-        setData(d);
-        // Photos may still be uploading from the booth; check again until they arrive
-        if (d.assets.length === 0 && !d.isExpired) timer = setTimeout(load, 30000);
-      }
-      setLoading(false);
-    }
-    load();
-    return () => clearTimeout(timer);
+  const load = useCallback(async () => {
+    try {
+      const r = await fetch('/api/g/' + token + '/s/' + sessionToken, { cache: 'no-store' });
+      if (r.ok) setData(await r.json());
+      else if (r.status === 404) setData(null);
+    } catch { /* offline for a moment: keep what's shown and try again on the next check */ }
+    setLoading(false);
   }, [token, sessionToken]);
+  useEffect(() => { load(); }, [load]);
+
+  // Photos may still be uploading from the booth: check often at first, then less, and show them as they land
+  const waiting = !!data && !data.isExpired && (data.assets.length === 0 || data.morePending);
+  useWaitingPoll(load, waiting, data?.assets.length);
+  const waitedMs = useWaitingFor(!!data && data.assets.length === 0);
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -90,12 +91,18 @@ export default function GuestSessionPage() {
             <p className="text-lg font-bold text-gray-800 mb-2">Photos Expired</p>
             <p className="text-sm text-gray-500">The access period for these photos has ended.</p>
           </div>
+        ) : assets.length === 0 && data.boothOffline ? (
+          <div className="text-center py-20 max-w-sm mx-auto">
+            <BoothOffline/>
+            <p className="text-lg font-semibold text-gray-800">The booth is offline right now</p>
+            <p className="text-sm text-gray-500 mt-2">Your photos are safe on the booth and will appear here as soon as it reconnects. Keep or bookmark this link to come back to them.</p>
+          </div>
         ) : assets.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            <Image className="w-12 h-12 mx-auto mb-4 opacity-30"/>
-            <p className="text-lg font-semibold">Your photos are on their way</p>
-            <p className="text-sm mt-2">The booth is still sending them. Check back in a few minutes — this page will update.</p>
-            <p className="text-xs mt-6">Still nothing after an hour? Ask the event host.</p>
+          <div className="text-center py-20 max-w-sm mx-auto">
+            <UploadingIndicator color={pc}/>
+            <p className="text-lg font-semibold text-gray-800">Uploading your photos…</p>
+            <p className="text-sm text-gray-500 mt-2">Your photos are uploading. This page will show them as soon as they&apos;re ready.</p>
+            {waitedMs >= LONG_WAIT_MS && <p className="text-xs text-gray-400 mt-8">Taking longer than usual? The event host can help.</p>}
           </div>
         ) : (
           <div className="space-y-6">
@@ -123,7 +130,7 @@ export default function GuestSessionPage() {
 
             {print && (
               <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-                <img src={print.url} alt="Your print" className="w-full max-h-[75vh] object-contain rounded-lg"/>
+                <FadeInImg src={print.url} alt="Your print" className="w-full max-h-[75vh] object-contain rounded-lg"/>
                 <button
                   onClick={() => downloadFile(print.url, fileName(print, 0))}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm"
@@ -139,11 +146,18 @@ export default function GuestSessionPage() {
               </div>
             )}
 
+            {data.morePending && (
+              <div className="flex items-center justify-center gap-3 py-2 text-sm text-gray-500">
+                <span className="relative w-16 h-1 rounded-full bg-gray-200 overflow-hidden"><span className="absolute inset-y-0 left-0 w-1/3 rounded-full animate-upload-slide" style={{ backgroundColor: pc }}/></span>
+                More photos on the way…
+              </div>
+            )}
+
             {shots.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {shots.map((a, i) => (
                   <div key={a.id} className="relative rounded-xl overflow-hidden bg-gray-100">
-                    <img src={a.url} alt="" className="w-full aspect-square object-cover"/>
+                    <FadeInImg src={a.url} alt="" className="w-full aspect-square object-cover"/>
                     <button
                       onClick={() => downloadFile(a.url, fileName(a, i))}
                       className="absolute bottom-2 right-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/60 hover:bg-black/70 text-white text-xs font-medium"
