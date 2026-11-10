@@ -5,6 +5,11 @@ export function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
 const CURRENCY_LOCALE: Record<string, string> = {
   usd: 'en-US', cad: 'en-CA',
 };
+export function addressLabels(country: string | null | undefined) {
+  if (country === 'CA') return { stateLabel: 'Province',         postalLabel: 'Postal Code', statePh: 'ON',    postalPh: 'M5V 2T6' };
+  if (country === 'US') return { stateLabel: 'State',            postalLabel: 'Zip Code',    statePh: 'TX',    postalPh: '78701'   };
+  return                       { stateLabel: 'Province / State', postalLabel: 'Postal Code', statePh: 'ON',    postalPh: 'M5V'     };
+}
 export function fmtCents(cents: number, currency = 'usd') {
   const cur = currency.toLowerCase();
   const locale = CURRENCY_LOCALE[cur] ?? 'en-US';

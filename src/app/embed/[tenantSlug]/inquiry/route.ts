@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
+import { addressLabels } from '@/lib/utils';
 
 function darken(hex: string, pct: number): string {
   const n = parseInt(hex.replace('#', ''), 16);
@@ -52,7 +53,7 @@ export async function GET(
   const tenant = await prisma.tenant.findUnique({
     where: { slug: params.tenantSlug },
     include: {
-      branding: { select: { companyName: true, logoUrl: true, primaryColor: true, leadFormConfig: true, supportPhone: true, replyToEmail: true, websiteUrl: true } },
+      branding: { select: { companyName: true, logoUrl: true, primaryColor: true, leadFormConfig: true, supportPhone: true, replyToEmail: true, websiteUrl: true, country: true } },
       customLeadFields: { where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] },
     },
   });
@@ -79,6 +80,7 @@ export async function GET(
 
   const cfg: Required<LeadFormConfig> = { ...DEFAULTS, ...((tenant.branding?.leadFormConfig ?? {}) as LeadFormConfig) };
   const heading = cfg.heading.replace('{{company}}', co);
+  const addrLbls = addressLabels((tenant.branding as any)?.country);
 
   // Fetch blackout dates server-side so flatpickr can disable them upfront
   const blackoutRows = await prisma.blackoutDate.findMany({
@@ -164,8 +166,8 @@ export async function GET(
     (cfg.showVenue ? '<div class="full"><label>Venue Name</label><input type="text" name="venueName" placeholder="Ballroom, backyard, event hall..."/></div>' : '') +
     (cfg.showVenue ? '<div class="full"><label>Venue Address</label><input type="text" name="venueAddress" autocomplete="street-address" placeholder="123 Main St"/></div>' : '') +
     (cfg.showVenue ? '<div><label>City</label><input type="text" name="venueCity" autocomplete="address-level2"/></div>' : '') +
-    (cfg.showVenue ? '<div><label>State</label><input type="text" name="venueState" autocomplete="address-level1" placeholder="MD"/></div>' : '') +
-    (cfg.showVenue ? '<div><label>Zip Code</label><input type="text" name="venuePostalCode" autocomplete="postal-code" placeholder="20001"/></div>' : '') +
+    (cfg.showVenue ? '<div><label>' + addrLbls.stateLabel + '</label><input type="text" name="venueState" autocomplete="address-level1" placeholder="' + addrLbls.statePh + '"/></div>' : '') +
+    (cfg.showVenue ? '<div><label>' + addrLbls.postalLabel + '</label><input type="text" name="venuePostalCode" autocomplete="postal-code" placeholder="' + addrLbls.postalPh + '"/></div>' : '') +
     (cfg.showMessage ? '<div class="full"><label>Additional Notes</label><textarea name="message" placeholder="Special requests, theme, anything else we should know..."></textarea></div>' : '') +
     customFieldsHtml +
     '</div>' +

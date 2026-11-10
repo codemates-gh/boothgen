@@ -18,10 +18,11 @@ export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await req.json();
-  const { companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, businessAddress, invoiceFooterText, emailHeaderHtml, logoUrl, currency, taxLabel, defaultDepositPercent, balanceDueDaysBeforeEvent, fullPaymentIfWithinDays, leadFormConfig, onboardingDismissed } = body;
+  const { companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, businessAddress, invoiceFooterText, emailHeaderHtml, logoUrl, currency, taxLabel, country, defaultDepositPercent, balanceDueDaysBeforeEvent, fullPaymentIfWithinDays, leadFormConfig, onboardingDismissed } = body;
   const updateData: any = { companyName, primaryColor, secondaryColor, replyToEmail, supportPhone, websiteUrl, businessAddress, invoiceFooterText, emailHeaderHtml };
   if (currency) updateData.currency = currency.toLowerCase();
   if (taxLabel !== undefined) updateData.taxLabel = taxLabel || 'Tax';
+  if (country !== undefined) updateData.country = country || null;
   if (logoUrl !== undefined) updateData.logoUrl = logoUrl || null;
   if (defaultDepositPercent !== undefined) updateData.defaultDepositPercent = parseInt(defaultDepositPercent);
   if (balanceDueDaysBeforeEvent !== undefined) updateData.balanceDueDaysBeforeEvent = parseInt(balanceDueDaysBeforeEvent);

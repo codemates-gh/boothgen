@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { addressLabels } from '@/lib/utils';
 import { useParams, useRouter } from 'next/navigation';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +35,11 @@ export default function EditEventPage() {
   const [clientResults, setClientResults] = useState<ClientResult[]>([]);
   const [selectedClient, setSelectedClient] = useState<ClientResult | null>(null);
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [country, setCountry] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/settings/branding').then(r => r.json()).then(b => setCountry(b.country ?? null)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch('/api/events/' + id + '/full').then(r => r.json()).then(d => {
@@ -190,8 +196,8 @@ export default function EditEventPage() {
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">{F('venueName','Venue Name')}</div>
             <div className="sm:col-span-2">{F('venueAddress','Street Address')}</div>
-            {F('venueCity','City')} {F('venueState','State')}
-            {F('venuePostalCode','Zip Code')} <div/>
+            {F('venueCity','City')} {F('venueState', addressLabels(country).stateLabel)}
+            {F('venuePostalCode', addressLabels(country).postalLabel)} <div/>
           </CardContent>
         </Card>
         <Card>
