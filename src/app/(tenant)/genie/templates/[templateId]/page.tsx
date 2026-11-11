@@ -473,7 +473,8 @@ export default function TemplateDesignerPage() {
             </CardContent>
           </Card>
 
-          <div className="space-y-4">
+          {/* On wide screens the side panel stays in view and scrolls on its own, between the top bar and the save bar */}
+          <div className="space-y-4 lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto lg:overscroll-contain">
             <Card>
               <CardHeader className="pb-3"><CardTitle>Canvas</CardTitle></CardHeader>
               <CardContent className="space-y-3">

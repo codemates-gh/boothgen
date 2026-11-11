@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.63.1] — 2026-11-11
+
+### Changed
+- **Template Designer**: on wide screens the right-hand panel stays in view and scrolls on its own, so frame tools like Delete are reachable without losing sight of the canvas
+
+---
+
 ## [2.63.0] — 2026-11-11
 
 ### Added
