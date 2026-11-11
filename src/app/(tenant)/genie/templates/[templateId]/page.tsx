@@ -25,6 +25,25 @@ const round = (n: number) => Math.round(n);
 const clamp = (n: number, lo: number, hi: number) => Math.min(Math.max(n, lo), hi);
 const newId = () => 'f' + Math.random().toString(36).slice(2, 8);
 
+// Frame shapes. A frame whose size matches one keeps that shape while resizing.
+const RATIOS = [
+  { id: '3:4', label: '3:4 portrait', r: 3 / 4 },
+  { id: '4:3', label: '4:3 landscape', r: 4 / 3 },
+  { id: '1:1', label: '1:1 square', r: 1 },
+  { id: '9:16', label: '9:16 portrait', r: 9 / 16 },
+  { id: '16:9', label: '16:9 landscape', r: 16 / 9 },
+] as const;
+const ratioOf = (s: Pick<Slot, 'width' | 'height'>) => RATIOS.find(q => Math.abs(s.width / s.height - q.r) / q.r < 0.01) ?? null;
+
+// The same frame in a new shape: about the same area, same center, inside the canvas
+function reshape(s: Slot, r: number, W: number, H: number): Slot {
+  let w = Math.sqrt(s.width * s.height * r), h = w / r;
+  const k = Math.min(1, W / w, H / h); w *= k; h *= k;
+  const up = Math.max(1, MIN / w, MIN / h); w *= up; h *= up;
+  const width = round(w), height = round(width / r);
+  return { ...s, width, height, x: round(clamp(s.x + s.width / 2 - width / 2, 0, W - width)), y: round(clamp(s.y + s.height / 2 - height / 2, 0, H - height)) };
+}
+
 // Starting frames for a size: 3 photos laid out the usual way
 function defaultSlots(p: Preset): Slot[] {
   const m = p.format === '2x6' ? 30 : 60;
@@ -99,7 +118,7 @@ async function renderThumbnail(l: Layout, samples: HTMLCanvasElement[]): Promise
 
 type Drag =
   | { kind: 'move'; startX: number; startY: number; orig: Record<string, { x: number; y: number }> }
-  | { kind: 'resize'; id: string; corner: 'nw' | 'ne' | 'sw' | 'se'; startX: number; startY: number; orig: Slot }
+  | { kind: 'resize'; id: string; corner: 'nw' | 'ne' | 'sw' | 'se'; startX: number; startY: number; orig: Slot; ratio: number | null }
   | { kind: 'rotate'; id: string; cx: number; cy: number };
 
 export default function TemplateDesignerPage() {
@@ -126,6 +145,9 @@ export default function TemplateDesignerPage() {
   const [error, setError] = useState('');
   const [notices, setNotices] = useState<string[]>([]);
   const [drag, setDrag] = useState<Drag | null>(null);
+  // Frames set to "Free" that happen to match a shape (this session only)
+  const [freeIds, setFreeIds] = useState<string[]>([]);
+  const lockedRatio = (s: Slot) => freeIds.includes(s.id) ? null : ratioOf(s);
   const stageRef = useRef<HTMLDivElement>(null);
   const [stageW, setStageW] = useState(640);
   const [samples, setSamples] = useState<HTMLCanvasElement[]>([]);
@@ -189,6 +211,18 @@ export default function TemplateDesignerPage() {
         if (drag.corner.includes('s')) height = clamp(o.height + dy, MIN, layout.heightPx - o.y);
         if (drag.corner.includes('w')) { x = clamp(o.x + dx, 0, o.x + o.width - MIN); width = o.x + o.width - x; }
         if (drag.corner.includes('n')) { y = clamp(o.y + dy, 0, o.y + o.height - MIN); height = o.y + o.height - y; }
+        if (drag.ratio) {
+          // Follow the larger movement, keep the shape, and stay inside the canvas with the opposite corner fixed
+          const r = drag.ratio;
+          let w = Math.abs(dx) >= Math.abs(dy) * r ? width : height * r;
+          const maxW = drag.corner.includes('e') ? layout.widthPx - o.x : o.x + o.width;
+          const maxH = drag.corner.includes('s') ? layout.heightPx - o.y : o.y + o.height;
+          w = Math.max(w, MIN, MIN * r);
+          w = Math.min(w, maxW, maxH * r);
+          width = round(w); height = round(width / r);
+          x = drag.corner.includes('w') ? o.x + o.width - width : o.x;
+          y = drag.corner.includes('n') ? o.y + o.height - height : o.y;
+        }
         setSlots(slots => slots.map(s => s.id === drag.id ? { ...s, x: round(x), y: round(y), width: round(width), height: round(height) } : s));
       } else {
         const rect = stageRef.current!.getBoundingClientRect();
@@ -243,10 +277,25 @@ export default function TemplateDesignerPage() {
       return n;
     }));
   }
+  function setShape(id: string) {
+    if (!one) return;
+    const q = RATIOS.find(x => x.id === id);
+    setFreeIds(f => q ? f.filter(i => i !== one.id) : [...f, one.id]);
+    if (q) setSlots(slots => slots.map(s => s.id === one.id ? reshape(s, q.r, layout.widthPx, layout.heightPx) : s));
+  }
+  function setSize(k: 'width' | 'height', v: number) {
+    const q = one && lockedRatio(one);
+    if (!q || !v) return updateOne({ [k]: v });
+    let w = k === 'width' ? v : v * q.r;
+    w = Math.min(Math.max(w, MIN, MIN * q.r), layout.widthPx, layout.heightPx * q.r);
+    updateOne({ width: round(w), height: round(round(w) / q.r) });
+  }
   function addFrame() {
     const used = new Set(layout.slots.map(s => s.shotIndex));
     const shotIndex = Array.from({ length: 10 }, (_, i) => i).find(i => !used.has(i)) ?? 0;
-    const w = round(layout.widthPx / 3), h = round(layout.heightPx / 4);
+    // New frames start 3:4 portrait on portrait canvases and 4:3 landscape on landscape ones
+    const r = layout.widthPx >= layout.heightPx ? 4 / 3 : 3 / 4;
+    const w = round(Math.min(layout.widthPx / 3, (layout.heightPx / 3) * r)), h = round(w / r);
     const s: Slot = { id: newId(), shotIndex, x: round((layout.widthPx - w) / 2), y: round((layout.heightPx - h) / 2), width: w, height: h, rotationDegrees: 0, fit: 'fill' };
     setSlots(slots => [...slots, s]); setSelected([s.id]);
   }
@@ -338,7 +387,7 @@ export default function TemplateDesignerPage() {
   }
 
   const handle = (corner: 'nw' | 'ne' | 'sw' | 'se', s: Slot) => (
-    <div key={corner} onPointerDown={e => { e.preventDefault(); e.stopPropagation(); setDrag({ kind: 'resize', id: s.id, corner, startX: e.clientX, startY: e.clientY, orig: s }); }}
+    <div key={corner} onPointerDown={e => { e.preventDefault(); e.stopPropagation(); setDrag({ kind: 'resize', id: s.id, corner, startX: e.clientX, startY: e.clientY, orig: s, ratio: lockedRatio(s)?.r ?? null }); }}
       className={'absolute w-3 h-3 bg-white border-2 border-[#0085FF] rounded-sm ' + { nw: '-left-1.5 -top-1.5 cursor-nwse-resize', ne: '-right-1.5 -top-1.5 cursor-nesw-resize', sw: '-left-1.5 -bottom-1.5 cursor-nesw-resize', se: '-right-1.5 -bottom-1.5 cursor-nwse-resize' }[corner]}/>
   );
 
@@ -491,9 +540,17 @@ export default function TemplateDesignerPage() {
                               <option value="fit">Fit (no crop)</option>
                             </Select>
                           </Field>
+                          <div className="col-span-2">
+                            <Field label="Shape" hint={lockedRatio(one) ? 'Resizing keeps this shape.' : 'Resize freely.'}>
+                              <Select value={lockedRatio(one)?.id ?? 'free'} onChange={e => setShape(e.target.value)}>
+                                {RATIOS.map(q => <option key={q.id} value={q.id}>{q.label}</option>)}
+                                <option value="free">Free</option>
+                              </Select>
+                            </Field>
+                          </div>
                           {([['x', 'X'], ['y', 'Y'], ['width', 'Width'], ['height', 'Height'], ['rotationDegrees', 'Rotation °']] as const).map(([k, label]) => (
                             <Field key={k} label={label}>
-                              <Input type="number" value={one[k]} onChange={e => updateOne({ [k]: Number(e.target.value) } as Partial<Slot>)}/>
+                              <Input type="number" value={one[k]} onChange={e => k === 'width' || k === 'height' ? setSize(k, Number(e.target.value)) : updateOne({ [k]: Number(e.target.value) } as Partial<Slot>)}/>
                             </Field>
                           ))}
                         </div>

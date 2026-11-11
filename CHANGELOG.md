@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.63.0] — 2026-11-11
+
+### Added
+- **Photo frame shapes in the Template Designer**: pick 3:4 portrait, 4:3 landscape, 1:1 square, 9:16 portrait, 16:9 landscape or Free for a frame. A shaped frame keeps its shape when you drag a corner or type a width or height. Frames already the size of one of these shapes are picked up automatically
+- New frames start 3:4 portrait on portrait canvases and 4:3 landscape on landscape ones
+
+No database change.
+
+---
+
 ## [2.62.0] — 2026-11-11
 
 ### Added
