@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { sendDesignDecisionEmail } from '@/lib/email/send';
 import { z } from 'zod';
+import { applyApprovedDesignToGenie } from '@/lib/genie/autoApplyDesign';
 
 const Schema = z.object({ portalToken: z.string().min(1) });
 
@@ -35,6 +36,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     where: { id: params.id },
     data: { status: 'APPROVED', approvedAt: new Date() },
   });
+
+  // Genie: put the approved design on the client's chosen layout right away (never blocks the approval)
+  const genie = await applyApprovedDesignToGenie(design.tenantId, design.eventId).catch(e => {
+    console.error('[design-approve] Genie auto-apply failed:', e);
+    return null;
+  });
+  if (genie && !genie.applied && genie.reason === 'artwork') console.warn('[design-approve] approved design not placed in Genie:', genie.error);
 
   // Build recipient list: replyToEmail first, then HOST_ADMINs, then any active member as fallback
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';

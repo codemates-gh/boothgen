@@ -5,7 +5,8 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Upload, FileImage, ArrowLeft, CheckCircle2, Clock, MessageSquare, Trash2, Bell, Palette, ChevronDown, ChevronUp, Sparkles, PenLine } from 'lucide-react';
+import { Upload, FileImage, ArrowLeft, CheckCircle2, Clock, MessageSquare, Trash2, Bell, Palette, ChevronDown, ChevronUp, Sparkles, PenLine, Download, AlertTriangle } from 'lucide-react';
+import { downloadLayoutPng } from '@/components/genie/layoutImage';
 import Link from 'next/link';
 
 const BRIEF_STATUS_VARIANT: Record<string, string> = { PENDING: 'default', SUBMITTED: 'info', IN_DESIGN: 'warning', APPROVED: 'success' };
@@ -20,6 +21,7 @@ export default function TemplateDesignsPage() {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState('');
+  const [sizeWarning, setSizeWarning] = useState('');
   const [reminding, setReminding] = useState<string | null>(null);
   const [reminderSent, setReminderSent] = useState<string | null>(null);
   const [brief, setBrief] = useState<any>(null);
@@ -69,8 +71,20 @@ export default function TemplateDesignsPage() {
     else { const d = await res.json().catch(() => ({})); setError(d.error || 'Failed to delete design.'); }
   }
 
+  // The pixel size of an image file, or null for PDFs and anything the browser can't read
+  async function imageSize(file: File): Promise<{ w: number; h: number } | null> {
+    if (!file.type.startsWith('image/')) return null;
+    try { const b = await createImageBitmap(file); const r = { w: b.width, h: b.height }; b.close(); return r; } catch { return null; }
+  }
+
   async function uploadFile(file: File) {
-    setError(''); setUploading(true);
+    setError(''); setSizeWarning(''); setUploading(true);
+    // The final design should be the exact size of the client's layout so it lines up with the photo frames
+    const layout = brief?.template?.layout;
+    const size = layout ? await imageSize(file) : null;
+    if (layout && size && (size.w !== layout.widthPx || size.h !== layout.heightPx)) {
+      setSizeWarning(`This file is ${size.w}×${size.h}, but the client's layout is ${layout.widthPx}×${layout.heightPx}. It may not line up with the photo frames. Use Download layout to design at the right size.`);
+    }
     try {
       const fd = new FormData(); fd.append('file', file);
       const res = await fetch('/api/events/' + eventId + '/template-designs/upload', { method: 'POST', body: fd });
@@ -94,6 +108,7 @@ export default function TemplateDesignsPage() {
   }, [eventId]);
 
   const latestDesign = designs[0] ?? null;
+  const approvedDesign = designs.find((d: any) => d.status === 'APPROVED') ?? null;
   const canUpload = !latestDesign || latestDesign.status === 'REVISION_REQUESTED' || latestDesign.status === 'APPROVED';
 
   // Find selected color variant and font pairing from template data
@@ -155,10 +170,18 @@ export default function TemplateDesignsPage() {
                     {brief.isCustomDesign ? (
                       <p className="text-sm text-gray-600 flex items-center gap-1.5"><PenLine className="w-4 h-4 text-purple-500"/>Client requested a <strong>custom design</strong></p>
                     ) : (
-                      <p className="text-sm text-gray-600">
-                        Template: <strong>{brief.template?.name ?? 'Gallery selection'}</strong>
-                        {brief.template && ` · ${FORMAT_LABEL[brief.template.format] ?? brief.template.format} · ${brief.template.orientation} · ${brief.template.photoCount} photos`}
-                      </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm text-gray-600">
+                          Template: <strong>{brief.template?.name ?? 'Gallery selection'}</strong>
+                          {brief.template && ` · ${FORMAT_LABEL[brief.template.format] ?? brief.template.format} · ${brief.template.orientation} · ${brief.template.photoCount} photo${brief.template.photoCount === 1 ? '' : 's'}`}
+                        </p>
+                        {brief.template?.layout && (
+                          <Button size="sm" variant="ghost" onClick={async () => { if (!(await downloadLayoutPng(brief.template.layout, brief.template.name))) setError('Could not create the layout image. Try again.'); }}
+                            title={`Full-size PNG (${brief.template.layout.widthPx}×${brief.template.layout.heightPx}) with photo spots and the safe line, to design the final artwork on`}>
+                            <Download className="w-3.5 h-3.5 mr-1"/>Download layout
+                          </Button>
+                        )}
+                      </div>
                     )}
                     <div className="flex gap-2">
                       {brief.status === 'SUBMITTED' && (
@@ -264,6 +287,23 @@ export default function TemplateDesignsPage() {
         </Card>
 
         {error && <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">{error}</div>}
+        {sizeWarning && <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-xl flex items-start gap-2"><AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>{sizeWarning}</div>}
+
+        {/* Final layout: the client's chosen layout with their approved design */}
+        {approvedDesign && brief?.template && !brief.isCustomDesign && (
+          <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-sm flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5"/>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-green-800">Final layout: {brief.template.name} with approved design v{approvedDesign.version}</p>
+              <p className="text-green-700 mt-0.5">
+                {brief.genieTemplate?.designId === approvedDesign.id
+                  ? <>Added to this event&apos;s Genie templates. <Link href={'/events/' + eventId + '/genie'} className="underline">Open Genie</Link></>
+                  : 'This is the print file for the event.'}
+              </p>
+            </div>
+            <a href={approvedDesign.fileUrl} target="_blank" rel="noopener noreferrer" className="text-green-700 hover:underline whitespace-nowrap flex items-center gap-1"><Download className="w-3.5 h-3.5"/>Print file</a>
+          </div>
+        )}
 
         {canUpload && (
           <Card>

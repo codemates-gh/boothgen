@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { briefLibraryTemplate, copyToEvent, findLibraryTemplate, libraryWhere } from '@/lib/genie/library';
+import { applyApprovedDesignToGenie } from '@/lib/genie/autoApplyDesign';
 import { CUSTOM_FLAG, SECTION_NAMES, customFlags, getDefaults, newEventSettingsData, sectionValues } from '@/lib/genie/defaults';
 import { latestApprovedDesign } from '@/lib/genie/approvedDesign';
 import { requireGenieAdmin } from '@/lib/genie/admin';
@@ -74,6 +75,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         if (!('error' in r)) added.add(lib.id);
       }
     }
+    // A design the client already approved goes on their chosen layout
+    await applyApprovedDesignToGenie(auth.tenantId, event.id).catch(e => console.error('[genie-setup] auto-apply failed:', e));
     return NextResponse.json(settingsView(s), { status: 201 });
   } catch (err) {
     if ((err as any)?.code !== 'P2002') throw err;

@@ -13,7 +13,12 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
     where: { eventId: params.id },
     include: { template: true },
   });
-  return NextResponse.json(brief ?? null);
+  if (!brief) return NextResponse.json(null);
+  // Where the approved design went in Genie (the event template made from the client's layout, carrying it)
+  const genieTemplate = brief.templateId
+    ? await prisma.eventGenieTemplate.findFirst({ where: { eventId: params.id, tenantId: session.tenantId, libraryTemplateId: brief.templateId, designId: { not: null } }, select: { id: true, name: true, designId: true } })
+    : null;
+  return NextResponse.json({ ...brief, genieTemplate });
 }
 
 // POST: operator enables the design brief for this event (creates empty brief)

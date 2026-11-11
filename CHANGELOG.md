@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.70.0] — 2026-11-12
+
+### Added
+- **Approved designs go straight into Genie**: when the client approves a design, it's placed on the layout they picked in their design brief and added first in the event's Genie templates (over the photos if the PNG has transparent windows, behind them otherwise). If Genie isn't set up for the event yet, it happens at setup. Events that have started and files that don't match the layout's size are left alone; the approval still goes through and you can place it by hand
+- **Designs tab → Download layout**: a full-size PNG of the client's chosen layout (photo spots and the safe line) to design the final artwork on
+- **Upload size check**: uploading a design that isn't the layout's exact size shows a warning before the client reviews it
+- **Final layout** on the Designs tab once the client approves: the layout name, approved version, the print file, and whether it's in Genie
+
+No database change.
+
+---
+
 ## [2.69.0] — 2026-11-12
 
 ### Added
