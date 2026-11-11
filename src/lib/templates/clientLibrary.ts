@@ -40,3 +40,26 @@ export function clientTemplateView(t: BoothDesignTemplate) {
     layout: t.layout as unknown as StoredLayout | null, // photo frames, for a preview when there's no picture
   };
 }
+
+// Hide or show a published Standard layout in this operator's library and their clients' picker
+export async function setStandardHidden(tenantId: string, templateId: string, hidden: boolean): Promise<{ hidden: string[] } | { error: string; status: number }> {
+  const t = await prisma.boothDesignTemplate.findFirst({ where: { id: templateId, tenantId: null, isPublished: true, isActive: true }, select: { id: true } });
+  if (!t) return { error: 'Not found', status: 404 };
+  return prisma.$transaction(async tx => {
+    const row = await tx.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { hiddenStandardTemplates: true } });
+    const current = Array.isArray(row.hiddenStandardTemplates) ? (row.hiddenStandardTemplates as string[]) : [];
+    const next = hidden ? Array.from(new Set([...current, templateId])) : current.filter(id => id !== templateId);
+    await tx.tenant.update({ where: { id: tenantId }, data: { hiddenStandardTemplates: next } });
+    return { hidden: next };
+  });
+}
+
+// Settings → Booth Templates: every published Standard layout (hidden ones flagged) plus this operator's offered templates
+export async function operatorClientLibrary(tenantId: string) {
+  const hidden = new Set(await hiddenStandardIds(tenantId));
+  const rows = await prisma.boothDesignTemplate.findMany({
+    where: { isActive: true, layout: { not: Prisma.AnyNull }, OR: [{ tenantId: null, isPublished: true }, { tenantId, offerToClients: true }] },
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+  });
+  return [...rows.filter(r => r.tenantId), ...rows.filter(r => !r.tenantId)].map(r => ({ ...clientTemplateView(r), hidden: hidden.has(r.id) }));
+}

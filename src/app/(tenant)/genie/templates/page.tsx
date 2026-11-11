@@ -7,12 +7,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
-import { Sparkles, Plus, Pencil, Copy, Trash2, LayoutTemplate, Eye } from 'lucide-react';
+import { Sparkles, Plus, Pencil, Copy, Trash2, LayoutTemplate, Eye, EyeOff } from 'lucide-react';
 import { Layout, LayoutPreview, artUrl } from '@/components/genie/parts';
 import { DesignBriefSettings } from '@/components/settings/DesignBriefSettings';
 
 type Template = {
-  id: string; name: string; description: string | null; scope: 'standard' | 'mine'; isPublished: boolean; offerToClients: boolean;
+  id: string; name: string; description: string | null; scope: 'standard' | 'mine'; isPublished: boolean; offerToClients: boolean; hidden?: boolean;
   thumbnail: { url: string } | null; layout: Layout | null; alternateLayout: Layout | null;
 };
 const FORMAT_LABEL: Record<string, string> = { '4x6': '4×6', '2x6': '2×6 strip' };
@@ -38,6 +38,14 @@ export default function GenieTemplatesPage() {
     if (r.ok) setData(await r.json());
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  // Standard layouts: hide from this account's library and clients' design picker, or show again
+  async function setHidden(t: Template, hidden: boolean) {
+    setError('');
+    const r = await fetch('/api/template-library/hidden', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ templateId: t.id, hidden }) });
+    if (!r.ok) { setError((await r.json().catch(() => ({}))).error || 'Could not change it'); return; }
+    setData(d => d && ({ ...d, standard: d.standard.map(x => x.id === t.id ? { ...x, hidden } : x) }));
+  }
 
   async function duplicate(t: Template) {
     if (!t.layout) return;
@@ -106,12 +114,13 @@ export default function GenieTemplatesPage() {
                 {list.map(t => {
                   const editable = t.scope === 'mine' || data.superAdmin;
                   return (
-                    <Card key={t.id} className="flex flex-col">
+                    <Card key={t.id} className={'flex flex-col' + (t.hidden ? ' opacity-60' : '')}>
                       <div className="h-48 bg-[#F5F6F8] rounded-t-xl flex items-center justify-center p-4"><Thumb t={t}/></div>
                       <CardContent className="pt-4 flex-1 flex flex-col">
                         <p className="font-medium text-sm flex items-center gap-2 flex-wrap">{t.name}
                           {t.scope === 'standard' && data.superAdmin && <Badge variant={t.isPublished && t.layout ? 'success' : 'default'}>{t.isPublished && t.layout ? 'Published' : 'Hidden'}</Badge>}
                           {t.scope === 'mine' && t.offerToClients && <Badge variant="info">Offered to clients</Badge>}
+                          {t.hidden && <Badge variant="default">Hidden</Badge>}
                         </p>
                         {t.layout && (
                           <p className="text-xs text-gray-500 mt-0.5">
@@ -121,6 +130,11 @@ export default function GenieTemplatesPage() {
                         <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-gray-100">
                           <Link href={'/genie/templates/' + t.id}><Button variant="ghost" size="sm">{editable ? <><Pencil className="w-3.5 h-3.5 mr-1"/>Edit</> : <><Eye className="w-3.5 h-3.5 mr-1"/>View</>}</Button></Link>
                           {t.layout && <Button variant="ghost" size="sm" disabled={busy} onClick={() => duplicate(t)}><Copy className="w-3.5 h-3.5 mr-1"/>Duplicate</Button>}
+                          {t.scope === 'standard' && t.isPublished && (
+                            <Button variant="ghost" size="sm" onClick={() => setHidden(t, !t.hidden)} title={t.hidden ? 'Show in your Standard templates and to your clients' : "Hide from your event templates and your clients' design picker"}>
+                              {t.hidden ? <><Eye className="w-3.5 h-3.5 mr-1"/>Show</> : <><EyeOff className="w-3.5 h-3.5 mr-1"/>Hide</>}
+                            </Button>
+                          )}
                           {t.scope === 'mine' && <Button variant="ghost" size="sm" className="text-[#E2445C] hover:text-[#CC3A52] hover:bg-red-50" onClick={() => setDeleting(t)}><Trash2 className="w-3.5 h-3.5 mr-1"/>Delete</Button>}
                         </div>
                       </CardContent>

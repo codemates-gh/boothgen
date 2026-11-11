@@ -6,6 +6,7 @@ import { requireTemplateEditor } from '@/lib/genie/admin';
 import { findDesignerTemplate, libraryView, libraryWhere } from '@/lib/genie/library';
 import { TemplateBody, clientOptionsData, prepareTemplate } from '@/lib/genie/designer';
 import { allowedPrefixes } from '@/lib/genie/templateAssets';
+import { hiddenStandardIds } from '@/lib/templates/clientLibrary';
 
 // Genie template library: Standard and My templates. Super admins also see unpublished Standard templates and
 // Standard booth templates that don't have a Genie layout yet.
@@ -16,7 +17,9 @@ export async function GET() {
     ? { isActive: true, OR: [{ tenantId: null }, ...(auth.tenantId ? [{ tenantId: auth.tenantId, layout: { not: Prisma.AnyNull } }] : [])] }
     : libraryWhere(auth.tenantId!);
   const rows = await prisma.boothDesignTemplate.findMany({ where, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
-  const all = rows.map(libraryView).filter(t => t.layout || auth.superAdmin);
+  // Standard layouts this operator hid stay listed (flagged) so they can show them again
+  const hidden = new Set(auth.tenantId ? await hiddenStandardIds(auth.tenantId) : []);
+  const all = rows.map(libraryView).filter(t => t.layout || auth.superAdmin).map(t => ({ ...t, hidden: t.scope === 'standard' && hidden.has(t.id) }));
   return NextResponse.json({ standard: all.filter(t => t.scope === 'standard'), mine: all.filter(t => t.scope === 'mine'), superAdmin: auth.superAdmin });
 }
 

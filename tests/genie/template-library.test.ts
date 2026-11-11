@@ -11,6 +11,8 @@ import { DesignLayout } from '@/lib/genie/designer';
 import { GET as LIBRARY, POST as CREATE } from '@/app/api/genie-templates/route';
 import { GET as GET_T, PUT as UPDATE, PATCH as TOGGLE, DELETE as REMOVE } from '@/app/api/genie-templates/[templateId]/route';
 import { GET as PORTAL_BRIEF, POST as PORTAL_SUBMIT } from '@/app/api/portal/[portalToken]/design-brief/route';
+import { POST as HIDE } from '@/app/api/template-library/hidden/route';
+import { GET as BOOTH_TEMPLATES } from '@/app/api/settings/booth-templates/route';
 import { STANDARD_TEMPLATES, standardTemplatesSql } from '../../scripts/standard-templates.mjs';
 import { req, resetDb, seedEvent, seedTenant } from './helpers';
 
@@ -126,6 +128,38 @@ describe('Client design picker', () => {
     expect((await submit(theirs.id)).status).toBe(400);
     expect((await submit(hidden.id)).status).toBe(400);
     expect((await submit(offered.id)).status).toBe(200);
+  });
+
+  it('operators hide Standard layouts they do not offer, and can show them again', async () => {
+    const { tenant, client } = await seedTenant();
+    await prisma.tenantBranding.create({ data: { tenantId: tenant.id, designBriefEnabled: true } });
+    const event = await seedEvent(tenant.id, client.id);
+    const { portalToken } = await prisma.event.findUniqueOrThrow({ where: { id: event.id }, select: { portalToken: true } });
+    asSuperAdmin();
+    const std = await (await CREATE(json({ name: PREFIX + 'Std', scope: 'standard', isPublished: true, layout: SAMPLE_LAYOUT }))).json();
+    const draft = await (await CREATE(json({ name: PREFIX + 'Draft', scope: 'standard', isPublished: false, layout: SAMPLE_LAYOUT }))).json();
+
+    asOperator(tenant.id);
+    const portalIds = async () => (await (await PORTAL_BRIEF(req('/x'), { params: { portalToken } })).json()).templates.map((t: { id: string }) => t.id);
+    expect(await portalIds()).toContain(std.id);
+
+    expect((await HIDE(json({ templateId: std.id, hidden: true }))).status).toBe(200);
+    expect(await portalIds()).not.toContain(std.id);
+    const lib = await (await LIBRARY()).json();
+    expect(lib.standard.find((t: { id: string }) => t.id === std.id).hidden).toBe(true); // still listed, flagged
+    const settings = await (await BOOTH_TEMPLATES()).json();
+    expect(settings.find((t: { id: string }) => t.id === std.id).hidden).toBe(true);
+
+    expect((await HIDE(json({ templateId: std.id, hidden: false }))).status).toBe(200);
+    expect(await portalIds()).toContain(std.id);
+    expect((await prisma.tenant.findUniqueOrThrow({ where: { id: tenant.id } })).hiddenStandardTemplates).toEqual([]);
+
+    // Only published Standard layouts can be hidden; another account isn't affected
+    expect((await HIDE(json({ templateId: draft.id, hidden: true }))).status).toBe(404);
+    expect((await HIDE(json({ templateId: std.id }))).status).toBe(400);
+    const other = await seedTenant();
+    await HIDE(json({ templateId: std.id, hidden: true }));
+    expect((await prisma.tenant.findUniqueOrThrow({ where: { id: other.tenant.id } })).hiddenStandardTemplates).toEqual([]);
   });
 });
 

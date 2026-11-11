@@ -59,7 +59,7 @@ export default function GenieTemplates({ eventId, templates, shotCount, locked, 
     setPicking(true); setError('');
     if (!library) {
       const r = await fetch('/api/genie-templates');
-      if (r.ok) { const d = await r.json(); setLibrary(d); if (d.standard.length === 0 && d.mine.length > 0) setTab('mine'); }
+      if (r.ok) { const d = await r.json(); d.standard = d.standard.filter((t: { hidden?: boolean }) => !t.hidden); setLibrary(d); if (d.standard.length === 0 && d.mine.length > 0) setTab('mine'); }
     }
   }
 

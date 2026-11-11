@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.69.0] — 2026-11-12
+
+### Added
+- **Hide Standard layouts you don't offer**: Genie → Templates (Standard tab) and Settings → Booth Templates have Hide / Show on each Standard layout. Hidden layouts stay listed (dimmed) so you can show them again, but they leave your clients' design picker and the event's Add a Template list. Each account's choice is its own
+- **Client design picker filters**: clients narrow layouts by size (4×6 landscape, 4×6 portrait, 2×6 strip) and number of photos. Filters only appear when there's more than one choice
+
+No database change (uses the column added in 2.67.0).
+
+---
+
 ## [2.68.0] — 2026-11-12
 
 ### Added

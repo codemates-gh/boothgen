@@ -8,6 +8,9 @@ import { InvoicePaymentForm } from '@/components/stripe/PaymentForm';
 import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
 
 const FORMAT_LABEL: Record<string, string> = { '2x6': '2"×6" Strip', '4x6': '4"×6" Full Size' };
+const SIZE_LABEL: Record<string, string> = { '4x6-landscape': '4×6 Landscape', '4x6-portrait': '4×6 Portrait', '2x6-portrait': '2×6 Strip' };
+const sizeKey = (t: { format: string; orientation: string }) => `${t.format}-${t.orientation}`;
+const photoKey = (n: number) => (n >= 4 ? '4+' : String(n));
 
 type Tab = 'quote' | 'contract' | 'invoice' | 'design' | 'gallery';
 
@@ -46,6 +49,9 @@ export default function ClientPortalPage() {
   // Design brief state
   const [designBrief, setDesignBrief] = useState<any>(null);
   const [briefTemplates, setBriefTemplates] = useState<any[]>([]);
+  // Layout picker filters: size (format + orientation) and number of photos; '' = all
+  const [layoutSize, setLayoutSize] = useState('');
+  const [layoutPhotos, setLayoutPhotos] = useState('');
   const [customDesignEnabled, setCustomDesignEnabled] = useState(false);
   const [briefStep, setBriefStep] = useState<'gallery' | 'customize' | 'done'>('gallery');
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
@@ -920,9 +926,36 @@ export default function ClientPortalPage() {
                 <div className="p-6">
                   {briefTemplates.length === 0 ? (
                     <p className="text-sm text-gray-500 text-center py-8">No layouts available yet. Your operator will be in touch.</p>
-                  ) : (
+                  ) : (() => {
+                    const sizes = Object.keys(SIZE_LABEL).filter(k => briefTemplates.some((t: any) => sizeKey(t) === k));
+                    const counts = ['1', '2', '3', '4+'].filter(k => briefTemplates.some((t: any) => photoKey(t.photoCount) === k));
+                    const shown = briefTemplates.filter((t: any) => (!layoutSize || sizeKey(t) === layoutSize) && (!layoutPhotos || photoKey(t.photoCount) === layoutPhotos));
+                    const chip = (active: boolean, label: string, onClick: () => void) => (
+                      <button key={label} onClick={onClick} className={'px-3 py-1 rounded-full text-xs font-medium border transition-colors ' + (active ? 'text-white border-transparent' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300')} style={active ? { backgroundColor: pc } : undefined}>{label}</button>
+                    );
+                    return (
+                    <>
+                    {(sizes.length > 1 || counts.length > 1) && (
+                      <div className="space-y-2 mb-5">
+                        {sizes.length > 1 && (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-xs text-gray-400 w-14">Size</span>
+                            {chip(!layoutSize, 'All', () => setLayoutSize(''))}
+                            {sizes.map(k => chip(layoutSize === k, SIZE_LABEL[k], () => setLayoutSize(k)))}
+                          </div>
+                        )}
+                        {counts.length > 1 && (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-xs text-gray-400 w-14">Photos</span>
+                            {chip(!layoutPhotos, 'Any', () => setLayoutPhotos(''))}
+                            {counts.map(k => chip(layoutPhotos === k, k === '1' ? '1 photo' : k + ' photos', () => setLayoutPhotos(k)))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {shown.length === 0 && <p className="text-sm text-gray-500 text-center py-8">No layouts match. Try another size or number of photos.</p>}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                      {briefTemplates.map((t: any) => (
+                      {shown.map((t: any) => (
                         <button key={t.id} onClick={() => selectTemplate(t)}
                           className="group text-left rounded-2xl border-2 border-gray-200 hover:border-brand overflow-hidden transition-all focus:outline-none focus:ring-2"
                           style={{ '--tw-ring-color': pc + '66' } as React.CSSProperties}>
@@ -940,12 +973,14 @@ export default function ClientPortalPage() {
                           )}
                           <div className="p-3">
                             <p className="font-semibold text-sm text-gray-900 group-hover:text-brand transition-colors">{t.name}</p>
-                            <p className="text-xs text-gray-500 mt-0.5">{FORMAT_LABEL[t.format] ?? t.format} · {t.photoCount} photos</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{SIZE_LABEL[sizeKey(t)] ?? FORMAT_LABEL[t.format] ?? t.format} · {t.photoCount} photo{t.photoCount === 1 ? '' : 's'}</p>
                           </div>
                         </button>
                       ))}
                     </div>
-                  )}
+                    </>
+                    );
+                  })()}
                   {customDesignEnabled && (
                     <div className="mt-6 pt-5 border-t border-gray-100 text-center">
                       <p className="text-sm text-gray-500 mb-3">Don't see what you're looking for?</p>
