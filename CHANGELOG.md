@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.64.0] — 2026-11-11
+
+### Added
+- **Template Designer → Download**: saves a full-size PNG (e.g. 1800×1200) of the current layout with sample photos and the safe line, to design an overlay or background on in Photoshop, Canva, etc.
+- **Safe area guide**: a dashed line 1/8 inch in from the edges shows where printers may trim. A selected frame that crosses it shows a warning
+
+### Changed
+- **Starting layouts use 3:4 photos**: 4×6 landscape has three 3:4 photos side by side; 4×6 portrait a 2×2 grid with three 3:4 photos and a spot for a logo; 2×6 strips three 4:3 photos (3:4 would be too narrow on a 2-inch strip). New frames follow the same shapes
+- **Changing the canvas size keeps frame shapes**: an untouched starting layout switches to the new size's starting layout; edited 3:4 / 4:3 / 1:1 / 9:16 / 16:9 frames keep their shape instead of stretching
+
+---
+
 ## [2.63.2] — 2026-11-11
 
 ### Changed

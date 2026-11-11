@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Plus, Copy, Trash2, AlignCenterHorizontal, AlignCenterVertical, AlignHorizontalSpaceAround, AlignVerticalSpaceAround, Upload, X, Eye, Pencil, AlertTriangle, RotateCw } from 'lucide-react';
+import { ArrowLeft, Plus, Copy, Trash2, AlignCenterHorizontal, AlignCenterVertical, AlignHorizontalSpaceAround, AlignVerticalSpaceAround, Upload, X, Eye, Pencil, AlertTriangle, RotateCw, Download } from 'lucide-react';
 import { Field, Layout, RemoteAsset, Slot, Toggle, artUrl } from '@/components/genie/parts';
 
 const PRESETS = [
@@ -44,33 +44,56 @@ function reshape(s: Slot, r: number, W: number, H: number): Slot {
   return { ...s, width, height, x: round(clamp(s.x + s.width / 2 - width / 2, 0, W - width)), y: round(clamp(s.y + s.height / 2 - height / 2, 0, H - height)) };
 }
 
+// Photo shape for new frames: 3:4 portrait on 4×6, 4:3 landscape on strips (3:4 would be too narrow on a 2-inch strip)
+const newFrameRatio = (format: string) => format === '2x6' ? 4 / 3 : 3 / 4;
+
+// Printers can trim up to 1/8 inch at the edges; keep faces and text inside this line
+const SAFE_INCH = 0.125;
+
 // Starting frames for a size: 3 photos laid out the usual way
 function defaultSlots(p: Preset): Slot[] {
-  const m = p.format === '2x6' ? 30 : 60;
+  const r = newFrameRatio(p.format);
+  const slot = (shotIndex: number, x: number, y: number, width: number): Slot => ({ id: newId(), shotIndex, x: round(x), y: round(y), width: round(width), height: round(round(width) / r), rotationDegrees: 0, fit: 'fill' });
   if (p.format === '2x6') {
-    const h = (p.heightPx - m * 5) / 4;
-    return [0, 1, 2].map(i => ({ id: newId(), shotIndex: i, x: m, y: m + i * (h + m), width: p.widthPx - 2 * m, height: round(h), rotationDegrees: 0, fit: 'fill' }));
+    // Three 4:3 photos stacked, room for a logo below
+    const m = 45, w = p.widthPx - 2 * m, h = w / r;
+    return [0, 1, 2].map(i => slot(i, m, m + i * (h + m), w));
   }
+  const m = 60;
   if (p.orientation === 'landscape') {
-    const big = { id: newId(), shotIndex: 0, x: m, y: m, width: 1050, height: p.heightPx - 2 * m, rotationDegrees: 0, fit: 'fill' as const };
-    const w = p.widthPx - big.width - 3 * m, h = (p.heightPx - 3 * m) / 2;
-    return [big, ...[1, 2].map(i => ({ id: newId(), shotIndex: i, x: big.width + 2 * m, y: m + (i - 1) * (h + m), width: w, height: round(h), rotationDegrees: 0, fit: 'fill' as const }))];
+    // Three 3:4 photos side by side, room for a logo below
+    const w = (p.widthPx - 4 * m) / 3;
+    return [0, 1, 2].map(i => slot(i, m + i * (w + m), m, w));
   }
-  const h = (p.heightPx - 4 * m - 200) / 3;
-  return [0, 1, 2].map(i => ({ id: newId(), shotIndex: i, x: m, y: m + i * (h + m), width: p.widthPx - 2 * m, height: round(h), rotationDegrees: 0, fit: 'fill' }));
+  // 2×2 grid: three 3:4 photos, the bottom-right square left for a logo
+  const w = (p.widthPx - 3 * m) / 2, h = w / r;
+  return [slot(0, m, m, w), slot(1, 2 * m + w, m, w), slot(2, m, 2 * m + h, w)];
 }
 
 function blankLayout(p: Preset): Layout {
   return { format: p.format, orientation: p.orientation, widthPx: p.widthPx, heightPx: p.heightPx, dpi: 300, backgroundColor: '#FFFFFF', slots: defaultSlots(p) };
 }
 
-// Same frames on a different canvas size, scaled to fit; artwork is dropped (it no longer matches)
+// The starting layout, still untouched (ids aside)
+const strip = (slots: Slot[]) => JSON.stringify(slots.map(({ id: _i, ...rest }) => rest));
+const isStartingLayout = (l: Layout) => strip(l.slots) === strip(defaultSlots(presetOf(l)));
+
+// Same frames on a different canvas size; artwork is dropped (it no longer matches).
+// An untouched starting layout becomes the new size's starting layout. Shaped frames keep their shape.
 function resize(l: Layout, p: Preset): Layout {
-  const sx = p.widthPx / l.widthPx, sy = p.heightPx / l.heightPx;
   const { background: _b, overlay: _o, ...rest } = l;
+  const base = { ...rest, format: p.format, orientation: p.orientation, widthPx: p.widthPx, heightPx: p.heightPx };
+  if (isStartingLayout(l)) return { ...base, slots: defaultSlots(p) };
+  const sx = p.widthPx / l.widthPx, sy = p.heightPx / l.heightPx;
   return {
-    ...rest, format: p.format, orientation: p.orientation, widthPx: p.widthPx, heightPx: p.heightPx,
-    slots: l.slots.map(s => ({ ...s, x: round(s.x * sx), y: round(s.y * sy), width: Math.max(MIN, round(s.width * sx)), height: Math.max(MIN, round(s.height * sy)) })),
+    ...base,
+    slots: l.slots.map(s => {
+      const q = ratioOf(s);
+      if (!q) return { ...s, x: round(s.x * sx), y: round(s.y * sy), width: Math.max(MIN, round(s.width * sx)), height: Math.max(MIN, round(s.height * sy)) };
+      const width = Math.max(MIN, round(s.width * Math.min(sx, sy))), height = round(width / q.r);
+      const cx = (s.x + s.width / 2) * sx, cy = (s.y + s.height / 2) * sy;
+      return { ...s, width, height, x: round(clamp(cx - width / 2, 0, p.widthPx - width)), y: round(clamp(cy - height / 2, 0, p.heightPx - height)) };
+    }),
   };
 }
 
@@ -95,9 +118,9 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-// Draws the layout with sample photos; used for the saved thumbnail
-async function renderThumbnail(l: Layout, samples: HTMLCanvasElement[]): Promise<Blob | null> {
-  const scale = 480 / Math.max(l.widthPx, l.heightPx);
+// Draws the layout with sample photos: small for the saved thumbnail, or full size (with the safe line, without the overlay) to design artwork on
+async function renderThumbnail(l: Layout, samples: HTMLCanvasElement[], fullSize = false): Promise<Blob | null> {
+  const scale = fullSize ? 1 : 480 / Math.max(l.widthPx, l.heightPx);
   const c = document.createElement('canvas'); c.width = round(l.widthPx * scale); c.height = round(l.heightPx * scale);
   const g = c.getContext('2d')!;
   g.scale(scale, scale);
@@ -112,7 +135,11 @@ async function renderThumbnail(l: Layout, samples: HTMLCanvasElement[]): Promise
     g.drawImage(img, -img.width * k / 2, -img.height * k / 2, img.width * k, img.height * k);
     g.restore();
   }
-  if (l.overlay) g.drawImage(await loadImage(artUrl(l.overlay.url)), 0, 0, l.widthPx, l.heightPx);
+  if (fullSize) {
+    const safe = SAFE_INCH * l.dpi;
+    g.strokeStyle = '#E2445C'; g.lineWidth = 3; g.setLineDash([18, 12]);
+    g.strokeRect(safe, safe, l.widthPx - 2 * safe, l.heightPx - 2 * safe);
+  } else if (l.overlay) g.drawImage(await loadImage(artUrl(l.overlay.url)), 0, 0, l.widthPx, l.heightPx);
   return new Promise(resolve => { try { c.toBlob(b => resolve(b), 'image/png'); } catch { resolve(null); } });
 }
 
@@ -196,6 +223,8 @@ export default function TemplateDesignerPage() {
   const readOnly = !canEdit;
 
   const frameCount = new Set(layout.slots.map(s => s.shotIndex)).size;
+  const safe = Math.round(SAFE_INCH * layout.dpi);
+  const pastSafe = (s: Slot) => s.x < safe || s.y < safe || s.x + s.width > layout.widthPx - safe || s.y + s.height > layout.heightPx - safe;
 
   // ── pointer interactions ─────────────────────────────────────────────────
   useEffect(() => {
@@ -293,8 +322,7 @@ export default function TemplateDesignerPage() {
   function addFrame() {
     const used = new Set(layout.slots.map(s => s.shotIndex));
     const shotIndex = Array.from({ length: 10 }, (_, i) => i).find(i => !used.has(i)) ?? 0;
-    // New frames start 3:4 portrait on portrait canvases and 4:3 landscape on landscape ones
-    const r = layout.widthPx >= layout.heightPx ? 4 / 3 : 3 / 4;
+    const r = newFrameRatio(layout.format);
     const w = round(Math.min(layout.widthPx / 3, (layout.heightPx / 3) * r)), h = round(w / r);
     const s: Slot = { id: newId(), shotIndex, x: round((layout.widthPx - w) / 2), y: round((layout.heightPx - h) / 2), width: w, height: h, rotationDegrees: 0, fit: 'fill' };
     setSlots(slots => [...slots, s]); setSelected([s.id]);
@@ -386,6 +414,18 @@ export default function TemplateDesignerPage() {
     if (isNew) router.replace('/genie/templates/' + d.id);
   }
 
+  // Full-size PNG of the current layout to design a background or overlay on
+  async function downloadGuide() {
+    setError('');
+    const blob = await renderThumbnail(layout, samples, true).catch(() => null);
+    if (!blob) { setError('Could not create the image. Try again.'); return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${(name.trim() || 'template').replace(/[^\w\- ]+/g, '').replace(/\s+/g, '-')}-${layout.widthPx}x${layout.heightPx}.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
   const handle = (corner: 'nw' | 'ne' | 'sw' | 'se', s: Slot) => (
     <div key={corner} onPointerDown={e => { e.preventDefault(); e.stopPropagation(); setDrag({ kind: 'resize', id: s.id, corner, startX: e.clientX, startY: e.clientY, orig: s, ratio: lockedRatio(s)?.r ?? null }); }}
       className={'absolute w-3 h-3 bg-white border-2 border-[#0085FF] rounded-sm ' + { nw: '-left-1.5 -top-1.5 cursor-nwse-resize', ne: '-right-1.5 -top-1.5 cursor-nesw-resize', sw: '-left-1.5 -bottom-1.5 cursor-nesw-resize', se: '-right-1.5 -bottom-1.5 cursor-nwse-resize' }[corner]}/>
@@ -410,6 +450,7 @@ export default function TemplateDesignerPage() {
           <div className="flex flex-wrap items-center gap-2">
             {scope === 'standard' && <Badge variant="info">Standard</Badge>}
             {readOnly && <Badge variant="default">View only</Badge>}
+            <Button variant="outline" onClick={downloadGuide} disabled={samples.length === 0} title="Full-size PNG with sample photos and the safe line, to design an overlay or background on"><Download className="w-4 h-4 mr-1.5"/>Download</Button>
             <Button variant={preview ? 'default' : 'outline'} onClick={() => { setPreview(p => !p); setSelected([]); }}>{preview ? <><Pencil className="w-4 h-4 mr-1.5"/>Edit frames</> : <><Eye className="w-4 h-4 mr-1.5"/>Preview</>}</Button>
           </div>
         </div>
@@ -447,6 +488,7 @@ export default function TemplateDesignerPage() {
                     </div>
                   ))}
                   {layout.overlay && <img src={artUrl(layout.overlay.url)} alt="" draggable={false} className={'absolute inset-0 w-full h-full pointer-events-none ' + (preview ? '' : 'opacity-60')}/>}
+                  {!preview && <div className="absolute border border-dashed border-[#E2445C]/70 pointer-events-none" style={{ inset: safe * scale }} title="Safe area"/>}
                   </div>
                   {!preview && layout.slots.map(s => {
                     const on = selected.includes(s.id);
@@ -470,6 +512,7 @@ export default function TemplateDesignerPage() {
                 </div>
               </div>
               {!readOnly && !preview && <p className="text-xs text-gray-400 mt-2">Drag frames to move, corners to resize, the round handle to rotate. Shift-click to select several. Arrow keys nudge.</p>}
+              {!preview && <p className="text-xs text-gray-400 mt-1"><span className="inline-block w-4 border-t border-dashed border-[#E2445C] align-middle mr-1.5"/>Safe area: printers can trim up to 1/8 inch at the edges, so keep faces, logos and text inside the dashed line.</p>}
             </CardContent>
           </Card>
 
@@ -494,6 +537,7 @@ export default function TemplateDesignerPage() {
                         <Button variant="outline" size="sm" onClick={duplicateSelected} disabled={layout.slots.length + sel.length > 10} title="Duplicate"><Copy className="w-3.5 h-3.5"/></Button>
                         <Button variant="outline" size="sm" className="text-[#E2445C]" onClick={removeSelected} disabled={layout.slots.length <= sel.length} title="Delete"><Trash2 className="w-3.5 h-3.5"/></Button>
                       </div>
+                      {sel.some(pastSafe) && <p className="text-xs text-amber-700 flex items-start gap-1.5"><AlertTriangle className="w-3.5 h-3.5 mt-px flex-shrink-0"/>{sel.length > 1 ? 'Some of these frames go' : 'This frame goes'} past the safe area. The edge of the photo may be trimmed when printed.</p>}
                       {sel.length > 1 && <p className="text-xs text-gray-500">{sel.length} frames selected.{sel.length < 3 ? ' Select 3 or more to distribute.' : ''}</p>}
                       {one && (
                         <div className="grid grid-cols-2 gap-3">
