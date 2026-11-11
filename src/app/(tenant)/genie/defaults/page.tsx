@@ -77,7 +77,7 @@ export default function GenieDefaultsPage() {
               </p>
             </div>
 
-            <Section icon={Settings2} title="Time zone">
+            <Section icon={Settings2} title="Time zone" description="Your business time zone. New events start in it; change it on an event held somewhere else.">
               <div className="max-w-sm"><TimeZoneSelect value={form.timeZone} onChange={tz => setForm({ ...form, timeZone: tz })}/></div>
             </Section>
 

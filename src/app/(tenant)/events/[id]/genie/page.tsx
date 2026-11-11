@@ -60,10 +60,11 @@ export default function EventGeniePage() {
     const d: Dashboard = await r.json();
     setData(d);
     if (resetForm && d.settings) setForm(toForm(d.settings));
-    if (!d.settings) setSetupTz(tz => (d.defaults.saved ? d.defaults.timeZone : tz));
+    // Your account's time zone (Genie → Event Defaults), not this browser's
+    if (!d.settings) setSetupTz(d.defaults.timeZone);
   }, [eventId]);
 
-  useEffect(() => { load(); setSetupTz(Intl.DateTimeFormat().resolvedOptions().timeZone); }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   useEffect(() => { if (!savedAt) return; const t = setTimeout(() => setSavedAt(null), 4000); return () => clearTimeout(t); }, [savedAt]);
 

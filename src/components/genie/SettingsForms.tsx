@@ -53,15 +53,59 @@ export function DefaultState({ custom, onReset, disabled }: { custom: boolean; o
   ) : <Badge variant="default" className="flex-shrink-0">Default</Badge>;
 }
 
+// US and Canada first with plain names, then every other zone as "City — Region (GMT±h)"
+const COMMON_ZONES: [string, string][] = [
+  ['America/New_York', 'Eastern Time'],
+  ['America/Chicago', 'Central Time'],
+  ['America/Denver', 'Mountain Time'],
+  ['America/Phoenix', 'Mountain Time — Arizona (no daylight saving)'],
+  ['America/Los_Angeles', 'Pacific Time'],
+  ['America/Anchorage', 'Alaska Time'],
+  ['Pacific/Honolulu', 'Hawaii Time'],
+  ['America/Halifax', 'Atlantic Time (Canada)'],
+  ['America/St_Johns', 'Newfoundland Time'],
+  ['America/Regina', 'Central Time — Saskatchewan (no daylight saving)'],
+  ['America/Puerto_Rico', 'Atlantic Time — Puerto Rico'],
+];
+
+function gmtOffset(zone: string): string {
+  try {
+    return new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'shortOffset' }).formatToParts(new Date()).find(p => p.type === 'timeZoneName')?.value ?? '';
+  } catch { return ''; }
+}
+
+export function timeZoneLabel(zone: string): string {
+  const common = COMMON_ZONES.find(([z]) => z === zone);
+  const off = gmtOffset(zone);
+  if (common) return `${common[1]} (${off})`;
+  const parts = zone.split('/');
+  const city = parts[parts.length - 1].replace(/_/g, ' ');
+  const region = parts.slice(0, -1).join(' / ').replace(/_/g, ' ');
+  return `${city}${region ? ' — ' + region : ''}${off ? ` (${off})` : ''}`;
+}
+
 export function useTimeZones() {
-  return useMemo(() => { try { return (Intl as any).supportedValuesOf('timeZone') as string[]; } catch { return []; } }, []);
+  return useMemo(() => {
+    let all: string[] = [];
+    try { all = (Intl as any).supportedValuesOf('timeZone') as string[]; } catch { /* old browsers: common list only */ }
+    const common = COMMON_ZONES.map(([z]) => z);
+    const others = all.filter(z => !common.includes(z)).map(z => ({ zone: z, label: timeZoneLabel(z) })).sort((a, b) => a.label.localeCompare(b.label));
+    return { common: common.map(z => ({ zone: z, label: timeZoneLabel(z) })), others };
+  }, []);
 }
 
 export function TimeZoneSelect({ value, onChange, disabled }: { value: string; onChange: (tz: string) => void; disabled?: boolean }) {
-  const zones = useTimeZones();
+  const { common, others } = useTimeZones();
+  const known = common.some(z => z.zone === value) || others.some(z => z.zone === value);
   return (
     <Select value={value} disabled={disabled} onChange={e => onChange(e.target.value)}>
-      {(zones.includes(value) ? zones : [value, ...zones]).map(z => <option key={z} value={z}>{z}</option>)}
+      {!known && <option value={value}>{timeZoneLabel(value)}</option>}
+      <optgroup label="United States & Canada">
+        {common.map(z => <option key={z.zone} value={z.zone}>{z.label}</option>)}
+      </optgroup>
+      <optgroup label="All time zones">
+        {others.map(z => <option key={z.zone} value={z.zone}>{z.label}</option>)}
+      </optgroup>
     </Select>
   );
 }

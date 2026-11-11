@@ -5,10 +5,11 @@ import { prisma } from '@/lib/prisma/client';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { decryptSecret } from '@/lib/crypto/secrets';
+import { PHONE_HINT, normalizePhone } from '@/lib/sms/phone';
 import { FULL_ACCESS_KEY_HINT, checkResendFromDomain, getMessagingConfig, sendTenantEmail, sendTenantSms, type SendResult } from '@/lib/genie/messaging';
 
 const Body = z.discriminatedUnion('channel', [
-  z.object({ channel: z.literal('sms'), to: z.string().regex(/^\+[1-9]\d{6,14}$/, 'Enter the number in E.164 format, e.g. +14155550123') }),
+  z.object({ channel: z.literal('sms'), to: z.string().transform((v, ctx) => normalizePhone(v) ?? (ctx.addIssue({ code: 'custom', message: PHONE_HINT }), z.NEVER)) }),
   z.object({ channel: z.literal('email'), to: z.string().email('Enter a valid email address') }),
 ]);
 

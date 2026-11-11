@@ -6,8 +6,8 @@ import { ensureGallery } from '@/lib/genie/bundle';
 import { dispatchReadyShares, ensureGenieSession } from '@/lib/genie/sessions';
 import { ShareJob, firstIssue } from '@/lib/genie/schemas';
 import { emailUsable, getMessagingConfig, smsConfigured } from '@/lib/genie/messaging';
+import { normalizePhone } from '@/lib/sms/phone';
 
-const E164 = /^\+[1-9]\d{6,14}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest, { params }: { params: { eventId: string } }) {
@@ -20,6 +20,9 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
   const parsed = ShareJob.safeParse(await readJson(req));
   if (!parsed.success) return genieError(400, 'invalid_request', firstIssue(parsed.error));
   const body = parsed.data;
+  // US/Canada numbers may arrive without +1; store them in E.164
+  const phone = body.channel === 'sms' ? normalizePhone(body.destination) : null;
+  if (phone) body.destination = phone;
 
   const existing = await prisma.genieShare.findUnique({ where: { clientId: body.id } });
   if (existing) {
@@ -28,7 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
   }
 
   if (body.channel === 'sms' && !body.smsConsentAt) return genieError(422, 'consent_required', 'SMS shares require smsConsentAt');
-  if (body.channel === 'sms' && !E164.test(body.destination)) return genieError(422, 'invalid_destination', 'Phone number must be in E.164 format');
+  if (body.channel === 'sms' && !phone) return genieError(422, 'invalid_destination', 'Enter a US or Canada phone number, or an international number starting with +');
   if (body.channel === 'email' && !EMAIL.test(body.destination)) return genieError(422, 'invalid_destination', 'Invalid email address');
 
   const settings = await prisma.eventGenieSettings.findUnique({ where: { eventId: event.id } });

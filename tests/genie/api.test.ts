@@ -282,11 +282,16 @@ describe('shares', () => {
     const r1 = await createShare(req(`/api/genie/events/${event.id}/shares`, { token, body: noConsent }), ev(event.id));
     expect(r1.status).toBe(422);
     expect(await r1.json()).toMatchObject({ code: 'consent_required' });
-    const r2 = await createShare(req(`/api/genie/events/${event.id}/shares`, { token, body: share(guestSession(), { destination: '4155550123' }) }), ev(event.id));
+    const r2 = await createShare(req(`/api/genie/events/${event.id}/shares`, { token, body: share(guestSession(), { destination: '555-0123' }) }), ev(event.id));
     expect(await r2.json()).toMatchObject({ code: 'invalid_destination' });
     const r3 = await createShare(req(`/api/genie/events/${event.id}/shares`, { token, body: share(guestSession(), { channel: 'email', destination: 'nope', smsConsentAt: undefined }) }), ev(event.id));
     expect(await r3.json()).toMatchObject({ code: 'invalid_destination' });
     expect(await prisma.genieShare.count({ where: { eventId: event.id } })).toBe(0);
+
+    // US/Canada numbers without +1 are accepted and stored in E.164
+    const r4 = await createShare(req(`/api/genie/events/${event.id}/shares`, { token, body: share(guestSession(), { destination: '(415) 555-0123' }) }), ev(event.id));
+    expect(r4.status).toBe(202);
+    expect((await prisma.genieShare.findFirstOrThrow({ where: { eventId: event.id } })).destination).toBe('+14155550123');
   });
 
   it('stores consent, is idempotent and dispatches once the session has a photo', async () => {

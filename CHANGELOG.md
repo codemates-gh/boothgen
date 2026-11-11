@@ -4,6 +4,21 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.65.0] — 2026-11-11
+
+### Added
+- **Event → Genie → iPads on This Event**: also lists the account's other paired iPads as available. Any of them can open the event from Genie while a spot is free
+- **US and Canada phone numbers without +1**: guest texts at events, test texts and the Twilio From number accept 202-555-0123, (202) 555-0123, 1 202 555 0123 or +12025550123. International numbers still start with +
+
+### Changed
+- **Easier time zone list** (event setup, event settings, Event Defaults): US and Canada first by name ("Eastern Time (GMT-5)"), then every other zone as "City — Region (GMT±h)"
+- **Setting up Genie on an event starts in your account time zone** (Genie → Event Defaults), not the time zone of the computer you're on
+- **Twilio Messaging Service SID is marked optional**: leave it blank to send from your From number
+
+No database change.
+
+---
+
 ## [2.64.0] — 2026-11-11
 
 ### Added

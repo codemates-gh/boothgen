@@ -5,6 +5,7 @@ import type { GenieMessagingConfig, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { decryptSecret, encryptSecret, maskSecret } from '@/lib/crypto/secrets';
 import { requireGenieAdmin } from '@/lib/genie/admin';
+import { normalizePhone } from '@/lib/sms/phone';
 import { FULL_ACCESS_KEY_HINT, checkResendFromDomain, emailConfigured, platformDomainError, smsConfigured } from '@/lib/genie/messaging';
 
 const opt = (s: z.ZodString) => s.optional().or(z.literal('')).transform(v => v || null);
@@ -13,7 +14,7 @@ const SmsInput = z.object({
   accountSid: z.string().regex(/^AC[0-9a-fA-F]{32}$/, 'Account SID starts with AC followed by 32 characters'),
   authToken: z.string().optional(), // blank keeps the saved token
   messagingServiceSid: opt(z.string().regex(/^MG[0-9a-fA-F]{32}$/, 'Messaging Service SID starts with MG followed by 32 characters')),
-  fromNumber: opt(z.string().regex(/^\+[1-9]\d{6,14}$/, 'From number must be in E.164 format, e.g. +14155550123')),
+  fromNumber: z.string().optional().transform((v, ctx) => !v?.trim() ? null : normalizePhone(v) ?? (ctx.addIssue({ code: 'custom', message: 'Enter the From number as 240-555-0123 or +12405550123' }), z.NEVER)),
 });
 
 const EmailInput = z.object({

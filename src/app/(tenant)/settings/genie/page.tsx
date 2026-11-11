@@ -140,10 +140,10 @@ export default function GenieSettingsPage() {
                   <Field label="Auth Token" hint={config.sms.authTokenMasked ? 'Saved ' + config.sms.authTokenMasked + ' — leave blank to keep it' : undefined}>
                     <Input type="password" autoComplete="off" value={sms.authToken} onChange={e => setSms(s => ({ ...s, authToken: e.target.value }))} placeholder={config.sms.authTokenMasked ? 'Enter a new token to replace' : ''}/>
                   </Field>
-                  <Field label="Messaging Service SID" hint="Recommended for 10DLC. Used instead of the From number when set.">
+                  <Field label="Messaging Service SID (optional)" hint="Leave blank to send from your From number. If set, texts go through this Messaging Service instead.">
                     <Input value={sms.messagingServiceSid} onChange={e => setSms(s => ({ ...s, messagingServiceSid: e.target.value.trim() }))} placeholder="MG…"/>
                   </Field>
-                  <Field label="From Number"><Input value={sms.fromNumber} onChange={e => setSms(s => ({ ...s, fromNumber: e.target.value.trim() }))} placeholder="+14155550123"/></Field>
+                  <Field label="From Number"><Input value={sms.fromNumber} onChange={e => setSms(s => ({ ...s, fromNumber: e.target.value }))} placeholder="240-555-0123"/></Field>
                 </div>
                 {saveError.sms && <p className="text-sm text-red-600">{saveError.sms}</p>}
                 <div className="flex flex-wrap gap-2">
@@ -154,7 +154,7 @@ export default function GenieSettingsPage() {
                   <div className="border-t pt-4 space-y-3">
                     <Field label="Send a test text to">
                       <div className="flex gap-2">
-                        <Input value={testTo.sms} onChange={e => setTestTo(t => ({ ...t, sms: e.target.value.trim() }))} placeholder="+14155550123"/>
+                        <Input value={testTo.sms} onChange={e => setTestTo(t => ({ ...t, sms: e.target.value }))} placeholder="202-555-0123"/>
                         <Button variant="outline" onClick={() => sendTest('sms')} disabled={testing === 'sms' || !testTo.sms} className="shrink-0"><Send className="w-3.5 h-3.5 mr-1.5"/>{testing === 'sms' ? 'Sending…' : 'Send Test'}</Button>
                       </div>
                     </Field>
