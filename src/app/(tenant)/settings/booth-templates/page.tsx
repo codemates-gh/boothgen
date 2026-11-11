@@ -6,12 +6,13 @@ import { Layout } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DesignBriefSettings } from '@/components/settings/DesignBriefSettings';
+import { LayoutPreview, type Layout as GenieLayout } from '@/components/genie/parts';
 
 const TABS = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['booth-templates','Booth Templates'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
 
 const FORMAT_LABEL: Record<string, string> = { '2x6': '2"×6" Strip', '4x6': '4"×6" Full Size' };
 
-type Template = { id: string; name: string; description?: string; format: string; orientation: string; photoCount: number; thumbnailUrl?: string; colorVariants: unknown[]; fontPairings: unknown[]; textZones: unknown[] };
+type Template = { id: string; name: string; description?: string; format: string; orientation: string; photoCount: number; thumbnailUrl?: string; colorVariants: unknown[]; fontPairings: unknown[]; textZones: unknown[]; layout: GenieLayout | null };
 
 export default function BoothTemplatesPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -46,7 +47,7 @@ export default function BoothTemplatesPage() {
         {/* Shared Template Library */}
         <div>
           <h3 className="font-semibold text-gray-800 mb-1">Available Layout Templates</h3>
-          <p className="text-sm text-gray-500 mb-4">These shared templates are managed by Booth Genius and available to your clients when the design brief is enabled.</p>
+          <p className="text-sm text-gray-500 mb-4">Booth Genius Standard layouts, plus your own templates you offer to clients. Clients pick from these when the design brief is enabled.</p>
           {templates.length === 0 ? (
             <Card><CardContent className="text-center py-12 text-gray-400">
               <Layout className="w-10 h-10 mx-auto mb-3 opacity-30"/>
@@ -59,16 +60,16 @@ export default function BoothTemplatesPage() {
                 <Card key={t.id}>
                   <CardContent className="p-0">
                     {t.thumbnailUrl ? (
-                      <img src={t.thumbnailUrl} alt={t.name} className="w-full h-40 object-cover rounded-t-xl"/>
+                      <img src={t.thumbnailUrl} alt={t.name} className="w-full h-40 object-contain bg-gray-50 p-2 rounded-t-xl"/>
                     ) : (
-                      <div className="w-full h-40 bg-gray-100 rounded-t-xl flex items-center justify-center">
-                        <Layout className="w-10 h-10 text-gray-300"/>
+                      <div className="w-full h-40 bg-gray-50 rounded-t-xl flex items-center justify-center">
+                        {t.layout ? <LayoutPreview layout={t.layout} width={Math.round(130 * t.layout.widthPx / t.layout.heightPx)}/> : <Layout className="w-10 h-10 text-gray-300"/>}
                       </div>
                     )}
                     <div className="p-3">
                       <p className="font-semibold text-sm">{t.name}</p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        {FORMAT_LABEL[t.format] ?? t.format} · {t.orientation} · {t.photoCount} photos
+                        {FORMAT_LABEL[t.format] ?? t.format} · {t.orientation} · {t.photoCount} photo{t.photoCount === 1 ? '' : 's'}
                       </p>
                       {t.description && <p className="text-xs text-gray-400 mt-1">{t.description}</p>}
                       <div className="flex gap-2 mt-2 flex-wrap">

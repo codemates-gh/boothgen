@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireGenieAdmin } from '@/lib/genie/admin';
+import { requireTemplateEditor } from '@/lib/genie/admin';
 import { allowedPrefixes, verifyAsset } from '@/lib/genie/templateAssets';
 import { artworkFit } from '@/lib/genie/image';
 
@@ -13,7 +13,7 @@ const Body = z.object({
 
 // After the upload: the file's real type, pixel size, transparency and sha256, plus whether it fits the layout
 export async function POST(req: NextRequest) {
-  const auth = await requireGenieAdmin();
+  const auth = await requireTemplateEditor();
   if (auth instanceof NextResponse) return auth;
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Invalid request' }, { status: 400 });

@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { requireGenieAdmin } from '@/lib/genie/admin';
+import { requireTemplateEditor } from '@/lib/genie/admin';
 import { getR2Object } from '@/lib/storage/r2';
 import { allowedPrefixes, keyForUrl } from '@/lib/genie/templateAssets';
 import { readImageInfo } from '@/lib/genie/image';
 
 // Same-origin copy of template artwork for the designer, so its canvas can draw it and export a thumbnail
 export async function GET(req: NextRequest) {
-  const auth = await requireGenieAdmin();
+  const auth = await requireTemplateEditor();
   if (auth instanceof NextResponse) return auth;
   const key = keyForUrl(req.nextUrl.searchParams.get('url') ?? '');
   const prefixes = [...allowedPrefixes('mine', auth.tenantId)];

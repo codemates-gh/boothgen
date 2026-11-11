@@ -113,8 +113,8 @@ export function TimeZoneSelect({ value, onChange, disabled }: { value: string; o
 export function CaptureFields({ value, onChange, disabled, children }: { value: Capture; onChange: (p: Partial<Capture>) => void; disabled?: boolean; children?: React.ReactNode }) {
   return (
     <>
+      <p className="text-xs text-gray-500">Each template sets how many photos guests take: one per photo frame.</p>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Field label="Photos per session" hint="1–10"><Num value={value.shotCount} min={1} max={10} disabled={disabled} onChange={n => onChange({ shotCount: n })}/></Field>
         <Field label="First countdown (sec)" hint="0–10"><Num value={value.initialCountdownSeconds} min={0} max={10} disabled={disabled} onChange={n => onChange({ initialCountdownSeconds: n })}/></Field>
         <Field label="Between photos (sec)" hint="0–10"><Num value={value.betweenShotsCountdownSeconds} min={0} max={10} disabled={disabled} onChange={n => onChange({ betweenShotsCountdownSeconds: n })}/></Field>
       </div>

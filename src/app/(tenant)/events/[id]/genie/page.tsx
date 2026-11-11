@@ -114,7 +114,7 @@ export default function EventGeniePage() {
   const set = <K extends keyof Form>(key: K, patch: Partial<Form[K]>) => setForm(f => f && ({ ...f, [key]: typeof f[key] === 'object' ? { ...(f[key] as object), ...patch } : patch }));
   const cap = (patch: Partial<Capture>) => set('capture', patch);
 
-  const mismatched = form && data ? data.templates.filter(t => templateMismatch(t, form.capture.shotCount)) : [];
+  const mismatched = form && data ? data.templates.filter(t => templateMismatch(t)) : [];
 
   return (
     <>
@@ -197,7 +197,7 @@ export default function EventGeniePage() {
                     {mismatched.length > 0 && (
                       <div className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                         <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
-                        <span>Guests take {form.capture.shotCount} photo{form.capture.shotCount === 1 ? '' : 's'}, but {mismatched.map(t => t.name).join(', ')} {mismatched.length === 1 ? 'has' : 'have'} a different number of frames.</span>
+                        <span>{mismatched.map(t => t.name).join(', ')}: frames skip a photo number, so guests take a photo that never prints. Renumber the frames in the designer.</span>
                       </div>
                     )}
                   </CaptureFields>

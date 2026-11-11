@@ -255,7 +255,7 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
           <>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Design Templates</h1>
-              <p className="text-sm text-gray-500 mt-1">Manage the shared layout library available to all operators for client design briefs.</p>
+              <p className="text-sm text-gray-500 mt-1">Design the Standard layouts. Published ones show in every operator's Standard templates (they can hide any) and in their clients' design picker. Approved designs go straight into Genie.</p>
             </div>
             <DesignTemplatesManager />
           </>

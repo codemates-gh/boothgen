@@ -2,31 +2,32 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
-import { requireGenieAdmin } from '@/lib/genie/admin';
+import { requireTemplateEditor } from '@/lib/genie/admin';
 import { findDesignerTemplate, libraryView, libraryWhere } from '@/lib/genie/library';
-import { TemplateBody, prepareTemplate } from '@/lib/genie/designer';
+import { TemplateBody, clientOptionsData, prepareTemplate } from '@/lib/genie/designer';
 import { allowedPrefixes } from '@/lib/genie/templateAssets';
 
 // Genie template library: Standard and My templates. Super admins also see unpublished Standard templates and
 // Standard booth templates that don't have a Genie layout yet.
 export async function GET() {
-  const auth = await requireGenieAdmin();
+  const auth = await requireTemplateEditor();
   if (auth instanceof NextResponse) return auth;
   const where: Prisma.BoothDesignTemplateWhereInput = auth.superAdmin
-    ? { isActive: true, OR: [{ tenantId: null }, { tenantId: auth.tenantId, layout: { not: Prisma.AnyNull } }] }
-    : libraryWhere(auth.tenantId);
+    ? { isActive: true, OR: [{ tenantId: null }, ...(auth.tenantId ? [{ tenantId: auth.tenantId, layout: { not: Prisma.AnyNull } }] : [])] }
+    : libraryWhere(auth.tenantId!);
   const rows = await prisma.boothDesignTemplate.findMany({ where, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
   const all = rows.map(libraryView).filter(t => t.layout || auth.superAdmin);
   return NextResponse.json({ standard: all.filter(t => t.scope === 'standard'), mine: all.filter(t => t.scope === 'mine'), superAdmin: auth.superAdmin });
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireGenieAdmin();
+  const auth = await requireTemplateEditor();
   if (auth instanceof NextResponse) return auth;
   const parsed = TemplateBody.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request' }, { status: 400 });
   const scope = parsed.data.scope ?? 'mine';
   if (scope === 'standard' && !auth.superAdmin) return NextResponse.json({ error: 'Only BoothGen can add Standard templates' }, { status: 403 });
+  if (scope === 'mine' && !auth.tenantId) return NextResponse.json({ error: 'Sign in to an account to make your own templates' }, { status: 400 });
 
   const source = parsed.data.copyFrom ? await findDesignerTemplate(auth, parsed.data.copyFrom) : null;
   if (parsed.data.copyFrom && !source) return NextResponse.json({ error: 'Template to copy not found' }, { status: 404 });
@@ -42,6 +43,9 @@ export async function POST(req: NextRequest) {
       ...(thumbnail ? { genieThumbnail: thumbnail, thumbnailUrl: thumbnail.url } : {}),
       // My templates never publish: they'd otherwise surface as Standard if the tenant were deleted (relation is SetNull)
       isPublished: scope === 'standard' ? (parsed.data.isPublished ?? false) : false,
+      offerToClients: scope === 'mine' ? (parsed.data.offerToClients ?? false) : false,
+      ...(source ? { description: source.description, textZones: source.textZones ?? [], colorVariants: source.colorVariants ?? [], fontPairings: source.fontPairings ?? [] } : {}),
+      ...clientOptionsData(parsed.data),
     },
   });
   return NextResponse.json({ ...libraryView(t), warnings }, { status: 201 });

@@ -12,7 +12,7 @@ import { Layout, LayoutPreview, artUrl } from '@/components/genie/parts';
 import { DesignBriefSettings } from '@/components/settings/DesignBriefSettings';
 
 type Template = {
-  id: string; name: string; description: string | null; scope: 'standard' | 'mine'; isPublished: boolean;
+  id: string; name: string; description: string | null; scope: 'standard' | 'mine'; isPublished: boolean; offerToClients: boolean;
   thumbnail: { url: string } | null; layout: Layout | null; alternateLayout: Layout | null;
 };
 const FORMAT_LABEL: Record<string, string> = { '4x6': '4×6', '2x6': '2×6 strip' };
@@ -111,10 +111,11 @@ export default function GenieTemplatesPage() {
                       <CardContent className="pt-4 flex-1 flex flex-col">
                         <p className="font-medium text-sm flex items-center gap-2 flex-wrap">{t.name}
                           {t.scope === 'standard' && data.superAdmin && <Badge variant={t.isPublished && t.layout ? 'success' : 'default'}>{t.isPublished && t.layout ? 'Published' : 'Hidden'}</Badge>}
+                          {t.scope === 'mine' && t.offerToClients && <Badge variant="info">Offered to clients</Badge>}
                         </p>
                         {t.layout && (
                           <p className="text-xs text-gray-500 mt-0.5">
-                            {FORMAT_LABEL[t.layout.format]} {t.layout.orientation} · {new Set(t.layout.slots.map(s => s.shotIndex)).size} photos{t.alternateLayout ? ' · + ' + t.alternateLayout.orientation : ''}
+                            {FORMAT_LABEL[t.layout.format]} {t.layout.orientation} · {new Set(t.layout.slots.map(s => s.shotIndex)).size} photo{new Set(t.layout.slots.map(s => s.shotIndex)).size === 1 ? "" : "s"}{t.alternateLayout ? ' · + ' + t.alternateLayout.orientation : ''}
                           </p>
                         )}
                         <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-gray-100">

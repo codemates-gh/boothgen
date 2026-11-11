@@ -15,11 +15,13 @@ export type EventTemplate = {
 type LibraryTemplate = { id: string; name: string; description: string | null; scope: 'standard' | 'mine'; layout: Layout; alternateLayout: Layout | null };
 
 const FORMAT_LABEL: Record<string, string> = { '4x6': '4×6', '2x6': '2×6 strip' };
+const photos = (l: Layout) => new Set(l.slots.map(s => s.shotIndex)).size;
 
-// Templates with a different number of photos than the capture's shot count, or frames for photos never taken
-export function templateMismatch(t: EventTemplate, shotCount: number): string | null {
-  if (t.maxShotIndex >= shotCount) return `Uses photo ${t.maxShotIndex + 1}, but guests take ${shotCount}.`;
-  if (t.frameCount !== shotCount) return `Shows ${t.frameCount} photo${t.frameCount === 1 ? '' : 's'}; guests take ${shotCount}.`;
+// The iPad takes as many photos as the chosen template's highest photo number. Frames that skip a number mean
+// guests take a photo that never prints.
+export function templateMismatch(t: EventTemplate): string | null {
+  const taken = t.maxShotIndex + 1;
+  if (t.frameCount < taken) return `Frames skip a photo number: guests take ${taken} photos but only ${t.frameCount} print. Renumber the frames in the designer.`;
   return null;
 }
 
@@ -29,6 +31,7 @@ export default function GenieTemplates({ eventId, templates, shotCount, locked, 
   eventId: string; templates: EventTemplate[]; shotCount: number; locked: boolean; onChange: () => void;
   approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
 }) {
+  const onEvent = (libraryId: string) => templates.some(e => e.libraryTemplateId === libraryId);
   const [picking, setPicking] = useState(false);
   const [library, setLibrary] = useState<{ standard: LibraryTemplate[]; mine: LibraryTemplate[] } | null>(null);
   const [tab, setTab] = useState<'standard' | 'mine'>('standard');
@@ -124,7 +127,7 @@ export default function GenieTemplates({ eventId, templates, shotCount, locked, 
         ) : (
           <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg">
             {ordered.map((t, i) => {
-              const mismatch = templateMismatch(t, shotCount);
+              const mismatch = templateMismatch(t);
               return (
                 <li key={t.id}
                   draggable={!locked}
@@ -188,17 +191,15 @@ export default function GenieTemplates({ eventId, templates, shotCount, locked, 
                 <LayoutPreview layout={t.layout} width={t.layout.widthPx >= t.layout.heightPx ? 96 : 40}/>
                 <div className="min-w-0 flex-1 flex flex-col">
                   <p className="text-sm font-medium">{t.name}{briefTemplate?.id === t.id && <Badge variant="info" className="ml-2">Client&apos;s pick</Badge>}</p>
-                  <p className="text-xs text-gray-500">{FORMAT_LABEL[t.layout.format]} {t.layout.orientation} · {new Set(t.layout.slots.map(s => s.shotIndex)).size} photos</p>
-                  {t.layout.slots.length > 0 && new Set(t.layout.slots.map(s => s.shotIndex)).size !== shotCount && (
-                    <Badge variant="warning" className="self-start mt-1">Guests take {shotCount}</Badge>
-                  )}
+                  <p className="text-xs text-gray-500">{FORMAT_LABEL[t.layout.format]} {t.layout.orientation} · {photos(t.layout)} photo{photos(t.layout) === 1 ? '' : 's'}</p>
+                  {onEvent(t.id) && <Badge variant="success" className="self-start mt-1">On this event</Badge>}
                   {t.alternateLayout && (
                     <label className="flex items-center gap-1.5 text-xs text-gray-600 mt-2 cursor-pointer">
                       <input type="checkbox" className="w-4 h-4 rounded" checked={!!withAlternate[t.id]} onChange={e => setWithAlternate(w => ({ ...w, [t.id]: e.target.checked }))}/>
                       Include {t.alternateLayout.orientation} version
                     </label>
                   )}
-                  <Button size="sm" className="mt-auto self-start" disabled={!!busy} onClick={() => add(t)}>{busy === 'add-' + t.id ? 'Adding…' : 'Add'}</Button>
+                  <Button size="sm" variant={onEvent(t.id) ? 'outline' : 'default'} className="mt-auto self-start" disabled={!!busy} onClick={() => add(t)}>{busy === 'add-' + t.id ? 'Adding…' : onEvent(t.id) ? 'Add again' : 'Add'}</Button>
                 </div>
               </div>
             ))}

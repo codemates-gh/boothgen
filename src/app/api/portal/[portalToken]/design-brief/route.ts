@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { sendEmail } from '@/lib/email/send';
+import { clientTemplateView, clientTemplates, clientTemplatesWhere } from '@/lib/templates/clientLibrary';
 
 export async function GET(_: NextRequest, { params }: { params: { portalToken: string } }) {
   const event = await prisma.event.findFirst({
@@ -20,14 +21,12 @@ export async function GET(_: NextRequest, { params }: { params: { portalToken: s
   const designBriefEnabled = event.tenant.branding?.designBriefEnabled ?? false;
   if (!designBriefEnabled) return NextResponse.json(null);
 
-  // Return brief + shared templates for gallery
-  const templates = await prisma.boothDesignTemplate.findMany({
-    where: { tenantId: null, isPublished: true },
-    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-  });
+  // Brief + the layouts this operator offers (Standard they haven't hidden, plus their own offered templates)
+  const templates = await clientTemplates(event.tenantId);
+  const brief = event.designBrief ? { ...event.designBrief, template: event.designBrief.template ? clientTemplateView(event.designBrief.template) : null } : null;
 
   return NextResponse.json({
-    brief: event.designBrief ?? null,
+    brief,
     templates,
     customDesignEnabled: event.tenant.branding?.customDesignEnabled ?? false,
   });
@@ -46,6 +45,11 @@ export async function POST(req: NextRequest, { params }: { params: { portalToken
   if (!event.tenant.branding?.designBriefEnabled) return NextResponse.json({ error: 'Design brief not enabled.' }, { status: 400 });
 
   const { templateId, selectedColorVariantId, selectedFontPairingId, textValues, themeInput, themeDirections, selectedDirectionIndex, isCustomDesign, notes } = await req.json();
+
+  // The layout must be one this operator offers
+  if (templateId && !(await prisma.boothDesignTemplate.findFirst({ where: { id: templateId, ...(await clientTemplatesWhere(event.tenantId)) }, select: { id: true } }))) {
+    return NextResponse.json({ error: 'That layout is no longer available. Pick another one.' }, { status: 400 });
+  }
 
   // Upsert brief
   const existingBrief = event.designBrief;

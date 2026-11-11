@@ -1,4 +1,5 @@
 'use client';
+import { LayoutPreview } from '@/components/genie/parts';
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Printer, Layers, AlertCircle, Download, X, Copy, Palette, Sparkles, PenLine, ArrowLeft as ArrowLeftIcon } from 'lucide-react';
@@ -927,14 +928,14 @@ export default function ClientPortalPage() {
                           style={{ '--tw-ring-color': pc + '66' } as React.CSSProperties}>
                           {t.thumbnailUrl ? (
                             <div className="relative">
-                              <img src={t.thumbnailUrl} alt={t.name} className="w-full aspect-[3/2] object-cover"/>
+                              <img src={t.thumbnailUrl} alt={t.name} className="w-full aspect-[3/2] object-contain bg-gray-50 p-2"/>
                               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                 <div className="bg-black/30 text-white text-[10px] font-bold tracking-widest px-2 py-0.5 rounded rotate-[-25deg] uppercase select-none">Preview</div>
                               </div>
                             </div>
                           ) : (
-                            <div className="w-full aspect-[3/2] bg-gray-100 flex items-center justify-center">
-                              <Layers className="w-8 h-8 text-gray-300"/>
+                            <div className="w-full aspect-[3/2] bg-gray-50 flex items-center justify-center">
+                              {t.layout ? <LayoutPreview layout={t.layout} width={Math.round(150 * t.layout.widthPx / t.layout.heightPx)}/> : <Layers className="w-8 h-8 text-gray-300"/>}
                             </div>
                           )}
                           <div className="p-3">
@@ -979,6 +980,9 @@ export default function ClientPortalPage() {
 
                 <div className="p-6 space-y-8">
                   {/* Layout thumbnail */}
+                  {!isCustomDesign && !selectedTemplate?.thumbnailUrl && selectedTemplate?.layout && (
+                    <div className="flex justify-center"><LayoutPreview layout={selectedTemplate.layout} width={Math.round(300 * selectedTemplate.layout.widthPx / selectedTemplate.layout.heightPx)}/></div>
+                  )}
                   {!isCustomDesign && selectedTemplate?.thumbnailUrl && (
                     <div className="relative max-w-xs mx-auto">
                       <img src={selectedTemplate.thumbnailUrl} alt={selectedTemplate.name} className="w-full rounded-xl border border-gray-200 shadow-sm"/>

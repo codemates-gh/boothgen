@@ -4,6 +4,26 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.67.0] — 2026-11-12
+
+### Added
+- **One template library for client picks and Genie**: Super Admin → Design Templates now opens the full Template Designer (frames, shapes, safe area, artwork, download). Booth Genius designs the Standard layouts there; published ones show in every operator's Standard templates and in their clients' design picker
+- **Client Options in the designer**: description, text fields, color palettes and font pairings that clients customize in their design brief
+- **Operators can offer their own templates to clients**: "Offer to my clients" on any My Template; offered ones show first in the client's picker with an "Offered to clients" badge
+- **15 Standard layouts** across 4×6 landscape, 4×6 portrait and 2×6 strip (full bleed, classic single, logo panel, side by side, three in a row, trio + logo, grids of four, instant camera, strips of 3 and 4)
+- **Add a Template** on an event marks templates already on it ("On this event", "Add again")
+
+### Changed
+- **Photos per session follows the layout**: guests take one photo per frame of the template they choose, so the "Photos per session" setting and the "guests take N" warnings are gone. A warning remains only when a template's frames skip a photo number
+- **Client design picker** shows only layouts with photo frames, uses the designer's picture (or a frame preview) without cropping, and only accepts layouts the operator offers
+
+### Fixed
+- **Super Admin template API** used a cookie nothing sets: it now requires a signed-in super admin
+
+**DB change required**: two columns plus the Standard set — `docs/genie/apply-production-template-library.sql`. Earlier test Standard templates are hidden, not deleted.
+
+---
+
 ## [2.66.0] — 2026-11-11
 
 ### Changed

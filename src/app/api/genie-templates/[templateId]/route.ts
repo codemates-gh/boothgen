@@ -2,15 +2,15 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
-import { requireGenieAdmin } from '@/lib/genie/admin';
+import { requireTemplateEditor } from '@/lib/genie/admin';
 import { canEditTemplate, findDesignerTemplate, libraryView } from '@/lib/genie/library';
-import { TemplateBody, prepareTemplate } from '@/lib/genie/designer';
+import { TemplateBody, clientOptionsData, prepareTemplate } from '@/lib/genie/designer';
 import { allowedPrefixes, deleteUnusedTemplateAssets, templateAssetUrls } from '@/lib/genie/templateAssets';
 
 type P = { params: { templateId: string } };
 
 export async function GET(_req: NextRequest, { params }: P) {
-  const auth = await requireGenieAdmin();
+  const auth = await requireTemplateEditor();
   if (auth instanceof NextResponse) return auth;
   const t = await findDesignerTemplate(auth, params.templateId);
   if (!t) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -18,7 +18,7 @@ export async function GET(_req: NextRequest, { params }: P) {
 }
 
 export async function PUT(req: NextRequest, { params }: P) {
-  const auth = await requireGenieAdmin();
+  const auth = await requireTemplateEditor();
   if (auth instanceof NextResponse) return auth;
   const t = await findDesignerTemplate(auth, params.templateId);
   if (!t) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -39,6 +39,8 @@ export async function PUT(req: NextRequest, { params }: P) {
       layout, alternateLayout: alternateLayout ?? Prisma.DbNull,
       genieThumbnail: thumbnail ?? Prisma.DbNull, ...(thumbnail ? { thumbnailUrl: thumbnail.url } : {}),
       ...(scope === 'standard' && parsed.data.isPublished !== undefined ? { isPublished: parsed.data.isPublished } : {}),
+      ...(scope === 'mine' && parsed.data.offerToClients !== undefined ? { offerToClients: parsed.data.offerToClients } : {}),
+      ...clientOptionsData(parsed.data),
     },
   });
   // Images this template no longer uses, unless something else still does
@@ -49,11 +51,11 @@ export async function PUT(req: NextRequest, { params }: P) {
 
 // Hides the template from the library. Events keep their copies; design briefs that chose it keep working.
 export async function DELETE(_req: NextRequest, { params }: P) {
-  const auth = await requireGenieAdmin();
+  const auth = await requireTemplateEditor();
   if (auth instanceof NextResponse) return auth;
   const t = await findDesignerTemplate(auth, params.templateId);
   if (!t) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (!canEditTemplate(auth, t) || t.tenantId === null) return NextResponse.json({ error: 'Only your own templates can be deleted here' }, { status: 403 });
+  if (!canEditTemplate(auth, t)) return NextResponse.json({ error: 'Only your own templates can be deleted here' }, { status: 403 });
   await prisma.boothDesignTemplate.update({ where: { id: t.id }, data: { isActive: false } });
   return NextResponse.json({ ok: true });
 }

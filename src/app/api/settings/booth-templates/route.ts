@@ -1,12 +1,12 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma/client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/config';
+import { clientTemplates } from '@/lib/templates/clientLibrary';
 
-// Returns the BoothGen shared published template library
+// The layouts this account's clients can pick in their design brief
 export async function GET() {
-  const templates = await prisma.boothDesignTemplate.findMany({
-    where: { tenantId: null, isPublished: true },
-    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-  });
-  return NextResponse.json(templates);
+  const session = await getServerSession(authOptions);
+  if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  return NextResponse.json(await clientTemplates(session.tenantId));
 }

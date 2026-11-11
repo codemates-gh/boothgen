@@ -3,6 +3,7 @@ import type { BoothDesignTemplate } from '@prisma/client';
 import { StoredLayout } from './schemas';
 import { artworkFit } from './image';
 import { verifyAsset, type RemoteAsset } from './templateAssets';
+import { ClientOptions, syncPairings } from '@/lib/templates/clientOptions';
 
 // Frame sizes the designer offers (300 dpi). Square waits for GIF mode.
 export const SIZE_PRESETS = [
@@ -42,7 +43,8 @@ export const TemplateBody = z.object({
   alternateLayout: DesignLayout.nullable().optional(),
   thumbnail: AssetRef.nullable().optional(),
   copyFrom: z.string().optional(), // duplicating: the source template's images are reused as they are
-}).strict().superRefine((b, ctx) => {
+  offerToClients: z.boolean().optional(), // My templates: shown in this account's clients' design brief picker
+}).merge(ClientOptions).strict().superRefine((b, ctx) => {
   if (b.alternateLayout && (b.alternateLayout.orientation === b.layout.orientation || b.alternateLayout.format !== b.layout.format)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'The alternate layout must be the same size in the other orientation', path: ['alternateLayout'] });
   }
@@ -100,4 +102,15 @@ export async function prepareTemplate(body: TemplateBody, existing: AssetSource,
   const thumb = await checkAsset(body.thumbnail ?? undefined, previous, prefixes);
   if ('error' in thumb) return { error: 'Thumbnail: ' + thumb.error };
   return { layout: layouts[0]!, alternateLayout: layouts[1], thumbnail: thumb.asset ?? null, warnings };
+}
+
+// Client options to save: what the client may customize in their design brief. Omitted fields stay as they are.
+export function clientOptionsData(b: TemplateBody) {
+  const zones = b.textZones;
+  return {
+    ...(b.description !== undefined ? { description: b.description || null } : {}),
+    ...(zones !== undefined ? { textZones: zones } : {}),
+    ...(b.colorVariants !== undefined ? { colorVariants: b.colorVariants } : {}),
+    ...(b.fontPairings !== undefined ? { fontPairings: syncPairings(b.fontPairings, zones ?? []) } : {}),
+  };
 }

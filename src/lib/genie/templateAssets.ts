@@ -7,18 +7,20 @@ export type RemoteAsset = { url: string; sha256: string; contentType: 'image/png
 export type Scope = 'mine' | 'standard';
 
 // Where designer uploads go: Standard (BoothGen-managed) artwork is shared, My templates' artwork is per tenant
-export function assetPrefix(scope: Scope, tenantId: string): string {
+// (tenantId is null for a BoothGen super admin working outside an account: Standard only)
+export function assetPrefix(scope: Scope, tenantId: string | null): string {
+  if (scope !== 'standard' && !tenantId) throw new Error('My templates need an account');
   return scope === 'standard' ? 'genie-templates/standard/' : `genie-templates/${tenantId}/`;
 }
 
-export function newAssetKey(scope: Scope, tenantId: string, contentType: string): string {
+export function newAssetKey(scope: Scope, tenantId: string | null, contentType: string): string {
   return assetPrefix(scope, tenantId) + randomUUID() + (contentType === 'image/png' ? '.png' : '.jpg');
 }
 
 // R2 keys a template may reference: its own folder, Standard artwork (duplicated templates), and the tenant's
 // client-approved design files (templates/<tenantId>/...)
-export function allowedPrefixes(scope: Scope, tenantId: string): string[] {
-  return scope === 'standard'
+export function allowedPrefixes(scope: Scope, tenantId: string | null): string[] {
+  return scope === 'standard' || !tenantId
     ? ['genie-templates/standard/']
     : [`genie-templates/${tenantId}/`, 'genie-templates/standard/', `templates/${tenantId}/`];
 }

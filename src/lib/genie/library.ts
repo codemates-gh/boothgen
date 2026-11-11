@@ -27,20 +27,24 @@ export function libraryView(t: BoothDesignTemplate) {
     thumbnailUrl: t.thumbnailUrl,
     thumbnail: (t.genieThumbnail as { url: string } | null) ?? null,
     isPublished: t.isPublished,
+    offerToClients: t.offerToClients,
+    textZones: (t.textZones as unknown[]) ?? [],
+    colorVariants: (t.colorVariants as unknown[]) ?? [],
+    fontPairings: (t.fontPairings as unknown[]) ?? [],
     layout: layout.success ? layout.data : null,
     alternateLayout: alternate?.success ? alternate.data : null,
   };
 }
 
 // Templates the designer may open: the tenant's own, published Standard ones, and (for super admins) every Standard one
-export async function findDesignerTemplate(auth: { tenantId: string; superAdmin: boolean }, id: string) {
-  const t = await prisma.boothDesignTemplate.findFirst({ where: { id, isActive: true, OR: [{ tenantId: auth.tenantId }, { tenantId: null }] } });
+export async function findDesignerTemplate(auth: { tenantId: string | null; superAdmin: boolean }, id: string) {
+  const t = await prisma.boothDesignTemplate.findFirst({ where: { id, isActive: true, OR: [...(auth.tenantId ? [{ tenantId: auth.tenantId }] : []), { tenantId: null }] } });
   if (!t) return null;
   if (t.tenantId === null && !auth.superAdmin && !(t.isPublished && t.layout !== null)) return null;
   return t;
 }
 
-export function canEditTemplate(auth: { tenantId: string; superAdmin: boolean }, t: Pick<BoothDesignTemplate, 'tenantId'>): boolean {
+export function canEditTemplate(auth: { tenantId: string | null; superAdmin: boolean }, t: Pick<BoothDesignTemplate, 'tenantId'>): boolean {
   return t.tenantId === null ? auth.superAdmin : t.tenantId === auth.tenantId;
 }
 
