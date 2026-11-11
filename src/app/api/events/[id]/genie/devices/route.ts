@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 
-// Devices holding (or released from) this event's Genie slots
+// Devices holding (or released from) this event's Genie slots, plus paired iPads that can still open it
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
@@ -16,10 +16,17 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     orderBy: { assignedAt: 'asc' },
     include: { device: { select: { id: true, name: true, model: true, appVersion: true, lastSeenAt: true, revokedAt: true } } },
   });
+  // The account's other paired iPads: any of them can open this event while a spot is free
+  const available = await prisma.genieDevice.findMany({
+    where: { tenantId: auth.tenantId, revokedAt: null, id: { notIn: rows.map(r => r.deviceId) } },
+    orderBy: { name: 'asc' },
+    select: { id: true, name: true, model: true, appVersion: true, lastSeenAt: true },
+  });
   return NextResponse.json({
     maxDevices: event.genieSettings?.maxDevices ?? 2,
     used: rows.filter(r => !r.releasedAt).length,
     devices: rows.map(r => ({ ...r.device, assignedAt: r.assignedAt, releasedAt: r.releasedAt })),
+    available,
   });
 }
 

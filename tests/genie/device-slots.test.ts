@@ -35,6 +35,17 @@ describe('per-event device limit', () => {
     expect(await third.json()).toMatchObject({ code: 'event_device_limit' });
   });
 
+  it("lists the account's other paired iPads as available for the event", async () => {
+    const { event, devices, bundle } = await setup();
+    const other = await seedTenant();
+    await seedDevice(other.tenant.id);
+    await prisma.genieDevice.update({ where: { id: devices[2].device.id }, data: { revokedAt: new Date() } });
+    await bundle(devices[0].token);
+    const d = await (await listSlots(req('/x'), { params: { id: event.id } })).json();
+    expect(d.devices.map((x: any) => x.id)).toEqual([devices[0].device.id]);
+    expect(d.available.map((x: any) => x.id)).toEqual([devices[1].device.id]);
+  });
+
   it('never hands out more slots than the limit under concurrent requests', async () => {
     const { event, tenant, bundle } = await setup();
     const more = await Promise.all([1, 2, 3, 4, 5].map(() => seedDevice(tenant.id)));

@@ -8,10 +8,11 @@ import { Modal } from '@/components/ui/modal';
 import { Tablet } from 'lucide-react';
 import { fmtDateTime } from '@/components/genie/parts';
 
+type Available = { id: string; name: string; model: string | null; appVersion: string | null; lastSeenAt: string | null };
 type Row = { id: string; name: string; model: string | null; appVersion: string | null; lastSeenAt: string | null; revokedAt: string | null; assignedAt: string; releasedAt: string | null };
 
 export default function GenieEventDevices({ eventId }: { eventId: string }) {
-  const [data, setData] = useState<{ maxDevices: number; used: number; devices: Row[] } | null>(null);
+  const [data, setData] = useState<{ maxDevices: number; used: number; devices: Row[]; available: Available[] } | null>(null);
   const [confirm, setConfirm] = useState<{ row: Row; action: 'release' | 'allow' } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -39,11 +40,11 @@ export default function GenieEventDevices({ eventId }: { eventId: string }) {
           <CardTitle className="flex items-center gap-2"><Tablet className="w-4 h-4"/>iPads on This Event</CardTitle>
           {data && <Badge variant={data.used >= data.maxDevices ? 'warning' : 'default'}>{data.used} of {data.maxDevices}</Badge>}
         </div>
-        <p className="text-sm text-gray-500">An iPad takes a spot when it loads this event. Release one to free its spot for another iPad. <Link href="/genie/devices" className="text-brand hover:underline">Manage iPads</Link></p>
+        <p className="text-sm text-gray-500">Any paired iPad can open this event from its event list; it takes a spot when it does. Release one to free its spot for another iPad. <Link href="/genie/devices" className="text-brand hover:underline">Manage iPads</Link></p>
       </CardHeader>
       <CardContent>
         {!data ? <p className="text-sm text-gray-400">Loading…</p> : data.devices.length === 0 ? (
-          <p className="text-sm text-gray-500">No iPads have loaded this event yet.</p>
+          data.available.length === 0 && <p className="text-sm text-gray-500">No iPads are paired yet. <Link href="/genie/devices" className="text-brand hover:underline">Pair an iPad</Link></p>
         ) : (
           <ul className="divide-y divide-gray-100">
             {data.devices.map(d => (
@@ -60,6 +61,24 @@ export default function GenieEventDevices({ eventId }: { eventId: string }) {
               </li>
             ))}
           </ul>
+        )}
+        {data && data.available.length > 0 && (
+          <div className={data.devices.length > 0 ? 'mt-4 pt-4 border-t border-gray-100' : ''}>
+            <p className="text-xs font-medium text-gray-500 uppercase mb-1">Available</p>
+            <ul className="divide-y divide-gray-100">
+              {data.available.map(d => (
+                <li key={d.id} className="flex items-center gap-3 py-2.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium flex items-center gap-2">{d.name}<Badge variant="default">Not on this event yet</Badge></p>
+                    <p className="text-xs text-gray-500">{[d.model, d.appVersion && 'v' + d.appVersion].filter(Boolean).join(' · ')}{d.lastSeenAt ? ' · last seen ' + fmtDateTime(d.lastSeenAt) : ''}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-gray-400 mt-1">
+              {data.used >= data.maxDevices ? `All ${data.maxDevices} spots are taken. Release an iPad above before another one opens this event.` : 'Open this event in Genie on the iPad to start using it here.'}
+            </p>
+          </div>
         )}
       </CardContent>
 
