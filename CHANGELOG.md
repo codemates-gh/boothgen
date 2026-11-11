@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.63.2] — 2026-11-11
+
+### Changed
+- **Template Designer**: Photo Frames now sits above Canvas in the side panel, so a selected frame's tools are right at the top
+
+---
+
 ## [2.63.1] — 2026-11-11
 
 ### Changed

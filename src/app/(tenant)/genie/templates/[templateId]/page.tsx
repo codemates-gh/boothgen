@@ -475,39 +475,6 @@ export default function TemplateDesignerPage() {
 
           {/* On wide screens the side panel stays in view and scrolls on its own, between the top bar and the save bar */}
           <div className="space-y-4 lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto lg:overscroll-contain">
-            <Card>
-              <CardHeader className="pb-3"><CardTitle>Canvas</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <Field label="Size">
-                  <Select value={preset.id} disabled={readOnly} onChange={e => changePreset(e.target.value)}>
-                    {PRESETS.filter(p => active === 'main' || (p.format === layouts.main.format && p.orientation !== layouts.main.orientation)).map(p => <option key={p.id} value={p.id}>{p.label} ({p.widthPx}×{p.heightPx})</option>)}
-                  </Select>
-                </Field>
-                <Field label="Background colour">
-                  <div className="flex gap-2">
-                    <input type="color" value={layout.backgroundColor} disabled={readOnly} onChange={e => setLayout(l => ({ ...l, backgroundColor: e.target.value.toUpperCase() }))} className="h-10 w-12 rounded border border-gray-300 cursor-pointer"/>
-                    <Input key={layout.backgroundColor} defaultValue={layout.backgroundColor} disabled={readOnly} maxLength={7}
-                      onBlur={e => { const v = e.target.value.trim().toUpperCase(); if (/^#[0-9A-F]{6}$/.test(v)) setLayout(l => ({ ...l, backgroundColor: v })); else e.target.value = layout.backgroundColor; }}/>
-                  </div>
-                </Field>
-                {(['background', 'overlay'] as const).map(kind => (
-                  <Field key={kind} label={kind === 'background' ? 'Background image' : 'Overlay'} hint={kind === 'background' ? 'PNG or JPG behind the photos.' : 'PNG with transparent windows, drawn over the photos.'}>
-                    {layout[kind] ? (
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="flex-1 truncate text-gray-600">{layout[kind]!.contentType === 'image/png' ? 'PNG' : 'JPG'} · {(layout[kind]!.bytes / 1024 / 1024).toFixed(1)} MB</span>
-                        {!readOnly && <Button variant="ghost" size="sm" onClick={() => setLayout(l => { const n = { ...l }; delete n[kind]; return n; })}><X className="w-3.5 h-3.5 mr-1"/>Remove</Button>}
-                      </div>
-                    ) : !readOnly && (
-                      <label className={'flex items-center justify-center gap-2 h-10 rounded-lg border border-dashed border-gray-300 text-sm text-gray-600 hover:bg-gray-50 ' + (uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer')}>
-                        <Upload className="w-4 h-4"/>{uploading === kind ? 'Uploading…' : 'Upload'}
-                        <input type="file" accept={kind === 'overlay' ? 'image/png' : 'image/png,image/jpeg'} className="hidden" onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) uploadArt(kind, f); }}/>
-                      </label>
-                    )}
-                  </Field>
-                ))}
-              </CardContent>
-            </Card>
-
             {!readOnly && (
               <Card>
                 <CardHeader className="pb-3">
@@ -561,6 +528,39 @@ export default function TemplateDesignerPage() {
                 </CardContent>
               </Card>
             )}
+
+            <Card>
+              <CardHeader className="pb-3"><CardTitle>Canvas</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <Field label="Size">
+                  <Select value={preset.id} disabled={readOnly} onChange={e => changePreset(e.target.value)}>
+                    {PRESETS.filter(p => active === 'main' || (p.format === layouts.main.format && p.orientation !== layouts.main.orientation)).map(p => <option key={p.id} value={p.id}>{p.label} ({p.widthPx}×{p.heightPx})</option>)}
+                  </Select>
+                </Field>
+                <Field label="Background colour">
+                  <div className="flex gap-2">
+                    <input type="color" value={layout.backgroundColor} disabled={readOnly} onChange={e => setLayout(l => ({ ...l, backgroundColor: e.target.value.toUpperCase() }))} className="h-10 w-12 rounded border border-gray-300 cursor-pointer"/>
+                    <Input key={layout.backgroundColor} defaultValue={layout.backgroundColor} disabled={readOnly} maxLength={7}
+                      onBlur={e => { const v = e.target.value.trim().toUpperCase(); if (/^#[0-9A-F]{6}$/.test(v)) setLayout(l => ({ ...l, backgroundColor: v })); else e.target.value = layout.backgroundColor; }}/>
+                  </div>
+                </Field>
+                {(['background', 'overlay'] as const).map(kind => (
+                  <Field key={kind} label={kind === 'background' ? 'Background image' : 'Overlay'} hint={kind === 'background' ? 'PNG or JPG behind the photos.' : 'PNG with transparent windows, drawn over the photos.'}>
+                    {layout[kind] ? (
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="flex-1 truncate text-gray-600">{layout[kind]!.contentType === 'image/png' ? 'PNG' : 'JPG'} · {(layout[kind]!.bytes / 1024 / 1024).toFixed(1)} MB</span>
+                        {!readOnly && <Button variant="ghost" size="sm" onClick={() => setLayout(l => { const n = { ...l }; delete n[kind]; return n; })}><X className="w-3.5 h-3.5 mr-1"/>Remove</Button>}
+                      </div>
+                    ) : !readOnly && (
+                      <label className={'flex items-center justify-center gap-2 h-10 rounded-lg border border-dashed border-gray-300 text-sm text-gray-600 hover:bg-gray-50 ' + (uploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer')}>
+                        <Upload className="w-4 h-4"/>{uploading === kind ? 'Uploading…' : 'Upload'}
+                        <input type="file" accept={kind === 'overlay' ? 'image/png' : 'image/png,image/jpeg'} className="hidden" onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) uploadArt(kind, f); }}/>
+                      </label>
+                    )}
+                  </Field>
+                ))}
+              </CardContent>
+            </Card>
 
             {scope === 'standard' && superAdmin && (
               <Card><CardContent className="pt-6">
