@@ -9,7 +9,7 @@ vi.mock('@/lib/email/send', () => ({ sendEmail: vi.fn(async () => ({})) }));
 import { prisma } from '@/lib/prisma/client';
 import { DesignLayout } from '@/lib/genie/designer';
 import { GET as LIBRARY, POST as CREATE } from '@/app/api/genie-templates/route';
-import { GET as GET_T, PUT as UPDATE, DELETE as REMOVE } from '@/app/api/genie-templates/[templateId]/route';
+import { GET as GET_T, PUT as UPDATE, PATCH as TOGGLE, DELETE as REMOVE } from '@/app/api/genie-templates/[templateId]/route';
 import { GET as PORTAL_BRIEF, POST as PORTAL_SUBMIT } from '@/app/api/portal/[portalToken]/design-brief/route';
 import { STANDARD_TEMPLATES, standardTemplatesSql } from '../../scripts/standard-templates.mjs';
 import { req, resetDb, seedEvent, seedTenant } from './helpers';
@@ -82,6 +82,14 @@ describe('Super Admin → Design Templates', () => {
     expect((await UPDATE(json({ name: PREFIX + 'Hack', layout: SAMPLE_LAYOUT }, 'PUT'), p(t.id))).status).toBe(403);
     expect((await REMOVE(req('/x', { method: 'DELETE' }), p(t.id))).status).toBe(403);
     expect((await (await GET_T(req('/x'), p(t.id))).json()).canEdit).toBe(false);
+    expect((await TOGGLE(json({ visible: false }, 'PATCH'), p(t.id))).status).toBe(403);
+
+    // Operators switch their own templates' "offer to clients"; super admins publish Standard ones
+    const mine = await (await CREATE(json({ name: PREFIX + 'Mine', layout: SAMPLE_LAYOUT }))).json();
+    expect((await (await TOGGLE(json({ visible: true }, 'PATCH'), p(mine.id))).json()).offerToClients).toBe(true);
+    asSuperAdmin();
+    expect((await (await TOGGLE(json({ visible: false }, 'PATCH'), p(t.id))).json()).isPublished).toBe(false);
+    expect((await TOGGLE(json({ visible: 'yes' }, 'PATCH'), p(t.id))).status).toBe(400);
   });
 });
 

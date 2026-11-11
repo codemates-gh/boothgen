@@ -4,6 +4,20 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.68.0] — 2026-11-12
+
+### Added
+- **Mark as paid for full-payment invoices**: invoices without a payment schedule get a "Payment in full" row on the invoice page and the event's Invoices card, with the same payment-method choice, paid-plan requirement and undo as payment-schedule invoices. Marking it paid sets the invoice paid and books the event (lead/quoted → booked). Card payments made through Stripe can't be undone here
+- **Publish / Unpublish on Super Admin → Design Templates cards**, no need to open the designer
+
+### Fixed
+- **$0 invoices are paid**: a $0 invoice is paid as soon as it's sent (or created by contract signing), its $0 payments count as paid, the event is booked, and the client portal shows no Pay button and moves on to the next step. $0 invoices already sent settle the next time the invoice, the event or the client portal is opened
+- Super Admin template cards no longer cut off portrait and strip previews
+
+No database change.
+
+---
+
 ## [2.67.0] — 2026-11-12
 
 ### Added

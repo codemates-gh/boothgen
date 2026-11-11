@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
+import { bookEvent, milestoneStatusFor, sentInvoiceFields } from '@/lib/invoices/payments';
 import { z } from 'zod';
 import { sendHostNotificationEmail } from '@/lib/email/send';
 import { triggerAutomation, scheduleEventDateAutomations } from '@/lib/inngest/trigger';
@@ -74,9 +75,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
               taxAmountCents: quote.taxAmountCents,
               discountCents: quote.discountCents,
               totalCents: quote.totalCents,
-              balanceDueCents: quote.totalCents,
-              amountPaidCents: 0,
-              status: 'SENT',
+              ...sentInvoiceFields(quote.totalCents), // a $0 invoice starts paid
               lineItems: {
                 create: (quote.lineItems as any[]).map((li, i) => ({
                   description: li.description,
@@ -88,12 +87,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
               },
               ...(isDeposit ? {
                 PaymentMilestone: { create: [
-                  { tenantId: contract.tenantId, label: 'Deposit (' + (quote.depositPercent || 50) + '%)', amountCents: depositAmt, dueDate: new Date() },
-                  { tenantId: contract.tenantId, label: 'Balance', amountCents: balanceAmt, dueDate: balanceDueDate },
+                  { tenantId: contract.tenantId, label: 'Deposit (' + (quote.depositPercent || 50) + '%)', amountCents: depositAmt, dueDate: new Date(), ...milestoneStatusFor(depositAmt) },
+                  { tenantId: contract.tenantId, label: 'Balance', amountCents: balanceAmt, dueDate: balanceDueDate, ...milestoneStatusFor(balanceAmt) },
                 ]},
               } : {}),
             },
           });
+          // A $0 invoice is paid as soon as it exists, which books the event
+          if (quote.totalCents <= 0) await bookEvent(tx, contract.eventId);
         }
       }
     }

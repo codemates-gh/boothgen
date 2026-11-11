@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
-import { Plus, Pencil, Trash2, LayoutTemplate } from 'lucide-react';
+import { Plus, Pencil, Trash2, LayoutTemplate, Eye, EyeOff } from 'lucide-react';
 import { Layout, LayoutPreview } from '@/components/genie/parts';
 
 type Row = {
@@ -29,6 +29,13 @@ export default function DesignTemplatesManager() {
     setRows(d.standard);
   }
   useEffect(() => { load(); }, []);
+
+  async function setPublished(t: Row, visible: boolean) {
+    setError('');
+    const r = await fetch('/api/genie-templates/' + t.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ visible }) });
+    if (!r.ok) { setError((await r.json().catch(() => ({}))).error || 'Could not change it'); return; }
+    setRows(rs => rs && rs.map(x => x.id === t.id ? { ...x, isPublished: visible } : x));
+  }
 
   async function remove() {
     if (!removing) return;
@@ -54,7 +61,7 @@ export default function DesignTemplatesManager() {
           {rows.map(t => (
             <Card key={t.id} className="flex flex-col">
               <div className="h-44 bg-gray-50 rounded-t-xl flex items-center justify-center overflow-hidden p-3">
-                {t.layout ? <LayoutPreview layout={t.layout} width={t.layout.widthPx >= t.layout.heightPx ? 200 : 100}/>
+                {t.layout ? <LayoutPreview layout={t.layout} width={Math.round(Math.min(200, 150 * t.layout.widthPx / t.layout.heightPx))}/>
                   : t.thumbnailUrl ? <img src={t.thumbnailUrl} alt="" className="max-h-full"/> : <LayoutTemplate className="w-10 h-10 text-gray-300"/>}
               </div>
               <CardContent className="pt-3 flex-1 flex flex-col gap-2">
@@ -69,6 +76,9 @@ export default function DesignTemplatesManager() {
                 {t.description && <p className="text-xs text-gray-400 line-clamp-2">{t.description}</p>}
                 <div className="flex gap-2 mt-auto pt-1">
                   <Link href={'/super-admin/design-templates/' + t.id} className="flex-1"><Button variant="outline" size="sm" className="w-full"><Pencil className="w-3.5 h-3.5 mr-1.5"/>Design</Button></Link>
+                  <Button variant="outline" size="sm" disabled={!t.layout} onClick={() => setPublished(t, !t.isPublished)} title={t.isPublished ? 'Hide from operators and clients' : 'Show to operators and clients'}>
+                    {t.isPublished ? <><EyeOff className="w-3.5 h-3.5 mr-1.5"/>Unpublish</> : <><Eye className="w-3.5 h-3.5 mr-1.5"/>Publish</>}
+                  </Button>
                   <Button variant="ghost" size="sm" className="text-[#E2445C] hover:bg-red-50" onClick={() => setRemoving(t)} aria-label="Delete"><Trash2 className="w-3.5 h-3.5"/></Button>
                 </div>
               </CardContent>

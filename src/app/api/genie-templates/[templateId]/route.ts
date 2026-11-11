@@ -49,6 +49,20 @@ export async function PUT(req: NextRequest, { params }: P) {
   return NextResponse.json({ ...libraryView(saved), warnings });
 }
 
+// Quick visibility switch without re-saving the layout: Standard → isPublished (BoothGen), My templates → offerToClients
+export async function PATCH(req: NextRequest, { params }: P) {
+  const auth = await requireTemplateEditor();
+  if (auth instanceof NextResponse) return auth;
+  const t = await findDesignerTemplate(auth, params.templateId);
+  if (!t) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!canEditTemplate(auth, t)) return NextResponse.json({ error: 'Standard templates are managed by BoothGen' }, { status: 403 });
+  const body = await req.json().catch(() => null);
+  if (typeof body?.visible !== 'boolean') return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+  if (body.visible && t.layout === null) return NextResponse.json({ error: 'Add photo frames in the designer before publishing' }, { status: 400 });
+  const saved = await prisma.boothDesignTemplate.update({ where: { id: t.id }, data: t.tenantId === null ? { isPublished: body.visible } : { offerToClients: body.visible } });
+  return NextResponse.json(libraryView(saved));
+}
+
 // Hides the template from the library. Events keep their copies; design briefs that chose it keep working.
 export async function DELETE(_req: NextRequest, { params }: P) {
   const auth = await requireTemplateEditor();

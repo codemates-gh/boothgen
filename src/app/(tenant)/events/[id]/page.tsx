@@ -22,6 +22,7 @@ import EventChecklist from './EventChecklist';
 import EventMessagePanel from './EventMessagePanel';
 import EventProfitability from './EventProfitability';
 import EventInvoicePanel from './EventInvoicePanel';
+import { settleZeroInvoice } from '@/lib/invoices/payments';
 
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger', LOST:'default' };
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
@@ -46,6 +47,8 @@ export default async function EventDetailPage({ params, searchParams }: { params
         include: {
           lineItems: { orderBy: { sortOrder: 'asc' } },
           PaymentMilestone: { orderBy: { dueDate: 'asc' } },
+          // The latest payment marked by hand (no Stripe ids), for full-payment invoices
+          payments: { where: { stripeChargeId: null, stripePaymentIntentId: null }, orderBy: { paidAt: 'desc' }, take: 1 },
         },
         orderBy: { createdAt: 'desc' },
       },
@@ -57,6 +60,10 @@ export default async function EventDetailPage({ params, searchParams }: { params
     },
   });
   if (!event) notFound();
+  // A sent $0 invoice counts as paid
+  for (const inv of event.invoices) {
+    if (await settleZeroInvoice(prisma, inv.id)) Object.assign(inv, { status: 'PAID', paidAt: new Date(), balanceDueCents: 0, amountPaidCents: 0 });
+  }
 
   // Fetch active members for the assignment dropdown (admins only)
   const members = isAdmin
@@ -257,6 +264,12 @@ export default async function EventDetailPage({ params, searchParams }: { params
                   balanceDueCents: inv.balanceDueCents,
                   status: inv.status,
                   currency: (inv as any).currency ?? branding?.currency ?? 'usd',
+                  fullPayment: ((inv as any).PaymentMilestone ?? []).length === 0 ? {
+                    dueDate: (inv.dueDate ?? inv.createdAt).toISOString(),
+                    paidAt: inv.paidAt ? inv.paidAt.toISOString() : null,
+                    paymentMethod: (inv as any).payments?.[0]?.paymentMethod ?? null,
+                    viaStripe: inv.status === 'PAID' && !(inv as any).payments?.length,
+                  } : null,
                   milestones: ((inv as any).PaymentMilestone ?? []).map((m: any) => ({
                     id: m.id,
                     label: m.label,

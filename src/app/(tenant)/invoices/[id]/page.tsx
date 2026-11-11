@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, Bell, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import MilestonesCard from './MilestonesCard';
+import { manualPaymentMethod, settleZeroInvoice } from '@/lib/invoices/payments';
 import { fmtCents } from '@/lib/utils';
 
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
@@ -40,8 +41,13 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
     prisma.stripeSubscription.findUnique({ where: { tenantId: session.tenantId } }),
   ]);
   const isPro = subscription?.plan === 'MONTHLY' || subscription?.plan === 'ANNUAL' || subscription?.plan === 'LIFETIME';
-  const inv = await prisma.invoice.findFirst({ where: { id: params.id, tenantId: session.tenantId }, include: { client: true, event: true, lineItems: { orderBy: { sortOrder: 'asc' } }, payments: { orderBy: { paidAt: 'desc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } } });
+  const load = () => prisma.invoice.findFirst({ where: { id: params.id, tenantId: session.tenantId }, include: { client: true, event: true, lineItems: { orderBy: { sortOrder: 'asc' } }, payments: { orderBy: { paidAt: 'desc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } } });
+  let inv = await load();
   if (!inv) notFound();
+  // A sent $0 invoice counts as paid
+  if (await settleZeroInvoice(prisma, inv.id)) inv = (await load())!;
+  // Full-payment invoices (no schedule) get a single "Payment in full" row to mark paid; Stripe payments can't be undone here
+  const fullPaymentMethod = inv.PaymentMilestone.length === 0 && inv.status === 'PAID' ? await manualPaymentMethod(inv.id) : null;
   const fmt = (c: number) => fmtCents(c, inv.currency ?? 'usd');
   return (
     <>
@@ -93,6 +99,21 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
           <MilestonesCard
             invoiceId={inv.id}
             milestones={(inv as any).PaymentMilestone}
+            isAdmin={isAdmin}
+            isPro={isPro}
+            currency={inv.currency ?? 'usd'}
+          />
+        )}
+        {inv.PaymentMilestone.length === 0 && inv.status !== 'CANCELLED' && (
+          <MilestonesCard
+            key={inv.status}
+            mode="full"
+            invoiceId={inv.id}
+            milestones={[{
+              id: 'full', label: 'Payment in full', amountCents: inv.totalCents, dueDate: inv.dueDate ?? inv.createdAt,
+              status: inv.status === 'PAID' ? 'PAID' : inv.status === 'OVERDUE' ? 'OVERDUE' : 'PENDING',
+              paymentMethod: inv.status === 'PAID' ? (fullPaymentMethod === undefined ? 'stripe' : fullPaymentMethod) : null,
+            }]}
             isAdmin={isAdmin}
             isPro={isPro}
             currency={inv.currency ?? 'usd'}

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { fmtCents } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,13 +22,19 @@ interface Milestone {
   paymentMethod?: string | null;
 }
 
-export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin, isPro, currency = 'usd' }: {
+// mode "full": an invoice without a payment schedule, shown as one "Payment in full" row (milestones[0])
+export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin, isPro, currency = 'usd', mode = 'milestones' }: {
   invoiceId: string;
   milestones: Milestone[];
   isAdmin?: boolean;
   isPro?: boolean;
   currency?: string;
+  mode?: 'milestones' | 'full';
 }) {
+  const router = useRouter();
+  const full = mode === 'full';
+  const paidUrl = (id: string) => full ? `/api/invoices/${invoiceId}/mark-paid` : `/api/invoices/${invoiceId}/milestones/${id}/mark-paid`;
+  const undoUrl = (id: string) => full ? `/api/invoices/${invoiceId}/unmark-paid` : `/api/invoices/${invoiceId}/milestones/${id}/unmark-paid`;
   const [milestones, setMilestones] = useState(initial);
   const [editing, setEditing] = useState<string | null>(null);
   const [dateVal, setDateVal] = useState('');
@@ -65,10 +72,11 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
   async function undoPayment(milestoneId: string) {
     setUndoing(milestoneId);
     setError('');
-    const res = await fetch(`/api/invoices/${invoiceId}/milestones/${milestoneId}/unmark-paid`, { method: 'POST' });
+    const res = await fetch(undoUrl(milestoneId), { method: 'POST' });
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setMilestones(ms => ms.map(m => m.id === milestoneId ? { ...m, status: 'PENDING', paymentMethod: null } : m));
+      router.refresh();
     } else {
       setError(data.error || 'Failed to undo payment');
     }
@@ -78,7 +86,7 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
   async function markPaid(milestoneId: string) {
     setMarkingPaid(milestoneId);
     setError('');
-    const res = await fetch(`/api/invoices/${invoiceId}/milestones/${milestoneId}/mark-paid`, {
+    const res = await fetch(paidUrl(milestoneId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ paymentMethod }),
@@ -88,6 +96,7 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
       setMilestones(ms => ms.map(m => m.id === milestoneId ? { ...m, status: 'PAID', paymentMethod } : m));
       setConfirmPay(null);
       setPaymentMethod('Cash');
+      router.refresh();
     } else {
       setError(data.error || 'Failed to mark as paid');
     }
@@ -96,7 +105,7 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
 
   return (
     <Card>
-      <CardHeader><CardTitle>Payment Schedule</CardTitle></CardHeader>
+      <CardHeader><CardTitle>{full ? 'Payment' : 'Payment Schedule'}</CardTitle></CardHeader>
       <CardContent className="p-0">
         <div className="divide-y">
           {milestones.map(m => (
@@ -118,7 +127,7 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
                   ) : (
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <p className="text-xs text-gray-400">Due {format(new Date((m.dueDate instanceof Date ? m.dueDate.toISOString() : m.dueDate).slice(0,10) + 'T00:00:00'), 'MMMM d, yyyy')}</p>
-                      {isAdmin && m.status !== 'PAID' && m.status !== 'REFUNDED' && (
+                      {isAdmin && !full && m.status !== 'PAID' && m.status !== 'REFUNDED' && (
                         <button onClick={() => startEdit(m)} className="text-gray-300 hover:text-gray-500 transition-colors">
                           <Pencil className="w-3 h-3" />
                         </button>
@@ -126,7 +135,7 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
                     </div>
                   )}
                   {m.status === 'PAID' && m.paymentMethod && (
-                    <p className="text-xs text-green-600 mt-0.5">via {m.paymentMethod}</p>
+                    <p className="text-xs text-green-600 mt-0.5">via {m.paymentMethod.startsWith('stripe') ? 'card (Stripe)' : m.paymentMethod}</p>
                   )}
                 </div>
 
@@ -134,7 +143,7 @@ export default function MilestonesCard({ invoiceId, milestones: initial, isAdmin
                   <p className="font-semibold text-sm">{fmtCents(m.amountCents, currency)}</p>
                   <Badge variant={MC[m.status]}>{m.status.replace('_', ' ')}</Badge>
 
-                  {isAdmin && m.status === 'PAID' && !m.paymentMethod?.startsWith('stripe') && (
+                  {isAdmin && m.status === 'PAID' && !m.paymentMethod?.startsWith('stripe') && m.amountCents > 0 && (
                     <button
                       onClick={() => undoPayment(m.id)}
                       disabled={undoing === m.id}

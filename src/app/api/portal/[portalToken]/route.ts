@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma/client';
 import { NOT_PRINT_SHEET } from '@/lib/genie/urls';
 import { stripe } from '@/lib/stripe';
 import { sendPaymentConfirmationEmail } from '@/lib/email/send';
+import { settleZeroInvoice } from '@/lib/invoices/payments';
 
 export async function GET(req: NextRequest, { params }: { params: { portalToken: string } }) {
   const event = await prisma.event.findFirst({
@@ -32,6 +33,14 @@ export async function GET(req: NextRequest, { params }: { params: { portalToken:
   const companyName = event.tenant.branding?.companyName ?? event.tenant.name;
   const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
   const portalUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com') + '/portal/' + params.portalToken + '?tab=invoice';
+
+  // A sent $0 invoice has nothing to collect: it counts as paid so the client moves on to the next step
+  if (rawInvoice && await settleZeroInvoice(prisma, rawInvoice.id)) {
+    rawInvoice = await prisma.invoice.findUniqueOrThrow({
+      where: { id: rawInvoice.id },
+      include: { lineItems: { orderBy: { sortOrder: 'asc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } },
+    });
+  }
 
   if (rawInvoice && rawInvoice.status !== 'PAID') {
     try {

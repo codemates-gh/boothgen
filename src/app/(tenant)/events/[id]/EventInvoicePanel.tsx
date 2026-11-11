@@ -30,18 +30,23 @@ interface InvoiceData {
   status: string;
   currency: string;
   milestones: Milestone[];
+  // No payment schedule: one "Payment in full" row (paid through Stripe can't be undone here)
+  fullPayment?: { dueDate: string; paidAt: string | null; paymentMethod: string | null; viaStripe: boolean } | null;
 }
 
 interface Props {
   invoices: InvoiceData[];
 }
 
-function MilestoneRow({ milestone, invoiceId, currency, onUpdate }: {
+function MilestoneRow({ milestone, invoiceId, currency, onUpdate, full = false, canUndo = true }: {
   milestone: Milestone;
   invoiceId: string;
   currency: string;
-  onUpdate: (milestoneId: string, milestoneStatus: string, invoiceStatus: string) => void;
+  onUpdate: (milestoneId: string, milestoneStatus: string, invoiceStatus: string, paymentMethod: string | null) => void;
+  full?: boolean;
+  canUndo?: boolean;
 }) {
+  const base = full ? `/api/invoices/${invoiceId}` : `/api/invoices/${invoiceId}/milestones/${milestone.id}`;
   const fmt = (c: number) => fmtCents(c, currency);
   const [expanded, setExpanded] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Credit Card');
@@ -54,9 +59,9 @@ function MilestoneRow({ milestone, invoiceId, currency, onUpdate }: {
   async function undoPayment() {
     setUndoing(true);
     setError('');
-    const res = await fetch(`/api/invoices/${invoiceId}/milestones/${milestone.id}/unmark-paid`, { method: 'POST' });
+    const res = await fetch(`${base}/unmark-paid`, { method: 'POST' });
     const d = await res.json();
-    if (res.ok) onUpdate(milestone.id, 'PENDING', d.invoiceStatus);
+    if (res.ok) onUpdate(milestone.id, 'PENDING', d.invoiceStatus, null);
     else setError(d.error || 'Failed to undo payment');
     setUndoing(false);
   }
@@ -64,14 +69,14 @@ function MilestoneRow({ milestone, invoiceId, currency, onUpdate }: {
   async function markPaid() {
     setLoading(true);
     setError('');
-    const res = await fetch(`/api/invoices/${invoiceId}/milestones/${milestone.id}/mark-paid`, {
+    const res = await fetch(`${base}/mark-paid`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ paymentMethod }),
     });
     const d = await res.json();
     if (res.ok) {
-      onUpdate(milestone.id, 'PAID', d.invoiceStatus);
+      onUpdate(milestone.id, 'PAID', d.invoiceStatus, paymentMethod);
       setExpanded(false);
     } else {
       if (d.upgradeRequired) setError('PRO plan required to mark payments as paid.');
@@ -94,14 +99,14 @@ function MilestoneRow({ milestone, invoiceId, currency, onUpdate }: {
         {isPaid ? (
           <div className="flex items-center gap-1.5">
             <Badge variant="success" className="text-xs">{milestone.paymentMethod ?? 'Paid'}</Badge>
-            <button
+            {canUndo && milestone.amountCents > 0 && <button
               onClick={undoPayment}
               disabled={undoing}
               title="Undo payment"
               className="text-gray-300 hover:text-orange-500 transition-colors disabled:opacity-40"
             >
               <Undo2 className="w-3.5 h-3.5" />
-            </button>
+            </button>}
           </div>
         ) : (
           <button
@@ -128,6 +133,7 @@ function MilestoneRow({ milestone, invoiceId, currency, onUpdate }: {
           {error && <p className="w-full text-xs text-red-600">{error}</p>}
         </div>
       )}
+      {error && !expanded && <p className="px-6 pb-2 text-xs text-red-600">{error}</p>}
     </div>
   );
 }
@@ -135,12 +141,17 @@ function MilestoneRow({ milestone, invoiceId, currency, onUpdate }: {
 export default function EventInvoicePanel({ invoices }: Props) {
   const [invoiceData, setInvoiceData] = useState<InvoiceData[]>(invoices);
 
-  function handleMilestoneUpdate(invoiceId: string, milestoneId: string, newMilestoneStatus: string, newInvoiceStatus: string) {
+  function handleMilestoneUpdate(invoiceId: string, milestoneId: string, newMilestoneStatus: string, newInvoiceStatus: string, paymentMethod: string | null) {
     setInvoiceData(prev => prev.map(inv => {
       if (inv.id !== invoiceId) return inv;
+      if (milestoneId === 'full') {
+        const paid = newMilestoneStatus === 'PAID';
+        return { ...inv, status: newInvoiceStatus, balanceDueCents: paid ? 0 : inv.totalCents,
+          fullPayment: inv.fullPayment ? { ...inv.fullPayment, paidAt: paid ? new Date().toISOString() : null, paymentMethod: paid ? paymentMethod : null } : inv.fullPayment };
+      }
       const updatedMilestones = inv.milestones.map(m =>
         m.id === milestoneId
-          ? { ...m, status: newMilestoneStatus, paidAt: newMilestoneStatus === 'PAID' ? new Date().toISOString() : null, paymentMethod: newMilestoneStatus === 'PAID' ? m.paymentMethod : null }
+          ? { ...m, status: newMilestoneStatus, paidAt: newMilestoneStatus === 'PAID' ? new Date().toISOString() : null, paymentMethod: newMilestoneStatus === 'PAID' ? paymentMethod : null }
           : m
       );
       const newBalance = updatedMilestones
@@ -172,9 +183,19 @@ export default function EventInvoicePanel({ invoices }: Props) {
                 milestone={m}
                 invoiceId={inv.id}
                 currency={inv.currency ?? 'usd'}
-                onUpdate={(milestoneId, milestoneStatus, invoiceStatus) => handleMilestoneUpdate(inv.id, milestoneId, milestoneStatus, invoiceStatus)}
+                onUpdate={(milestoneId, milestoneStatus, invoiceStatus, method) => handleMilestoneUpdate(inv.id, milestoneId, milestoneStatus, invoiceStatus, method)}
               />
             ))}
+            {!hasMilestones && inv.fullPayment && inv.status !== 'CANCELLED' && (
+              <MilestoneRow
+                full
+                canUndo={!inv.fullPayment.viaStripe}
+                milestone={{ id: 'full', label: 'Payment in full', amountCents: inv.totalCents, dueDate: inv.fullPayment.dueDate, status: inv.status === 'PAID' ? 'PAID' : 'PENDING', paidAt: inv.fullPayment.paidAt, paymentMethod: inv.fullPayment.paymentMethod }}
+                invoiceId={inv.id}
+                currency={inv.currency ?? 'usd'}
+                onUpdate={(milestoneId, milestoneStatus, invoiceStatus, method) => handleMilestoneUpdate(inv.id, milestoneId, milestoneStatus, invoiceStatus, method)}
+              />
+            )}
           </div>
         );
       })}

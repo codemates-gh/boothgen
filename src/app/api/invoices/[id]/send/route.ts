@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
+import { settleZeroInvoice } from '@/lib/invoices/payments';
 import { sendInvoiceLink } from '@/lib/email/send';
 import { triggerAutomation } from '@/lib/inngest/trigger';
 import { inngest } from '@/lib/inngest/client';
@@ -29,6 +30,8 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
     await sendInvoiceLink({ to: inv.client.email, firstName: inv.client.firstName, companyName: tenant.branding?.companyName ?? tenant.name, invoiceNumber: inv.invoiceNumber, totalFormatted: fmt(inv.totalCents), portalUrl });
   }
   await prisma.invoice.update({ where: { id: inv.id }, data: { status: 'SENT' } });
+  // Nothing to collect on a $0 invoice: it counts as paid once sent
+  await settleZeroInvoice(prisma, inv.id);
   if (inv.eventId) {
     triggerAutomation({ tenantId: session.tenantId, eventId: inv.eventId, trigger: 'INVOICE_SENT' }).catch(e =>
       console.error('[invoice/send] INVOICE_SENT automation error:', e)
