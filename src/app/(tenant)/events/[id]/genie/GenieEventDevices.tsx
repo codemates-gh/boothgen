@@ -37,14 +37,14 @@ export default function GenieEventDevices({ eventId }: { eventId: string }) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between gap-3">
-          <CardTitle className="flex items-center gap-2"><Tablet className="w-4 h-4"/>iPads on This Event</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Tablet className="w-4 h-4"/>Devices on This Event</CardTitle>
           {data && <Badge variant={data.used >= data.maxDevices ? 'warning' : 'default'}>{data.used} of {data.maxDevices}</Badge>}
         </div>
-        <p className="text-sm text-gray-500">Any paired iPad can open this event from its event list; it takes a spot when it does. Release one to free its spot for another iPad. <Link href="/genie/devices" className="text-brand hover:underline">Manage iPads</Link></p>
+        <p className="text-sm text-gray-500">Any paired device can open this event from its event list; it takes a spot when it does. Release one to free its spot for another device. <Link href="/genie/devices" className="text-brand hover:underline">Manage devices</Link></p>
       </CardHeader>
       <CardContent>
         {!data ? <p className="text-sm text-gray-400">Loading…</p> : data.devices.length === 0 ? (
-          data.available.length === 0 && <p className="text-sm text-gray-500">No iPads are paired yet. <Link href="/genie/devices" className="text-brand hover:underline">Pair an iPad</Link></p>
+          data.available.length === 0 && <p className="text-sm text-gray-500">No devices are paired yet. <Link href="/genie/devices" className="text-brand hover:underline">Pair a device</Link></p>
         ) : (
           <ul className="divide-y divide-gray-100">
             {data.devices.map(d => (
@@ -76,7 +76,7 @@ export default function GenieEventDevices({ eventId }: { eventId: string }) {
               ))}
             </ul>
             <p className="text-xs text-gray-400 mt-1">
-              {data.used >= data.maxDevices ? `All ${data.maxDevices} spots are taken. Release an iPad above before another one opens this event.` : 'Open this event in Genie on the iPad to start using it here.'}
+              {data.used >= data.maxDevices ? `All ${data.maxDevices} spots are taken. Release a device above before another one opens this event.` : 'Open this event in Genie on the device to start using it here.'}
             </p>
           </div>
         )}

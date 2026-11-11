@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.66.0] — 2026-11-11
+
+### Changed
+- **Genie → Sharing**: your Twilio and email accounts for guest texts and emails moved here from Settings → Genie (old links still work). The Settings "Genie" tab is gone
+- **Genie → Devices**: "iPads" is now "Devices" in the sidebar, the Devices page and the event's "Devices on This Event" card
+- **Client Design Brief is in Genie → Templates** for Genie accounts (a section below the templates). Settings → Booth Templates takes Genie accounts there; other accounts keep it in Settings
+- **Capture → Review screen timeout**: the old "Idle timeout" renamed and explained. It's how long the final photo with Print / Share stays up without a tap before going back to the start screen
+
+No database change.
+
+---
+
 ## [2.65.0] — 2026-11-11
 
 ### Added

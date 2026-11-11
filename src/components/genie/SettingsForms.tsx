@@ -135,7 +135,7 @@ export function CaptureFields({ value, onChange, disabled, children }: { value: 
         <Field label="Retakes allowed" hint="Per photo with Keep / Retake; per session from the final review. 0–3">
           <Num value={value.retakesPerShot} min={0} max={3} disabled={disabled} onChange={n => onChange({ retakesPerShot: n })}/>
         </Field>
-        <Field label="Idle timeout (sec)" hint="Back to the start screen after no taps. 10–600">
+        <Field label="Review screen timeout (sec)" hint="How long the final photo with Print / Share stays up without a tap before going back to the start screen. Also applies to any screen waiting for the guest. 10–600">
           <Num value={value.idleTimeoutSeconds} min={10} max={600} disabled={disabled} onChange={n => onChange({ idleTimeoutSeconds: n })}/>
         </Field>
       </div>

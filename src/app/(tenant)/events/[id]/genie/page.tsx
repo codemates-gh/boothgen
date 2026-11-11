@@ -232,7 +232,7 @@ export default function EventGeniePage() {
                   right={<DefaultState custom={data.settings.custom.sharing} disabled={locked} onReset={() => resetSection('sharing', 'Sharing')}/>}>
                   {data.providerWarnings.map(w => (
                     <div key={w.channel} className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/><span>{w.message} <Link href="/settings/genie" className="underline whitespace-nowrap">Open settings</Link></span>
+                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/><span>{w.message} <Link href="/genie/sharing" className="underline whitespace-nowrap">Open Genie → Sharing</Link></span>
                     </div>
                   ))}
                   <SharingFields value={form.sharing} disabled={locked} onChange={p => set('sharing', p)}/>

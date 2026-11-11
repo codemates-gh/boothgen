@@ -53,8 +53,8 @@ const genieSection: NavSection = {
     { href: '/genie/events', label: 'Events', icon: CalendarCheck },
     { href: '/genie/defaults', label: 'Event Defaults', icon: SlidersHorizontal },
     { href: '/genie/templates', label: 'Templates', icon: LayoutTemplate },
-    { href: '/genie/devices', label: 'iPads', icon: Tablet },
-    { href: '/settings/genie', label: 'Messaging', icon: Send },
+    { href: '/genie/devices', label: 'Devices', icon: Tablet },
+    { href: '/genie/sharing', label: 'Sharing', icon: Send },
   ],
 };
 
@@ -176,7 +176,7 @@ export function Sidebar({ isFoundingMember, genieEnabled }: { isFoundingMember?:
                 href="/settings"
                 label="Settings"
                 Icon={Settings}
-                active={(path === '/settings' || path.startsWith('/settings/')) && !(genieEnabled && path === '/settings/genie')}
+                active={path === '/settings' || path.startsWith('/settings/')}
                 close={close}
               />
               <div className="border-t border-white/10 my-3 ml-3" />

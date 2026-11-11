@@ -87,7 +87,7 @@ export default function GenieDevicesPage() {
 
   return (
     <>
-      <TopBar title="Genie iPads"/>
+      <TopBar title="Genie Devices"/>
       <div className="p-4 sm:p-8 space-y-6 max-w-4xl">
         {notEnabled ? (
           <Card>
@@ -102,23 +102,23 @@ export default function GenieDevicesPage() {
         ) : (
           <>
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold">Genie iPads</h2>
-              <p className="text-sm text-gray-500 mt-1">Pair the iPads that run your booths. Each event can use up to 2 at a time; manage that on the event&apos;s Genie page.</p>
+              <h2 className="text-xl sm:text-2xl font-bold">Genie Devices</h2>
+              <p className="text-sm text-gray-500 mt-1">Pair the devices (iPads) that run your booths. Each event can use up to 2 at a time; manage that on the event&apos;s Genie page.</p>
             </div>
 
             <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><Plus className="w-4 h-4"/>Pair an iPad</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="flex items-center gap-2"><Plus className="w-4 h-4"/>Pair a Device</CardTitle></CardHeader>
               <CardContent>
                 {data.pairingCode ? (
                   <div className="text-center py-4">
-                    <p className="text-sm text-gray-500 mb-3">Enter this code in Genie on the iPad:</p>
+                    <p className="text-sm text-gray-500 mb-3">Enter this code in Genie on the device:</p>
                     <p className="font-mono text-5xl sm:text-6xl font-bold tracking-[0.3em] text-[#1F1F3D] pl-[0.3em]">{data.pairingCode.code}</p>
                     <p className="text-sm text-gray-500 mt-3">Expires in <Countdown expiresAt={data.pairingCode.expiresAt} onExpire={expire}/> · works once</p>
                     <Button variant="ghost" size="sm" className="mt-3" onClick={createCode} disabled={creating}>New code</Button>
                   </div>
                 ) : (
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <p className="text-sm text-gray-500 flex-1">Create a code, then enter it in Genie on the iPad. Codes last 10 minutes.</p>
+                    <p className="text-sm text-gray-500 flex-1">Create a code, then enter it in Genie on the device. Codes last 10 minutes.</p>
                     <Button onClick={createCode} disabled={creating}>{creating ? 'Creating…' : 'Create Pairing Code'}</Button>
                   </div>
                 )}
@@ -129,18 +129,18 @@ export default function GenieDevicesPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2"><Tablet className="w-4 h-4"/>Paired iPads</CardTitle>
+                  <CardTitle className="flex items-center gap-2"><Tablet className="w-4 h-4"/>Paired Devices</CardTitle>
                   <span className="text-sm text-gray-500">{data.devices.length}</span>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
                 {data.devices.length === 0 ? (
-                  <p className="text-sm text-gray-500 px-6 pb-6">No iPads yet. Create a pairing code above.</p>
+                  <p className="text-sm text-gray-500 px-6 pb-6">No devices yet. Create a pairing code above.</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[640px]">
                       <thead><tr className="border-b">
-                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">iPad</th>
+                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Device</th>
                         <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">App</th>
                         <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Last seen</th>
                         <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Event</th>
@@ -187,7 +187,7 @@ export default function GenieDevicesPage() {
                 </div>
               </CardHeader>
               <CardContent className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <p className="text-sm text-gray-500 flex-1">Locks the iPad&apos;s operator screens so guests can&apos;t leave the booth. All your iPads use the same PIN.</p>
+                <p className="text-sm text-gray-500 flex-1">Locks the operator screens so guests can&apos;t leave the booth. All your devices use the same PIN.</p>
                 <Button variant="outline" onClick={() => { setPin(''); setModalError(''); setPinOpen(true); }}><Lock className="w-3.5 h-3.5 mr-1.5"/>{data.pinSet ? 'Change PIN' : 'Set PIN'}</Button>
               </CardContent>
             </Card>
@@ -195,7 +195,7 @@ export default function GenieDevicesPage() {
         )}
       </div>
 
-      <Modal open={!!renaming} onClose={() => setRenaming(null)} title="Rename iPad">
+      <Modal open={!!renaming} onClose={() => setRenaming(null)} title="Rename Device">
         <form onSubmit={e => { e.preventDefault(); if (renaming) submit(`/api/genie-devices/${renaming.id}`, { method: 'PATCH', body: JSON.stringify({ name: newName }) }, () => setRenaming(null)); }} className="space-y-4">
           <Input value={newName} onChange={e => setNewName(e.target.value)} maxLength={80} autoFocus placeholder="Booth 1 iPad"/>
           {modalError && <p className="text-sm text-red-600">{modalError}</p>}
@@ -219,7 +219,7 @@ export default function GenieDevicesPage() {
       <Modal open={pinOpen} onClose={() => setPinOpen(false)} title={data?.pinSet ? 'Change Attendant PIN' : 'Set Attendant PIN'}>
         <form onSubmit={e => { e.preventDefault(); submit('/api/genie-devices/pin', { method: 'PUT', body: JSON.stringify({ pin }) }, () => setPinOpen(false)); }} className="space-y-4">
           <Input value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))} inputMode="numeric" autoComplete="off" autoFocus placeholder="4–8 digits" className="font-mono tracking-widest"/>
-          <p className="text-xs text-gray-400">iPads get the new PIN the next time they sync.</p>
+          <p className="text-xs text-gray-400">Devices get the new PIN the next time they sync.</p>
           {modalError && <p className="text-sm text-red-600">{modalError}</p>}
           <div className="flex justify-end gap-2">
             {data?.pinSet && <Button type="button" variant="ghost" className="mr-auto text-[#E2445C] hover:bg-red-50" disabled={busy} onClick={() => submit('/api/genie-devices/pin', { method: 'PUT', body: JSON.stringify({ pin: null }) }, () => setPinOpen(false))}>Remove PIN</Button>}

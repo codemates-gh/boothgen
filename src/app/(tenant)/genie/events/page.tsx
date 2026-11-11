@@ -77,7 +77,7 @@ export default function GenieEventsPage() {
                         <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Event</th>
                         <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Genie</th>
                         <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Templates</th>
-                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">iPads</th>
+                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Devices</th>
                         <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">{past ? 'Sessions' : 'Locks'}</th>
                         <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Texts &amp; emails</th>
                       </tr></thead>

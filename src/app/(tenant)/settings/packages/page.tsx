@@ -10,7 +10,7 @@ import { Modal } from '@/components/ui/modal';
 import Link from 'next/link';
 import { Plus, Edit2, Trash2, Package, Layers } from 'lucide-react';
 
-const TABS = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['booth-templates','Booth Templates'],['profile','Profile'],['import','Import'],['print-costs','Print Costs'],['genie','Genie']];
+const TABS = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['booth-templates','Booth Templates'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
 const CATS = [['package','Full Package'],['addon','Add-On / Extra'],['product','A La Carte Item'],['discount','Discount']];
 const CAT_COLOR: Record<string,string> = { package:'bg-brand-surface text-brand', addon:'bg-blue-50 text-blue-700', product:'bg-purple-50 text-purple-700', discount:'bg-green-50 text-green-700' };
 const CAT_DESC: Record<string,string> = {

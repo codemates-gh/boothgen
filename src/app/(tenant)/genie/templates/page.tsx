@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { Sparkles, Plus, Pencil, Copy, Trash2, LayoutTemplate, Eye } from 'lucide-react';
 import { Layout, LayoutPreview, artUrl } from '@/components/genie/parts';
+import { DesignBriefSettings } from '@/components/settings/DesignBriefSettings';
 
 type Template = {
   id: string; name: string; description: string | null; scope: 'standard' | 'mine'; isPublished: boolean;
@@ -127,6 +128,14 @@ export default function GenieTemplatesPage() {
                 })}
               </div>
             )}
+
+            <div id="design-brief" className="pt-4 border-t border-gray-200 space-y-3 scroll-mt-20">
+              <div>
+                <h3 className="text-lg font-bold">Client Design Brief</h3>
+                <p className="text-sm text-gray-500 mt-0.5">Let clients pick a layout from your templates and choose colors, fonts and text before you design. Moved here from Settings → Booth Templates.</p>
+              </div>
+              <DesignBriefSettings/>
+            </div>
           </>
         )}
       </div>
