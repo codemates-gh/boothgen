@@ -2,7 +2,7 @@
 import { format } from 'date-fns';
 import { Lock } from 'lucide-react';
 
-export type ThreadNote = { id: string; body: string; fromAdmin: boolean; internal: boolean; author: string; createdAt: string };
+export type ThreadNote = { id: string; body: string; fromAdmin: boolean; internal: boolean; author: string; createdAt: string; attachments?: { index: number; name: string; contentType: string; url: string }[] };
 
 // Notes on a report, oldest first. Team notes are tinted; internal notes (Super Admin only) are marked.
 export function ReportThread({ notes, reporterName }: { notes: ThreadNote[]; reporterName?: string }) {
@@ -18,6 +18,7 @@ export function ReportThread({ notes, reporterName }: { notes: ThreadNote[]; rep
             <span>· {format(new Date(n.createdAt), 'MMM d, h:mm a')}</span>
           </p>
           <p className="text-gray-800 whitespace-pre-wrap break-words">{n.body}</p>
+          {!!n.attachments?.length && <div className="mt-2"><AttachmentList attachments={n.attachments} /></div>}
         </li>
       ))}
     </ul>

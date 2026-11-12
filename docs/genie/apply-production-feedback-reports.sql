@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS "feedback_notes" (
     "fromAdmin" BOOLEAN NOT NULL DEFAULT false,
     "internal" BOOLEAN NOT NULL DEFAULT false,
     "body" TEXT NOT NULL,
+    "attachments" JSONB NOT NULL DEFAULT '[]',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "feedback_notes_pkey" PRIMARY KEY ("id")
 );
@@ -51,6 +52,8 @@ ALTER TABLE "feedback_reports" ADD COLUMN IF NOT EXISTS "duplicateOfId" TEXT;
 -- 2.74.0: Assign to Dev
 ALTER TABLE "feedback_reports" ADD COLUMN IF NOT EXISTS "assignedToDev" BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE "feedback_reports" ADD COLUMN IF NOT EXISTS "assignedAt" TIMESTAMP(3);
+-- 2.74.0: screenshots on replies and notes
+ALTER TABLE "feedback_notes" ADD COLUMN IF NOT EXISTS "attachments" JSONB NOT NULL DEFAULT '[]';
 
 CREATE TABLE IF NOT EXISTS "feedback_followers" (
     "reportId" TEXT NOT NULL,

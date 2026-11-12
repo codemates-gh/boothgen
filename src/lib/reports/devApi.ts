@@ -36,6 +36,10 @@ export async function devView(r: FullReport) {
     tenant: r.tenant ? { name: r.tenant.name } : null,
     link: `${(process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com').replace(/\/$/, '')}/super-admin?tab=reports&report=${r.id}`,
     attachments: await Promise.all(v.attachments.map(async (a: any, i: number) => ({ ...a, url: await getPresignedDownloadUrl(keys[i].key, 3600) }))),
+    notes: await Promise.all(v.notes.map(async (n: any) => {
+      const noteKeys = attachmentsOf(r.notes.find(x => x.id === n.id)?.attachments);
+      return { ...n, attachments: await Promise.all(n.attachments.map(async (a: any, i: number) => ({ ...a, url: await getPresignedDownloadUrl(noteKeys[i].key, 3600) }))) };
+    })),
     isMine: undefined, hasVoted: undefined, isFollowing: undefined, canVote: undefined, canReply: undefined, unread: undefined,
   };
 }

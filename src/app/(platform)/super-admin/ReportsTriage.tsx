@@ -9,6 +9,7 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { AttachmentList, ReportThread, type ThreadNote } from '@/components/reports/ReportThread';
 import { HowToFind } from '@/components/reports/HowToFind';
+import { AttachmentPicker, useAttachments } from '@/components/reports/AttachmentPicker';
 import {
   REPORT_AREAS, REPORT_PRIORITIES, REPORT_STATUSES, REPORT_TYPES, areaLabel, severityLabel, statusBadge, statusLabel, typeLabel,
 } from '@/lib/reports/options';
@@ -38,6 +39,7 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
   const [detail, setDetail] = useState<Detail | null>(null);
   const [note, setNote] = useState('');
   const [internal, setInternal] = useState(false);
+  const noteFiles = useAttachments();
   const [fixedIn, setFixedIn] = useState('');
   const [busy, setBusy] = useState(false);
   // "Already exists" / "Duplicate" need more before saving
@@ -94,11 +96,11 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
   async function addNote() {
     if (!detail) return;
     setBusy(true); setError('');
-    const res = await fetch(`/api/reports/${detail.id}/notes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: note, admin: true, internal }) });
+    const res = await fetch(`/api/reports/${detail.id}/notes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: note, admin: true, internal, attachments: noteFiles.ready }) });
     const d = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) { setError(d.error || 'Could not add the note'); return; }
-    setDetail(d.report); setNote(''); setInternal(false);
+    setDetail(d.report); setNote(''); setInternal(false); noteFiles.reset();
     loadList();
   }
 
@@ -264,12 +266,13 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
               <div className="border-t pt-4 space-y-3">
                 <p className="text-sm font-semibold text-gray-900">Notes</p>
                 <ReportThread notes={detail.notes} reporterName={detail.reporter.name} />
-                <Textarea rows={3} value={note} maxLength={5000} onChange={e => setNote(e.target.value)} placeholder={internal ? 'Internal note (only Super Admins see it)' : 'Note everyone can see (reporter and followers get an email)'} />
+                <Textarea rows={3} value={note} maxLength={5000} onChange={e => setNote(e.target.value)} onPaste={noteFiles.onPaste} placeholder={internal ? 'Internal note (only Super Admins see it)' : 'Note everyone can see (reporter and followers get an email)'} />
+                <AttachmentPicker state={noteFiles} label="Attach screenshots" />
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-2 text-sm text-gray-600">
                     <input type="checkbox" checked={internal} onChange={e => setInternal(e.target.checked)} />Internal only
                   </label>
-                  <Button onClick={addNote} disabled={!note.trim() || busy}>{internal ? 'Add internal note' : 'Send note'}</Button>
+                  <Button onClick={addNote} disabled={!note.trim() || busy || noteFiles.uploading}>{internal ? 'Add internal note' : 'Send note'}</Button>
                 </div>
                 {error && <p className="text-sm text-red-600">{error}</p>}
               </div>

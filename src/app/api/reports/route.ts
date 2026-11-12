@@ -3,19 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma/client';
-import { headR2Object } from '@/lib/storage/r2';
+import { AttachmentsInput, checkUploads, uploadPrefix } from '@/lib/reports/attachments';
 import { APP_VERSION } from '@/lib/version';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { displayName, forEmail, loadReport, reportViewer, voteCount, votingOpen } from '@/lib/reports/server';
 import { notifyAdminsNewReport } from '@/lib/reports/notify';
-import { AREA_VALUES, ATTACHMENT_MAX_FILES, ATTACHMENT_TYPES, OPEN_STATUSES, SEVERITY_VALUES, TYPE_VALUES } from '@/lib/reports/options';
-
-const Attachment = z.object({
-  key: z.string().max(200),
-  name: z.string().trim().min(1).max(200),
-  contentType: z.string().refine(t => t in ATTACHMENT_TYPES),
-  bytes: z.number().int().min(1),
-}).strict();
+import { AREA_VALUES, OPEN_STATUSES, SEVERITY_VALUES, TYPE_VALUES } from '@/lib/reports/options';
 
 const Body = z.object({
   type: z.enum(TYPE_VALUES),
@@ -25,7 +18,7 @@ const Body = z.object({
   deviceInfo: z.string().trim().max(200).nullish(),
   details: z.string().trim().min(5, 'Add a few details').max(10000),
   pageUrl: z.string().max(1000).nullish(),
-  attachments: z.array(Attachment).max(ATTACHMENT_MAX_FILES, `Attach up to ${ATTACHMENT_MAX_FILES} files`).default([]),
+  attachments: AttachmentsInput,
 }).strict();
 
 // The shared Reports board: every report from every account (reporter by display name only).
@@ -80,12 +73,8 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Check the form' }, { status: 400 });
   const d = parsed.data;
 
-  for (const a of d.attachments) {
-    if (!a.key.startsWith(`reports/${viewer.userId}/`)) return NextResponse.json({ error: 'Attachment not found' }, { status: 400 });
-    const head = await headR2Object(a.key);
-    if (!head) return NextResponse.json({ error: `"${a.name}" didn't finish uploading. Remove it and try again.` }, { status: 400 });
-    a.bytes = head.bytes;
-  }
+  const uploadError = await checkUploads(uploadPrefix(viewer.userId), d.attachments);
+  if (uploadError) return NextResponse.json({ error: uploadError }, { status: 400 });
 
   const created = await prisma.feedbackReport.create({
     data: {

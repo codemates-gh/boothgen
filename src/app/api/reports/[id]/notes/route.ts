@@ -6,11 +6,13 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { forEmail, loadReport, reportView, reportViewer, watchersOf } from '@/lib/reports/server';
 import { notifyAdminsReply, notifyWatchers } from '@/lib/reports/notify';
 import { addTeamNote } from '@/lib/reports/triage';
+import { AttachmentsInput, checkUploads, uploadPrefix } from '@/lib/reports/attachments';
 
 const Body = z.object({
   body: z.string().trim().min(1, 'Write a note').max(5000),
   admin: z.boolean().optional(),      // posted from Super Admin triage
   internal: z.boolean().optional(),   // Super Admin only: hidden from everyone else
+  attachments: AttachmentsInput,
 }).strict();
 
 // A note: from a Super Admin (visible to everyone unless internal; reporter and followers are emailed),
@@ -27,16 +29,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const watcher = r.userId === viewer.userId || r.followers.some(f => f.userId === viewer.userId);
   if (!asAdmin && !watcher) return NextResponse.json({ error: 'Vote or tap "This is my issue too" to join this report first' }, { status: 403 });
   const internal = asAdmin && parsed.data.internal === true;
+  const uploadError = await checkUploads(uploadPrefix(viewer.userId), parsed.data.attachments);
+  if (uploadError) return NextResponse.json({ error: uploadError }, { status: 400 });
+  const files = parsed.data.attachments;
 
   if (asAdmin) {
-    await addTeamNote(r, viewer.userId, parsed.data.body, internal);
+    await addTeamNote(r, viewer.userId, parsed.data.body, internal, files);
     const updated = await loadReport(r.id);
     return NextResponse.json({ report: reportView(updated!, viewer.userId, true) }, { status: 201 });
   }
 
   // Reporter or follower reply: Booth Genius and the other watchers hear about it
   await prisma.$transaction([
-    prisma.feedbackNote.create({ data: { reportId: r.id, authorId: viewer.userId, fromAdmin: false, internal: false, body: parsed.data.body } }),
+    prisma.feedbackNote.create({ data: { reportId: r.id, authorId: viewer.userId, fromAdmin: false, internal: false, body: parsed.data.body, attachments: files } }),
     prisma.feedbackReport.update({ where: { id: r.id }, data: { adminUnread: true, ...(r.userId !== viewer.userId ? { reporterUnread: true } : {}) } }),
     prisma.feedbackFollower.updateMany({ where: { reportId: r.id, following: true, userId: { not: viewer.userId } }, data: { unread: true } }),
   ]);

@@ -1617,13 +1617,14 @@ model FeedbackReport {
 }
 
 model FeedbackNote {
-  id        String   @id @default(cuid())
-  reportId  String
-  authorId  String?
-  fromAdmin Boolean  @default(false)
-  internal  Boolean  @default(false) // Super Admin only; never shown to the reporter
-  body      String   @db.Text
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  reportId    String
+  authorId    String?
+  fromAdmin   Boolean  @default(false)
+  internal    Boolean  @default(false) // Super Admin only; never shown to the reporter
+  body        String   @db.Text
+  attachments Json     @default("[]") // screenshots etc., same shape as FeedbackReport.attachments
+  createdAt   DateTime @default(now())
 
   report FeedbackReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
   author User?          @relation(fields: [authorId], references: [id], onDelete: SetNull)

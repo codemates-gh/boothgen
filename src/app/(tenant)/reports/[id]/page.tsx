@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { AttachmentList, ReportThread, type ThreadNote } from '@/components/reports/ReportThread';
 import { HowToFind } from '@/components/reports/HowToFind';
+import { AttachmentPicker, useAttachments } from '@/components/reports/AttachmentPicker';
 import { areaLabel, severityLabel, statusBadge, statusLabel, typeLabel } from '@/lib/reports/options';
 
 type Report = {
@@ -24,6 +25,7 @@ export default function ReportPage({ params }: { params: { id: string } }) {
   const [report, setReport] = useState<Report | null>(null);
   const [missing, setMissing] = useState(false);
   const [reply, setReply] = useState('');
+  const files = useAttachments();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -35,11 +37,11 @@ export default function ReportPage({ params }: { params: { id: string } }) {
 
   async function send() {
     setBusy(true); setError('');
-    const res = await fetch(`/api/reports/${params.id}/notes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: reply }) });
+    const res = await fetch(`/api/reports/${params.id}/notes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: reply, attachments: files.ready }) });
     const d = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) { setError(d.error || 'Could not send'); return; }
-    setReport(d.report); setReply('');
+    setReport(d.report); setReply(''); files.reset();
   }
 
   async function toggle(kind: 'vote' | 'follow', on: boolean) {
@@ -113,9 +115,10 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                 <ReportThread notes={report.notes} />
                 {report.canReply ? (
                   <div className="space-y-2 pt-2">
-                    <Textarea rows={3} value={reply} maxLength={5000} onChange={e => setReply(e.target.value)} placeholder={report.status === 'need_info' ? 'Add the details the team asked for…' : 'Add more information…'} />
+                    <Textarea rows={3} value={reply} maxLength={5000} onChange={e => setReply(e.target.value)} onPaste={files.onPaste} placeholder={report.status === 'need_info' ? 'Add the details the team asked for…' : 'Add more information…'} />
+                    <AttachmentPicker state={files} label="Attach screenshots" />
                     <p className="text-xs text-gray-400">Everyone using BoothGen can see this. Don&apos;t include guest phone numbers, emails or private photos.</p>
-                    <div className="flex justify-end"><Button onClick={send} disabled={!reply.trim() || busy}>{busy ? 'Sending…' : 'Reply'}</Button></div>
+                    <div className="flex justify-end"><Button onClick={send} disabled={!reply.trim() || busy || files.uploading}>{busy ? 'Sending…' : files.uploading ? 'Uploading…' : 'Reply'}</Button></div>
                   </div>
                 ) : (
                   <p className="text-xs text-gray-400">{report.type === 'suggestion' ? 'Vote for this suggestion' : 'Tap \u201cThis is my issue too\u201d'} to get updates and add details.</p>

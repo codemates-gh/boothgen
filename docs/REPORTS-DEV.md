@@ -22,6 +22,7 @@ When asked to "work on the reports assigned to Dev":
    `src/lib/version.ts`, commit). Database changes still need the user to run SQL in Neon first.
 4. **Only after the fix is deployed** to boothgen.com, close it out:
    `update <#> --status fixed --fixed-in <version> --note "<what changed, in plain words>"`
+   Add `--attach before.png,after.png` to include screenshots of the fixed screen with the note.
 5. If it can't be reproduced or needs a decision: `update <#> --status need_info --note "<question>"`
    (the reporter is emailed and can reply on the report). For something BoothGen already does:
    `update <#> --status exists --how-to-find "Steps" --how-to-find-url /path`.

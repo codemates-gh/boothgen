@@ -6,12 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Bug, Lightbulb, Paperclip, X, CheckCircle2, Users, ThumbsUp } from 'lucide-react';
-import { statusLabel, ATTACHMENT_MAX_BYTES, ATTACHMENT_MAX_FILES, ATTACHMENT_TYPES, REPORT_AREAS, REPORT_SEVERITIES, type ReportAttachment } from '@/lib/reports/options';
+import { Bug, Lightbulb, CheckCircle2, Users, ThumbsUp } from 'lucide-react';
+import { AttachmentPicker, useAttachments } from './AttachmentPicker';
+import { statusLabel, REPORT_AREAS, REPORT_SEVERITIES } from '@/lib/reports/options';
 
 type Similar = { id: string; number: number; type: string; title: string; status: string; voteCount: number; isMine: boolean; hasVoted: boolean; canVote: boolean };
-type Upload = { file: File; status: 'uploading' | 'done' | 'error'; att?: ReportAttachment; error?: string };
-
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
@@ -27,7 +26,7 @@ const EMPTY = { type: 'bug' as 'bug' | 'suggestion', title: '', area: '', severi
 // "Report a bug / Suggest" form. The user, account, page, browser and BoothGen version are added by the server.
 export function ReportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [form, setForm] = useState(EMPTY);
-  const [uploads, setUploads] = useState<Upload[]>([]);
+  const files = useAttachments();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState<{ id: string; number: number } | null>(null);
@@ -55,36 +54,8 @@ export function ReportDialog({ open, onClose }: { open: boolean; onClose: () => 
 
   function close() {
     onClose();
-    if (sent || joined) { setForm(EMPTY); setUploads([]); setSent(null); setJoined(null); setSimilar([]); }
+    if (sent || joined) { setForm(EMPTY); files.reset(); setSent(null); setJoined(null); setSimilar([]); }
     setError('');
-  }
-
-  async function upload(file: File) {
-    const res = await fetch('/api/reports/upload-url', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contentType: file.type, bytes: file.size }),
-    });
-    const d = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(d.error || 'Upload failed');
-    const put = await fetch(d.uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
-    if (!put.ok) throw new Error('Upload failed');
-    return { key: d.key, name: file.name, contentType: file.type, bytes: file.size } as ReportAttachment;
-  }
-
-  function addFiles(list: FileList | null) {
-    if (!list) return;
-    setError('');
-    const room = ATTACHMENT_MAX_FILES - uploads.length;
-    const files = Array.from(list).slice(0, Math.max(0, room));
-    if (list.length > room) setError(`Attach up to ${ATTACHMENT_MAX_FILES} files`);
-    for (const file of files) {
-      if (!(file.type in ATTACHMENT_TYPES)) { setError(`"${file.name}": attach images, videos (MP4/MOV) or PDFs`); continue; }
-      if (file.size > ATTACHMENT_MAX_BYTES) { setError(`"${file.name}" is larger than 100 MB`); continue; }
-      setUploads(u => [...u, { file, status: 'uploading' }]);
-      upload(file)
-        .then(att => setUploads(u => u.map(x => x.file === file ? { ...x, status: 'done', att } : x)))
-        .catch(e => setUploads(u => u.map(x => x.file === file ? { ...x, status: 'error', error: e.message } : x)));
-    }
   }
 
   async function submit() {
@@ -97,7 +68,7 @@ export function ReportDialog({ open, onClose }: { open: boolean; onClose: () => 
         severity: form.type === 'bug' && form.severity ? form.severity : null,
         deviceInfo: form.deviceInfo || null,
         pageUrl: window.location.href,
-        attachments: uploads.filter(u => u.status === 'done').map(u => u.att),
+        attachments: files.ready,
       }),
     });
     const d = await res.json().catch(() => ({}));
@@ -107,7 +78,7 @@ export function ReportDialog({ open, onClose }: { open: boolean; onClose: () => 
     window.dispatchEvent(new Event('reports:changed'));
   }
 
-  const uploading = uploads.some(u => u.status === 'uploading');
+  const uploading = files.uploading;
   const ready = form.title.trim().length >= 3 && form.area && form.details.trim().length >= 5 && !uploading;
 
   return (
@@ -188,29 +159,9 @@ export function ReportDialog({ open, onClose }: { open: boolean; onClose: () => 
             <Input value={form.deviceInfo} maxLength={200} onChange={e => set('deviceInfo', e.target.value)} />
           </Field>
           <Field label="Details" hint={form.type === 'bug' ? 'What you did, what happened, and what you expected.' : 'What you would like and why it helps.'}>
-            <Textarea rows={5} value={form.details} maxLength={10000} onChange={e => set('details', e.target.value)} />
+            <Textarea rows={5} value={form.details} maxLength={10000} onChange={e => set('details', e.target.value)} onPaste={files.onPaste} />
           </Field>
-          <div>
-            <label className="inline-flex items-center gap-2 text-sm font-medium text-[#0085FF] cursor-pointer hover:underline">
-              <Paperclip className="w-4 h-4" />Attach screenshots, photos, videos or PDFs
-              <input type="file" multiple className="hidden" accept={Object.keys(ATTACHMENT_TYPES).join(',')} onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
-            </label>
-            {uploads.length > 0 && (
-              <ul className="mt-2 space-y-1">
-                {uploads.map((u, i) => (
-                  <li key={i} className="flex items-center gap-2 text-xs text-gray-600">
-                    <span className="truncate flex-1">{u.file.name}</span>
-                    <span className={u.status === 'error' ? 'text-red-500' : u.status === 'done' ? 'text-green-600' : 'text-gray-400'}>
-                      {u.status === 'uploading' ? 'Uploading…' : u.status === 'done' ? 'Ready' : u.error}
-                    </span>
-                    <button type="button" onClick={() => setUploads(list => list.filter(x => x !== u))} className="text-gray-300 hover:text-gray-500" aria-label="Remove">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <AttachmentPicker state={files} />
           <p className="text-xs text-gray-500">Everyone using BoothGen can see reports. Don&apos;t include guest phone numbers, emails or private photos.</p>
           <p className="text-xs text-gray-400">Others see your name. Your email, account and the page you&apos;re on go only to the Booth Genius team so we can follow up.</p>
           {error && <p className="text-sm text-red-600">{error}</p>}

@@ -24,6 +24,8 @@ import { POST as NOTE } from '@/app/api/reports/[id]/notes/route';
 import { GET as FILE } from '@/app/api/reports/[id]/files/[index]/route';
 import { POST as UPLOAD_URL } from '@/app/api/reports/upload-url/route';
 import { GET as DEV_LIST } from '@/app/api/dev/reports/route';
+import { POST as DEV_UPLOAD } from '@/app/api/dev/reports/upload-url/route';
+import { GET as NOTE_FILE } from '@/app/api/reports/[id]/notes/[noteId]/files/[index]/route';
 import { GET as DEV_SHOW, POST as DEV_UPDATE } from '@/app/api/dev/reports/[id]/route';
 import { req, resetDb, seedTenant } from './helpers';
 
@@ -334,6 +336,39 @@ describe('Bug reports and suggestions', () => {
     expect((await (await DEV_LIST(dev('/x'))).json()).reports).toEqual([]); // closed drops off the queue
     expect((await (await DEV_LIST(dev('/x?all=1'))).json()).reports).toHaveLength(1);
     expect((await DEV_UPDATE(dev('/x', { status: 'exists' }), p(id))).status).toBe(400);
+    delete process.env.REPORTS_DEV_TOKEN;
+  });
+
+  it('screenshots on replies and notes; internal notes keep theirs private', async () => {
+    const { tenant, reporter, admin } = await users();
+    as(reporter, tenant.id);
+    const { id } = await (await CREATE(post(BUG))).json();
+    const shot = (owner: string, name = 'shot.png') => ({ key: `reports/${owner}/${name}`, name, contentType: 'image/png', bytes: 5 });
+
+    expect((await NOTE(post({ body: 'Here it is', attachments: [shot('someone-else')] }), p(id))).status).toBe(400);
+    const replied = await (await NOTE(post({ body: 'Here it is', attachments: [shot(reporter.id)] }), p(id))).json();
+    const reply = replied.report.notes.at(-1);
+    expect(reply.attachments).toEqual([expect.objectContaining({ name: 'shot.png', bytes: 1234, url: `/api/reports/${id}/notes/${reply.id}/files/0` })]);
+
+    as(admin, undefined, true);
+    const withInternal = await (await NOTE(post({ body: 'Log from the device', admin: true, internal: true, attachments: [shot(admin.id, 'log.png')] }), p(id))).json();
+    const internalNote = withInternal.report.notes.at(-1);
+    expect((await NOTE_FILE(req('/x'), { params: { id, noteId: internalNote.id, index: '0' } })).status).toBe(302);
+
+    const other = await prisma.user.create({ data: { email: randomUUID() + TAG, name: 'Other' } });
+    as(other, tenant.id);
+    expect((await NOTE_FILE(req('/x'), { params: { id, noteId: reply.id, index: '0' } })).status).toBe(302);
+    expect((await NOTE_FILE(req('/x'), { params: { id, noteId: internalNote.id, index: '0' } })).status).toBe(404);
+    expect((await NOTE_FILE(req('/x'), { params: { id: 'wrong', noteId: reply.id, index: '0' } })).status).toBe(404);
+
+    // Dev notes can carry screenshots too (uploaded under reports/dev/)
+    process.env.REPORTS_DEV_TOKEN = 'k'.repeat(40);
+    const dev = (body: unknown) => req('/x', { body, headers: { authorization: 'Bearer ' + 'k'.repeat(40) } });
+    expect(await (await DEV_UPLOAD(dev({ contentType: 'image/png', bytes: 10 }))).json()).toMatchObject({ key: expect.stringMatching(/^reports\/dev\/.+\.png$/) });
+    expect((await DEV_UPDATE(dev({ attachments: [shot('dev')] }), p(id))).status).toBe(400); // needs a note
+    expect((await DEV_UPDATE(dev({ note: 'x', attachments: [shot(reporter.id)] }), p(id))).status).toBe(400); // not a Dev upload
+    const fixed = await (await DEV_UPDATE(dev({ status: 'fixed', fixedInVersion: '2.74.0', note: 'Fixed screen attached', attachments: [shot('dev', 'after.png')] }), p(id))).json();
+    expect(fixed.report.notes.at(-1)).toMatchObject({ body: 'Fixed screen attached', attachments: [expect.objectContaining({ name: 'after.png', url: expect.stringContaining('reports/dev/after.png') })] });
     delete process.env.REPORTS_DEV_TOKEN;
   });
 });

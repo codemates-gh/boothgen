@@ -6,9 +6,10 @@
 //   node --env-file=.env scripts/dev-reports.mjs show 12 [--download <folder>]
 //   node --env-file=.env scripts/dev-reports.mjs update 12 --status fixed --fixed-in 2.74.0 --note "What changed"
 //        other flags: --priority P1|P2|P3  --internal (note only Super Admins see)  --unassign
+//                     --attach shot1.png,shot2.png (screenshots with the note, e.g. the fixed screen)
 //                     --how-to-find "Steps" --how-to-find-url /genie/sharing  --duplicate-of 7
 // See docs/REPORTS-DEV.md.
-import { mkdir, writeFile } from 'fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'fs/promises';
 import path from 'path';
 
 const BASE = (process.env.BOOTHGEN_URL || 'https://www.boothgen.com').replace(/\/$/, '');
@@ -44,7 +45,10 @@ function print(r) {
   if (r.userAgent) console.log(`  browser: ${r.userAgent}`);
   console.log('\n' + r.details.split('\n').map(l => '  ' + l).join('\n'));
   for (const a of r.attachments) console.log(`  attachment: ${a.name} (${a.contentType}, ${a.bytes} bytes) ${a.url}`);
-  for (const n of r.notes) console.log(`  — ${n.author}${n.internal ? ' (internal)' : ''}: ${n.body}`);
+  for (const n of r.notes) {
+    console.log(`  — ${n.author}${n.internal ? ' (internal)' : ''}: ${n.body}`);
+    for (const a of n.attachments ?? []) console.log(`      attachment: ${a.name} ${a.url}`);
+  }
   console.log(`  open: ${r.link}\n`);
 }
 
@@ -76,6 +80,20 @@ if (cmd === 'list') {
     ...(flags.unassign ? { assignedToDev: false } : {}),
     ...(typeof flags.note === 'string' ? { note: flags.note, internal: !!flags.internal } : {}),
   };
+  if (flags.attach) {
+    if (typeof flags.note !== 'string') { console.error('--attach goes with --note'); process.exit(1); }
+    const TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.pdf': 'application/pdf' };
+    body.attachments = [];
+    for (const file of String(flags.attach).split(',').map(f => f.trim()).filter(Boolean)) {
+      const contentType = TYPES[path.extname(file).toLowerCase()];
+      if (!contentType) { console.error(`${file}: attach PNG, JPG, GIF, WebP, MP4, MOV or PDF`); process.exit(1); }
+      const bytes = (await stat(file)).size;
+      const slot = await api('/upload-url', { contentType, bytes });
+      const put = await fetch(slot.uploadUrl, { method: 'PUT', headers: { 'content-type': contentType }, body: await readFile(file) });
+      if (!put.ok) { console.error(`Upload failed for ${file}`); process.exit(1); }
+      body.attachments.push({ key: slot.key, name: path.basename(file), contentType, bytes });
+    }
+  }
   if (!Object.keys(body).length) { console.error('Nothing to update'); process.exit(1); }
   const { report } = await api('/' + encodeURIComponent(ref), body);
   console.log(`#${report.number} updated: ${report.status}${report.fixedInVersion ? ' (' + report.fixedInVersion + ')' : ''}`);

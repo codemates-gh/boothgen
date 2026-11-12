@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma/client';
 import { forEmail, watchersOf, type FullReport } from './server';
 import { notifyWatchers } from './notify';
-import { REPORT_PRIORITIES, STATUS_VALUES, statusLabel } from './options';
+import { REPORT_PRIORITIES, STATUS_VALUES, statusLabel, type ReportAttachment } from './options';
 
 const Link = z.string().trim().max(500).refine(u => u.startsWith('/') || /^https?:\/\//i.test(u), 'The link must start with / or https://');
 
@@ -91,13 +91,13 @@ export async function applyTriage(r: FullReport, actorId: string | null, d: Tria
 }
 
 // A team note: visible to everyone (reporter and followers are emailed) unless internal
-export async function addTeamNote(r: FullReport, actorId: string | null, body: string, internal: boolean) {
+export async function addTeamNote(r: FullReport, actorId: string | null, body: string, internal: boolean, attachments: ReportAttachment[] = []) {
   await prisma.$transaction([
-    prisma.feedbackNote.create({ data: { reportId: r.id, authorId: actorId, fromAdmin: true, internal, body } }),
+    prisma.feedbackNote.create({ data: { reportId: r.id, authorId: actorId, fromAdmin: true, internal, body, attachments } }),
     ...(internal ? [] : [
       prisma.feedbackReport.update({ where: { id: r.id }, data: { reporterUnread: true }, select: { id: true } }),
       prisma.feedbackFollower.updateMany({ where: { reportId: r.id, following: true }, data: { unread: true } }),
     ]),
   ]);
-  if (!internal) await notifyWatchers(forEmail(r), watchersOf(r), { note: body });
+  if (!internal) await notifyWatchers(forEmail(r), watchersOf(r), { note: body + (attachments.length ? `\n\n(${attachments.length} attachment${attachments.length > 1 ? 's' : ''} on the report)` : '') });
 }
