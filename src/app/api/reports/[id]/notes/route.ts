@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!r) return NextResponse.json({ error: 'Report not found' }, { status: 404 });
   const asAdmin = viewer.isAdmin && parsed.data.admin === true;
   const watcher = r.userId === viewer.userId || r.followers.some(f => f.userId === viewer.userId);
-  if (!asAdmin && !watcher) return NextResponse.json({ error: 'Tap "This is my issue too" to join this report first' }, { status: 403 });
+  if (!asAdmin && !watcher) return NextResponse.json({ error: 'Vote or tap "This is my issue too" to join this report first' }, { status: 403 });
   const internal = asAdmin && parsed.data.internal === true;
 
   await prisma.$transaction([
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         where: { id: r.id },
         data: { ...(asAdmin ? {} : { adminUnread: true }), ...(r.userId !== viewer.userId ? { reporterUnread: true } : {}) },
       }),
-      prisma.feedbackFollower.updateMany({ where: { reportId: r.id, userId: { not: viewer.userId } }, data: { unread: true } }),
+      prisma.feedbackFollower.updateMany({ where: { reportId: r.id, following: true, userId: { not: viewer.userId } }, data: { unread: true } }),
     ]),
   ]);
   if (!internal) {

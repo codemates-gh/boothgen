@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Bug, Lightbulb, Paperclip, X, CheckCircle2, Users } from 'lucide-react';
+import { Bug, Lightbulb, Paperclip, X, CheckCircle2, Users, ThumbsUp } from 'lucide-react';
 import { statusLabel, ATTACHMENT_MAX_BYTES, ATTACHMENT_MAX_FILES, ATTACHMENT_TYPES, REPORT_AREAS, REPORT_SEVERITIES, type ReportAttachment } from '@/lib/reports/options';
 
-type Similar = { id: string; number: number; title: string; status: string; followerCount: number; isMine: boolean; isFollowing: boolean };
+type Similar = { id: string; number: number; type: string; title: string; status: string; voteCount: number; isMine: boolean; hasVoted: boolean; canVote: boolean };
 type Upload = { file: File; status: 'uploading' | 'done' | 'error'; att?: ReportAttachment; error?: string };
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -46,7 +46,7 @@ export function ReportDialog({ open, onClose }: { open: boolean; onClose: () => 
 
   async function joinReport(r: Similar) {
     setError('');
-    const res = await fetch(`/api/reports/${r.id}/follow`, { method: 'POST' });
+    const res = await fetch(`/api/reports/${r.id}/vote`, { method: 'POST' });
     if (!res.ok) { setError('Could not add you to that report'); return; }
     setJoined(r);
     window.dispatchEvent(new Event('reports:changed'));
@@ -115,7 +115,7 @@ export function ReportDialog({ open, onClose }: { open: boolean; onClose: () => 
       {joined ? (
         <div className="text-center space-y-3 py-2">
           <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
-          <p className="text-sm text-gray-700">You&apos;re added to #{joined.number}. You&apos;ll get an email when there&apos;s an update.</p>
+          <p className="text-sm text-gray-700">{joined.type === 'suggestion' ? 'Your vote was added to' : 'You were added to'} #{joined.number}. You&apos;ll get an email when there&apos;s an update.</p>
           <div className="flex justify-center gap-2 pt-2">
             <Link href={`/reports/${joined.id}`} onClick={close}><Button variant="outline">View report</Button></Link>
             <Button onClick={close}>Done</Button>
@@ -151,15 +151,18 @@ export function ReportDialog({ open, onClose }: { open: boolean; onClose: () => 
           </Field>
           {similar.length > 0 && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 space-y-2">
-              <p className="text-xs font-medium text-amber-800">Already reported? Join it instead of sending a new one:</p>
+              <p className="text-xs font-medium text-amber-800">Already reported? Vote or join it instead of sending a new one:</p>
               <ul className="space-y-1.5">
                 {similar.map(r => (
                   <li key={r.id} className="flex items-center gap-2 text-sm">
                     <Link href={`/reports/${r.id}`} target="_blank" className="flex-1 min-w-0 truncate text-gray-800 hover:text-[#0085FF]">#{r.number} {r.title}</Link>
-                    <span className="text-[11px] text-gray-500 shrink-0">{statusLabel(r.status)}{r.followerCount ? ` · +${r.followerCount}` : ''}</span>
+                    <span className="text-[11px] text-gray-500 shrink-0">{statusLabel(r.status)} · {r.voteCount} {r.type === 'suggestion' ? (r.voteCount === 1 ? 'vote' : 'votes') : 'affected'}</span>
                     {r.isMine ? <span className="text-[11px] text-gray-400 shrink-0">yours</span>
-                      : r.isFollowing ? <span className="text-[11px] text-[#0085FF] shrink-0">joined</span>
-                      : <Button size="sm" variant="outline" className="shrink-0" onClick={() => joinReport(r)}><Users className="w-3 h-3 mr-1" />This is my issue too</Button>}
+                      : r.hasVoted ? <span className="text-[11px] text-[#0085FF] shrink-0">{r.type === 'suggestion' ? 'voted' : 'joined'}</span>
+                      : !r.canVote ? <span className="text-[11px] text-gray-400 shrink-0">closed</span>
+                      : <Button size="sm" variant="outline" className="shrink-0" onClick={() => joinReport(r)}>
+                          {r.type === 'suggestion' ? <><ThumbsUp className="w-3 h-3 mr-1" />Vote</> : <><Users className="w-3 h-3 mr-1" />This is my issue too</>}
+                        </Button>}
                   </li>
                 ))}
               </ul>

@@ -15,13 +15,13 @@ import {
 
 type Row = {
   id: string; number: number; type: string; title: string; area: string; severity: string | null; status: string; priority: string | null;
-  unread: boolean; followerCount: number; createdAt: string; updatedAt: string; user: { name: string; email: string }; tenant: { id: string; name: string } | null;
+  unread: boolean; voteCount: number; createdAt: string; updatedAt: string; user: { name: string; email: string }; tenant: { id: string; name: string } | null;
 };
 type Detail = {
   id: string; number: number; type: string; title: string; area: string; severity: string | null; deviceInfo: string | null; details: string;
   status: string; priority: string | null; fixedInVersion: string | null; createdAt: string;
   howToFind: string | null; howToFindUrl: string | null; duplicateOf: { id: string; number: number; title: string } | null;
-  followers: { name: string; email: string }[];
+  followers: { name: string; email: string; voted: boolean; following: boolean }[]; voteCount: number;
   reporter: { id: string; name: string; email: string }; tenant: { id: string; name: string; slug: string } | null;
   pageUrl: string | null; userAgent: string | null; appVersion: string | null;
   attachments: { index: number; name: string; contentType: string; bytes: number; url: string }[]; notes: ThreadNote[];
@@ -30,7 +30,7 @@ type Detail = {
 const SEV_VARIANT: Record<string, any> = { blocker: 'danger', major: 'warning', minor: 'default', cosmetic: 'default' };
 
 export default function ReportsTriage({ initialReportId }: { initialReportId?: string }) {
-  const [filters, setFilters] = useState({ status: '', type: '', area: '', tenantId: '', q: '', unread: '' });
+  const [filters, setFilters] = useState({ status: '', type: '', area: '', tenantId: '', q: '', unread: '', sort: '' });
   const [rows, setRows] = useState<Row[] | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [tenants, setTenants] = useState<{ id: string; name: string }[]>([]);
@@ -136,6 +136,10 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
           <option value="">All accounts</option>
           {tenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </Select>
+        <Select className="w-40" value={filters.sort} onChange={e => setF('sort', e.target.value)}>
+          <option value="">Unread, then newest</option>
+          <option value="votes">Most votes</option>
+        </Select>
         <label className="flex items-center gap-2 text-sm text-gray-600 px-2">
           <input type="checkbox" checked={filters.unread === '1'} onChange={e => setF('unread', e.target.checked ? '1' : '')} />Unread only
         </label>
@@ -159,7 +163,7 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
                         <Badge variant={r.type === 'bug' ? 'default' : 'info'}>{typeLabel(r.type)}</Badge>
                         {r.severity && <Badge variant={SEV_VARIANT[r.severity]}>{severityLabel(r.severity)}</Badge>}
                         {r.priority && <Badge variant="brand">{r.priority}</Badge>}
-                        {r.followerCount > 0 && <Badge variant="info">+{r.followerCount}</Badge>}
+                        <Badge variant={r.voteCount > 1 ? 'info' : 'default'}>{r.voteCount} {r.type === 'suggestion' ? (r.voteCount === 1 ? 'vote' : 'votes') : 'affected'}</Badge>
                       </div>
                     </div>
                   </button>
@@ -241,7 +245,7 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
                 <p className="break-all"><span className="text-gray-400">Page:</span> {detail.pageUrl ?? '—'}</p>
                 <p className="break-all"><span className="text-gray-400">Browser:</span> {detail.userAgent ?? '—'}</p>
                 <p><span className="text-gray-400">BoothGen version:</span> {detail.appVersion ?? '—'}</p>
-                <p><span className="text-gray-400">Also have it ({detail.followers.length}):</span> {detail.followers.length ? detail.followers.map(f => `${f.name} (${f.email})`).join(', ') : '—'}</p>
+                <p><span className="text-gray-400">{detail.type === 'suggestion' ? 'Votes' : 'Affected'}: {detail.voteCount}</span>{detail.followers.length ? ' · ' + detail.followers.map(f => `${f.name || 'a tester'} (${f.email})${f.voted ? '' : ' no vote'}${f.following ? '' : ', no emails'}`).join(', ') : ''}</p>
               </div>
 
               <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">{detail.details}</p>

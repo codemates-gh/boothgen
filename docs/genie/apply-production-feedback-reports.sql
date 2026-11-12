@@ -1,5 +1,5 @@
 -- BoothGen 2.72.0: bug reports and suggestions (Report a bug / Suggest, shared Reports board, Super Admin → Reports).
--- Run in the Neon SQL Editor on the PRODUCTION branch. Creates three new tables and, if the first version of this
+-- Run in the Neon SQL Editor on the PRODUCTION branch. Creates three new tables and, if an earlier version of this
 -- file was already run, adds the newer columns. Nothing existing is changed or dropped. Safe to run more than once.
 BEGIN;
 
@@ -50,10 +50,15 @@ ALTER TABLE "feedback_reports" ADD COLUMN IF NOT EXISTS "duplicateOfId" TEXT;
 CREATE TABLE IF NOT EXISTS "feedback_followers" (
     "reportId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
+    "voted" BOOLEAN NOT NULL DEFAULT true,
+    "following" BOOLEAN NOT NULL DEFAULT true,
     "unread" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "feedback_followers_pkey" PRIMARY KEY ("reportId","userId")
 );
+
+ALTER TABLE "feedback_followers" ADD COLUMN IF NOT EXISTS "voted" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "feedback_followers" ADD COLUMN IF NOT EXISTS "following" BOOLEAN NOT NULL DEFAULT true;
 
 CREATE INDEX IF NOT EXISTS "feedback_followers_userId_idx" ON "feedback_followers"("userId");
 CREATE UNIQUE INDEX IF NOT EXISTS "feedback_reports_number_key" ON "feedback_reports"("number");

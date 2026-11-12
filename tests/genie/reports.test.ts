@@ -15,7 +15,8 @@ vi.mock('@/lib/storage/r2', () => ({
 import { prisma } from '@/lib/prisma/client';
 import { GET as BOARD, POST as CREATE } from '@/app/api/reports/route';
 import { GET as SIMILAR } from '@/app/api/reports/similar/route';
-import { POST as FOLLOW } from '@/app/api/reports/[id]/follow/route';
+import { POST as VOTE, DELETE as UNVOTE } from '@/app/api/reports/[id]/vote/route';
+import { DELETE as UNFOLLOW } from '@/app/api/reports/[id]/follow/route';
 import { GET as ADMIN_LIST } from '@/app/api/reports/admin/route';
 import { GET as UNREAD } from '@/app/api/reports/unread/route';
 import { GET as DETAIL, PATCH as TRIAGE } from '@/app/api/reports/[id]/route';
@@ -136,7 +137,7 @@ describe('Bug reports and suggestions', () => {
     as(other, otherTenant.id);
     const board = await (await BOARD(req('/x'))).json();
     expect(board.reports.map((r: any) => r.id)).toEqual([id]);
-    expect(board.reports[0]).toMatchObject({ reporterName: 'Ana Tester', isMine: false, followerCount: 0 });
+    expect(board.reports[0]).toMatchObject({ reporterName: 'Ana Tester', isMine: false, voteCount: 1, canVote: true });
     const d = (await (await DETAIL(req('/x'), p(id))).json()).report;
     expect(d).toMatchObject({ reporterName: 'Ana Tester', canReply: false });
     for (const k of ['reporter', 'tenant', 'pageUrl', 'userAgent', 'followers']) expect(d[k]).toBeUndefined();
@@ -170,9 +171,9 @@ describe('Bug reports and suggestions', () => {
     const sim = await (await SIMILAR(req('/x?q=' + encodeURIComponent('print button broken')))).json();
     expect(sim.reports.map((r: any) => r.id)).toEqual([id]);
     expect((await (await SIMILAR(req('/x?q=the%20and'))).json()).reports).toEqual([]);
-    expect(await (await FOLLOW(req('/x', { method: 'POST' }), p(id))).json()).toMatchObject({ followerCount: 1 });
-    expect(await (await FOLLOW(req('/x', { method: 'POST' }), p(id))).json()).toMatchObject({ followerCount: 1 }); // once
-    expect((await (await BOARD(req('/x?mine=1'))).json()).reports[0]).toMatchObject({ id, isFollowing: true, followerCount: 1 });
+    expect(await (await VOTE(req('/x', { method: 'POST' }), p(id))).json()).toMatchObject({ voteCount: 2 });
+    expect(await (await VOTE(req('/x', { method: 'POST' }), p(id))).json()).toMatchObject({ voteCount: 2 }); // once
+    expect((await (await BOARD(req('/x?mine=1'))).json()).reports[0]).toMatchObject({ id, hasVoted: true, isFollowing: true, voteCount: 2 });
 
     // Follower replies: Booth Genius and the reporter hear about it; the follower shows as "a tester"
     sendEmail.mockClear();
@@ -223,7 +224,7 @@ describe('Bug reports and suggestions', () => {
     as(second, tenant.id);
     const dup = await (await CREATE(post({ ...BUG, title: 'Printing broken' }))).json();
     as(fan, tenant.id);
-    await FOLLOW(req('/x', { method: 'POST' }), p(dup.id));
+    await VOTE(req('/x', { method: 'POST' }), p(dup.id));
 
     as(admin, undefined, true);
     expect((await TRIAGE(req('/x', { method: 'PATCH', body: { status: 'duplicate' } }), p(dup.id))).status).toBe(400);
@@ -237,6 +238,61 @@ describe('Bug reports and suggestions', () => {
     // Following a duplicate joins the original
     const late = await prisma.user.create({ data: { email: randomUUID() + TAG, name: 'Di' } });
     as(late, tenant.id);
-    expect(await (await FOLLOW(req('/x', { method: 'POST' }), p(dup.id))).json()).toMatchObject({ reportId: orig.id, followerCount: 3 });
+    expect(await (await VOTE(req('/x', { method: 'POST' }), p(dup.id))).json()).toMatchObject({ reportId: orig.id, voteCount: 4 });
+  });
+
+  it('votes on suggestions: once per person, toggle, follow separately, sorted by most votes, closed keeps the count', async () => {
+    const { tenant, reporter, admin } = await users();
+    as(reporter, tenant.id);
+    const a = await (await CREATE(post({ ...BUG, type: 'suggestion', title: 'Filters before countdown' }))).json();
+    const b = await (await CREATE(post({ ...BUG, type: 'suggestion', title: 'Boomerang mode' }))).json();
+    expect(await (await VOTE(req('/x', { method: 'POST' }), p(a.id))).json()).toMatchObject({ voteCount: 1 }); // own vote counts already
+    const voters = await Promise.all([1, 2].map(() => prisma.user.create({ data: { email: randomUUID() + TAG, name: 'Voter' } })));
+    for (const v of voters) { as(v, tenant.id); await VOTE(req('/x', { method: 'POST' }), p(b.id)); }
+    as(voters[0], tenant.id);
+    const board = await (await BOARD(req('/x?type=suggestion'))).json();
+    expect(board.sort).toBe('votes');
+    expect(board.reports.map((r: any) => [r.id, r.voteCount])).toEqual([[b.id, 3], [a.id, 1]]);
+
+    // Stop emails but keep the vote; then take the vote back
+    await UNFOLLOW(req('/x', { method: 'DELETE' }), p(b.id));
+    let d = (await (await DETAIL(req('/x'), p(b.id))).json()).report;
+    expect(d).toMatchObject({ voteCount: 3, hasVoted: true, isFollowing: false });
+    as(admin, undefined, true);
+    sendEmail.mockClear();
+    await TRIAGE(req('/x', { method: 'PATCH', body: { status: 'confirmed' } }), p(b.id));
+    expect(sendEmail.mock.calls.map(c => c[0]).sort()).toEqual([reporter.email, voters[1].email].sort());
+    expect((await (await ADMIN_LIST(req('/x?sort=votes'))).json()).reports.map((r: any) => r.voteCount)).toEqual([3, 1]);
+    as(voters[0], tenant.id);
+    expect(await (await UNVOTE(req('/x', { method: 'DELETE' }), p(b.id))).json()).toMatchObject({ voteCount: 2 });
+
+    // Closed: count stays, no new votes or vote changes
+    as(admin, undefined, true);
+    await TRIAGE(req('/x', { method: 'PATCH', body: { status: 'wont_fix' } }), p(b.id));
+    as(voters[0], tenant.id);
+    expect((await VOTE(req('/x', { method: 'POST' }), p(b.id))).status).toBe(400);
+    expect((await UNVOTE(req('/x', { method: 'DELETE' }), p(b.id))).status).toBe(400);
+    d = (await (await DETAIL(req('/x'), p(b.id))).json()).report;
+    expect(d).toMatchObject({ voteCount: 2, canVote: false });
+  });
+
+  it('Duplicate moves votes to the original without counting anyone twice', async () => {
+    const { tenant, reporter, admin } = await users();
+    as(reporter, tenant.id);
+    const orig = await (await CREATE(post({ ...BUG, type: 'suggestion', title: 'Dark mode' }))).json();
+    const [x, y] = await Promise.all([1, 2].map(() => prisma.user.create({ data: { email: randomUUID() + TAG, name: 'V' } })));
+    as(x, tenant.id);
+    const dup = await (await CREATE(post({ ...BUG, type: 'suggestion', title: 'Night theme' }))).json();
+    await VOTE(req('/x', { method: 'POST' }), p(orig.id)); // x voted on both
+    as(y, tenant.id);
+    await VOTE(req('/x', { method: 'POST' }), p(dup.id));
+    as(reporter, tenant.id);
+    await VOTE(req('/x', { method: 'POST' }), p(dup.id)); // the original's reporter voted on the duplicate too
+
+    as(admin, undefined, true);
+    await TRIAGE(req('/x', { method: 'PATCH', body: { status: 'duplicate', duplicateOf: orig.number } }), p(dup.id));
+    const o = (await (await DETAIL(req('/x?admin=1'), p(orig.id))).json()).report;
+    expect(o.voteCount).toBe(3); // reporter + x + y
+    expect((await (await DETAIL(req('/x?admin=1'), p(dup.id))).json()).report.voteCount).toBe(1);
   });
 });

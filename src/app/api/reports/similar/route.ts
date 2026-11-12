@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
-import { reportViewer } from '@/lib/reports/server';
+import { reportViewer, voteCount, votingOpen } from '@/lib/reports/server';
 import { OPEN_STATUSES } from '@/lib/reports/options';
 
 const STOP = new Set(['the', 'and', 'for', 'with', 'when', 'not', 'does', 'doesnt', "doesn't", 'can', 'cant', "can't", 'after', 'from', 'that', 'this', 'into', 'have', 'are', 'was', 'its', "it's"]);
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const rows = await prisma.feedbackReport.findMany({
     where: { duplicateOfId: null, OR: words.flatMap(w => [{ title: { contains: w, mode: 'insensitive' as const } }, { details: { contains: w, mode: 'insensitive' as const } }]) },
     orderBy: { updatedAt: 'desc' }, take: 50,
-    select: { id: true, number: true, title: true, details: true, status: true, userId: true, followers: { select: { userId: true } } },
+    select: { id: true, number: true, type: true, title: true, details: true, status: true, userId: true, followers: { select: { userId: true, voted: true } } },
   });
   const scored = rows.map(r => {
     const t = r.title.toLowerCase(), d = r.details.toLowerCase();
@@ -26,8 +26,9 @@ export async function GET(req: NextRequest) {
   }).filter(x => x.score >= 3).sort((a, b) => b.score - a.score).slice(0, 5);
   return NextResponse.json({
     reports: scored.map(({ r }) => ({
-      id: r.id, number: r.number, title: r.title, status: r.status, followerCount: r.followers.length,
-      isMine: r.userId === viewer.userId, isFollowing: r.followers.some(f => f.userId === viewer.userId),
+      id: r.id, number: r.number, type: r.type, title: r.title, status: r.status, voteCount: voteCount(r.followers),
+      isMine: r.userId === viewer.userId, hasVoted: r.followers.some(f => f.userId === viewer.userId && f.voted),
+      canVote: r.userId !== viewer.userId && votingOpen(r.status),
     })),
   });
 }

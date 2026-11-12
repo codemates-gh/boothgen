@@ -67,8 +67,12 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     : howChanged ? 'Updated how to find it'
     : `Fixed in version ${fixedIn ?? '—'}`;
 
-  // Duplicate: reporter and followers follow the original instead
-  const movers = original ? [r.userId, ...r.followers.map(f => f.userId)].filter(u => u !== original!.userId) : [];
+  // Duplicate: the reporter's and voters' votes and follows move to the original (one per person; the original's
+  // reporter already counts). The reporter of the duplicate votes for and follows the original.
+  const movers = original
+    ? [{ userId: r.userId, voted: true, following: true }, ...r.followers.map(f => ({ userId: f.userId, voted: f.voted, following: f.following }))]
+        .filter(m => m.userId !== original!.userId)
+    : [];
 
   await prisma.$transaction([
     prisma.feedbackReport.update({
@@ -82,11 +86,17 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
       },
     }),
     ...(tellWatchers ? [
-      prisma.feedbackFollower.updateMany({ where: { reportId: r.id }, data: { unread: true } }),
+      prisma.feedbackFollower.updateMany({ where: { reportId: r.id, following: true }, data: { unread: true } }),
       prisma.feedbackNote.create({ data: { reportId: r.id, authorId: viewer.userId, fromAdmin: true, body: noteBody } }),
     ] : []),
     ...(original ? [
-      prisma.feedbackFollower.createMany({ data: movers.map(userId => ({ reportId: original!.id, userId })), skipDuplicates: true }),
+      ...movers.map(m => prisma.feedbackFollower.upsert({
+        where: { reportId_userId: { reportId: original!.id, userId: m.userId } },
+        create: { reportId: original!.id, userId: m.userId, voted: m.voted, following: m.following },
+        update: { ...(m.voted ? { voted: true } : {}), ...(m.following ? { following: true } : {}) },
+      })),
+      // The duplicate keeps no votes of its own: they now count on the original
+      prisma.feedbackFollower.updateMany({ where: { reportId: r.id }, data: { voted: false } }),
       prisma.feedbackReport.update({ where: { id: original.id }, data: { adminUnread: true }, select: { id: true } }),
     ] : []),
   ]);

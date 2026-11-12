@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { ArrowLeft, Users } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, Users } from 'lucide-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,7 @@ type Report = {
   id: string; number: number; type: string; title: string; area: string; severity: string | null; deviceInfo: string | null; details: string;
   status: string; priority: string | null; fixedInVersion: string | null; howToFind: string | null; howToFindUrl: string | null;
   duplicateOf: { id: string; number: number; title: string } | null; createdAt: string;
-  reporterName: string; followerCount: number; isMine: boolean; isFollowing: boolean; canReply: boolean;
+  reporterName: string; voteCount: number; isMine: boolean; hasVoted: boolean; isFollowing: boolean; canVote: boolean; canReply: boolean;
   attachments: { index: number; name: string; contentType: string; bytes: number; url: string }[]; notes: ThreadNote[];
 };
 
@@ -42,11 +42,12 @@ export default function ReportPage({ params }: { params: { id: string } }) {
     setReport(d.report); setReply('');
   }
 
-  async function follow(on: boolean) {
+  async function toggle(kind: 'vote' | 'follow', on: boolean) {
     setBusy(true); setError('');
-    const res = await fetch(`/api/reports/${params.id}/follow`, { method: on ? 'POST' : 'DELETE' });
+    const res = await fetch(`/api/reports/${params.id}/${kind}`, { method: on ? 'POST' : 'DELETE' });
+    const d = await res.json().catch(() => ({}));
     setBusy(false);
-    if (!res.ok) { setError('Could not save'); return; }
+    if (!res.ok) { setError(d.error || 'Could not save'); return; }
     await load();
   }
 
@@ -82,15 +83,26 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                 {report.deviceInfo && <p className="text-xs text-gray-500">Device: {report.deviceInfo}</p>}
                 <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">{report.details}</p>
                 <AttachmentList attachments={report.attachments} />
-                <div className="flex items-center justify-between gap-3 border-t pt-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
                   <p className="text-sm text-gray-500 flex items-center gap-1.5">
-                    <Users className="w-4 h-4" />
-                    {report.followerCount === 0 ? 'No one else yet' : `${report.followerCount} ${report.followerCount === 1 ? 'other person has' : 'others have'} this too`}
+                    {report.type === 'suggestion' ? <ThumbsUp className="w-4 h-4" /> : <Users className="w-4 h-4" />}
+                    {report.type === 'suggestion'
+                      ? `${report.voteCount} ${report.voteCount === 1 ? 'vote' : 'votes'}`
+                      : `${report.voteCount} ${report.voteCount === 1 ? 'person has' : 'people have'} this issue`}
                   </p>
-                  {!report.isMine && report.status !== 'duplicate' && (
-                    report.isFollowing
-                      ? <Button variant="outline" size="sm" disabled={busy} onClick={() => follow(false)}>You have this too · Undo</Button>
-                      : <Button size="sm" disabled={busy} onClick={() => follow(true)}>This is my issue too</Button>
+                  {!report.isMine && (
+                    <div className="flex items-center gap-3">
+                      {(report.isFollowing || report.hasVoted) && (
+                        <label className="flex items-center gap-2 text-xs text-gray-500">
+                          <input type="checkbox" checked={report.isFollowing} disabled={busy} onChange={e => toggle('follow', e.target.checked)} />Email me updates
+                        </label>
+                      )}
+                      {report.canVote ? (
+                        report.hasVoted
+                          ? <Button variant="outline" size="sm" disabled={busy} onClick={() => toggle('vote', false)}>{report.type === 'suggestion' ? 'Voted · Undo' : 'You have this too · Undo'}</Button>
+                          : <Button size="sm" disabled={busy} onClick={() => toggle('vote', true)}>{report.type === 'suggestion' ? <><ThumbsUp className="w-3.5 h-3.5 mr-1.5" />Vote</> : 'This is my issue too'}</Button>
+                      ) : report.status !== 'duplicate' && <span className="text-xs text-gray-400">Closed for votes</span>}
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -106,7 +118,7 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                     <div className="flex justify-end"><Button onClick={send} disabled={!reply.trim() || busy}>{busy ? 'Sending…' : 'Reply'}</Button></div>
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-400">Have this issue too? Tap &ldquo;This is my issue too&rdquo; to get updates and add details.</p>
+                  <p className="text-xs text-gray-400">{report.type === 'suggestion' ? 'Vote for this suggestion' : 'Tap \u201cThis is my issue too\u201d'} to get updates and add details.</p>
                 )}
                 {error && <p className="text-sm text-red-600">{error}</p>}
               </CardContent>

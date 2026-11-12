@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
-import type { ReportAttachment } from './options';
+import { OPEN_STATUSES, type ReportAttachment } from './options';
 
 export type ReportViewer = { userId: string; tenantId: string | null; isAdmin: boolean };
 
@@ -25,7 +25,7 @@ export const reportInclude = {
   user: { select: { id: true, name: true, email: true } },
   tenant: { select: { id: true, name: true, slug: true } },
   notes: { orderBy: { createdAt: 'asc' as const }, include: { author: { select: { name: true } } } },
-  followers: { select: { userId: true, unread: true, user: { select: { name: true, email: true } } } },
+  followers: { select: { userId: true, voted: true, following: true, unread: true, user: { select: { name: true, email: true } } } },
   duplicateOf: { select: { id: true, number: true, title: true } },
 };
 
@@ -37,6 +37,11 @@ export function loadReport(id: string) {
 
 export const attachmentsOf = (v: unknown): ReportAttachment[] => (Array.isArray(v) ? (v as ReportAttachment[]) : []);
 export const displayName = (name: string | null | undefined) => name?.trim() || 'a tester';
+
+// Votes (suggestions) / people affected (bugs): the reporter plus everyone who voted
+export const voteCount = (followers: { voted: boolean }[]) => 1 + followers.filter(f => f.voted).length;
+// Voting is open until the report is closed (Fixed, Won't fix, Duplicate, Already exists)
+export const votingOpen = (status: string) => OPEN_STATUSES.includes(status);
 
 // asAdmin: Super Admin triage view (reporter email, account, captured context, internal notes, followers' emails).
 // Otherwise the shared board view: reporter by display name only, no internal notes.
@@ -54,16 +59,17 @@ export function reportView(r: FullReport, viewerId: string, asAdmin: boolean) {
     details: r.details, status: r.status, priority: r.priority, fixedInVersion: r.fixedInVersion,
     howToFind: r.howToFind, howToFindUrl: r.howToFindUrl, duplicateOf: r.duplicateOf,
     createdAt: r.createdAt, updatedAt: r.updatedAt,
-    reporterName: displayName(r.user.name), followerCount: r.followers.length,
-    isMine, isFollowing: !!follow, canReply: isMine || !!follow,
+    reporterName: displayName(r.user.name), voteCount: voteCount(r.followers),
+    isMine, hasVoted: isMine || !!follow?.voted, isFollowing: isMine || !!follow?.following,
+    canVote: !isMine && votingOpen(r.status), canReply: isMine || !!follow,
     attachments: attachmentsOf(r.attachments).map((a, i) => ({ index: i, name: a.name, contentType: a.contentType, bytes: a.bytes, url: `/api/reports/${r.id}/files/${i}` })),
     notes,
   };
-  if (!asAdmin) return { ...base, unread: isMine ? r.reporterUnread : !!follow?.unread };
+  if (!asAdmin) return { ...base, unread: isMine ? r.reporterUnread : !!(follow?.following && follow.unread) };
   return {
     ...base, unread: r.adminUnread,
     reporter: r.user, tenant: r.tenant, pageUrl: r.pageUrl, userAgent: r.userAgent, appVersion: r.appVersion,
-    followers: r.followers.map(f => f.user),
+    followers: r.followers.map(f => ({ ...f.user, voted: f.voted, following: f.following })),
   };
 }
 
@@ -74,6 +80,6 @@ export async function markReadFor(r: FullReport, userId: string) {
 }
 
 // Reporter and followers: everyone who gets status / note updates
-export const watchersOf = (r: FullReport) => [r.user.email, ...r.followers.map(f => f.user.email)];
+export const watchersOf = (r: FullReport) => [r.user.email, ...r.followers.filter(f => f.following).map(f => f.user.email)];
 
 export const forEmail = (r: FullReport) => ({ id: r.id, number: r.number, type: r.type, title: r.title, area: r.area, details: r.details, user: r.user, tenant: r.tenant });

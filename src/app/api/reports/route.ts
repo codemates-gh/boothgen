@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma/client';
 import { headR2Object } from '@/lib/storage/r2';
 import { APP_VERSION } from '@/lib/version';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { displayName, forEmail, loadReport, reportViewer } from '@/lib/reports/server';
+import { displayName, forEmail, loadReport, reportViewer, voteCount, votingOpen } from '@/lib/reports/server';
 import { notifyAdminsNewReport } from '@/lib/reports/notify';
 import { AREA_VALUES, ATTACHMENT_MAX_FILES, ATTACHMENT_TYPES, OPEN_STATUSES, SEVERITY_VALUES, TYPE_VALUES } from '@/lib/reports/options';
 
@@ -29,7 +29,8 @@ const Body = z.object({
 }).strict();
 
 // The shared Reports board: every report from every account (reporter by display name only).
-// ?status=open (default) | all | <status>, &type, &area, &q, &mine=1 (reported or followed by me)
+// ?status=open (default) | all | <status>, &type, &area, &q, &mine=1 (reported, voted or followed by me),
+// &sort=votes | recent (default: votes when showing suggestions only, otherwise recent)
 export async function GET(req: NextRequest) {
   const viewer = await reportViewer();
   if (viewer instanceof NextResponse) return viewer;
@@ -53,16 +54,21 @@ export async function GET(req: NextRequest) {
       id: true, number: true, type: true, title: true, area: true, severity: true, status: true, priority: true, fixedInVersion: true,
       userId: true, reporterUnread: true, createdAt: true, updatedAt: true,
       user: { select: { name: true } },
-      followers: { select: { userId: true, unread: true } },
+      followers: { select: { userId: true, voted: true, following: true, unread: true } },
     },
   });
-  return NextResponse.json({
-    reports: reports.map(({ userId, reporterUnread, user, followers, ...r }) => {
-      const mine = userId === viewer.userId;
-      const follow = followers.find(f => f.userId === viewer.userId);
-      return { ...r, reporterName: displayName(user.name), followerCount: followers.length, isMine: mine, isFollowing: !!follow, unread: mine ? reporterUnread : !!follow?.unread };
-    }),
+  const sort = p.get('sort') || (p.get('type') === 'suggestion' ? 'votes' : 'recent');
+  const rows = reports.map(({ userId, reporterUnread, user, followers, ...r }) => {
+    const mine = userId === viewer.userId;
+    const follow = followers.find(f => f.userId === viewer.userId);
+    return {
+      ...r, reporterName: displayName(user.name), voteCount: voteCount(followers), isMine: mine,
+      hasVoted: mine || !!follow?.voted, isFollowing: mine || !!follow?.following, canVote: !mine && votingOpen(r.status),
+      unread: mine ? reporterUnread : !!(follow?.following && follow.unread),
+    };
   });
+  if (sort === 'votes') rows.sort((a, b) => b.voteCount - a.voteCount || +new Date(b.updatedAt) - +new Date(a.updatedAt));
+  return NextResponse.json({ reports: rows, sort });
 }
 
 // File a bug report or suggestion. Who, which account, page, browser and BoothGen version are captured here.

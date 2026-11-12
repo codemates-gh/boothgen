@@ -9,7 +9,7 @@ export async function GET() {
   if (viewer instanceof NextResponse) return viewer;
   const [own, following, admin] = await Promise.all([
     prisma.feedbackReport.count({ where: { userId: viewer.userId, reporterUnread: true } }),
-    prisma.feedbackFollower.count({ where: { userId: viewer.userId, unread: true } }),
+    prisma.feedbackFollower.count({ where: { userId: viewer.userId, following: true, unread: true } }),
     viewer.isAdmin ? prisma.feedbackReport.count({ where: { adminUnread: true } }) : Promise.resolve(0),
   ]);
   return NextResponse.json({ mine: own + following, admin, isAdmin: viewer.isAdmin });

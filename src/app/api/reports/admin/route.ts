@@ -2,9 +2,9 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
-import { reportViewer } from '@/lib/reports/server';
+import { reportViewer, voteCount } from '@/lib/reports/server';
 
-// Super Admin triage list: every report, filtered, with counts per status
+// Super Admin triage list: every report, filtered, with counts per status and votes (&sort=votes for most votes)
 export async function GET(req: NextRequest) {
   const viewer = await reportViewer();
   if (viewer instanceof NextResponse) return viewer;
@@ -33,14 +33,16 @@ export async function GET(req: NextRequest) {
       select: {
         id: true, number: true, type: true, title: true, area: true, severity: true, status: true, priority: true, adminUnread: true, createdAt: true, updatedAt: true,
         user: { select: { name: true, email: true } }, tenant: { select: { id: true, name: true } },
-        _count: { select: { followers: true } },
+        followers: { select: { voted: true } },
       },
     }),
     prisma.feedbackReport.groupBy({ by: ['status'], where: base, _count: { _all: true } }),
     prisma.tenant.findMany({ where: { feedbackReports: { some: {} } }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
   ]);
+  const rows = reports.map(({ adminUnread, followers, ...r }) => ({ ...r, unread: adminUnread, voteCount: voteCount(followers) }));
+  if (p.get('sort') === 'votes') rows.sort((a, b) => b.voteCount - a.voteCount || +new Date(b.updatedAt) - +new Date(a.updatedAt));
   return NextResponse.json({
-    reports: reports.map(({ adminUnread, _count, ...r }) => ({ ...r, unread: adminUnread, followerCount: _count.followers })),
+    reports: rows,
     counts: Object.fromEntries(byStatus.map(s => [s.status, s._count._all])),
     tenants,
   });

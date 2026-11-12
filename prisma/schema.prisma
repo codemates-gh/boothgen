@@ -1628,10 +1628,13 @@ model FeedbackNote {
   @@map("feedback_notes")
 }
 
-// "This is my issue too": users following someone else's report get its status / note updates
+// Other users on a report: a vote on a suggestion / "This is my issue too" on a bug (voted), and/or getting its
+// status and note emails (following). Voting turns following on; each can be turned off separately.
 model FeedbackFollower {
   reportId  String
   userId    String
+  voted     Boolean  @default(true)
+  following Boolean  @default(true)
   unread    Boolean  @default(false)
   createdAt DateTime @default(now())
 
