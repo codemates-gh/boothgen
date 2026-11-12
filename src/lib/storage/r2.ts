@@ -91,3 +91,8 @@ export async function getR2Object(key: string): Promise<{ body: Buffer; contentT
     throw err;
   }
 }
+
+// Short-lived download link for a private object (e.g. report attachments)
+export async function getPresignedDownloadUrl(key: string, expiresIn = 600): Promise<string> {
+  return getSignedUrl(r2, new GetObjectCommand({ Bucket: BUCKET, Key: key }), { expiresIn });
+}

@@ -17,21 +17,22 @@ import SuperAdminTabs from './SuperAdminTabs';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import FoundingMembersCard from './FoundingMembersCard';
 import DesignTemplatesManager from './DesignTemplatesManager';
+import ReportsTriage from './ReportsTriage';
 
-const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
+const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
 type Tab = typeof VALID_TABS[number];
 
 const TENANT_BADGE: Record<string, 'warning' | 'success' | 'danger' | 'default'> = {
   TRIAL: 'warning', ACTIVE: 'success', SUSPENDED: 'danger', CANCELLED: 'default',
 };
 
-export default async function SuperAdminPage({ searchParams }: { searchParams: { tab?: string } }) {
+export default async function SuperAdminPage({ searchParams }: { searchParams: { tab?: string; report?: string } }) {
   await requireSuperAdminSession();
   const tab: Tab = (VALID_TABS as readonly string[]).includes(searchParams?.tab ?? '')
     ? searchParams.tab as Tab
     : 'overview';
 
-  const [tenants, totalUsers, totalEvents, allSettings, failedCounts, failedTotal, proSubscriberCount, foundingSettings, foundingMembers] = await Promise.all([
+  const [tenants, totalUsers, totalEvents, allSettings, failedCounts, failedTotal, proSubscriberCount, foundingSettings, foundingMembers, reportsUnread] = await Promise.all([
     prisma.tenant.findMany({
       take: 100, orderBy: { createdAt: 'desc' },
       include: {
@@ -52,6 +53,7 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
     prisma.stripeSubscription.count({ where: { plan: 'MONTHLY', status: 'ACTIVE' } }).catch(() => 0),
     prisma.systemSetting.findMany({ where: { key: { in: ['founding_enabled', 'founding_round', 'founding_spots_limit'] } } }).catch(() => []),
     prisma.foundingMember.findMany({ orderBy: { createdAt: 'desc' }, select: { id: true, paymentEmail: true, name: true, company: true, tier: true, amountCents: true, status: true, createdAt: true } }).catch(() => []),
+    prisma.feedbackReport.count({ where: { adminUnread: true } }).catch(() => 0),
   ]);
 
   const failedMap = Object.fromEntries((failedCounts as any[]).map((f: any) => [f.tenantId, f._count.id]));
@@ -76,7 +78,7 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
       </div>
 
       {/* Tab Bar */}
-      <SuperAdminTabs active={tab} failedTotal={failedTotal} />
+      <SuperAdminTabs active={tab} failedTotal={failedTotal} reportsUnread={reportsUnread} />
 
       {/* Tab Content */}
       <div className="flex-1 p-8 space-y-8">
@@ -181,6 +183,17 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
               initialSettings={Object.fromEntries((foundingSettings as any[]).map((s: any) => [s.key, s.value]))}
               initialMembers={(foundingMembers as any[]).map((m: any) => ({ ...m, createdAt: m.createdAt.toISOString() }))}
             />
+          </>
+        )}
+
+        {/* REPORTS */}
+        {tab === 'reports' && (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+              <p className="text-sm text-gray-500 mt-1">Bugs and suggestions from signed-in users. Notes go to the reporter by email unless marked internal.</p>
+            </div>
+            <ReportsTriage initialReportId={searchParams?.report} />
           </>
         )}
 

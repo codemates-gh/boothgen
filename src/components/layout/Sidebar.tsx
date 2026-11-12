@@ -4,7 +4,8 @@ import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send, CalendarCheck, SlidersHorizontal } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send, CalendarCheck, SlidersHorizontal, Bug, ClipboardList } from 'lucide-react';
+import { ReportDialog } from '@/components/reports/ReportDialog';
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 import { APP_VERSION } from '@/lib/version';
 
@@ -78,7 +79,7 @@ const TEAM_NAV_MAP: Record<string, NavItem> = {
   gallery:  { href: '/gallery', label: 'Gallery',         icon: Camera, pro: true },
 };
 
-function NavLink({ href, label, Icon, pro, active, close }: { href: string; label: string; Icon: any; pro?: boolean; active: boolean; close: () => void }) {
+function NavLink({ href, label, Icon, pro, active, close, count }: { href: string; label: string; Icon: any; pro?: boolean; active: boolean; close: () => void; count?: number }) {
   return (
     <Link
       href={href}
@@ -94,6 +95,7 @@ function NavLink({ href, label, Icon, pro, active, close }: { href: string; labe
       <Icon className={cn('w-4 h-4 flex-shrink-0 transition-colors', active ? 'text-white' : 'text-sidebar-text group-hover:text-white/80')} />
       {label}
       {pro && <span className="ml-auto text-[9px] font-semibold px-1.5 py-0.5 rounded bg-yellow-400/20 text-yellow-300 tracking-wide">PRO</span>}
+      {!!count && <span className="ml-auto min-w-[18px] text-center text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#E2445C] text-white leading-none">{count}</span>}
     </Link>
   );
 }
@@ -104,6 +106,16 @@ export function Sidebar({ isFoundingMember, genieEnabled }: { isFoundingMember?:
   const [isOpen, setIsOpen] = useState(false);
   const [teamMemberAccess, setTeamMemberAccess] = useState<string[]>(['events']);
   const close = () => setIsOpen(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportsUnread, setReportsUnread] = useState(0);
+
+  // Unread updates on the user's own bug reports / suggestions
+  useEffect(() => {
+    const load = () => fetch('/api/reports/unread').then(r => r.json()).then(d => setReportsUnread(d?.mine ?? 0)).catch(() => {});
+    load();
+    window.addEventListener('reports:changed', load);
+    return () => window.removeEventListener('reports:changed', load);
+  }, [path]);
 
   useEffect(() => {
     fetch('/api/settings/branding')
@@ -176,6 +188,20 @@ export function Sidebar({ isFoundingMember, genieEnabled }: { isFoundingMember?:
           )}
         </nav>
         <div className="pr-3 pb-4 shrink-0">
+          <button
+            onClick={() => { setReportOpen(true); close(); }}
+            className="flex items-center gap-3 pl-[9px] pr-3 py-2.5 rounded-r-lg text-sm font-medium mb-0.5 text-sidebar-text hover:bg-white/[0.05] hover:text-white w-full transition-colors border-l-[3px] border-transparent"
+          >
+            <Bug className="w-4 h-4" />Report a bug / Suggest
+          </button>
+          <NavLink
+            href="/reports"
+            label="My reports"
+            Icon={ClipboardList}
+            active={path === '/reports' || path.startsWith('/reports/')}
+            close={close}
+            count={reportsUnread}
+          />
           {!isTeamMember && (
             <>
               <NavLink
@@ -209,6 +235,7 @@ export function Sidebar({ isFoundingMember, genieEnabled }: { isFoundingMember?:
           <p className="text-sidebar-text text-[10px] pl-3 pt-2 opacity-30">v{APP_VERSION}</p>
         </div>
       </aside>
+      <ReportDialog open={reportOpen} onClose={() => setReportOpen(false)} />
     </>
   );
 }

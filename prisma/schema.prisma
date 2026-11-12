@@ -188,18 +188,18 @@ enum SubscriptionStatus {
 }
 
 model Tenant {
-  id          String       @id @default(cuid())
-  clerkOrgId  String?      @unique
-  name        String
-  slug        String       @unique
-  status             TenantStatus @default(TRIAL)
-  cancelledAt        DateTime?
-  trialEndsAt        DateTime?
-  teamMemberAccess   String       @default("[\"events\"]")
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  id               String       @id @default(cuid())
+  clerkOrgId       String?      @unique
+  name             String
+  slug             String       @unique
+  status           TenantStatus @default(TRIAL)
+  cancelledAt      DateTime?
+  trialEndsAt      DateTime?
+  teamMemberAccess String       @default("[\"events\"]")
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
-  calendarToken        String?              @unique
+  calendarToken String? @unique
 
   memberships          TenantMembership[]
   branding             TenantBranding?
@@ -244,6 +244,7 @@ model Tenant {
   genieMessaging       GenieMessagingConfig?
   genieEventDevices    GenieEventDevice[]
   genieDefaults        GenieDefaults?
+  feedbackReports      FeedbackReport[]
 
   // Genie paid add-on entitlement (super admin toggle until billing exists)
   genieEnabled          Boolean   @default(false)
@@ -276,6 +277,8 @@ model User {
   automationExecutions AutomationExecution[] @relation("ExecutionSentBy")
   auditLogs            AuditLog[]
   eventNotes           EventNote[]
+  feedbackReports      FeedbackReport[]
+  feedbackNotes        FeedbackNote[]
 
   @@map("users")
 }
@@ -301,39 +304,39 @@ model TenantMembership {
 }
 
 model TenantBranding {
-  id                String   @id @default(cuid())
-  tenantId          String   @unique
-  companyName       String?
-  logoUrl           String?
-  faviconUrl        String?
-  primaryColor      String   @default("#F97316")
-  secondaryColor    String   @default("#EA6100")
-  accentColor       String   @default("#FED7AA")
-  emailHeaderHtml   String?
-  invoiceFooterText String?
-  portalDomain      String?  @unique
-  replyToEmail      String?
-  supportPhone      String?
-  websiteUrl        String?
-  businessAddress   String?
-  leadFormConfig    Json?
+  id                        String   @id @default(cuid())
+  tenantId                  String   @unique
+  companyName               String?
+  logoUrl                   String?
+  faviconUrl                String?
+  primaryColor              String   @default("#F97316")
+  secondaryColor            String   @default("#EA6100")
+  accentColor               String   @default("#FED7AA")
+  emailHeaderHtml           String?
+  invoiceFooterText         String?
+  portalDomain              String?  @unique
+  replyToEmail              String?
+  supportPhone              String?
+  websiteUrl                String?
+  businessAddress           String?
+  leadFormConfig            Json?
   // Currency, tax & regional
-  currency          String   @default("usd")
-  taxLabel          String   @default("Tax")
-  country           String?
+  currency                  String   @default("usd")
+  taxLabel                  String   @default("Tax")
+  country                   String?
   // Payment terms
-  defaultDepositPercent     Int @default(50)
-  balanceDueDaysBeforeEvent Int @default(30)
-  fullPaymentIfWithinDays   Int @default(14)
+  defaultDepositPercent     Int      @default(50)
+  balanceDueDaysBeforeEvent Int      @default(30)
+  fullPaymentIfWithinDays   Int      @default(14)
   // Design brief feature flags
-  designBriefEnabled  Boolean @default(false)
-  customDesignEnabled Boolean @default(false)
+  designBriefEnabled        Boolean  @default(false)
+  customDesignEnabled       Boolean  @default(false)
   // Every event gets the design brief without activating it on the event's Designs tab
-  designBriefAutoActivate Boolean @default(false)
+  designBriefAutoActivate   Boolean  @default(false)
   // Onboarding
-  onboardingDismissed Boolean @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  onboardingDismissed       Boolean  @default(false)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -391,31 +394,31 @@ model Client {
 
 model Event {
   assignedToUserId     String?
-  id              String      @id @default(cuid())
-  tenantId        String
-  clientId        String
-  portalToken     String      @unique @default(cuid())
-  title           String
-  status          EventStatus @default(LEAD)
-  eventDate       DateTime
-  setupTime       DateTime?
-  startTime       DateTime?
-  endTime         DateTime?
-  venueName       String?
-  venueAddress    String?
-  venueCity       String?
-  venueState      String?
-  venuePostalCode String?
-  packageName     String?
-  packageNotes    String?     @db.Text
-  internalNotes   String?     @db.Text
+  id                   String      @id @default(cuid())
+  tenantId             String
+  clientId             String
+  portalToken          String      @unique @default(cuid())
+  title                String
+  status               EventStatus @default(LEAD)
+  eventDate            DateTime
+  setupTime            DateTime?
+  startTime            DateTime?
+  endTime              DateTime?
+  venueName            String?
+  venueAddress         String?
+  venueCity            String?
+  venueState           String?
+  venuePostalCode      String?
+  packageName          String?
+  packageNotes         String?     @db.Text
+  internalNotes        String?     @db.Text
   guestCount           Int?
   hearAboutUs          String?
   estimatedValueCents  Int?
   designReminderSentAt DateTime?
   importBatchId        String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
 
   tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   client               Client                @relation(fields: [clientId], references: [id])
@@ -687,9 +690,9 @@ model Gallery {
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
 
-  tenant Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  event  Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  assets GalleryAsset[]
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event         Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  assets        GalleryAsset[]
   genieSessions GenieSession[]
 
   @@map("galleries")
@@ -718,7 +721,7 @@ model GalleryAsset {
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
 
-  gallery Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  gallery      Gallery       @relation(fields: [galleryId], references: [id], onDelete: Cascade)
   genieSession GenieSession? @relation(fields: [genieSessionId], references: [id], onDelete: SetNull)
 
   @@unique([galleryId, clientId])
@@ -727,7 +730,7 @@ model GalleryAsset {
 }
 
 model LeadSubmission {
-  id                 String    @id @default(cuid())
+  id                 String     @id @default(cuid())
   tenantId           String
   apiKeyId           String?
   clientId           String?
@@ -747,22 +750,22 @@ model LeadSubmission {
   endTime            String?
   guestCount         Int?
   packageInterest    String?
-  message            String?   @db.Text
+  message            String?    @db.Text
   hearAboutUs        String?
-  source             String    @default("iframe")
+  source             String     @default("iframe")
   referrerUrl        String?
   utmSource          String?
   utmMedium          String?
   utmCampaign        String?
   ipAddress          String?
   userAgent          String?
-  convertedToEventId String?   @unique
+  convertedToEventId String?    @unique
   convertedAt        DateTime?
   status             LeadStatus @default(NEW)
-  notes              String?   @db.Text
-  isSpam             Boolean   @default(false)
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  notes              String?    @db.Text
+  isSpam             Boolean    @default(false)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
   tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   apiKey           TenantApiKey?     @relation(fields: [apiKeyId], references: [id])
@@ -881,19 +884,19 @@ model ServicePackage {
 }
 
 model Quote {
-  id                  String          @id @default(cuid())
+  id                  String            @id @default(cuid())
   tenantId            String
   eventId             String
   clientId            String
   quoteNumber         String
-  status              QuoteStatus     @default(DRAFT)
-  subtotalCents       Int             @default(0)
-  taxRatePercent      Float           @default(0)
-  taxAmountCents      Int             @default(0)
-  discountCents       Int             @default(0)
+  status              QuoteStatus       @default(DRAFT)
+  subtotalCents       Int               @default(0)
+  taxRatePercent      Float             @default(0)
+  taxAmountCents      Int               @default(0)
+  discountCents       Int               @default(0)
   discountLabel       String?
   couponId            String?
-  totalCents          Int             @default(0)
+  totalCents          Int               @default(0)
   notes               String?
   terms               String?
   validUntil          DateTime?
@@ -905,21 +908,21 @@ model Quote {
   clientSignatureData String?
   clientSignedAt      DateTime?
   clientIpAddress     String?
-  clientName              String?
-  contractTemplateId      String?
-  paymentType             String          @default("full")
-  depositPercent          Int             @default(50)
-  currency                String          @default("usd")
-  isCorporate             Boolean         @default(false)
-  portalToken             String          @unique @default(cuid())
-  createdAt               DateTime        @default(now())
-  updatedAt               DateTime        @updatedAt
-  tenant                  Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  event                   Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  client                  Client          @relation(fields: [clientId], references: [id])
-  contractTemplate        ContractTemplate? @relation(fields: [contractTemplateId], references: [id], onDelete: SetNull)
-  coupon                  Coupon?           @relation(fields: [couponId], references: [id], onDelete: SetNull)
-  lineItems               QuoteLineItem[]
+  clientName          String?
+  contractTemplateId  String?
+  paymentType         String            @default("full")
+  depositPercent      Int               @default(50)
+  currency            String            @default("usd")
+  isCorporate         Boolean           @default(false)
+  portalToken         String            @unique @default(cuid())
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  tenant              Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event               Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  client              Client            @relation(fields: [clientId], references: [id])
+  contractTemplate    ContractTemplate? @relation(fields: [contractTemplateId], references: [id], onDelete: SetNull)
+  coupon              Coupon?           @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  lineItems           QuoteLineItem[]
 
   @@index([tenantId])
   @@index([eventId])
@@ -1014,7 +1017,7 @@ model BlackoutDate {
   date      DateTime @db.Date
   createdAt DateTime @default(now())
 
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, date])
   @@index([tenantId])
@@ -1022,11 +1025,11 @@ model BlackoutDate {
 }
 
 model ChecklistTemplate {
-  id        String                  @id @default(cuid())
+  id        String   @id @default(cuid())
   tenantId  String
   name      String
-  createdAt DateTime                @default(now())
-  updatedAt DateTime                @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   tenant Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   items  ChecklistTemplateItem[]
@@ -1036,12 +1039,12 @@ model ChecklistTemplate {
 }
 
 model ChecklistTemplateItem {
-  id         String            @id @default(cuid())
+  id         String @id @default(cuid())
   templateId String
   label      String
-  position   Int               @default(0)
+  position   Int    @default(0)
 
-  template   ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@index([templateId])
   @@map("checklist_template_items")
@@ -1056,8 +1059,8 @@ model EventChecklistItem {
   position    Int      @default(0)
   createdAt   DateTime @default(now())
 
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@index([eventId])
   @@map("event_checklist_items")
@@ -1200,31 +1203,31 @@ model EventExpense {
 
 // BoothGen-managed shared design template library
 model BoothDesignTemplate {
-  id          String   @id @default(cuid())
-  tenantId    String?  // null = BoothGen shared template
-  name        String
-  description String?
-  format      String   // "2x6" | "4x6"
-  orientation String   // "portrait" | "landscape"
-  photoCount  Int      @default(3)
-  thumbnailUrl String? // Layout wireframe image (R2)
+  id              String   @id @default(cuid())
+  tenantId        String? // null = BoothGen shared template
+  name            String
+  description     String?
+  format          String // "2x6" | "4x6"
+  orientation     String // "portrait" | "landscape"
+  photoCount      Int      @default(3)
+  thumbnailUrl    String? // Layout wireframe image (R2)
   // JSON: [{id, label, placeholder, maxChars, required, hint?}]
-  textZones    Json    @default("[]")
+  textZones       Json     @default("[]")
   // JSON: [{id, name, colors: {background, text, accent}}]
-  colorVariants Json   @default("[]")
+  colorVariants   Json     @default("[]")
   // JSON: [{id, name, fonts: [{zoneId, fontId, label, fontFamily}]}]
-  fontPairings Json    @default("[]")
+  fontPairings    Json     @default("[]")
   // Genie designer layouts (LayoutTemplate minus id/version); set = shows in the Genie template library
   layout          Json?
   alternateLayout Json?
   genieThumbnail  Json? // RemoteAsset rendered by the designer on save
-  isPublished Boolean  @default(false) // Standard: shown to operators and their clients
+  isPublished     Boolean  @default(false) // Standard: shown to operators and their clients
   // An operator's own template offered in their clients' design brief picker
-  offerToClients Boolean @default(false)
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  offerToClients  Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   tenant Tenant?            @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   briefs EventDesignBrief[]
@@ -1235,11 +1238,11 @@ model BoothDesignTemplate {
 
 // Client-submitted design preferences for a specific event
 model EventDesignBrief {
-  id         String             @id @default(cuid())
-  tenantId   String
-  eventId    String             @unique
-  templateId String?
-  status     DesignBriefStatus  @default(PENDING)
+  id                     String            @id @default(cuid())
+  tenantId               String
+  eventId                String            @unique
+  templateId             String?
+  status                 DesignBriefStatus @default(PENDING)
   // Text zone values: {zoneId: "text"}
   textValues             Json?
   // Selected variant/pairing IDs
@@ -1247,13 +1250,13 @@ model EventDesignBrief {
   selectedFontPairingId  String?
   // AI theme fields
   themeInput             String?
-  themeDirections        Json?   // [{title, description}] x3
+  themeDirections        Json? // [{title, description}] x3
   selectedDirectionIndex Int?
-  isCustomDesign         Boolean @default(false)
-  notes                  String? @db.Text
+  isCustomDesign         Boolean           @default(false)
+  notes                  String?           @db.Text
   submittedAt            DateTime?
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
 
   tenant   Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   event    Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -1266,21 +1269,21 @@ model EventDesignBrief {
 // ─── Genie (iPad photo booth app) ────────────────────────────────────────────
 
 model GenieDevice {
-  id         String    @id @default(cuid())
-  tenantId   String
-  name       String
-  model      String?
-  appVersion String?
-  tokenHash  String    @unique
-  prefix     String
-  lastSeenAt DateTime?
-  revokedAt  DateTime?
+  id                String    @id @default(cuid())
+  tenantId          String
+  name              String
+  model             String?
+  appVersion        String?
+  tokenHash         String    @unique
+  prefix            String
+  lastSeenAt        DateTime?
+  revokedAt         DateTime?
   // Storage reported by the app on each request (X-Genie-Storage-Free / -Total headers)
-  storageFreeBytes   BigInt?
-  storageTotalBytes  BigInt?
-  storageReportedAt  DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  storageFreeBytes  BigInt?
+  storageTotalBytes BigInt?
+  storageReportedAt DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   pairingCodes GeniePairingCode[]
@@ -1310,12 +1313,12 @@ model GeniePairingCode {
 
 // One row per event: everything in the Genie EventBundle except the templates
 model EventGenieSettings {
-  id       String @id @default(cuid())
-  tenantId String
-  eventId  String @unique
-  timeZone String @default("America/New_York")
+  id             String  @id @default(cuid())
+  tenantId       String
+  eventId        String  @unique
+  timeZone       String  @default("America/New_York")
   // Genie on/off for this event; off hides it from iPads and the bundle returns 409
-  enabled  Boolean @default(true)
+  enabled        Boolean @default(true)
   // Section follows the account's Genie defaults (false) or was customized for this event (true). Existing rows
   // default to custom so adding defaults never changes an event someone already set up.
   customTimeZone Boolean @default(true)
@@ -1563,4 +1566,55 @@ model GenieEventDevice {
   @@unique([eventId, deviceId])
   @@index([deviceId])
   @@map("genie_event_devices")
+}
+
+// Bug reports and suggestions from signed-in users, triaged by Super Admins (src/lib/reports)
+model FeedbackReport {
+  id             String   @id @default(cuid())
+  number         Int      @unique @default(autoincrement())
+  userId         String
+  tenantId       String?
+  type           String // bug | suggestion
+  title          String
+  area           String // see REPORT_AREAS
+  severity       String? // bugs: blocker | major | minor | cosmetic
+  deviceInfo     String?
+  details        String   @db.Text
+  attachments    Json     @default("[]") // [{ key, name, contentType, bytes }]
+  // Captured automatically when the report is filed
+  pageUrl        String?
+  userAgent      String?
+  appVersion     String?
+  // Triage
+  status         String   @default("new") // see REPORT_STATUSES
+  priority       String? // P1 | P2 | P3
+  fixedInVersion String?
+  adminUnread    Boolean  @default(true)
+  reporterUnread Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant?        @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  notes  FeedbackNote[]
+
+  @@index([status])
+  @@index([userId])
+  @@map("feedback_reports")
+}
+
+model FeedbackNote {
+  id        String   @id @default(cuid())
+  reportId  String
+  authorId  String?
+  fromAdmin Boolean  @default(false)
+  internal  Boolean  @default(false) // Super Admin only; never shown to the reporter
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  report FeedbackReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  author User?          @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([reportId])
+  @@map("feedback_notes")
 }
