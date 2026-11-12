@@ -33,13 +33,14 @@ export async function GET(req: NextRequest) {
       select: {
         id: true, number: true, type: true, title: true, area: true, severity: true, status: true, priority: true, adminUnread: true, createdAt: true, updatedAt: true,
         user: { select: { name: true, email: true } }, tenant: { select: { id: true, name: true } },
+        _count: { select: { followers: true } },
       },
     }),
     prisma.feedbackReport.groupBy({ by: ['status'], where: base, _count: { _all: true } }),
     prisma.tenant.findMany({ where: { feedbackReports: { some: {} } }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
   ]);
   return NextResponse.json({
-    reports: reports.map(({ adminUnread, ...r }) => ({ ...r, unread: adminUnread })),
+    reports: reports.map(({ adminUnread, _count, ...r }) => ({ ...r, unread: adminUnread, followerCount: _count.followers })),
     counts: Object.fromEntries(byStatus.map(s => [s.status, s._count._all])),
     tenants,
   });

@@ -32,7 +32,11 @@ export const REPORT_STATUSES = [
   { value: 'fixed', label: 'Fixed', badge: 'success' },
   { value: 'wont_fix', label: "Won't fix", badge: 'default' },
   { value: 'duplicate', label: 'Duplicate', badge: 'default' },
+  { value: 'exists', label: 'Already exists', badge: 'success' },
 ] as const;
+
+// Still being worked on; the Reports board shows these by default
+export const OPEN_STATUSES = ['new', 'need_info', 'confirmed', 'in_progress'];
 
 export const REPORT_PRIORITIES = ['P1', 'P2', 'P3'] as const;
 

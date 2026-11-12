@@ -279,6 +279,7 @@ model User {
   eventNotes           EventNote[]
   feedbackReports      FeedbackReport[]
   feedbackNotes        FeedbackNote[]
+  feedbackFollows      FeedbackFollower[]
 
   @@map("users")
 }
@@ -1589,14 +1590,22 @@ model FeedbackReport {
   status         String   @default("new") // see REPORT_STATUSES
   priority       String? // P1 | P2 | P3
   fixedInVersion String?
+  // "Already exists": how to get to the feature (steps, optional link to the BoothGen page)
+  howToFind      String?  @db.Text
+  howToFindUrl   String?
+  // "Duplicate": the original report (its followers moved there)
+  duplicateOfId  String?
   adminUnread    Boolean  @default(true)
   reporterUnread Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenant Tenant?        @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  notes  FeedbackNote[]
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant      Tenant?            @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  notes       FeedbackNote[]
+  followers   FeedbackFollower[]
+  duplicateOf FeedbackReport?    @relation("FeedbackDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates  FeedbackReport[]   @relation("FeedbackDuplicates")
 
   @@index([status])
   @@index([userId])
@@ -1617,4 +1626,19 @@ model FeedbackNote {
 
   @@index([reportId])
   @@map("feedback_notes")
+}
+
+// "This is my issue too": users following someone else's report get its status / note updates
+model FeedbackFollower {
+  reportId  String
+  userId    String
+  unread    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  report FeedbackReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([reportId, userId])
+  @@index([userId])
+  @@map("feedback_followers")
 }

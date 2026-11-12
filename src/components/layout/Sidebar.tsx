@@ -196,7 +196,7 @@ export function Sidebar({ isFoundingMember, genieEnabled }: { isFoundingMember?:
           </button>
           <NavLink
             href="/reports"
-            label="My reports"
+            label="Reports"
             Icon={ClipboardList}
             active={path === '/reports' || path.startsWith('/reports/')}
             close={close}

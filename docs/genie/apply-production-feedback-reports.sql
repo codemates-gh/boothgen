@@ -1,6 +1,6 @@
--- BoothGen 2.72.0: bug reports and suggestions (Report a bug / Suggest, My reports, Super Admin → Reports).
--- Run in the Neon SQL Editor on the PRODUCTION branch. Creates two new tables; nothing existing is changed or
--- dropped. Safe to run more than once.
+-- BoothGen 2.72.0: bug reports and suggestions (Report a bug / Suggest, shared Reports board, Super Admin → Reports).
+-- Run in the Neon SQL Editor on the PRODUCTION branch. Creates three new tables and, if the first version of this
+-- file was already run, adds the newer columns. Nothing existing is changed or dropped. Safe to run more than once.
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS "feedback_reports" (
@@ -21,6 +21,9 @@ CREATE TABLE IF NOT EXISTS "feedback_reports" (
     "status" TEXT NOT NULL DEFAULT 'new',
     "priority" TEXT,
     "fixedInVersion" TEXT,
+    "howToFind" TEXT,
+    "howToFindUrl" TEXT,
+    "duplicateOfId" TEXT,
     "adminUnread" BOOLEAN NOT NULL DEFAULT true,
     "reporterUnread" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -39,6 +42,20 @@ CREATE TABLE IF NOT EXISTS "feedback_notes" (
     CONSTRAINT "feedback_notes_pkey" PRIMARY KEY ("id")
 );
 
+-- Added after the first version of this file (for databases that already have feedback_reports)
+ALTER TABLE "feedback_reports" ADD COLUMN IF NOT EXISTS "howToFind" TEXT;
+ALTER TABLE "feedback_reports" ADD COLUMN IF NOT EXISTS "howToFindUrl" TEXT;
+ALTER TABLE "feedback_reports" ADD COLUMN IF NOT EXISTS "duplicateOfId" TEXT;
+
+CREATE TABLE IF NOT EXISTS "feedback_followers" (
+    "reportId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "unread" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "feedback_followers_pkey" PRIMARY KEY ("reportId","userId")
+);
+
+CREATE INDEX IF NOT EXISTS "feedback_followers_userId_idx" ON "feedback_followers"("userId");
 CREATE UNIQUE INDEX IF NOT EXISTS "feedback_reports_number_key" ON "feedback_reports"("number");
 CREATE INDEX IF NOT EXISTS "feedback_reports_status_idx" ON "feedback_reports"("status");
 CREATE INDEX IF NOT EXISTS "feedback_reports_userId_idx" ON "feedback_reports"("userId");
@@ -57,9 +74,19 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'feedback_notes_authorId_fkey') THEN
     ALTER TABLE "feedback_notes" ADD CONSTRAINT "feedback_notes_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'feedback_reports_duplicateOfId_fkey') THEN
+    ALTER TABLE "feedback_reports" ADD CONSTRAINT "feedback_reports_duplicateOfId_fkey" FOREIGN KEY ("duplicateOfId") REFERENCES "feedback_reports"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'feedback_followers_reportId_fkey') THEN
+    ALTER TABLE "feedback_followers" ADD CONSTRAINT "feedback_followers_reportId_fkey" FOREIGN KEY ("reportId") REFERENCES "feedback_reports"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'feedback_followers_userId_fkey') THEN
+    ALTER TABLE "feedback_followers" ADD CONSTRAINT "feedback_followers_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
 END $$;
 
 COMMIT;
 
--- Check (should return 2 rows):
--- SELECT table_name FROM information_schema.tables WHERE table_name IN ('feedback_reports', 'feedback_notes');
+-- Check (should return 3 rows, then 1 row):
+-- SELECT table_name FROM information_schema.tables WHERE table_name IN ('feedback_reports', 'feedback_notes', 'feedback_followers');
+-- SELECT column_name FROM information_schema.columns WHERE table_name = 'feedback_reports' AND column_name = 'howToFind';

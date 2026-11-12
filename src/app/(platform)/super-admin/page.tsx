@@ -191,7 +191,7 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
           <>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-              <p className="text-sm text-gray-500 mt-1">Bugs and suggestions from signed-in users. Notes go to the reporter by email unless marked internal.</p>
+              <p className="text-sm text-gray-500 mt-1">Bugs and suggestions from signed-in users. Everyone signed in sees reports (names only); notes reach the reporter and followers by email unless marked internal.</p>
             </div>
             <ReportsTriage initialReportId={searchParams?.report} />
           </>

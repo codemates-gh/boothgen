@@ -60,10 +60,25 @@ export async function notifyAdminsReply(r: ReportForEmail, body: string) {
     r.user.email);
 }
 
-export async function notifyReporter(r: ReportForEmail, change: { status?: string; fixedInVersion?: string | null; note?: string }) {
+// Reporter and followers: status change (with "how to find it" for Already exists) or a visible note
+export async function notifyWatchers(r: ReportForEmail, to: string[], change: {
+  status?: string; fixedInVersion?: string | null; note?: string; howToFind?: string | null; howToFindUrl?: string | null; duplicateOf?: number | null;
+}) {
   const lines: string[] = [esc(r.title)];
-  if (change.status) lines.push('Status: <strong>' + esc(statusLabel(change.status)) + '</strong>' + (change.status === 'fixed' && change.fixedInVersion ? ' in version ' + esc(change.fixedInVersion) : ''));
+  if (change.status) lines.push('Status: <strong>' + esc(statusLabel(change.status)) + '</strong>' + (change.status === 'fixed' && change.fixedInVersion ? ' in version ' + esc(change.fixedInVersion) : '') + (change.status === 'duplicate' && change.duplicateOf ? ' of #' + change.duplicateOf + ' (you now get its updates)' : ''));
+  if (change.status === 'exists' && change.howToFind) {
+    lines.push('<strong>This already exists in BoothGen.</strong> How to get to it:');
+    lines.push(esc(change.howToFind));
+    if (change.howToFindUrl) { const u = absoluteUrl(change.howToFindUrl); lines.push('<a href="' + esc(u) + '" style="color:#F97316">' + esc(u) + '</a>'); }
+  }
   if (change.note) lines.push(esc(excerpt(change.note)));
-  const subject = change.status ? `Your report #${r.number} is now ${statusLabel(change.status)}` : `New note on your report #${r.number}`;
-  await send([r.user.email], subject, layout(`Update on your report #${r.number}`, lines, reporterLink(r.id), 'View your report'));
+  const subject = change.status
+    ? (change.status === 'exists' ? `Already in BoothGen: #${r.number} ${r.title}` : `Report #${r.number} is now ${statusLabel(change.status)}`)
+    : `New note on report #${r.number}`;
+  await send([...new Set(to)], subject, layout(`Update on report #${r.number}`, lines, reporterLink(r.id), 'View the report'));
+}
+
+// Links saved as a BoothGen path ("/genie/sharing") become full URLs
+export function absoluteUrl(u: string) {
+  return u.startsWith('/') ? appUrl() + u : u;
 }

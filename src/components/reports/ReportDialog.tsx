@@ -1,14 +1,15 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Bug, Lightbulb, Paperclip, X, CheckCircle2 } from 'lucide-react';
-import { ATTACHMENT_MAX_BYTES, ATTACHMENT_MAX_FILES, ATTACHMENT_TYPES, REPORT_AREAS, REPORT_SEVERITIES, type ReportAttachment } from '@/lib/reports/options';
+import { Bug, Lightbulb, Paperclip, X, CheckCircle2, Users } from 'lucide-react';
+import { statusLabel, ATTACHMENT_MAX_BYTES, ATTACHMENT_MAX_FILES, ATTACHMENT_TYPES, REPORT_AREAS, REPORT_SEVERITIES, type ReportAttachment } from '@/lib/reports/options';
 
+type Similar = { id: string; number: number; title: string; status: string; followerCount: number; isMine: boolean; isFollowing: boolean };
 type Upload = { file: File; status: 'uploading' | 'done' | 'error'; att?: ReportAttachment; error?: string };
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -30,11 +31,31 @@ export function ReportDialog({ open, onClose }: { open: boolean; onClose: () => 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState<{ id: string; number: number } | null>(null);
+  const [similar, setSimilar] = useState<Similar[]>([]);
+  const [joined, setJoined] = useState<Similar | null>(null);
+
+  // Existing reports that match the title being typed, to avoid duplicates
+  useEffect(() => {
+    const q = form.title.trim();
+    if (!open || q.length < 4) { setSimilar([]); return; }
+    const t = setTimeout(() => {
+      fetch('/api/reports/similar?q=' + encodeURIComponent(q)).then(r => r.json()).then(d => setSimilar(d.reports ?? [])).catch(() => {});
+    }, 350);
+    return () => clearTimeout(t);
+  }, [form.title, open]);
+
+  async function joinReport(r: Similar) {
+    setError('');
+    const res = await fetch(`/api/reports/${r.id}/follow`, { method: 'POST' });
+    if (!res.ok) { setError('Could not add you to that report'); return; }
+    setJoined(r);
+    window.dispatchEvent(new Event('reports:changed'));
+  }
   const set = (k: keyof typeof EMPTY, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   function close() {
     onClose();
-    if (sent) { setForm(EMPTY); setUploads([]); setSent(null); }
+    if (sent || joined) { setForm(EMPTY); setUploads([]); setSent(null); setJoined(null); setSimilar([]); }
     setError('');
   }
 
@@ -90,8 +111,17 @@ export function ReportDialog({ open, onClose }: { open: boolean; onClose: () => 
   const ready = form.title.trim().length >= 3 && form.area && form.details.trim().length >= 5 && !uploading;
 
   return (
-    <Modal open={open} onClose={close} title={sent ? 'Thanks!' : 'Report a bug / Suggest'} className="max-w-xl">
-      {sent ? (
+    <Modal open={open} onClose={close} title={sent || joined ? 'Thanks!' : 'Report a bug / Suggest'} className="max-w-xl">
+      {joined ? (
+        <div className="text-center space-y-3 py-2">
+          <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
+          <p className="text-sm text-gray-700">You&apos;re added to #{joined.number}. You&apos;ll get an email when there&apos;s an update.</p>
+          <div className="flex justify-center gap-2 pt-2">
+            <Link href={`/reports/${joined.id}`} onClick={close}><Button variant="outline">View report</Button></Link>
+            <Button onClick={close}>Done</Button>
+          </div>
+        </div>
+      ) : sent ? (
         <div className="text-center space-y-3 py-2">
           <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
           <p className="text-sm text-gray-700">Report #{sent.number} was sent. You&apos;ll get an email when there&apos;s an update.</p>
@@ -119,6 +149,22 @@ export function ReportDialog({ open, onClose }: { open: boolean; onClose: () => 
           <Field label="Title">
             <Input value={form.title} maxLength={140} onChange={e => set('title', e.target.value)} placeholder={form.type === 'bug' ? 'Print button does nothing after the 3rd photo' : 'Let guests pick a filter before the countdown'} />
           </Field>
+          {similar.length > 0 && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 space-y-2">
+              <p className="text-xs font-medium text-amber-800">Already reported? Join it instead of sending a new one:</p>
+              <ul className="space-y-1.5">
+                {similar.map(r => (
+                  <li key={r.id} className="flex items-center gap-2 text-sm">
+                    <Link href={`/reports/${r.id}`} target="_blank" className="flex-1 min-w-0 truncate text-gray-800 hover:text-[#0085FF]">#{r.number} {r.title}</Link>
+                    <span className="text-[11px] text-gray-500 shrink-0">{statusLabel(r.status)}{r.followerCount ? ` · +${r.followerCount}` : ''}</span>
+                    {r.isMine ? <span className="text-[11px] text-gray-400 shrink-0">yours</span>
+                      : r.isFollowing ? <span className="text-[11px] text-[#0085FF] shrink-0">joined</span>
+                      : <Button size="sm" variant="outline" className="shrink-0" onClick={() => joinReport(r)}><Users className="w-3 h-3 mr-1" />This is my issue too</Button>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className={`grid gap-3 ${form.type === 'bug' ? 'sm:grid-cols-2' : ''}`}>
             <Field label="Part of the system">
               <Select value={form.area} onChange={e => set('area', e.target.value)}>
@@ -162,7 +208,8 @@ export function ReportDialog({ open, onClose }: { open: boolean; onClose: () => 
               </ul>
             )}
           </div>
-          <p className="text-xs text-gray-400">Your name, email, account and the page you&apos;re on are included so we can follow up.</p>
+          <p className="text-xs text-gray-500">Everyone using BoothGen can see reports. Don&apos;t include guest phone numbers, emails or private photos.</p>
+          <p className="text-xs text-gray-400">Others see your name. Your email, account and the page you&apos;re on go only to the Booth Genius team so we can follow up.</p>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={close}>Cancel</Button>

@@ -8,17 +8,20 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { AttachmentList, ReportThread, type ThreadNote } from '@/components/reports/ReportThread';
+import { HowToFind } from '@/components/reports/HowToFind';
 import {
   REPORT_AREAS, REPORT_PRIORITIES, REPORT_STATUSES, REPORT_TYPES, areaLabel, severityLabel, statusBadge, statusLabel, typeLabel,
 } from '@/lib/reports/options';
 
 type Row = {
   id: string; number: number; type: string; title: string; area: string; severity: string | null; status: string; priority: string | null;
-  unread: boolean; createdAt: string; updatedAt: string; user: { name: string; email: string }; tenant: { id: string; name: string } | null;
+  unread: boolean; followerCount: number; createdAt: string; updatedAt: string; user: { name: string; email: string }; tenant: { id: string; name: string } | null;
 };
 type Detail = {
   id: string; number: number; type: string; title: string; area: string; severity: string | null; deviceInfo: string | null; details: string;
   status: string; priority: string | null; fixedInVersion: string | null; createdAt: string;
+  howToFind: string | null; howToFindUrl: string | null; duplicateOf: { id: string; number: number; title: string } | null;
+  followers: { name: string; email: string }[];
   reporter: { id: string; name: string; email: string }; tenant: { id: string; name: string; slug: string } | null;
   pageUrl: string | null; userAgent: string | null; appVersion: string | null;
   attachments: { index: number; name: string; contentType: string; bytes: number; url: string }[]; notes: ThreadNote[];
@@ -37,6 +40,10 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
   const [internal, setInternal] = useState(false);
   const [fixedIn, setFixedIn] = useState('');
   const [busy, setBusy] = useState(false);
+  // "Already exists" / "Duplicate" need more before saving
+  const [pending, setPending] = useState<'exists' | 'duplicate' | null>(null);
+  const [how, setHow] = useState({ steps: '', url: '' });
+  const [dupOf, setDupOf] = useState('');
   const [error, setError] = useState('');
 
   const loadList = useCallback(() => {
@@ -50,7 +57,7 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
 
   useEffect(() => {
     if (!selected) { setDetail(null); return; }
-    setError('');
+    setError(''); setPending(null);
     fetch(`/api/reports/${selected}?admin=1`).then(r => r.json()).then(d => {
       setDetail(d.report ?? null);
       setFixedIn(d.report?.fixedInVersion ?? '');
@@ -68,8 +75,20 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
     const d = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) { setError(d.error || 'Could not save'); return; }
-    setDetail(d.report); setFixedIn(d.report.fixedInVersion ?? '');
+    setDetail(d.report); setFixedIn(d.report.fixedInVersion ?? ''); setPending(null);
     loadList();
+  }
+
+  function pickStatus(v: string) {
+    if (!detail) return;
+    if (v === 'exists' || v === 'duplicate') {
+      setPending(v);
+      setHow({ steps: detail.howToFind ?? '', url: detail.howToFindUrl ?? '' });
+      setDupOf(detail.duplicateOf ? String(detail.duplicateOf.number) : '');
+      return;
+    }
+    setPending(null);
+    triage({ status: v });
   }
 
   async function addNote() {
@@ -140,6 +159,7 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
                         <Badge variant={r.type === 'bug' ? 'default' : 'info'}>{typeLabel(r.type)}</Badge>
                         {r.severity && <Badge variant={SEV_VARIANT[r.severity]}>{severityLabel(r.severity)}</Badge>}
                         {r.priority && <Badge variant="brand">{r.priority}</Badge>}
+                        {r.followerCount > 0 && <Badge variant="info">+{r.followerCount}</Badge>}
                       </div>
                     </div>
                   </button>
@@ -162,7 +182,7 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
               <div className="grid sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
-                  <Select value={detail.status} disabled={busy} onChange={e => triage({ status: e.target.value })}>
+                  <Select value={pending ?? detail.status} disabled={busy} onChange={e => pickStatus(e.target.value)}>
                     {REPORT_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </Select>
                 </div>
@@ -181,6 +201,39 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
                 </div>
               </div>
 
+              {pending === 'exists' && (
+                <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 space-y-2">
+                  <p className="text-sm font-medium text-green-800">Already exists: how to find it</p>
+                  <Textarea rows={3} value={how.steps} maxLength={2000} onChange={e => setHow(h => ({ ...h, steps: e.target.value }))} placeholder="Events → open the event → Genie → Sharing" />
+                  <Input value={how.url} maxLength={500} onChange={e => setHow(h => ({ ...h, url: e.target.value }))} placeholder="Optional link to the page, e.g. /genie/sharing" />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setPending(null)}>Cancel</Button>
+                    <Button size="sm" disabled={busy || !how.steps.trim()} onClick={() => triage({ status: 'exists', howToFind: how.steps.trim(), howToFindUrl: how.url.trim() || null })}>Save and tell them</Button>
+                  </div>
+                </div>
+              )}
+              {pending === 'duplicate' && (
+                <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-2">
+                  <p className="text-sm font-medium text-gray-800">Duplicate of which report? Its reporter and followers move to the original.</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">#</span>
+                    <Input className="w-28" inputMode="numeric" value={dupOf} onChange={e => setDupOf(e.target.value.replace(/\D/g, ''))} placeholder="12" />
+                    <div className="flex-1" />
+                    <Button variant="ghost" size="sm" onClick={() => setPending(null)}>Cancel</Button>
+                    <Button size="sm" disabled={busy || !dupOf} onClick={() => triage({ status: 'duplicate', duplicateOf: Number(dupOf) })}>Mark duplicate</Button>
+                  </div>
+                </div>
+              )}
+              {!pending && detail.status === 'exists' && detail.howToFind && (
+                <div className="space-y-1">
+                  <HowToFind steps={detail.howToFind} url={detail.howToFindUrl} />
+                  <button className="text-xs text-[#0085FF] hover:underline" onClick={() => pickStatus('exists')}>Edit how to find it</button>
+                </div>
+              )}
+              {!pending && detail.status === 'duplicate' && detail.duplicateOf && (
+                <p className="text-sm text-gray-600">Duplicate of <button className="text-[#0085FF] hover:underline" onClick={() => setSelected(detail.duplicateOf!.id)}>#{detail.duplicateOf.number} {detail.duplicateOf.title}</button></p>
+              )}
+
               <div className="rounded-lg bg-gray-50 px-4 py-3 text-xs text-gray-600 space-y-1">
                 <p><span className="text-gray-400">Reporter:</span> {detail.reporter.name} · <a className="text-[#0085FF]" href={`mailto:${detail.reporter.email}`}>{detail.reporter.email}</a></p>
                 <p><span className="text-gray-400">Account:</span> {detail.tenant ? `${detail.tenant.name} (${detail.tenant.slug})` : '—'}</p>
@@ -188,6 +241,7 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
                 <p className="break-all"><span className="text-gray-400">Page:</span> {detail.pageUrl ?? '—'}</p>
                 <p className="break-all"><span className="text-gray-400">Browser:</span> {detail.userAgent ?? '—'}</p>
                 <p><span className="text-gray-400">BoothGen version:</span> {detail.appVersion ?? '—'}</p>
+                <p><span className="text-gray-400">Also have it ({detail.followers.length}):</span> {detail.followers.length ? detail.followers.map(f => `${f.name} (${f.email})`).join(', ') : '—'}</p>
               </div>
 
               <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">{detail.details}</p>
@@ -196,7 +250,7 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
               <div className="border-t pt-4 space-y-3">
                 <p className="text-sm font-semibold text-gray-900">Notes</p>
                 <ReportThread notes={detail.notes} reporterName={detail.reporter.name} />
-                <Textarea rows={3} value={note} maxLength={5000} onChange={e => setNote(e.target.value)} placeholder={internal ? 'Internal note (only Super Admins see it)' : 'Note to the reporter (they get an email)'} />
+                <Textarea rows={3} value={note} maxLength={5000} onChange={e => setNote(e.target.value)} placeholder={internal ? 'Internal note (only Super Admins see it)' : 'Note everyone can see (reporter and followers get an email)'} />
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-2 text-sm text-gray-600">
                     <input type="checkbox" checked={internal} onChange={e => setInternal(e.target.checked)} />Internal only

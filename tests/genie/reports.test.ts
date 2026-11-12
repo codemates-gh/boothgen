@@ -13,7 +13,9 @@ vi.mock('@/lib/storage/r2', () => ({
 }));
 
 import { prisma } from '@/lib/prisma/client';
-import { GET as MINE, POST as CREATE } from '@/app/api/reports/route';
+import { GET as BOARD, POST as CREATE } from '@/app/api/reports/route';
+import { GET as SIMILAR } from '@/app/api/reports/similar/route';
+import { POST as FOLLOW } from '@/app/api/reports/[id]/follow/route';
 import { GET as ADMIN_LIST } from '@/app/api/reports/admin/route';
 import { GET as UNREAD } from '@/app/api/reports/unread/route';
 import { GET as DETAIL, PATCH as TRIAGE } from '@/app/api/reports/[id]/route';
@@ -102,11 +104,11 @@ describe('Bug reports and suggestions', () => {
     expect(await (await UNREAD()).json()).toMatchObject({ mine: 1, admin: 0 });
     const mine = await (await DETAIL(req('/x'), p(id))).json();
     expect(mine.report.status).toBe('need_info');
-    expect(mine.report.priority).toBeUndefined();
+    expect(mine.report.priority).toBe('P1');
     expect(mine.report.reporter).toBeUndefined();
     expect(mine.report.notes.map((n: any) => n.body)).toEqual(['Status changed to Need more info', 'Which printer model?']);
     expect(await (await UNREAD()).json()).toMatchObject({ mine: 0 });
-    expect((await (await MINE()).json()).reports[0]).toMatchObject({ id, status: 'need_info', unread: false });
+    expect((await (await BOARD(req('/x?mine=1'))).json()).reports[0]).toMatchObject({ id, status: 'need_info', unread: false, isMine: true });
 
     sendEmail.mockClear();
     expect((await NOTE(post({ body: 'DNP DS620', internal: true }), p(id))).status).toBe(201);
@@ -122,26 +124,119 @@ describe('Bug reports and suggestions', () => {
     expect(String(sendEmail.mock.calls[0][2])).toContain('2.72.0');
   });
 
-  it('keeps reports and attachments private to the reporter and Super Admins', async () => {
+  it('everyone sees every report, but only by name; email, account, page and internal notes stay with Super Admins', async () => {
     const { tenant, reporter, admin } = await users();
     as(reporter, tenant.id);
     const { id } = await (await CREATE(post({ ...BUG, attachments: [{ key: `reports/${reporter.id}/a.png`, name: 'shot.png', contentType: 'image/png', bytes: 9 }] }))).json();
-    const res = await FILE(req('/x'), { params: { id, index: '0' } });
-    expect(res.status).toBe(302);
-    expect(res.headers.get('location')).toContain(`reports/${reporter.id}/a.png`);
+    as(admin, undefined, true);
+    await NOTE(post({ body: 'Probably the DNP driver', admin: true, internal: true }), p(id));
 
     const other = await prisma.user.create({ data: { email: randomUUID() + TAG, name: 'Someone Else' } });
-    as(other, tenant.id);
-    expect((await DETAIL(req('/x'), p(id))).status).toBe(404);
-    expect((await DETAIL(req('/x?admin=1'), p(id))).status).toBe(404);
-    expect((await NOTE(post({ body: 'hi' }), p(id))).status).toBe(404);
-    expect((await FILE(req('/x'), { params: { id, index: '0' } })).status).toBe(404);
-    expect((await (await MINE()).json()).reports).toEqual([]);
+    const { tenant: otherTenant } = await seedTenant();
+    as(other, otherTenant.id);
+    const board = await (await BOARD(req('/x'))).json();
+    expect(board.reports.map((r: any) => r.id)).toEqual([id]);
+    expect(board.reports[0]).toMatchObject({ reporterName: 'Ana Tester', isMine: false, followerCount: 0 });
+    const d = (await (await DETAIL(req('/x'), p(id))).json()).report;
+    expect(d).toMatchObject({ reporterName: 'Ana Tester', canReply: false });
+    for (const k of ['reporter', 'tenant', 'pageUrl', 'userAgent', 'followers']) expect(d[k]).toBeUndefined();
+    expect(JSON.stringify(d)).not.toContain(reporter.email);
+    expect(d.notes).toEqual([]);
+    expect((await DETAIL(req('/x?admin=1'), p(id))).status).toBe(200); // not a Super Admin: plain view
+    expect((await DETAIL(req('/x?admin=1'), p(id))).json().then(x => x.report.reporter)).resolves.toBeUndefined();
+    expect((await FILE(req('/x'), { params: { id, index: '0' } })).status).toBe(302);
+    expect((await NOTE(post({ body: 'me too' }), p(id))).status).toBe(403); // join first
+
+    // Closed reports leave the default (open) board
+    as(admin, undefined, true);
+    await TRIAGE(req('/x', { method: 'PATCH', body: { status: 'wont_fix' } }), p(id));
+    as(other, otherTenant.id);
+    expect((await (await BOARD(req('/x'))).json()).reports).toEqual([]);
+    expect((await (await BOARD(req('/x?status=all'))).json()).reports).toHaveLength(1);
+
+    // A stale session token claiming Super Admin isn't enough
+    as(other, otherTenant.id, true);
+    expect((await ADMIN_LIST(req('/x'))).status).toBe(403);
+    who.userId = '';
+    expect((await BOARD(req('/x'))).status).toBe(401);
+  });
+
+  it('suggests matching reports; "This is my issue too" follows them and gets the updates', async () => {
+    const { tenant, reporter, admin } = await users();
+    as(reporter, tenant.id);
+    const { id } = await (await CREATE(post(BUG))).json();
+    const follower = await prisma.user.create({ data: { email: randomUUID() + TAG, name: '' } });
+    as(follower, tenant.id);
+    const sim = await (await SIMILAR(req('/x?q=' + encodeURIComponent('print button broken')))).json();
+    expect(sim.reports.map((r: any) => r.id)).toEqual([id]);
+    expect((await (await SIMILAR(req('/x?q=the%20and'))).json()).reports).toEqual([]);
+    expect(await (await FOLLOW(req('/x', { method: 'POST' }), p(id))).json()).toMatchObject({ followerCount: 1 });
+    expect(await (await FOLLOW(req('/x', { method: 'POST' }), p(id))).json()).toMatchObject({ followerCount: 1 }); // once
+    expect((await (await BOARD(req('/x?mine=1'))).json()).reports[0]).toMatchObject({ id, isFollowing: true, followerCount: 1 });
+
+    // Follower replies: Booth Genius and the reporter hear about it; the follower shows as "a tester"
+    sendEmail.mockClear();
+    expect((await NOTE(post({ body: 'Same on my iPad' }), p(id))).status).toBe(201);
+    expect(sendEmail.mock.calls.map(c => c[0]).sort()).toEqual([reporter.email, 'g@boothgen.test'].sort());
+    as(reporter, tenant.id);
+    const seen = (await (await DETAIL(req('/x'), p(id))).json()).report;
+    expect(seen.notes.at(-1)).toMatchObject({ author: 'a tester', body: 'Same on my iPad' });
+
+    // Status change reaches the reporter and the follower
+    as(admin, undefined, true);
+    sendEmail.mockClear();
+    await TRIAGE(req('/x', { method: 'PATCH', body: { status: 'confirmed' } }), p(id));
+    expect(sendEmail.mock.calls.map(c => c[0]).sort()).toEqual([reporter.email, follower.email].sort());
+    as(follower, tenant.id);
+    expect(await (await UNREAD()).json()).toMatchObject({ mine: 1 });
+    await DETAIL(req('/x'), p(id));
+    expect(await (await UNREAD()).json()).toMatchObject({ mine: 0 });
+  });
+
+  it('"Already exists" needs how to find it and tells everyone the steps and link', async () => {
+    const { tenant, reporter, admin } = await users();
+    as(reporter, tenant.id);
+    const { id } = await (await CREATE(post({ ...BUG, type: 'suggestion', title: 'Let guests get texts' }))).json();
+    as(admin, undefined, true);
+    expect((await TRIAGE(req('/x', { method: 'PATCH', body: { status: 'exists' } }), p(id))).status).toBe(400);
+    expect((await TRIAGE(req('/x', { method: 'PATCH', body: { status: 'exists', howToFind: 'Genie → Sharing', howToFindUrl: 'javascript:alert(1)' } }), p(id))).status).toBe(400);
+    sendEmail.mockClear();
+    const r = await (await TRIAGE(req('/x', { method: 'PATCH', body: { status: 'exists', howToFind: 'Genie → Sharing', howToFindUrl: '/genie/sharing' } }), p(id))).json();
+    expect(r.report).toMatchObject({ status: 'exists', howToFind: 'Genie → Sharing', howToFindUrl: '/genie/sharing' });
+    const html = String(sendEmail.mock.calls[0][2]);
+    expect(html).toContain('Genie → Sharing');
+    expect(html).toContain('https://boothgen.test/genie/sharing');
+    expect((await (await ADMIN_LIST(req('/x'))).json()).counts).toEqual({ exists: 1 });
+    as(reporter, tenant.id);
+    expect((await (await DETAIL(req('/x'), p(id))).json()).report).toMatchObject({ status: 'exists', howToFind: 'Genie → Sharing' });
+    // Leaving the status clears it
+    as(admin, undefined, true);
+    expect((await (await TRIAGE(req('/x', { method: 'PATCH', body: { status: 'confirmed', howToFind: null, howToFindUrl: null } }), p(id))).json()).report).toMatchObject({ howToFind: null });
+  });
+
+  it('Duplicate links to the original and moves the reporter and followers there', async () => {
+    const { tenant, reporter, admin } = await users();
+    as(reporter, tenant.id);
+    const orig = await (await CREATE(post(BUG))).json();
+    const second = await prisma.user.create({ data: { email: randomUUID() + TAG, name: 'Bo' } });
+    const fan = await prisma.user.create({ data: { email: randomUUID() + TAG, name: 'Cy' } });
+    as(second, tenant.id);
+    const dup = await (await CREATE(post({ ...BUG, title: 'Printing broken' }))).json();
+    as(fan, tenant.id);
+    await FOLLOW(req('/x', { method: 'POST' }), p(dup.id));
 
     as(admin, undefined, true);
-    expect((await FILE(req('/x'), { params: { id, index: '0' } })).status).toBe(302);
-    // A stale session token claiming Super Admin isn't enough
-    as(other, tenant.id, true);
-    expect((await ADMIN_LIST(req('/x'))).status).toBe(403);
+    expect((await TRIAGE(req('/x', { method: 'PATCH', body: { status: 'duplicate' } }), p(dup.id))).status).toBe(400);
+    expect((await TRIAGE(req('/x', { method: 'PATCH', body: { status: 'duplicate', duplicateOf: dup.number } }), p(dup.id))).status).toBe(400);
+    sendEmail.mockClear();
+    const r = await (await TRIAGE(req('/x', { method: 'PATCH', body: { status: 'duplicate', duplicateOf: orig.number } }), p(dup.id))).json();
+    expect(r.report.duplicateOf).toMatchObject({ id: orig.id, number: orig.number });
+    expect(sendEmail.mock.calls.map(c => c[0]).sort()).toEqual([second.email, fan.email].sort());
+    const followers = await prisma.feedbackFollower.findMany({ where: { reportId: orig.id }, select: { userId: true } });
+    expect(followers.map(f => f.userId).sort()).toEqual([second.id, fan.id].sort());
+    // Following a duplicate joins the original
+    const late = await prisma.user.create({ data: { email: randomUUID() + TAG, name: 'Di' } });
+    as(late, tenant.id);
+    expect(await (await FOLLOW(req('/x', { method: 'POST' }), p(dup.id))).json()).toMatchObject({ reportId: orig.id, followerCount: 3 });
   });
 });

@@ -1,13 +1,14 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
+import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma/client';
 import { headR2Object } from '@/lib/storage/r2';
 import { APP_VERSION } from '@/lib/version';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { forEmail, loadReport, reportViewer } from '@/lib/reports/server';
+import { displayName, forEmail, loadReport, reportViewer } from '@/lib/reports/server';
 import { notifyAdminsNewReport } from '@/lib/reports/notify';
-import { AREA_VALUES, ATTACHMENT_MAX_FILES, ATTACHMENT_TYPES, SEVERITY_VALUES, TYPE_VALUES } from '@/lib/reports/options';
+import { AREA_VALUES, ATTACHMENT_MAX_FILES, ATTACHMENT_TYPES, OPEN_STATUSES, SEVERITY_VALUES, TYPE_VALUES } from '@/lib/reports/options';
 
 const Attachment = z.object({
   key: z.string().max(200),
@@ -27,15 +28,41 @@ const Body = z.object({
   attachments: z.array(Attachment).max(ATTACHMENT_MAX_FILES, `Attach up to ${ATTACHMENT_MAX_FILES} files`).default([]),
 }).strict();
 
-// The signed-in user's own reports, newest first
-export async function GET() {
+// The shared Reports board: every report from every account (reporter by display name only).
+// ?status=open (default) | all | <status>, &type, &area, &q, &mine=1 (reported or followed by me)
+export async function GET(req: NextRequest) {
   const viewer = await reportViewer();
   if (viewer instanceof NextResponse) return viewer;
+  const p = req.nextUrl.searchParams;
+  const status = p.get('status') || 'open';
+  const q = p.get('q')?.trim();
+  const where: Prisma.FeedbackReportWhereInput = {
+    ...(status === 'open' ? { status: { in: OPEN_STATUSES } } : status === 'all' ? {} : { status }),
+    ...(p.get('type') ? { type: p.get('type')! } : {}),
+    ...(p.get('area') ? { area: p.get('area')! } : {}),
+    ...(p.get('mine') === '1' ? { OR: [{ userId: viewer.userId }, { followers: { some: { userId: viewer.userId } } }] } : {}),
+    ...(q ? { AND: [{ OR: [
+      { title: { contains: q, mode: 'insensitive' } },
+      { details: { contains: q, mode: 'insensitive' } },
+      ...(/^#?\d+$/.test(q) ? [{ number: Number(q.replace('#', '')) }] : []),
+    ] }] } : {}),
+  };
   const reports = await prisma.feedbackReport.findMany({
-    where: { userId: viewer.userId }, orderBy: { updatedAt: 'desc' }, take: 200,
-    select: { id: true, number: true, type: true, title: true, area: true, status: true, fixedInVersion: true, reporterUnread: true, createdAt: true, updatedAt: true },
+    where, orderBy: { updatedAt: 'desc' }, take: 300,
+    select: {
+      id: true, number: true, type: true, title: true, area: true, severity: true, status: true, priority: true, fixedInVersion: true,
+      userId: true, reporterUnread: true, createdAt: true, updatedAt: true,
+      user: { select: { name: true } },
+      followers: { select: { userId: true, unread: true } },
+    },
   });
-  return NextResponse.json({ reports: reports.map(({ reporterUnread, ...r }) => ({ ...r, unread: reporterUnread })) });
+  return NextResponse.json({
+    reports: reports.map(({ userId, reporterUnread, user, followers, ...r }) => {
+      const mine = userId === viewer.userId;
+      const follow = followers.find(f => f.userId === viewer.userId);
+      return { ...r, reporterName: displayName(user.name), followerCount: followers.length, isMine: mine, isFollowing: !!follow, unread: mine ? reporterUnread : !!follow?.unread };
+    }),
+  });
 }
 
 // File a bug report or suggestion. Who, which account, page, browser and BoothGen version are captured here.
