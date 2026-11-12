@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle } from 'lucide-react';
 
-// Client Design Brief switches. Shown in Settings → Booth Templates, or in Genie → Templates for Genie accounts.
+// Client Design Brief switches (Templates → Template Settings)
 export function DesignBriefSettings() {
   const [designBriefEnabled, setDesignBriefEnabled] = useState(false);
   const [customDesignEnabled, setCustomDesignEnabled] = useState(false);

@@ -14,16 +14,12 @@ export async function requireGenieAdmin(): Promise<{ tenantId: string; userId: s
 
 export type TemplateAuth = { tenantId: string | null; userId: string; superAdmin: boolean };
 
-// Template library and designer: a Genie account's HOST_ADMIN, or a BoothGen super admin. A super admin outside an
-// account (Super Admin → Design Templates) works on Standard templates only (tenantId null).
+// Template library and designer (Templates): any account's HOST_ADMIN (not Genie-only), or a BoothGen super admin.
+// A super admin outside an account (Super Admin → Design Templates) works on Standard templates only (tenantId null).
 export async function requireTemplateEditor(): Promise<TemplateAuth | NextResponse> {
   const session = await getServerSession(authOptions);
-  if (session?.userId && session.globalRole === 'SUPER_ADMIN') {
-    if (session.tenantId && session.tenantRole === 'HOST_ADMIN') {
-      const tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId }, select: { genieEnabled: true } });
-      if (tenant?.genieEnabled) return { tenantId: session.tenantId, userId: session.userId, superAdmin: true };
-    }
-    return { tenantId: null, userId: session.userId, superAdmin: true };
-  }
-  return requireGenieAdmin();
+  const superAdmin = session?.globalRole === 'SUPER_ADMIN';
+  if (session?.userId && session.tenantId && session.tenantRole === 'HOST_ADMIN') return { tenantId: session.tenantId, userId: session.userId, superAdmin };
+  if (session?.userId && superAdmin) return { tenantId: null, userId: session.userId, superAdmin: true };
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 }

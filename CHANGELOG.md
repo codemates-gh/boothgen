@@ -4,6 +4,19 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.72.0] — 2026-11-12
+
+### Changed
+- **Templates is its own section** (sidebar → Templates), for every account, not just Genie:
+  - **Layouts**: your templates and the Standard layouts, the Template Designer, Hide / Show for Standard layouts, and "Offer to my clients" on your own
+  - **Template Settings**: the Client Design Brief switches (were Settings → Booth Templates)
+- Genie → Templates and Settings → Booth Templates are gone from the menus; their old addresses open the new pages
+- Genie events still use the same templates on the iPad
+
+No database change.
+
+---
+
 ## [2.71.0] — 2026-11-12
 
 ### Added

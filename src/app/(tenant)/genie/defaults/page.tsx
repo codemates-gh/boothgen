@@ -111,7 +111,7 @@ export default function GenieDefaultsPage() {
                 </Select>
                 <Button variant="outline" disabled={!adding} onClick={() => { setForm({ ...form, templateIds: [...form.templateIds, adding] }); setAdding(''); }}>Add</Button>
               </div>
-              <p className="text-xs text-gray-400">Make or edit templates in <Link href="/genie/templates" className="text-brand hover:underline">Genie → Templates</Link>.</p>
+              <p className="text-xs text-gray-400">Make or edit templates in <Link href="/templates" className="text-brand hover:underline">Templates</Link>.</p>
             </Section>
 
             <Section icon={Share2} title="Sharing" description="How guests get their photos from the iPad. Texts and emails go through your accounts in Genie → Sharing.">

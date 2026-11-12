@@ -69,7 +69,7 @@ describe('Event Genie dashboard: access', () => {
     sessionTenantId = tenant.id;
     const event = await seedEvent(tenant.id, client.id);
     expect((await DASH(req('/x'), p(event.id))).status).toBe(403);
-    expect((await LIBRARY()).status).toBe(403);
+    expect((await LIBRARY()).status).toBe(200); // Templates aren't Genie-only
   });
 
   it('sets up an event with defaults once', async () => {

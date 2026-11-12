@@ -182,7 +182,7 @@ export default function GenieTemplates({ eventId, templates, shotCount, locked, 
         {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
         {!library ? <p className="text-sm text-gray-400">Loading…</p> : libraryList.length === 0 ? (
           <p className="text-sm text-gray-500 py-6 text-center">
-            {tab === 'mine' ? <>You haven&apos;t made any templates yet. <Link href="/genie/templates" className="text-brand hover:underline">Open the template designer</Link>.</> : 'No standard templates yet.'}
+            {tab === 'mine' ? <>You haven&apos;t made any templates yet. <Link href="/templates" className="text-brand hover:underline">Open the template designer</Link>.</> : 'No standard templates yet.'}
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

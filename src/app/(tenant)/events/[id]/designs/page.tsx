@@ -142,7 +142,7 @@ export default function TemplateDesignsPage() {
               {!brief ? (
                 !briefEnabled ? (
                   <div className="text-sm text-gray-500">
-                    Design brief is not enabled for your account. <Link href="/settings/booth-templates" className="text-brand underline">Enable it in Settings → Booth Templates</Link>.
+                    Design brief is not enabled for your account. <Link href="/templates/settings" className="text-brand underline">Turn it on in Templates → Template Settings</Link>.
                   </div>
                 ) : (
                   <div className="space-y-3">

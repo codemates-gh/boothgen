@@ -102,7 +102,7 @@ type Drag =
   | { kind: 'resize'; id: string; corner: 'nw' | 'ne' | 'sw' | 'se'; startX: number; startY: number; orig: Slot; ratio: number | null }
   | { kind: 'rotate'; id: string; cx: number; cy: number };
 
-// Template Designer: Genie → Templates (operators, chrome "tenant") and Super Admin → Design Templates (BoothGen,
+// Template Designer: Templates (operators, chrome "tenant") and Super Admin → Design Templates (BoothGen,
 // chrome "platform": no sidebar or tenant top bar)
 export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, backLabel, editHref, chrome = 'tenant' }: {
   templateId: string; initialScope?: 'mine' | 'standard'; backHref: string; backLabel: string; editHref: (id: string) => string; chrome?: 'tenant' | 'platform';

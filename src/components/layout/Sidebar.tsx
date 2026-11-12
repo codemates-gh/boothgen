@@ -37,6 +37,13 @@ const adminSections: NavSection[] = [
     ],
   },
   {
+    label: 'Templates',
+    items: [
+      { href: '/templates', label: 'Layouts', icon: LayoutTemplate },
+      { href: '/templates/settings', label: 'Template Settings', icon: SlidersHorizontal },
+    ],
+  },
+  {
     label: 'Delivery & Ops',
     items: [
       { href: '/gallery', label: 'Gallery', icon: Camera, pro: true },
@@ -52,7 +59,6 @@ const genieSection: NavSection = {
   items: [
     { href: '/genie/events', label: 'Events', icon: CalendarCheck },
     { href: '/genie/defaults', label: 'Event Defaults', icon: SlidersHorizontal },
-    { href: '/genie/templates', label: 'Templates', icon: LayoutTemplate },
     { href: '/genie/devices', label: 'Devices', icon: Tablet },
     { href: '/genie/sharing', label: 'Sharing', icon: Send },
   ],
