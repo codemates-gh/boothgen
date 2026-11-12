@@ -129,6 +129,20 @@ describe('Genie event defaults', () => {
   });
 });
 
+describe('Event Defaults page round trip', () => {
+  it('saves exactly what it loaded (the page drops read-only extras)', async () => {
+    await setup();
+    const got = await (await GET_DEFAULTS()).json();
+    expect(got).toHaveProperty('templates');
+    expect(got).toHaveProperty('eventsFollowing');
+    // Same fields the page sends (toForm in genie/defaults/page.tsx)
+    const form = { timeZone: got.timeZone, capture: got.capture, sharing: got.sharing, printing: got.printing, templateIds: got.templateIds };
+    expect((await PUT_DEFAULTS(json(form))).status).toBe(200);
+    // Sending the whole GET body is rejected, which is what the page used to do
+    expect((await PUT_DEFAULTS(json(got))).status).toBe(400);
+  });
+});
+
 describe('Genie → Events overview', () => {
   it("lists only this account's events with their Genie status", async () => {
     const { tenant, client } = await setup();

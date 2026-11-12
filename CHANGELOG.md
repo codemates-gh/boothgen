@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.70.1] — 2026-11-12
+
+### Fixed
+- **Genie → Event Defaults wouldn't save** ("Unrecognized key(s) in object: 'templates', 'eventsFollowing'"): the page now sends only the settings
+- Event Defaults → Sharing now points to Genie → Sharing (was "Genie → Messaging")
+
+---
+
 ## [2.70.0] — 2026-11-12
 
 ### Added

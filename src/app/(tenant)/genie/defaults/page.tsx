@@ -13,7 +13,8 @@ type LibraryTemplate = { id: string; name: string; scope: 'standard' | 'mine'; l
 type Defaults = { saved: boolean; timeZone: string; capture: Capture; sharing: Sharing; printing: Printing; templateIds: string[] };
 type Form = Omit<Defaults, 'saved'>;
 
-const toForm = ({ saved: _s, ...rest }: Defaults): Form => JSON.parse(JSON.stringify(rest));
+// Only the editable settings: the GET also returns read-only extras (templates, eventsFollowing) the PUT rejects
+const toForm = (d: Defaults): Form => JSON.parse(JSON.stringify({ timeZone: d.timeZone, capture: d.capture, sharing: d.sharing, printing: d.printing, templateIds: d.templateIds }));
 
 export default function GenieDefaultsPage() {
   const [data, setData] = useState<Defaults & { eventsFollowing: number } | null>(null);
@@ -113,7 +114,7 @@ export default function GenieDefaultsPage() {
               <p className="text-xs text-gray-400">Make or edit templates in <Link href="/genie/templates" className="text-brand hover:underline">Genie → Templates</Link>.</p>
             </Section>
 
-            <Section icon={Share2} title="Sharing" description="How guests get their photos from the iPad. Texts and emails go through your accounts in Genie → Messaging.">
+            <Section icon={Share2} title="Sharing" description="How guests get their photos from the iPad. Texts and emails go through your accounts in Genie → Sharing.">
               <SharingFields value={form.sharing} onChange={p => set('sharing', p)}/>
             </Section>
 
