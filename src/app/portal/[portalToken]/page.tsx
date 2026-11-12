@@ -1,5 +1,6 @@
 'use client';
 import { LayoutPreview } from '@/components/genie/parts';
+import { CUSTOM_FIELDS } from '@/lib/templates/customRequest';
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Printer, Layers, AlertCircle, Download, X, Copy, Palette, Sparkles, PenLine, ArrowLeft as ArrowLeftIcon } from 'lucide-react';
@@ -11,6 +12,9 @@ const FORMAT_LABEL: Record<string, string> = { '2x6': '2"×6" Strip', '4x6': '4"
 const SIZE_LABEL: Record<string, string> = { '4x6-landscape': '4×6 Landscape', '4x6-portrait': '4×6 Portrait', '2x6-portrait': '2×6 Strip' };
 const sizeKey = (t: { format: string; orientation: string }) => `${t.format}-${t.orientation}`;
 const photoKey = (n: number) => (n >= 4 ? '4+' : String(n));
+// Custom design starting layouts: the usual picks first (4×6 landscape with 3 photos, then 2×6 strips)
+const customLayoutRank = (t: { format: string; orientation: string; photoCount: number }) =>
+  t.format === '4x6' && t.orientation === 'landscape' && t.photoCount === 3 ? 0 : t.format === '2x6' ? 1 : 2;
 
 type Tab = 'quote' | 'contract' | 'invoice' | 'design' | 'gallery';
 
@@ -64,6 +68,8 @@ export default function ClientPortalPage() {
   const [selectedDirectionIndex, setSelectedDirectionIndex] = useState<number | null>(null);
   const [loadingTheme, setLoadingTheme] = useState(false);
   const [isCustomDesign, setIsCustomDesign] = useState(false);
+  // Custom design: the layout to start from ('unsure' = client doesn't know yet)
+  const [customLayoutId, setCustomLayoutId] = useState('');
   const [submittingBrief, setSubmittingBrief] = useState(false);
   const [briefSubmitted, setBriefSubmitted] = useState(false);
 
@@ -155,7 +161,7 @@ export default function ClientPortalPage() {
       const r = await fetch('/api/portal/' + portalToken + '/design-brief', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          templateId: selectedTemplate?.id ?? null,
+          templateId: isCustomDesign ? (customLayoutId && customLayoutId !== 'unsure' ? customLayoutId : null) : (selectedTemplate?.id ?? null),
           selectedColorVariantId: selectedColorVariantId || null,
           selectedFontPairingId: selectedFontPairingId || null,
           textValues: briefText,
@@ -1087,6 +1093,67 @@ export default function ClientPortalPage() {
                           <div className="flex justify-end mt-1">
                             <span className="text-xs text-gray-400">{(briefText[zone.id] ?? '').length}/{zone.maxChars}</span>
                           </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Custom design: what the operator needs to know */}
+                  {isCustomDesign && (
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="font-semibold text-gray-800 text-sm">Design Details</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Help us design your print. Skip anything you&apos;re not sure about.</p>
+                      </div>
+                      {briefTemplates.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Layout</p>
+                          <p className="text-xs text-gray-500 mb-2">Pick the shape and number of photos to start from. We&apos;ll design everything else around it.</p>
+                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                            {[...briefTemplates].sort((a: any, b: any) => customLayoutRank(a) - customLayoutRank(b)).map((t: any) => {
+                              const on = customLayoutId === t.id;
+                              return (
+                                <button key={t.id} type="button" onClick={() => setCustomLayoutId(on ? '' : t.id)}
+                                  className={'rounded-xl border-2 p-2 text-left transition-all ' + (on ? '' : 'border-gray-200 hover:border-gray-300')}
+                                  style={on ? { borderColor: pc } : undefined}>
+                                  <div className="h-20 flex items-center justify-center bg-gray-50 rounded-lg mb-1.5 overflow-hidden">
+                                    {t.layout ? <LayoutPreview layout={t.layout} width={Math.round(Math.min(110, 72 * t.layout.widthPx / t.layout.heightPx))}/>
+                                      : t.thumbnailUrl ? <img src={t.thumbnailUrl} alt="" className="max-h-full"/> : null}
+                                  </div>
+                                  <p className="text-[11px] font-medium text-gray-700 leading-tight">{SIZE_LABEL[sizeKey(t)] ?? t.format}</p>
+                                  <p className="text-[11px] text-gray-400">{t.photoCount} photo{t.photoCount === 1 ? '' : 's'}</p>
+                                </button>
+                              );
+                            })}
+                            <button type="button" onClick={() => setCustomLayoutId(customLayoutId === 'unsure' ? '' : 'unsure')}
+                              className={'rounded-xl border-2 p-2 text-xs font-medium text-gray-600 transition-all ' + (customLayoutId === 'unsure' ? '' : 'border-gray-200 hover:border-gray-300')}
+                              style={customLayoutId === 'unsure' ? { borderColor: pc } : undefined}>
+                              Not sure / something else
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {CUSTOM_FIELDS.filter(f => !(briefTemplates.length > 0 && customLayoutId !== 'unsure' && (f.key === 'custom_size' || f.key === 'custom_photos'))).map(f => f.kind === 'choice' ? (
+                        <div key={f.key}>
+                          <p className="text-sm font-medium text-gray-700 mb-1.5">{f.label}</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {f.options.map(o => {
+                              const on = briefText[f.key] === o;
+                              return (
+                                <button key={o} type="button" onClick={() => setBriefText(v => ({ ...v, [f.key]: on ? '' : o }))}
+                                  className={'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ' + (on ? 'text-white border-transparent' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300')}
+                                  style={on ? { backgroundColor: pc } : undefined}>{o}</button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div key={f.key}>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{f.label}</label>
+                          <input type="text" value={briefText[f.key] ?? ''} maxLength={f.max} placeholder={f.placeholder}
+                            onChange={e => setBriefText(v => ({ ...v, [f.key]: e.target.value }))}
+                            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2"
+                            style={{ '--tw-ring-color': pc + '66' } as React.CSSProperties}/>
                         </div>
                       ))}
                     </div>

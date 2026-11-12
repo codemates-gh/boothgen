@@ -4,6 +4,19 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.71.0] — 2026-11-12
+
+### Added
+- **Custom design requests ask what the designer needs**: a starting layout picked from pictures (4×6 landscape with 3 photos and 2×6 strips first), or size and number of photos if the client isn't sure, plus type of event, names or title, date or tagline, hashtag, colors and logo. The starting layout is kept with the request, so the approved design goes into Genie on it like a regular pick. The event's Designs tab shows all of it with Download layout
+- **Design brief on for every event**: Client Design Brief → "Turn on for every event automatically". The brief starts when the client opens their Design tab, no need to activate it on each event
+
+### Changed
+- Client design brief text is kept tidy on save (text only, limited length)
+
+**DB change required**: one column — `docs/genie/apply-production-design-brief-auto.sql`
+
+---
+
 ## [2.70.2] — 2026-11-12
 
 ### Fixed

@@ -9,16 +9,17 @@ export async function PATCH(req: NextRequest) {
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (session.tenantRole !== 'HOST_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const { designBriefEnabled, customDesignEnabled } = await req.json();
+  const { designBriefEnabled, customDesignEnabled, designBriefAutoActivate } = await req.json();
   const branding = await prisma.tenantBranding.upsert({
     where: { tenantId: session.tenantId },
-    create: { tenantId: session.tenantId, designBriefEnabled: designBriefEnabled ?? false, customDesignEnabled: customDesignEnabled ?? false },
+    create: { tenantId: session.tenantId, designBriefEnabled: designBriefEnabled ?? false, customDesignEnabled: customDesignEnabled ?? false, designBriefAutoActivate: designBriefAutoActivate === true },
     update: {
       ...(designBriefEnabled !== undefined && { designBriefEnabled }),
       ...(customDesignEnabled !== undefined && { customDesignEnabled }),
+      ...(typeof designBriefAutoActivate === 'boolean' && { designBriefAutoActivate }),
     },
   });
-  return NextResponse.json({ designBriefEnabled: branding.designBriefEnabled, customDesignEnabled: branding.customDesignEnabled });
+  return NextResponse.json({ designBriefEnabled: branding.designBriefEnabled, customDesignEnabled: branding.customDesignEnabled, designBriefAutoActivate: branding.designBriefAutoActivate });
 }
 
 export async function GET() {
@@ -28,5 +29,6 @@ export async function GET() {
   return NextResponse.json({
     designBriefEnabled: branding?.designBriefEnabled ?? false,
     customDesignEnabled: branding?.customDesignEnabled ?? false,
+    designBriefAutoActivate: branding?.designBriefAutoActivate ?? false,
   });
 }

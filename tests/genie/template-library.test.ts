@@ -130,6 +130,34 @@ describe('Client design picker', () => {
     expect((await submit(offered.id)).status).toBe(200);
   });
 
+  it('starts the brief on its own when the account turns it on for every event', async () => {
+    const { tenant, client } = await seedTenant();
+    const event = await seedEvent(tenant.id, client.id);
+    const { portalToken } = await prisma.event.findUniqueOrThrow({ where: { id: event.id }, select: { portalToken: true } });
+    await prisma.tenantBranding.create({ data: { tenantId: tenant.id, designBriefEnabled: true } });
+    expect((await (await PORTAL_BRIEF(req('/x'), { params: { portalToken } })).json()).brief).toBeNull();
+    await prisma.tenantBranding.update({ where: { tenantId: tenant.id }, data: { designBriefAutoActivate: true } });
+    expect((await (await PORTAL_BRIEF(req('/x'), { params: { portalToken } })).json()).brief).toMatchObject({ status: 'PENDING', eventId: event.id });
+  });
+
+  it('a custom design request keeps its starting layout and details', async () => {
+    const { tenant, client } = await seedTenant();
+    await prisma.tenantBranding.create({ data: { tenantId: tenant.id, designBriefEnabled: true, customDesignEnabled: true } });
+    const event = await seedEvent(tenant.id, client.id);
+    const { portalToken } = await prisma.event.findUniqueOrThrow({ where: { id: event.id }, select: { portalToken: true } });
+    asSuperAdmin();
+    const std = await (await CREATE(json({ name: PREFIX + 'Strip', scope: 'standard', isPublished: true, layout: SAMPLE_LAYOUT }))).json();
+
+    const r = await PORTAL_SUBMIT(json({
+      isCustomDesign: true, templateId: std.id,
+      textValues: { custom_names: 'Ana & Ben', custom_colors: 'Navy and gold', custom_event_type: 'Wedding', junk: { nested: true }, empty: '   ' },
+    }), { params: { portalToken } });
+    expect(r.status).toBe(200);
+    const brief = await prisma.eventDesignBrief.findUniqueOrThrow({ where: { eventId: event.id } });
+    expect(brief).toMatchObject({ isCustomDesign: true, templateId: std.id });
+    expect(brief.textValues).toEqual({ custom_names: 'Ana & Ben', custom_colors: 'Navy and gold', custom_event_type: 'Wedding' });
+  });
+
   it('operators hide Standard layouts they do not offer, and can show them again', async () => {
     const { tenant, client } = await seedTenant();
     await prisma.tenantBranding.create({ data: { tenantId: tenant.id, designBriefEnabled: true } });

@@ -8,6 +8,7 @@ import { CheckCircle } from 'lucide-react';
 export function DesignBriefSettings() {
   const [designBriefEnabled, setDesignBriefEnabled] = useState(false);
   const [customDesignEnabled, setCustomDesignEnabled] = useState(false);
+  const [autoActivate, setAutoActivate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -15,6 +16,7 @@ export function DesignBriefSettings() {
     fetch('/api/settings/design-brief-settings').then(r => r.json()).then(d => {
       setDesignBriefEnabled(d.designBriefEnabled);
       setCustomDesignEnabled(d.customDesignEnabled);
+      setAutoActivate(!!d.designBriefAutoActivate);
     });
   }, []);
 
@@ -23,7 +25,7 @@ export function DesignBriefSettings() {
     await fetch('/api/settings/design-brief-settings', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ designBriefEnabled, customDesignEnabled }),
+      body: JSON.stringify({ designBriefEnabled, customDesignEnabled, designBriefAutoActivate: autoActivate }),
     });
     setSaving(false);
     setSaved(true);
@@ -41,7 +43,19 @@ export function DesignBriefSettings() {
           </div>
           <div>
             <p className="font-medium text-sm">Enable Design Brief</p>
-            <p className="text-xs text-gray-500 mt-0.5">Show the design brief flow in the client portal. You activate it per event on the Designs tab.</p>
+            <p className="text-xs text-gray-500 mt-0.5">Show the design brief flow in the client portal. Activate it per event on the Designs tab, or turn it on for every event below.</p>
+          </div>
+        </label>
+
+        <label className="flex items-start gap-3 cursor-pointer">
+          <div className="relative mt-0.5">
+            <input type="checkbox" className="sr-only" checked={autoActivate} onChange={e => setAutoActivate(e.target.checked)}/>
+            <div className={`w-10 h-6 rounded-full transition-colors ${autoActivate ? 'bg-brand' : 'bg-gray-200'}`}/>
+            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${autoActivate ? 'translate-x-5' : 'translate-x-1'}`}/>
+          </div>
+          <div>
+            <p className="font-medium text-sm">Turn on for every event automatically</p>
+            <p className="text-xs text-gray-500 mt-0.5">Clients see the layout picker on their Design tab without you activating it on each event.</p>
           </div>
         </label>
 

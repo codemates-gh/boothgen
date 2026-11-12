@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Upload, FileImage, ArrowLeft, CheckCircle2, Clock, MessageSquare, Trash2, Bell, Palette, ChevronDown, ChevronUp, Sparkles, PenLine, Download, AlertTriangle } from 'lucide-react';
 import { downloadLayoutPng } from '@/components/genie/layoutImage';
 import Link from 'next/link';
+import { CUSTOM_FIELDS } from '@/lib/templates/customRequest';
 
 const BRIEF_STATUS_VARIANT: Record<string, string> = { PENDING: 'default', SUBMITTED: 'info', IN_DESIGN: 'warning', APPROVED: 'success' };
 const BRIEF_STATUS_LABEL: Record<string, string> = { PENDING: 'Awaiting Client', SUBMITTED: 'Client Submitted', IN_DESIGN: 'In Design', APPROVED: 'Approved' };
@@ -26,6 +27,7 @@ export default function TemplateDesignsPage() {
   const [reminderSent, setReminderSent] = useState<string | null>(null);
   const [brief, setBrief] = useState<any>(null);
   const [briefEnabled, setBriefEnabled] = useState(false);
+  const [briefAuto, setBriefAuto] = useState(false);
   const [showBriefDetails, setShowBriefDetails] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [activating, setActivating] = useState(false);
@@ -43,7 +45,7 @@ export default function TemplateDesignsPage() {
   }
   async function loadBriefSettings() {
     const r = await fetch('/api/settings/design-brief-settings');
-    if (r.ok) { const d = await r.json(); setBriefEnabled(d.designBriefEnabled); }
+    if (r.ok) { const d = await r.json(); setBriefEnabled(d.designBriefEnabled); setBriefAuto(!!d.designBriefAutoActivate); }
   }
   async function loadPortalToken() {
     const r = await fetch('/api/events/' + eventId + '/full');
@@ -144,7 +146,9 @@ export default function TemplateDesignsPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <p className="text-sm text-gray-600">Activate the design brief to let your client browse layout templates and customize colors, fonts, and text through the portal.</p>
+                    <p className="text-sm text-gray-600">{briefAuto
+                      ? 'The design brief is on for every event: it starts when your client opens their Design tab. Activate it now to have it ready sooner.'
+                      : 'Activate the design brief to let your client browse layout templates and customize colors, fonts, and text through the portal.'}</p>
                     <Button onClick={activateBrief} disabled={activating}>
                       {activating ? 'Activating…' : 'Activate Design Brief'}
                     </Button>
@@ -167,12 +171,13 @@ export default function TemplateDesignsPage() {
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    {brief.isCustomDesign ? (
+                    {brief.isCustomDesign && !brief.template ? (
                       <p className="text-sm text-gray-600 flex items-center gap-1.5"><PenLine className="w-4 h-4 text-purple-500"/>Client requested a <strong>custom design</strong></p>
                     ) : (
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm text-gray-600">
-                          Template: <strong>{brief.template?.name ?? 'Gallery selection'}</strong>
+                          {brief.isCustomDesign && <><PenLine className="w-4 h-4 text-purple-500 inline mr-1 -mt-0.5"/>Custom design, starting from </>}
+                          {brief.isCustomDesign ? '' : 'Template: '}<strong>{brief.template?.name ?? 'Gallery selection'}</strong>
                           {brief.template && ` · ${FORMAT_LABEL[brief.template.format] ?? brief.template.format} · ${brief.template.orientation} · ${brief.template.photoCount} photo${brief.template.photoCount === 1 ? '' : 's'}`}
                         </p>
                         {brief.template?.layout && (
@@ -234,6 +239,25 @@ export default function TemplateDesignsPage() {
                     </div>
                   )}
 
+                  {/* Custom design request details */}
+                  {brief.isCustomDesign && CUSTOM_FIELDS.some(f => (brief.textValues as Record<string, string> | null)?.[f.key]) && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Design Details</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {CUSTOM_FIELDS.map(f => {
+                          const val = (brief.textValues as Record<string, string>)[f.key];
+                          if (!val) return null;
+                          return (
+                            <div key={f.key} className="bg-gray-50 rounded-lg p-3">
+                              <p className="text-xs text-gray-400 mb-0.5">{f.label}</p>
+                              <p className="text-sm font-medium text-gray-800">{val}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Text Values */}
                   {brief.textValues && Object.keys(brief.textValues).length > 0 && (
                     <div className="space-y-1.5">
@@ -290,7 +314,7 @@ export default function TemplateDesignsPage() {
         {sizeWarning && <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-xl flex items-start gap-2"><AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>{sizeWarning}</div>}
 
         {/* Final layout: the client's chosen layout with their approved design */}
-        {approvedDesign && brief?.template && !brief.isCustomDesign && (
+        {approvedDesign && brief?.template && (
           <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-sm flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5"/>
             <div className="flex-1 min-w-0">

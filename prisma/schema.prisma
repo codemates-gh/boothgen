@@ -328,6 +328,8 @@ model TenantBranding {
   // Design brief feature flags
   designBriefEnabled  Boolean @default(false)
   customDesignEnabled Boolean @default(false)
+  // Every event gets the design brief without activating it on the event's Designs tab
+  designBriefAutoActivate Boolean @default(false)
   // Onboarding
   onboardingDismissed Boolean @default(false)
   createdAt         DateTime @default(now())

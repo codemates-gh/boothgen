@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { sendEmail } from '@/lib/email/send';
 import { clientTemplateView, clientTemplates, clientTemplatesWhere } from '@/lib/templates/clientLibrary';
+import { cleanTextValues } from '@/lib/templates/customRequest';
 
 export async function GET(_: NextRequest, { params }: { params: { portalToken: string } }) {
   const event = await prisma.event.findFirst({
@@ -10,7 +11,7 @@ export async function GET(_: NextRequest, { params }: { params: { portalToken: s
     include: {
       tenant: {
         include: {
-          branding: { select: { designBriefEnabled: true, customDesignEnabled: true } },
+          branding: { select: { designBriefEnabled: true, customDesignEnabled: true, designBriefAutoActivate: true } },
         },
       },
       designBrief: { include: { template: true } },
@@ -20,6 +21,13 @@ export async function GET(_: NextRequest, { params }: { params: { portalToken: s
 
   const designBriefEnabled = event.tenant.branding?.designBriefEnabled ?? false;
   if (!designBriefEnabled) return NextResponse.json(null);
+
+  // Turned on for every event: the brief starts the first time the client opens the Design tab
+  if (!event.designBrief && event.tenant.branding?.designBriefAutoActivate) {
+    event.designBrief = await prisma.eventDesignBrief.upsert({
+      where: { eventId: event.id }, create: { tenantId: event.tenantId, eventId: event.id }, update: {}, include: { template: true },
+    });
+  }
 
   // Brief + the layouts this operator offers (Standard they haven't hidden, plus their own offered templates)
   const templates = await clientTemplates(event.tenantId);
@@ -63,7 +71,7 @@ export async function POST(req: NextRequest, { params }: { params: { portalToken
     templateId: templateId || null,
     selectedColorVariantId: selectedColorVariantId || null,
     selectedFontPairingId: selectedFontPairingId || null,
-    textValues: textValues ?? {},
+    textValues: cleanTextValues(textValues),
     themeInput: themeInput || null,
     themeDirections: themeDirections ?? null,
     selectedDirectionIndex: selectedDirectionIndex ?? null,
