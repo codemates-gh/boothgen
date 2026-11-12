@@ -578,9 +578,9 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
           <div className="mr-auto text-sm min-w-0">
             {error ? <p className="text-red-600">{error}</p>
               : notices.length ? <p className="text-amber-600 truncate" title={notices.join(' ')}>{notices[notices.length - 1]}</p>
-              : <p className="text-gray-500">{dirty ? 'Unsaved changes' : isNew ? 'New template' : 'Saved'}</p>}
+              : <p className="text-gray-500">{dirty ? 'Unsaved changes' : isNew ? 'New template' : !thumbnail ? 'No picture yet. Save to create the picture clients see.' : 'Saved'}</p>}
           </div>
-          <Button onClick={save} disabled={saving || !!uploading || !name.trim() || layouts.main.slots.length === 0 || (!!layouts.alt && layouts.alt.slots.length === 0) || (!dirty && !isNew)}>{saving ? 'Saving…' : 'Save Template'}</Button>
+          <Button onClick={save} disabled={saving || !!uploading || !name.trim() || layouts.main.slots.length === 0 || (!!layouts.alt && layouts.alt.slots.length === 0) || (!dirty && !isNew && !!thumbnail)}>{saving ? 'Saving…' : 'Save Template'}</Button>
         </div>
       )}
     </>

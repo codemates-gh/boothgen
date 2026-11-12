@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.70.2] — 2026-11-12
+
+### Fixed
+- **Template Designer**: Save Template is available on a template that has no picture yet (e.g. the Standard layouts), so one click renders the picture clients see. The save bar says so
+
+---
+
 ## [2.70.1] — 2026-11-12
 
 ### Fixed
