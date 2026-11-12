@@ -1,4 +1,4 @@
--- BoothGen 2.72.0: bug reports and suggestions (Report a bug / Suggest, shared Reports board, Super Admin → Reports).
+-- BoothGen 2.73.0: bug reports and suggestions (Report a bug / Suggest, shared Reports board, Super Admin → Reports).
 -- Run in the Neon SQL Editor on the PRODUCTION branch. Creates three new tables and, if an earlier version of this
 -- file was already run, adds the newer columns. Nothing existing is changed or dropped. Safe to run more than once.
 BEGIN;

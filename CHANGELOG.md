@@ -4,6 +4,24 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.73.0] — 2026-11-13
+
+### Added
+- **Report a bug / Suggest**: anyone signed in can send a bug report or suggestion from the sidebar on any page: bug or suggestion, title, part of the system (Genie guest screens, attendant panel, printing, booth Wi-Fi, sharing, guest photo page, BoothGen website, camera, other), how bad it is, device and app version, details, and up to 5 screenshots, photos, videos or PDFs. Who sent it, their account, the page they were on, their browser and the BoothGen version are added automatically (Booth Genius only)
+- **Shared Reports board**: everyone signed in sees every report (reporter by name only) with status, priority, "fixed in version" and the team's notes, so the same issue isn't sent twice. Open reports by default; filter by status, type, part, search and "Mine". The form warns that reports are visible to everyone
+- **Votes on suggestions, "This is my issue too" on bugs**: one vote per person (the reporter's counts automatically), shown on the board and the report, with a "Most votes" sort (the default for suggestions). Voting also sends that person the report's status and note emails ("Email me updates" can be turned off separately) and lets them reply. While typing a title, matching reports appear with Vote / "This is my issue too". Closed reports keep their count but take no new votes. A red count in the sidebar shows reports with news
+- **Super Admin → Reports**: every report with counts per status and filters (status, type, part, account, search, unread; sort by most votes), vote counts, the reporter's email and account, captured details, followers, attachments, status (New, Need more info, Confirmed, In progress, Fixed, Won't fix, Duplicate, Already exists), priority (P1–P3), "fixed in version" and notes. Notes are seen by everyone unless marked internal. Unread reports show a count on the tab
+- **Already exists**: for requests about something BoothGen already does. Add how to get to it (steps and an optional link); the report shows it with a "Take me there" button and the email includes it. Counted separately, to spot features people can't find
+- **Duplicate**: link a report to the original; its votes and followers move to the original (nobody counted twice)
+- **Notifications**: Booth Genius gets an email for every new report and reply; the reporter and followers get one when the status changes or a note is added. Email never blocks a report: if it can't be sent, the in-app markers still show
+
+### Changed
+- The version shown in the sidebar is current again (it had stayed at 2.48.2)
+
+**DB change required**: three new tables — `docs/genie/apply-production-feedback-reports.sql` (safe to run again if the first version was already run)
+
+---
+
 ## [2.72.0] — 2026-11-12
 
 ### Changed

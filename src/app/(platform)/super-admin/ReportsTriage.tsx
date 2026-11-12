@@ -199,7 +199,7 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Fixed in version</label>
-                  <Input value={fixedIn} disabled={busy} placeholder="2.72.0" maxLength={40}
+                  <Input value={fixedIn} disabled={busy} placeholder="2.73.0" maxLength={40}
                     onChange={e => setFixedIn(e.target.value)}
                     onBlur={() => { if (fixedIn.trim() !== (detail.fixedInVersion ?? '')) triage({ fixedInVersion: fixedIn.trim() || null }); }} />
                 </div>
