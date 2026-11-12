@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.74.0] — 2026-11-13
+
+### Added
+- **Assign to Dev** (Super Admin → Reports): tick it on a bug or suggestion to queue it for a Claude Code session. The report gets a "Dev" badge, and "Assigned to Dev" filters the list. When asked to "work on the reports assigned to Dev", a session reads the queue, fixes the issue, and — after the fix is deployed — marks it Fixed in that version with a note in plain words (or asks the reporter for more info). Reporters and voters get the usual emails; the team's notes show as Booth Genius to users and "Dev" in Super Admin
+- Dev API (`/api/dev/reports`) behind its own secret key (`REPORTS_DEV_TOKEN`; off without it), with `scripts/dev-reports.mjs` and the how-to in `docs/REPORTS-DEV.md`. It never returns people's email addresses
+
+**DB change required**: two columns — rerun `docs/genie/apply-production-feedback-reports.sql` (safe to run again)
+
+---
+
 ## [2.73.0] — 2026-11-13
 
 ### Added

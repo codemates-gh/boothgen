@@ -52,7 +52,7 @@ export function reportView(r: FullReport, viewerId: string, asAdmin: boolean) {
     .filter(n => asAdmin || !n.internal)
     .map(n => ({
       id: n.id, body: n.body, fromAdmin: n.fromAdmin, internal: n.internal, createdAt: n.createdAt,
-      author: n.fromAdmin && !asAdmin ? 'Booth Genius' : displayName(n.author?.name),
+      author: n.fromAdmin && !asAdmin ? 'Booth Genius' : n.fromAdmin && !n.authorId ? 'Dev' : displayName(n.author?.name),
     }));
   const base = {
     id: r.id, number: r.number, type: r.type, title: r.title, area: r.area, severity: r.severity, deviceInfo: r.deviceInfo,
@@ -67,7 +67,7 @@ export function reportView(r: FullReport, viewerId: string, asAdmin: boolean) {
   };
   if (!asAdmin) return { ...base, unread: isMine ? r.reporterUnread : !!(follow?.following && follow.unread) };
   return {
-    ...base, unread: r.adminUnread,
+    ...base, unread: r.adminUnread, assignedToDev: r.assignedToDev,
     reporter: r.user, tenant: r.tenant, pageUrl: r.pageUrl, userAgent: r.userAgent, appVersion: r.appVersion,
     followers: r.followers.map(f => ({ ...f.user, voted: f.voted, following: f.following })),
   };

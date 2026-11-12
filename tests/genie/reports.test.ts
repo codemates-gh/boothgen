@@ -23,6 +23,8 @@ import { GET as DETAIL, PATCH as TRIAGE } from '@/app/api/reports/[id]/route';
 import { POST as NOTE } from '@/app/api/reports/[id]/notes/route';
 import { GET as FILE } from '@/app/api/reports/[id]/files/[index]/route';
 import { POST as UPLOAD_URL } from '@/app/api/reports/upload-url/route';
+import { GET as DEV_LIST } from '@/app/api/dev/reports/route';
+import { GET as DEV_SHOW, POST as DEV_UPDATE } from '@/app/api/dev/reports/[id]/route';
 import { req, resetDb, seedTenant } from './helpers';
 
 const TAG = '@reports-test.boothgen.test';
@@ -294,5 +296,44 @@ describe('Bug reports and suggestions', () => {
     const o = (await (await DETAIL(req('/x?admin=1'), p(orig.id))).json()).report;
     expect(o.voteCount).toBe(3); // reporter + x + y
     expect((await (await DETAIL(req('/x?admin=1'), p(dup.id))).json()).report.voteCount).toBe(1);
+  });
+
+  it('Assign to Dev: the Dev API needs its key, lists assigned reports without emails, and updates like triage', async () => {
+    const { tenant, reporter, admin } = await users();
+    as(reporter, tenant.id);
+    const { id, number } = await (await CREATE(post({ ...BUG, attachments: [{ key: `reports/${reporter.id}/a.png`, name: 'shot.png', contentType: 'image/png', bytes: 9 }] }))).json();
+    const KEY = 'k'.repeat(40);
+    const dev = (path: string, body?: unknown, key = KEY) => req(path, { body, headers: { authorization: 'Bearer ' + key } });
+
+    delete process.env.REPORTS_DEV_TOKEN;
+    expect((await DEV_LIST(dev('/x'))).status).toBe(404); // off without a key
+    process.env.REPORTS_DEV_TOKEN = KEY;
+    expect((await DEV_LIST(dev('/x', undefined, 'wrong'))).status).toBe(401);
+    expect((await DEV_LIST(req('/x'))).status).toBe(401);
+    expect((await (await DEV_LIST(dev('/x'))).json()).reports).toEqual([]);
+
+    as(admin, undefined, true);
+    expect((await (await TRIAGE(req('/x', { method: 'PATCH', body: { assignedToDev: true } }), p(id))).json()).report.assignedToDev).toBe(true);
+    expect((await (await ADMIN_LIST(req('/x?dev=1'))).json()).reports.map((r: any) => r.id)).toEqual([id]);
+
+    const list = await (await DEV_LIST(dev('/x'))).json();
+    expect(list.reports).toHaveLength(1);
+    const r = list.reports[0];
+    expect(r).toMatchObject({ number, title: BUG.title, details: BUG.details, assignedToDev: true, reporter: { name: 'Ana Tester' }, userAgent: null });
+    expect(r.attachments[0].url).toContain(`reports/${reporter.id}/a.png`);
+    expect(JSON.stringify(r)).not.toContain(reporter.email);
+    expect((await DEV_SHOW(dev('/x'), p('#' + number))).status).toBe(200);
+
+    sendEmail.mockClear();
+    const up = await (await DEV_UPDATE(dev('/x', { status: 'fixed', fixedInVersion: '2.74.0', note: 'Print now retries when the printer wakes up.' }), p(String(number)))).json();
+    expect(up.report).toMatchObject({ status: 'fixed', fixedInVersion: '2.74.0' });
+    expect(up.report.notes.slice(-2).map((n: any) => [n.author, n.body])).toEqual([['Dev', 'Status changed to Fixed (version 2.74.0)'], ['Dev', 'Print now retries when the printer wakes up.']]);
+    expect(sendEmail.mock.calls.map(c => c[0])).toEqual([reporter.email, reporter.email]);
+    as(reporter, tenant.id);
+    expect((await (await DETAIL(req('/x'), p(id))).json()).report.notes.at(-1)).toMatchObject({ author: 'Booth Genius', fromAdmin: true });
+    expect((await (await DEV_LIST(dev('/x'))).json()).reports).toEqual([]); // closed drops off the queue
+    expect((await (await DEV_LIST(dev('/x?all=1'))).json()).reports).toHaveLength(1);
+    expect((await DEV_UPDATE(dev('/x', { status: 'exists' }), p(id))).status).toBe(400);
+    delete process.env.REPORTS_DEV_TOKEN;
   });
 });

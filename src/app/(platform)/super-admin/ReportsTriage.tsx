@@ -15,13 +15,13 @@ import {
 
 type Row = {
   id: string; number: number; type: string; title: string; area: string; severity: string | null; status: string; priority: string | null;
-  unread: boolean; voteCount: number; createdAt: string; updatedAt: string; user: { name: string; email: string }; tenant: { id: string; name: string } | null;
+  unread: boolean; voteCount: number; assignedToDev: boolean; createdAt: string; updatedAt: string; user: { name: string; email: string }; tenant: { id: string; name: string } | null;
 };
 type Detail = {
   id: string; number: number; type: string; title: string; area: string; severity: string | null; deviceInfo: string | null; details: string;
   status: string; priority: string | null; fixedInVersion: string | null; createdAt: string;
   howToFind: string | null; howToFindUrl: string | null; duplicateOf: { id: string; number: number; title: string } | null;
-  followers: { name: string; email: string; voted: boolean; following: boolean }[]; voteCount: number;
+  followers: { name: string; email: string; voted: boolean; following: boolean }[]; voteCount: number; assignedToDev: boolean;
   reporter: { id: string; name: string; email: string }; tenant: { id: string; name: string; slug: string } | null;
   pageUrl: string | null; userAgent: string | null; appVersion: string | null;
   attachments: { index: number; name: string; contentType: string; bytes: number; url: string }[]; notes: ThreadNote[];
@@ -30,7 +30,7 @@ type Detail = {
 const SEV_VARIANT: Record<string, any> = { blocker: 'danger', major: 'warning', minor: 'default', cosmetic: 'default' };
 
 export default function ReportsTriage({ initialReportId }: { initialReportId?: string }) {
-  const [filters, setFilters] = useState({ status: '', type: '', area: '', tenantId: '', q: '', unread: '', sort: '' });
+  const [filters, setFilters] = useState({ status: '', type: '', area: '', tenantId: '', q: '', unread: '', sort: '', dev: '' });
   const [rows, setRows] = useState<Row[] | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [tenants, setTenants] = useState<{ id: string; name: string }[]>([]);
@@ -143,6 +143,9 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
         <label className="flex items-center gap-2 text-sm text-gray-600 px-2">
           <input type="checkbox" checked={filters.unread === '1'} onChange={e => setF('unread', e.target.checked ? '1' : '')} />Unread only
         </label>
+        <label className="flex items-center gap-2 text-sm text-gray-600 px-2">
+          <input type="checkbox" checked={filters.dev === '1'} onChange={e => setF('dev', e.target.checked ? '1' : '')} />Assigned to Dev
+        </label>
       </div>
 
       <div className="grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 items-start">
@@ -163,6 +166,7 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
                         <Badge variant={r.type === 'bug' ? 'default' : 'info'}>{typeLabel(r.type)}</Badge>
                         {r.severity && <Badge variant={SEV_VARIANT[r.severity]}>{severityLabel(r.severity)}</Badge>}
                         {r.priority && <Badge variant="brand">{r.priority}</Badge>}
+                        {r.assignedToDev && <Badge variant="info">Dev</Badge>}
                         <Badge variant={r.voteCount > 1 ? 'info' : 'default'}>{r.voteCount} {r.type === 'suggestion' ? (r.voteCount === 1 ? 'vote' : 'votes') : 'affected'}</Badge>
                       </div>
                     </div>
@@ -182,6 +186,12 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
                   {typeLabel(detail.type)} · {areaLabel(detail.area)}{detail.severity ? ` · ${severityLabel(detail.severity)}` : ''} · {format(new Date(detail.createdAt), 'MMM d, yyyy h:mm a')}
                 </p>
               </div>
+
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" checked={detail.assignedToDev} disabled={busy} onChange={e => triage({ assignedToDev: e.target.checked })} />
+                <span className="font-medium">Assign to Dev</span>
+                <span className="text-xs text-gray-400">A Claude Code session picks it up when asked to work on assigned reports, then updates it here</span>
+              </label>
 
               <div className="grid sm:grid-cols-3 gap-3">
                 <div>

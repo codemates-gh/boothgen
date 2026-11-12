@@ -20,6 +20,8 @@ const PUBLIC_PREFIX = [
   '/api/status',
   // Genie iPads (device bearer token, checked in each route)
   '/api/genie',
+  // Dev API for reports assigned to Dev: checks its own bearer key (REPORTS_DEV_TOKEN)
+  '/api/dev',
 ];
 
 // Whole path segments only: '/g' covers '/g/<token>' but not '/gallery' or '/genie'

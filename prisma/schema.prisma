@@ -1571,8 +1571,8 @@ model GenieEventDevice {
 
 // Bug reports and suggestions from signed-in users, triaged by Super Admins (src/lib/reports)
 model FeedbackReport {
-  id             String   @id @default(cuid())
-  number         Int      @unique @default(autoincrement())
+  id             String    @id @default(cuid())
+  number         Int       @unique @default(autoincrement())
   userId         String
   tenantId       String?
   type           String // bug | suggestion
@@ -1580,25 +1580,28 @@ model FeedbackReport {
   area           String // see REPORT_AREAS
   severity       String? // bugs: blocker | major | minor | cosmetic
   deviceInfo     String?
-  details        String   @db.Text
-  attachments    Json     @default("[]") // [{ key, name, contentType, bytes }]
+  details        String    @db.Text
+  attachments    Json      @default("[]") // [{ key, name, contentType, bytes }]
   // Captured automatically when the report is filed
   pageUrl        String?
   userAgent      String?
   appVersion     String?
   // Triage
-  status         String   @default("new") // see REPORT_STATUSES
+  status         String    @default("new") // see REPORT_STATUSES
   priority       String? // P1 | P2 | P3
   fixedInVersion String?
   // "Already exists": how to get to the feature (steps, optional link to the BoothGen page)
-  howToFind      String?  @db.Text
+  howToFind      String?   @db.Text
   howToFindUrl   String?
   // "Duplicate": the original report (its followers moved there)
   duplicateOfId  String?
-  adminUnread    Boolean  @default(true)
-  reporterUnread Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  // "Assign to Dev": queued for a Claude Code session to fix (src/app/api/dev/reports, docs/REPORTS-DEV.md)
+  assignedToDev  Boolean   @default(false)
+  assignedAt     DateTime?
+  adminUnread    Boolean   @default(true)
+  reporterUnread Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   tenant      Tenant?            @relation(fields: [tenantId], references: [id], onDelete: SetNull)
@@ -1609,6 +1612,7 @@ model FeedbackReport {
 
   @@index([status])
   @@index([userId])
+  @@index([assignedToDev])
   @@map("feedback_reports")
 }
 

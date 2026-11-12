@@ -1,4 +1,4 @@
--- BoothGen 2.73.0: bug reports and suggestions (Report a bug / Suggest, shared Reports board, Super Admin → Reports).
+-- BoothGen 2.73.0 / 2.74.0: bug reports and suggestions (Report a bug / Suggest, shared Reports board, Super Admin → Reports).
 -- Run in the Neon SQL Editor on the PRODUCTION branch. Creates three new tables and, if an earlier version of this
 -- file was already run, adds the newer columns. Nothing existing is changed or dropped. Safe to run more than once.
 BEGIN;
@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS "feedback_reports" (
     "howToFind" TEXT,
     "howToFindUrl" TEXT,
     "duplicateOfId" TEXT,
+    "assignedToDev" BOOLEAN NOT NULL DEFAULT false,
+    "assignedAt" TIMESTAMP(3),
     "adminUnread" BOOLEAN NOT NULL DEFAULT true,
     "reporterUnread" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -46,6 +48,9 @@ CREATE TABLE IF NOT EXISTS "feedback_notes" (
 ALTER TABLE "feedback_reports" ADD COLUMN IF NOT EXISTS "howToFind" TEXT;
 ALTER TABLE "feedback_reports" ADD COLUMN IF NOT EXISTS "howToFindUrl" TEXT;
 ALTER TABLE "feedback_reports" ADD COLUMN IF NOT EXISTS "duplicateOfId" TEXT;
+-- 2.74.0: Assign to Dev
+ALTER TABLE "feedback_reports" ADD COLUMN IF NOT EXISTS "assignedToDev" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "feedback_reports" ADD COLUMN IF NOT EXISTS "assignedAt" TIMESTAMP(3);
 
 CREATE TABLE IF NOT EXISTS "feedback_followers" (
     "reportId" TEXT NOT NULL,
@@ -64,6 +69,7 @@ CREATE INDEX IF NOT EXISTS "feedback_followers_userId_idx" ON "feedback_follower
 CREATE UNIQUE INDEX IF NOT EXISTS "feedback_reports_number_key" ON "feedback_reports"("number");
 CREATE INDEX IF NOT EXISTS "feedback_reports_status_idx" ON "feedback_reports"("status");
 CREATE INDEX IF NOT EXISTS "feedback_reports_userId_idx" ON "feedback_reports"("userId");
+CREATE INDEX IF NOT EXISTS "feedback_reports_assignedToDev_idx" ON "feedback_reports"("assignedToDev");
 CREATE INDEX IF NOT EXISTS "feedback_notes_reportId_idx" ON "feedback_notes"("reportId");
 
 DO $$ BEGIN

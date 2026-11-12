@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
     ...(p.get('area') ? { area: p.get('area')! } : {}),
     ...(p.get('tenantId') ? { tenantId: p.get('tenantId')! } : {}),
     ...(p.get('unread') === '1' ? { adminUnread: true } : {}),
+    ...(p.get('dev') === '1' ? { assignedToDev: true } : {}),
     ...(q ? {
       OR: [
         { title: { contains: q, mode: 'insensitive' } },
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
     prisma.feedbackReport.findMany({
       where, orderBy: [{ adminUnread: 'desc' }, { updatedAt: 'desc' }], take: 300,
       select: {
-        id: true, number: true, type: true, title: true, area: true, severity: true, status: true, priority: true, adminUnread: true, createdAt: true, updatedAt: true,
+        id: true, number: true, type: true, title: true, area: true, severity: true, status: true, priority: true, adminUnread: true, assignedToDev: true, createdAt: true, updatedAt: true,
         user: { select: { name: true, email: true } }, tenant: { select: { id: true, name: true } },
         followers: { select: { voted: true } },
       },
