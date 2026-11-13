@@ -4,6 +4,12 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.79.0] — 2026-11-13
+
+### Added
+- **Abandoned attract-screen files are cleaned up daily**: an upload that was never converted (after 6 hours) and a converted file that was never saved to the account or an event (after 24 hours) are deleted from storage. Saved files, and files from the last day, are kept
+- **Gate on large attract videos**: videos longer than a minute or bigger than 4K are refused with a clear message (trim or export smaller). The editor checks before uploading, so nothing is sent; the server checks again after the upload
+
 ## [2.78.1] — 2026-11-13
 
 ### Changed

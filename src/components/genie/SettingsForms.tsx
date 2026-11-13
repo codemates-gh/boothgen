@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Info } from 'lucide-react';
 import { Field, Toggle } from './parts';
+import { attractVideoGate } from '@/lib/genie/attractGate';
 
 // Form pieces shared by Event → Genie and Genie → Event defaults
 
@@ -209,6 +210,20 @@ const ATTRACT_TYPES: Record<string, { kind: 'image' | 'video'; max: number }> = 
   'image/jpeg': { kind: 'image', max: 20 }, 'image/png': { kind: 'image', max: 20 },
   'video/mp4': { kind: 'video', max: 200 }, 'video/quicktime': { kind: 'video', max: 200 },
 };
+// Length and size of a video from its metadata, read in the browser before uploading; null when the browser
+// can't read it (e.g. HEVC on some PCs), and the server checks it after the upload instead
+function videoInfo(file: File): Promise<{ durationMs: number | null; width: number; height: number } | null> {
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement('video');
+    const done = (r: { durationMs: number | null; width: number; height: number } | null) => { clearTimeout(timer); URL.revokeObjectURL(url); v.removeAttribute('src'); resolve(r); };
+    const timer = setTimeout(() => done(null), 8000);
+    v.preload = 'metadata'; v.muted = true;
+    v.onloadedmetadata = () => done({ durationMs: Number.isFinite(v.duration) ? Math.round(v.duration * 1000) : null, width: v.videoWidth, height: v.videoHeight });
+    v.onerror = () => done(null);
+    v.src = url;
+  });
+}
 // PUT with upload progress (fetch can't report it); resolves false when it fails
 function putWithProgress(url: string, file: File, onProgress: (pct: number) => void): Promise<boolean> {
   return new Promise(resolve => {
@@ -236,6 +251,11 @@ export function AttractFields({ value, onChange, disabled }: { value: Attract; o
     const type = ATTRACT_TYPES[file.type];
     if (!type) { setError('Use a JPG or PNG image, or an MP4 or MOV video.'); return; }
     if (file.size > type.max * 1024 * 1024) { setError(type.kind === 'image' ? 'Images must be 20 MB or smaller.' : 'Videos must be 200 MB or smaller.'); return; }
+    if (type.kind === 'video') {
+      const info = await videoInfo(file);
+      const gate = info && attractVideoGate(info.durationMs, info.width, info.height);
+      if (gate) { setError(gate); return; }
+    }
     setPhase('uploading'); setPct(0);
     try {
       const r = await fetch('/api/genie-attract/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contentType: file.type, bytes: file.size }) });
@@ -283,7 +303,7 @@ export function AttractFields({ value, onChange, disabled }: { value: Attract; o
             </Button>
             {m && <Button type="button" variant="outline" size="sm" disabled={disabled || busy} onClick={() => { onChange({ media: null }); setNote(''); }}>Remove</Button>}
           </div>
-          {!m && !busy && <p className="text-xs text-gray-400">None: the booth opens on the start screen. Image: JPG or PNG up to 20 MB. Video: MP4 or MOV up to 200 MB; we use the first 30 seconds.</p>}
+          {!m && !busy && <p className="text-xs text-gray-400">None: the booth opens on the start screen. Image: JPG or PNG up to 20 MB. Video: MP4 or MOV, up to a minute long, 4K and 200 MB; we use the first 30 seconds.</p>}
           {phase === 'shrinking' && <p className="text-xs text-gray-400">A video can take a minute or two. Keep this page open.</p>}
           {note && <p className="text-xs text-green-700">{note} Save to use it.</p>}
           {error && <p className="text-sm text-red-600">{error}</p>}

@@ -22,6 +22,7 @@ import {
   sendDesignApprovalReminders,
   autoCompleteEvents,
   sendGenieShare,
+  sweepAbandonedAttract,
 } from '@/lib/inngest/functions';
 
 const handler = serve({
@@ -47,6 +48,7 @@ const handler = serve({
     sendDesignApprovalReminders,
     autoCompleteEvents,
     sendGenieShare,
+    sweepAbandonedAttract,
   ],
   signingKey: process.env.INNGEST_SIGNING_KEY,
 });

@@ -9,6 +9,7 @@ import {
   ATTRACT_IMAGE_SOURCE_MAX_BYTES, ATTRACT_MAX_SECONDS, ATTRACT_SOURCE_TYPES, ATTRACT_VIDEO_MAX_BYTES, ATTRACT_VIDEO_SOURCE_MAX_BYTES,
   attractMetadata, attractPrefix, attractUploadPrefix, type AttractMedia,
 } from './attract';
+import { attractVideoGate } from './attractGate';
 
 // Shrinks an attract-screen upload for the iPad, once:
 // - image: at most 2048 px on the long side, JPEG (quality about 80), aiming under 1 MB
@@ -87,6 +88,8 @@ export async function encodeAttract(tenantId: string, sourceUrl: string): Promis
       }
     } else {
       if (info.durationMs !== null && info.durationMs < 500) return { error: 'That video is too short to loop. Use 10–20 seconds.' };
+      const gate = attractVideoGate(info.durationMs, info.width, info.height);
+      if (gate) return { error: gate };
       trimmed = info.durationMs !== null && info.durationMs > ATTRACT_MAX_SECONDS * 1000 + 100;
       // Short side at most 1080, even dimensions (the rotation from phone videos is already applied here)
       const scale = "scale='if(gte(iw,ih),-2,min(1080,trunc(iw/2)*2))':'if(gte(iw,ih),min(1080,trunc(ih/2)*2),-2)'";

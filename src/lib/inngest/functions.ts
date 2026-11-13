@@ -7,6 +7,7 @@ import { sendEmail, sendDesignReadyEmail, sendDesignDecisionEmail, sendPaymentRe
 import { triggerAutomation, scheduleEventDateAutomations, executeAutomation, notifyAdminOfFailure } from './trigger';
 import { deleteFromR2, r2KeyFromUrl } from '@/lib/storage/r2';
 import { deleteTenant } from '@/lib/tenant/cleanup';
+import { sweepAbandonedAttractFiles } from '@/lib/genie/attract';
 import { prepareShare, deliverShare, recordShareResult, markShareFailed } from '@/lib/genie/shares';
 
 export const processAutomation = inngest.createFunction(
@@ -686,6 +687,17 @@ export const autoCompleteEvents = inngest.createFunction(
     });
     console.log(`[AUTO_COMPLETE] Marked ${count} past events as COMPLETED`);
     return { completed: count };
+  }
+);
+
+// Daily at 5:15 AM UTC — delete attract-screen files that were uploaded but never saved
+export const sweepAbandonedAttract = inngest.createFunction(
+  { id: 'sweep-abandoned-attract' },
+  { cron: '15 5 * * *' },
+  async () => {
+    const r = await sweepAbandonedAttractFiles();
+    console.log(`[ATTRACT_SWEEP] Deleted ${r.sources} unencoded uploads and ${r.unsaved} unsaved attract files`);
+    return r;
   }
 );
 

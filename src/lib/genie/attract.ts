@@ -12,6 +12,10 @@ export const ATTRACT_MAX_SECONDS = 30;
 export const ATTRACT_IMAGE_SOURCE_MAX_BYTES = 20 * 1024 * 1024;
 export const ATTRACT_VIDEO_SOURCE_MAX_BYTES = 200 * 1024 * 1024;
 export const ATTRACT_VIDEO_MAX_BYTES = 15 * 1024 * 1024;
+// Leftovers: a source is deleted by its encode, so one older than this was never encoded; an encoded file
+// gets this long to be saved before it's treated as abandoned
+export const ATTRACT_SOURCE_ABANDONED_MS = 6 * 3600_000;
+export const ATTRACT_UNSAVED_ABANDONED_MS = 24 * 3600_000;
 
 export const ATTRACT_SOURCE_TYPES = {
   'image/jpeg': { kind: 'image', ext: 'jpg' },
@@ -97,15 +101,20 @@ export function bundleAttract(attract: unknown, returnAfterSeconds: number) {
   return a ? { media: a.media, returnAfterSeconds } : undefined;
 }
 
-// Encoded files no defaults row and no event uses any more are deleted (events copy the defaults' file, so they share it)
+// Encoded files no defaults row and no event uses any more are deleted (events copy the defaults' file, so they share it).
+// Matched on the storage key, so a file stored under an earlier public address still counts as used.
 export async function deleteUnusedAttractMedia(urls: (string | undefined | null)[]): Promise<number> {
+  const keys = urls.map(u => (u ? keyForUrl(u) : null)).filter((k): k is string => !!k);
+  return deleteUnusedAttractKeys(keys);
+}
+
+async function deleteUnusedAttractKeys(keys: string[]): Promise<number> {
   const { prisma } = await import('@/lib/prisma/client');
   const { deleteFromR2 } = await import('@/lib/storage/r2');
   let deleted = 0;
-  for (const url of Array.from(new Set(urls.filter((u): u is string => !!u)))) {
-    const key = keyForUrl(url);
-    if (!key || !key.startsWith('genie-attract/')) continue;
-    const pattern = '%' + url.replace(/[\\%_]/g, m => '\\' + m) + '%';
+  for (const key of Array.from(new Set(keys))) {
+    if (!key.startsWith('genie-attract/') || key.includes('/uploads/')) continue;
+    const pattern = '%' + key.replace(/[\\%_]/g, m => '\\' + m) + '%';
     const [{ n }] = await prisma.$queryRaw<{ n: bigint }[]>`
       SELECT (
         (SELECT count(*) FROM genie_defaults WHERE attract::text LIKE ${pattern})
@@ -115,4 +124,19 @@ export async function deleteUnusedAttractMedia(urls: (string | undefined | null)
     try { await deleteFromR2(key); deleted++; } catch (err) { console.error('[genie] attract cleanup failed', key, err); }
   }
   return deleted;
+}
+
+// Daily sweep of abandoned attract files: sources whose encode never ran, and encoded files nobody saved
+// (uploaded, then the page was closed or another file was picked before saving)
+export async function sweepAbandonedAttractFiles(now = new Date()): Promise<{ sources: number; unsaved: number }> {
+  const { listR2Objects, deleteFromR2 } = await import('@/lib/storage/r2');
+  const all = await listR2Objects('genie-attract/');
+  let sources = 0;
+  for (const o of all) {
+    if (!o.key.includes('/uploads/') || now.getTime() - o.lastModified.getTime() < ATTRACT_SOURCE_ABANDONED_MS) continue;
+    try { await deleteFromR2(o.key); sources++; } catch (err) { console.error('[genie] attract source cleanup failed', o.key, err); }
+  }
+  const oldEncoded = all.filter(o => !o.key.includes('/uploads/') && now.getTime() - o.lastModified.getTime() >= ATTRACT_UNSAVED_ABANDONED_MS).map(o => o.key);
+  const unsaved = await deleteUnusedAttractKeys(oldEncoded);
+  return { sources, unsaved };
 }

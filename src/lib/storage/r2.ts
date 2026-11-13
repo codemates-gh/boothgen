@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutBucketCorsCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, ListObjectsV2Command, PutBucketCorsCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const r2 = new S3Client({
@@ -74,6 +74,18 @@ export async function headR2Object(key: string): Promise<{ bytes: number; metada
     if (err?.name === 'NotFound' || err?.$metadata?.httpStatusCode === 404) return null;
     throw err;
   }
+}
+
+// Every object under a prefix (all pages), with when it was last written
+export async function listR2Objects(prefix: string): Promise<{ key: string; lastModified: Date; bytes: number }[]> {
+  const out: { key: string; lastModified: Date; bytes: number }[] = [];
+  let token: string | undefined;
+  do {
+    const res = await r2.send(new ListObjectsV2Command({ Bucket: BUCKET, Prefix: prefix, ContinuationToken: token }));
+    for (const o of res.Contents ?? []) if (o.Key) out.push({ key: o.Key, lastModified: o.LastModified ?? new Date(0), bytes: o.Size ?? 0 });
+    token = res.IsTruncated ? res.NextContinuationToken : undefined;
+  } while (token);
+  return out;
 }
 
 export function r2PublicUrl(key: string): string {
