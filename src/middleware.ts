@@ -18,6 +18,8 @@ const PUBLIC_PREFIX = [
   '/api/auth', '/api/public', '/api/portal', '/api/webhooks', '/api/inngest',
   '/api/g', '/api/invite', '/api/support', '/api/og', '/api/lifetime',
   '/api/status',
+  // Calendar feed — token-based auth in URL, no session required
+  '/api/calendar/feed',
   // Genie iPads (device bearer token, checked in each route)
   '/api/genie',
   // Dev API for reports assigned to Dev: checks its own bearer key (REPORTS_DEV_TOKEN)

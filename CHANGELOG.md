@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.74.2] — 2026-11-13
+
+### Fixed
+- **Calendar subscription (iOS)**: calendar feed URL is now always generated with `https://` — iOS rejects insecure (`http://`) subscription URLs, causing "Validation failed" on the Add Subscribed Calendar screen
+- **Calendar feed auth**: `/api/calendar/feed/[token]` was accidentally protected by session auth after the middleware security fix; it's now correctly public (uses a secret token in the URL, not a session cookie)
+
+---
+
 ## [2.74.1] — 2026-11-13
 
 ### Fixed
