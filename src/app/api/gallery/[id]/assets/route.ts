@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
+import { NOT_BOOMERANG_POSTER } from '@/lib/genie/urls';
 import { prisma } from '@/lib/prisma/client';
 import { deleteFromR2, r2KeyFromUrl } from '@/lib/storage/r2';
 
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json([], { status: 200 });
-  const assets = await prisma.galleryAsset.findMany({ where: { galleryId: params.id }, orderBy: { createdAt: 'asc' } });
+  const assets = await prisma.galleryAsset.findMany({ where: { galleryId: params.id, ...NOT_BOOMERANG_POSTER }, orderBy: { createdAt: 'asc' } });
   return NextResponse.json(assets);
 }
 

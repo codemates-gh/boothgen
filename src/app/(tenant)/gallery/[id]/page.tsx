@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Upload, Image, Trash2, Globe, EyeOff, X, CheckCircle2, Lock, LockOpen, Link2 } from 'lucide-react';
 import Link from 'next/link';
+import { AssetThumb } from '@/components/gallery/AssetMedia';
 
 export default function GalleryDetailPage({ params }: { params: { id: string } }) {
   const [gallery, setGallery] = useState<any>(null);
@@ -291,7 +292,7 @@ export default function GalleryDetailPage({ params }: { params: { id: string } }
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {assets.map(a => (
                 <div key={a.id} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100">
-                  <img src={a.url} alt={a.filename} className="w-full h-full object-cover"/>
+                  <AssetThumb asset={a} alt={a.filename} className="w-full h-full object-cover"/>
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <button onClick={() => deleteAsset(a.id)} className="p-2 bg-red-500 rounded-lg text-white hover:bg-red-600">
                       <Trash2 className="w-4 h-4"/>

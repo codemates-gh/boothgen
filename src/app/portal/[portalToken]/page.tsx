@@ -7,6 +7,7 @@ import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Pri
 import { PoweredByBadge } from '@/components/brand/PoweredByBadge';
 import { InvoicePaymentForm } from '@/components/stripe/PaymentForm';
 import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
+import { AssetFull, AssetThumb, assetExt, isVideo } from '@/components/gallery/AssetMedia';
 
 const FORMAT_LABEL: Record<string, string> = { '2x6': '2"×6" Strip', '4x6': '4"×6" Full Size' };
 const SIZE_LABEL: Record<string, string> = { '4x6-landscape': '4×6 Landscape', '4x6-portrait': '4×6 Portrait', '2x6-portrait': '2×6 Strip' };
@@ -1434,8 +1435,7 @@ export default function ClientPortalPage() {
                           try {
                             const res = await fetch(a.url);
                             const blob = await res.blob();
-                            const ext = a.url.split('.').pop()?.split('?')[0] || 'jpg';
-                            folder.file(`photo-${i + 1}.${ext}`, blob);
+                            folder.file(`${isVideo(a) ? 'boomerang' : 'photo'}-${i + 1}.${assetExt(a)}`, blob);
                           } catch {}
                         }));
                         const content = await zip.generateAsync({ type: 'blob' });
@@ -1468,7 +1468,7 @@ export default function ClientPortalPage() {
                       className="relative group aspect-square rounded-xl overflow-hidden cursor-pointer"
                       onClick={() => setLightboxIndex(i)}
                     >
-                      <img src={a.url} alt="" className="w-full h-full object-cover"/>
+                      <AssetThumb asset={a} className="w-full h-full object-cover"/>
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"/>
                     </div>
                   ))}
@@ -1514,9 +1514,8 @@ export default function ClientPortalPage() {
                       </button>
                     )}
                     {/* Photo */}
-                    <img
-                      src={data.assets[lightboxIndex].url}
-                      alt=""
+                    <AssetFull
+                      asset={data.assets[lightboxIndex]}
                       className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
                       onClick={e => e.stopPropagation()}
                     />
@@ -1532,7 +1531,7 @@ export default function ClientPortalPage() {
                     {/* Download */}
                     <a
                       href={data.assets[lightboxIndex].url}
-                      download={`photo-${lightboxIndex + 1}.jpg`}
+                      download={`${isVideo(data.assets[lightboxIndex]) ? 'boomerang' : 'photo'}-${lightboxIndex + 1}.${assetExt(data.assets[lightboxIndex])}`}
                       className="absolute bottom-5 right-1/2 translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium"
                       onClick={e => e.stopPropagation()}
                     >

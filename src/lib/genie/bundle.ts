@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma/client';
 import type { StoredLayout } from './schemas';
 import { galleryUrl, sessionUrl } from './urls';
 import { emailUsable, smsConfigured } from './messaging';
+import { bundleBoomerang } from './boomerang';
 import { galleryRetentionDates, getGalleryRetention, type GalleryRetention } from '@/lib/gallery/retention';
 
 export { appUrl, galleryUrl, sessionUrl } from './urls';
@@ -126,6 +127,9 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
       allowReviewRetake: settings.allowReviewRetake,
       retakesPerShot: settings.retakesPerShot,
       idleTimeoutSeconds: settings.idleTimeoutSeconds,
+      // Optional; left out until the operator sets them, so existing bundles (and their version) don't change
+      ...(settings.lookAtCamera ? { lookAtCamera: settings.lookAtCamera } : {}),
+      ...(settings.boomerang ? { boomerang: bundleBoomerang(settings.boomerang) } : {}),
     },
     templates: [...event.genieTemplates].sort((a, b) => a.sortOrder - b.sortOrder).map(eventTemplateJson),
     processing: settings.processing,

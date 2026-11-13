@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.75.0] — 2026-11-13
+
+### Added
+- **Boomerang** (Event → Genie): offer a Boomerang tile on the iPad's start screen next to the photo designs, so guests can choose a short looping clip instead of photos. Off by default for every event. Choose the format (square, 4x6 portrait or 6x4 landscape), frames (10–16), playback speed, forwards-then-backwards, super-speed capture, a mirrored live view, and an optional PNG overlay drawn over the clip (checked to be transparent and the format's shape)
+- **Boomerangs on the guest pages**: the clip plays first on the guest's photo page and in the gallery, and Download gives the MP4. Its first frame is the thumbnail and the link preview in texts and chats. Boomerangs are never printed or counted as prints
+- **"Look at the camera" prompt** (Event → Genie → Capture): on by default on the iPad. You can turn it off, change the wording (up to 40 characters), or show it before the first photo only
+- Guest photo pages now show the design (or the boomerang's first frame) as the link preview
+
 ## [2.74.2] — 2026-11-13
 
 ### Fixed

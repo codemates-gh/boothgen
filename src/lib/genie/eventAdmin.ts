@@ -4,7 +4,9 @@ import type { Event, EventGenieSettings, EventGenieTemplate, GenieMessagingConfi
 import { prisma } from '@/lib/prisma/client';
 import { emailConfigured, platformDomainError, smsConfigured } from './messaging';
 import { effectiveLockedAt, isValidTimeZone } from './bundle';
-import { StoredLayout } from './schemas';
+import { BOOMERANG_ASPECT, BOOMERANG_DEFAULT, BoomerangSettings, LOOK_AT_CAMERA_DEFAULT, LookAtCamera, StoredLayout } from './schemas';
+import { verifyAsset } from './templateAssets';
+import { storedBoomerang, type StoredBoomerang } from './boomerang';
 
 // ── Lock ────────────────────────────────────────────────────────────────────
 // Locks when the event starts (see effectiveLockedAt in bundle.ts); iPads ignore newer bundle versions after that,
@@ -92,6 +94,10 @@ export const SettingsPatch = z.object({
     maxCopies: int(1, 10),
     defaultCopies: int(1, 10),
   }).strict().refine(p => p.defaultCopies <= p.maxCopies, { message: 'Default copies must not exceed max copies', path: ['defaultCopies'] }),
+  // Per event only (no account defaults)
+  lookAtCamera: LookAtCamera,
+  // overlayUrl: a PNG uploaded through /api/genie-templates/assets; null removes the overlay, absent keeps it
+  boomerang: BoomerangSettings.extend({ overlayUrl: z.string().url().nullable().optional() }).strict(),
   // Sections to put back on the account defaults (they follow default changes again)
   reset: z.array(z.enum(['timeZone', 'capture', 'sharing', 'printing'])).min(1),
 }).partial().strict();
@@ -113,12 +119,43 @@ export function settingsUpdateData(patch: SettingsPatch, current: EventGenieSett
     data.guestFiltersEnabled = patch.filters.guestFiltersEnabled;
   }
   if (patch.sharing) Object.assign(data, patch.sharing);
+  if (patch.lookAtCamera) data.lookAtCamera = patch.lookAtCamera;
   if (patch.printing) {
     data.printingEnabled = patch.printing.enabled;
     data.printMaxCopies = patch.printing.maxCopies;
     data.printDefaultCopies = patch.printing.defaultCopies;
   }
   return { data };
+}
+
+// ── Boomerang ───────────────────────────────────────────────────────────────
+function overlayShapeError(size: { width: number; height: number }, format: BoomerangSettings['format']): string | null {
+  const a = BOOMERANG_ASPECT[format];
+  const ratio = (size.width / size.height) / (a.w / a.h);
+  if (Math.abs(ratio - 1) <= 0.02) return null;
+  const shape = format === 'square' ? 'square (1:1)' : format === 'portrait4x6' ? '4x6 portrait (2:3)' : '6x4 landscape (3:2)';
+  return `The overlay is ${size.width}×${size.height}, but a ${shape} boomerang needs that shape, e.g. ${a.example}.`;
+}
+
+// The boomerang settings to save: checks a new overlay (a PNG with transparency, in the format's shape) and that a
+// kept overlay still fits when the format changes
+export async function boomerangData(patch: NonNullable<SettingsPatch['boomerang']>, current: unknown, tenantId: string): Promise<{ value: StoredBoomerang } | { error: string }> {
+  const { overlayUrl, ...settings } = patch;
+  const prev = storedBoomerang(current);
+  let overlay = prev?.overlay, overlaySize = prev?.overlaySize;
+  if (overlayUrl === null) { overlay = undefined; overlaySize = undefined; }
+  else if (overlayUrl && overlayUrl !== prev?.overlay?.url) {
+    const v = await verifyAsset(overlayUrl, [`genie-templates/${tenantId}/`]);
+    if ('error' in v) return { error: v.error };
+    if (v.info.contentType !== 'image/png') return { error: 'The boomerang overlay must be a PNG.' };
+    if (!v.info.hasAlpha) return { error: 'The overlay has no transparent area, so it would cover the whole clip. Use a PNG that is transparent where the clip shows through.' };
+    overlay = v.asset; overlaySize = { width: v.info.width, height: v.info.height };
+  }
+  if (overlaySize) {
+    const err = overlayShapeError(overlaySize, settings.format);
+    if (err) return { error: err };
+  }
+  return { value: { ...settings, ...(overlay ? { overlay, overlaySize } : {}) } };
 }
 
 // ── Views ───────────────────────────────────────────────────────────────────
@@ -139,6 +176,12 @@ export function settingsView(s: EventGenieSettings) {
       retakesPerShot: s.retakesPerShot,
       idleTimeoutSeconds: s.idleTimeoutSeconds,
     },
+    lookAtCamera: (s.lookAtCamera as LookAtCamera | null) ?? LOOK_AT_CAMERA_DEFAULT,
+    boomerang: (() => {
+      const b = storedBoomerang(s.boomerang);
+      const { overlay, overlaySize, ...settings }: StoredBoomerang = b ?? BOOMERANG_DEFAULT;
+      return { ...BOOMERANG_DEFAULT, ...settings, overlay: overlay ? { url: overlay.url, width: overlaySize?.width ?? null, height: overlaySize?.height ?? null } : null };
+    })(),
     filters: {
       guestFiltersEnabled: s.guestFiltersEnabled,
       defaultFilterId: s.defaultFilterId,

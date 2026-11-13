@@ -38,11 +38,16 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
     return genieError(422, 'invalid_storage_key', 'storageKey was not issued for this event');
   }
   const object = await headR2Object(body.storageKey);
-  if (!object) return genieError(422, 'object_missing', 'The photo was not found in storage');
+  if (!object) return genieError(422, 'object_missing', 'The file was not found in storage');
   if (object.bytes !== body.bytes) return genieError(422, 'size_mismatch', `Stored object is ${object.bytes} bytes, expected ${body.bytes}`);
 
   const session = await ensureGenieSession(event, gallery, auth.device.id, body.session);
   if (!session) return genieError(422, 'session_conflict', 'This session id or token belongs to another event');
+
+  // A boomerang's poster is its thumbnail (gallery grid, link previews); either may arrive first
+  const poster = body.kind === 'boomerang'
+    ? await prisma.galleryAsset.findFirst({ where: { genieSessionId: session.id, genieKind: 'boomerangPoster' }, select: { url: true } })
+    : null;
 
   let asset: GalleryAsset;
   try {
@@ -51,16 +56,19 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
         galleryId: gallery.id,
         clientId: body.clientId,
         genieSessionId: session.id,
-        assetType: 'PHOTO',
+        assetType: body.kind === 'boomerang' ? 'VIDEO' : 'PHOTO',
         url: r2PublicUrl(body.storageKey),
+        ...(poster ? { thumbnailUrl: poster.url } : {}),
+        ...(body.durationMs ? { durationMs: body.durationMs } : {}),
         filename: body.fileName,
         fileSizeBytes: body.bytes,
         mimeType: body.contentType,
         width: body.width,
         height: body.height,
         genieKind: body.kind,
-        // Gallery copy first, then shots in order; the printer sheet (archive only) last
-        sortOrder: body.kind === 'gallery' ? 0 : body.kind === 'shot' ? (body.shotIndex ?? 0) + 1 : 1000,
+        // Boomerang clip / gallery copy first, then shots in order; the printer sheet (archive only) and the
+        // boomerang poster (thumbnail only) last
+        sortOrder: body.kind === 'gallery' || body.kind === 'boomerang' ? 0 : body.kind === 'shot' ? (body.shotIndex ?? 0) + 1 : body.kind === 'print' ? 1000 : 1001,
         approvalStatus: 'APPROVED',
       },
     });
@@ -69,6 +77,10 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
     const raced = await repeat();
     if (raced) return raced;
     throw err;
+  }
+
+  if (body.kind === 'boomerangPoster') {
+    await prisma.galleryAsset.updateMany({ where: { genieSessionId: session.id, genieKind: 'boomerang' }, data: { thumbnailUrl: asset.url } });
   }
 
   // Same as manual uploads: advance approval status off PENDING_UPLOAD once photos arrive

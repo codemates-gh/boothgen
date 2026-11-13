@@ -9,7 +9,7 @@ import { CUSTOM_FLAG, SECTION_NAMES, customFlags, getDefaults, newEventSettingsD
 import { latestApprovedDesign } from '@/lib/genie/approvedDesign';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { designApprovalPending, effectiveLockedAt, eventLocksAt, isValidTimeZone } from '@/lib/genie/bundle';
-import { SettingsPatch, findAdminEvent, lockedError, providerWarnings, settingsUpdateData, settingsView, templateView } from '@/lib/genie/eventAdmin';
+import { SettingsPatch, boomerangData, findAdminEvent, lockedError, providerWarnings, settingsUpdateData, settingsView, templateView } from '@/lib/genie/eventAdmin';
 import { galleryRetentionDates, getGalleryRetention } from '@/lib/gallery/retention';
 
 // Everything the event's Genie dashboard shows
@@ -100,6 +100,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const result = settingsUpdateData(parsed.data, s);
   if ('error' in result) return NextResponse.json({ error: result.error }, { status: 400 });
+  if (parsed.data.boomerang) {
+    const b = await boomerangData(parsed.data.boomerang, s.boomerang, auth.tenantId);
+    if ('error' in b) return NextResponse.json({ error: b.error, path: 'boomerang.overlayUrl' }, { status: 400 });
+    result.data.boomerang = b.value;
+  }
   const defaults = (await getDefaults(auth.tenantId)).values;
   // Sections put back on the defaults
   for (const section of parsed.data.reset ?? []) Object.assign(result.data, sectionValues(defaults, section), { [CUSTOM_FLAG[section]]: false });

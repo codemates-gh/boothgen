@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Camera, Download, Lock, Image, X, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { PoweredByBadge } from '@/components/brand/PoweredByBadge';
+import { AssetFull, AssetThumb, assetExt, isVideo } from '@/components/gallery/AssetMedia';
 import { BoothOffline, FadeInImg, UploadingIndicator, useWaitingPoll } from '@/components/genie/GuestWaiting';
 
 export default function GallerySharePage() {
@@ -146,8 +147,7 @@ export default function GallerySharePage() {
                       try {
                         const res = await fetch(a.url);
                         const blob = await res.blob();
-                        const ext = a.url.split('.').pop()?.split('?')[0] || 'jpg';
-                        folder.file(`photo-${i + 1}.${ext}`, blob);
+                        folder.file(`${isVideo(a) ? 'boomerang' : 'photo'}-${i + 1}.${assetExt(a)}`, blob);
                       } catch {}
                     }));
                     const content = await zip.generateAsync({ type: 'blob' });
@@ -170,7 +170,7 @@ export default function GallerySharePage() {
                   className="relative group aspect-square rounded-xl overflow-hidden cursor-pointer bg-gray-100"
                   onClick={() => setLightboxIndex(i)}
                 >
-                  <FadeInImg src={a.url} alt="" className="w-full h-full object-cover"/>
+                  <AssetThumb asset={a} fade className="w-full h-full object-cover"/>
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"/>
                 </div>
               ))}
@@ -232,9 +232,8 @@ export default function GallerySharePage() {
               <ChevronRight className="w-8 h-8 rotate-180"/>
             </button>
           )}
-          <img
-            src={assets[lightboxIndex].url}
-            alt=""
+          <AssetFull
+            asset={assets[lightboxIndex]}
             className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
             onClick={e => e.stopPropagation()}
           />
@@ -248,7 +247,7 @@ export default function GallerySharePage() {
           )}
           <a
             href={assets[lightboxIndex].url}
-            download={`photo-${lightboxIndex + 1}.jpg`}
+            download={`${isVideo(assets[lightboxIndex]) ? 'boomerang' : 'photo'}-${lightboxIndex + 1}.${assetExt(assets[lightboxIndex])}`}
             className="absolute bottom-5 right-1/2 translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium"
             onClick={e => e.stopPropagation()}
           >

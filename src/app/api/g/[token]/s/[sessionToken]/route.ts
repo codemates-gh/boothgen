@@ -22,7 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
       assets: {
         where: { approvalStatus: 'APPROVED' },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-        select: { id: true, url: true, width: true, height: true, genieKind: true, createdAt: true },
+        select: { id: true, url: true, width: true, height: true, genieKind: true, thumbnailUrl: true, createdAt: true },
       },
     },
   });
@@ -49,17 +49,23 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
   if (session.gallery.clientToken !== params.token) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const expired = session.gallery.isExpired;
-  const photos = expired ? [] : session.assets.filter(a => a.genieKind !== 'print');
+  // The printer sheet is a download only; a boomerang's poster is the clip's thumbnail
+  const photos = expired ? [] : session.assets.filter(a => a.genieKind !== 'print' && a.genieKind !== 'boomerangPoster');
+  const boomerang = photos.find(a => a.genieKind === 'boomerang');
   const lastSeen = session.device && !session.device.revokedAt ? session.device.lastSeenAt : session.device ? null : await eventBoothLastSeen(session.eventId);
   return NextResponse.json({
     event: { title: session.gallery.event.title, eventDate: session.gallery.event.eventDate },
     branding: session.gallery.tenant.branding,
     isExpired: expired,
     galleryUrl: '/g/' + session.gallery.clientToken,
-    // Gallery image first, then shots; the printer sheet is offered as a download only
-    assets: photos.map(a => ({ id: a.id, url: a.url, width: a.width, height: a.height, isGallery: a.genieKind === 'gallery' })),
+    // Boomerang clip or gallery image first, then shots; the printer sheet is offered as a download only
+    assets: photos.map(a => ({
+      id: a.id, url: a.url, width: a.width, height: a.height, isGallery: a.genieKind === 'gallery',
+      ...(a.genieKind === 'boomerang' ? { isBoomerang: true, posterUrl: a.thumbnailUrl } : {}),
+    })),
     printSheetUrl: expired ? null : session.assets.find(a => a.genieKind === 'print')?.url ?? null,
-    morePending: !expired && morePhotosPending({
+    // A boomerang session uploads only the clip (and its poster)
+    morePending: !expired && !boomerang && morePhotosPending({
       hasGallery: photos.some(a => a.genieKind === 'gallery'),
       shots: photos.filter(a => a.genieKind === 'shot').length,
       expectedShots: session.gallery.event.genieSettings?.shotCount ?? 1,

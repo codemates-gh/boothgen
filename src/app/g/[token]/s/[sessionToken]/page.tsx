@@ -6,7 +6,7 @@ import { PoweredByBadge } from '@/components/brand/PoweredByBadge';
 import { BoothOffline, FadeInImg, UploadingIndicator, useWaitingFor, useWaitingPoll } from '@/components/genie/GuestWaiting';
 import { LONG_WAIT_MS } from '@/lib/genie/guestWaiting';
 
-type Asset = { id: string; url: string; width: number | null; height: number | null; isGallery: boolean };
+type Asset = { id: string; url: string; width: number | null; height: number | null; isGallery: boolean; isBoomerang?: boolean; posterUrl?: string | null };
 
 async function downloadFile(url: string, name: string) {
   try {
@@ -61,9 +61,10 @@ export default function GuestSessionPage() {
   const { event, branding, assets, isExpired, printSheetUrl } = data as { event: any; branding: any; assets: Asset[]; isExpired: boolean; printSheetUrl: string | null };
   const pc = branding?.primaryColor || '#F97316';
   const companyName = branding?.companyName || 'Photo Booth Co.';
+  const boomerang = assets.find(a => a.isBoomerang);
   const print = assets.find(a => a.isGallery);
-  const shots = assets.filter(a => !a.isGallery);
-  const fileName = (a: Asset, i: number) => (a.isGallery ? 'photo-booth' : 'photo-' + (i + 1)) + '.jpg';
+  const shots = assets.filter(a => !a.isGallery && !a.isBoomerang);
+  const fileName = (a: Asset, i: number) => a.isBoomerang ? 'boomerang.mp4' : (a.isGallery ? 'photo-booth' : 'photo-' + (i + 1)) + '.jpg';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -107,7 +108,7 @@ export default function GuestSessionPage() {
         ) : (
           <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-3">
-              <h1 className="text-xl font-bold text-gray-900">Your Photos</h1>
+              <h1 className="text-xl font-bold text-gray-900">{boomerang && assets.length === 1 ? 'Your Boomerang' : 'Your Photos'}</h1>
               {assets.length > 1 && (
                 <button
                   onClick={async () => {
@@ -127,6 +128,24 @@ export default function GuestSessionPage() {
                 </button>
               )}
             </div>
+
+            {boomerang && (
+              <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+                <video
+                  src={boomerang.url}
+                  poster={boomerang.posterUrl ?? undefined}
+                  autoPlay muted loop playsInline
+                  className="w-full max-h-[75vh] object-contain rounded-lg bg-black"
+                />
+                <button
+                  onClick={() => downloadFile(boomerang.url, fileName(boomerang, 0))}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm"
+                  style={{ backgroundColor: pc }}
+                >
+                  <Download className="w-4 h-4"/>Download
+                </button>
+              </div>
+            )}
 
             {print && (
               <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
