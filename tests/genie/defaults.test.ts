@@ -94,7 +94,7 @@ describe('Genie event defaults', () => {
 
     await PATCH(json({ printing: { enabled: true, maxCopies: 5, defaultCopies: 1 } }, 'PATCH'), p(e.id));
     let d = await (await DASH(req('/x'), p(e.id))).json();
-    expect(d.settings.custom).toEqual({ timeZone: false, capture: false, sharing: false, printing: true });
+    expect(d.settings.custom).toEqual({ timeZone: false, capture: false, sharing: false, printing: true, attract: false });
 
     // Saving the same values as the defaults isn't custom
     await PATCH(json({ printing: PRINTING }, 'PATCH'), p(e.id));
@@ -155,7 +155,10 @@ describe('Genie → Events overview', () => {
     const rows = (await (await EVENTS(req('/api/genie-events'))).json()).events;
     expect(rows.map((r: any) => r.id).sort()).toEqual([ready.id, notSetUp.id].sort());
     const r = rows.find((x: any) => x.id === ready.id);
-    expect(r.genie).toMatchObject({ enabled: true, templates: 1, ipads: 0, maxDevices: 2, lockedAt: null, followsDefaults: false });
+    // Older events are custom in every section but the attract screen, which they never had (they follow its default)
+    expect(r.genie).toMatchObject({ enabled: true, templates: 1, ipads: 0, maxDevices: 2, lockedAt: null, followsDefaults: true });
+    await prisma.eventGenieSettings.update({ where: { eventId: ready.id }, data: { customAttract: true } });
+    expect((await (await EVENTS(req('/api/genie-events'))).json()).events.find((x: any) => x.id === ready.id).genie.followsDefaults).toBe(false);
     expect(rows.find((x: any) => x.id === notSetUp.id).genie).toBeNull();
     expect((await (await EVENTS(req('/api/genie-events?past=1'))).json()).events).toHaveLength(0);
   });

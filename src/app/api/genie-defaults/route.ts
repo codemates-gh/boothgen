@@ -1,11 +1,13 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { SettingsPatch } from '@/lib/genie/eventAdmin';
 import { DefaultSection, SECTION_NAMES, applyDefaultsToEvents, getDefaults, sameSection } from '@/lib/genie/defaults';
 import { findLibraryTemplate, libraryView } from '@/lib/genie/library';
+import { attractData, attractView, deleteUnusedAttractMedia, storedAttract } from '@/lib/genie/attract';
 
 function view(d: Awaited<ReturnType<typeof getDefaults>>) {
   const v = d.values;
@@ -23,6 +25,7 @@ function view(d: Awaited<ReturnType<typeof getDefaults>>) {
       smsBody: v.smsBody, emailSubject: v.emailSubject, emailBody: v.emailBody, smsConsentText: v.smsConsentText,
     },
     printing: { enabled: v.printingEnabled, maxCopies: v.printMaxCopies, defaultCopies: v.printDefaultCopies },
+    attract: attractView(v.attract, v.attractReturnAfterSeconds),
     templateIds: d.templateIds,
   };
 }
@@ -34,7 +37,7 @@ export async function GET() {
   const templates = (await Promise.all(d.templateIds.map(id => findLibraryTemplate(auth.tenantId, id)))).filter(Boolean).map(t => libraryView(t!));
   // Events that follow at least one default section
   const eventsFollowing = await prisma.eventGenieSettings.count({
-    where: { tenantId: auth.tenantId, OR: [{ customTimeZone: false }, { customCapture: false }, { customSharing: false }, { customPrinting: false }] },
+    where: { tenantId: auth.tenantId, OR: [{ customTimeZone: false }, { customCapture: false }, { customSharing: false }, { customPrinting: false }, { customAttract: false }] },
   });
   return NextResponse.json({ ...view(d), templates, eventsFollowing });
 }
@@ -45,6 +48,7 @@ const Body = z.object({
   capture: shape.capture.unwrap(),
   sharing: shape.sharing.unwrap(),
   printing: shape.printing.unwrap(),
+  attract: shape.attract.unwrap(),
   templateIds: z.array(z.string().min(1)).max(20),
 }).partial().strict();
 
@@ -65,20 +69,30 @@ export async function PUT(req: NextRequest) {
     }
   }
   const before = await getDefaults(auth.tenantId);
+  let attract = {};
+  if (b.attract) {
+    const a = await attractData(b.attract, before.values.attract, auth.tenantId);
+    if ('error' in a) return NextResponse.json({ error: a.error, path: 'attract.mediaUrl' }, { status: 400 });
+    attract = a.data;
+  }
   const data = {
     ...(b.timeZone ? { timeZone: b.timeZone } : {}),
     ...(b.capture ?? {}),
     ...(b.sharing ?? {}),
     ...(b.printing ? { printingEnabled: b.printing.enabled, printMaxCopies: b.printing.maxCopies, printDefaultCopies: b.printing.defaultCopies } : {}),
+    ...attract,
     ...(b.templateIds ? { templateIds: b.templateIds } : {}),
   };
   await prisma.genieDefaults.upsert({
     where: { tenantId: auth.tenantId },
-    create: { tenantId: auth.tenantId, ...before.values, ...data },
+    create: { tenantId: auth.tenantId, ...before.values, attract: before.values.attract ?? Prisma.DbNull, ...data },
     update: data,
   });
   const after = await getDefaults(auth.tenantId);
   const changed = SECTION_NAMES.filter((s: DefaultSection) => !sameSection(before.values as any, after.values as any, s));
   const eventsUpdated = await applyDefaultsToEvents(auth.tenantId, after.values, changed);
+  // The replaced attract file is deleted once no event uses it any more
+  const oldAttract = storedAttract(before.values.attract)?.media.url;
+  if (oldAttract && oldAttract !== storedAttract(after.values.attract)?.media.url) await deleteUnusedAttractMedia([oldAttract]);
   return NextResponse.json({ ...view(after), eventsUpdated });
 }

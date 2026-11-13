@@ -7,6 +7,7 @@ import { effectiveLockedAt, isValidTimeZone } from './bundle';
 import { BOOMERANG_ASPECT, BOOMERANG_DEFAULT, BoomerangSettings, LOOK_AT_CAMERA_DEFAULT, LookAtCamera, StoredLayout } from './schemas';
 import { verifyAsset } from './templateAssets';
 import { storedBoomerang, type StoredBoomerang } from './boomerang';
+import { AttractPatch, attractView } from './attract';
 
 // ── Lock ────────────────────────────────────────────────────────────────────
 // Locks when the event starts (see effectiveLockedAt in bundle.ts); iPads ignore newer bundle versions after that,
@@ -100,8 +101,10 @@ export const SettingsPatch = z.object({
   lookAtCamera: LookAtCamera,
   // overlayUrl: a PNG uploaded through /api/genie-templates/assets; null removes the overlay, absent keeps it
   boomerang: BoomerangSettings.extend({ overlayUrl: z.string().url().nullable().optional() }).strict(),
+  // Attract screen (account default with per-event override); saved by attractData
+  attract: AttractPatch,
   // Sections to put back on the account defaults (they follow default changes again)
-  reset: z.array(z.enum(['timeZone', 'capture', 'sharing', 'printing'])).min(1),
+  reset: z.array(z.enum(['timeZone', 'capture', 'sharing', 'printing', 'attract'])).min(1),
 }).partial().strict();
 
 export type SettingsPatch = z.infer<typeof SettingsPatch>;
@@ -202,8 +205,9 @@ export function settingsView(s: EventGenieSettings) {
       smsConsentText: s.smsConsentText,
     },
     printing: { enabled: s.printingEnabled, maxCopies: s.printMaxCopies, defaultCopies: s.printDefaultCopies },
+    attract: attractView(s.attract, s.attractReturnAfterSeconds),
     // Which sections were customized for this event (false = follows the account's Genie defaults)
-    custom: { timeZone: s.customTimeZone, capture: s.customCapture, sharing: s.customSharing, printing: s.customPrinting },
+    custom: { timeZone: s.customTimeZone, capture: s.customCapture, sharing: s.customSharing, printing: s.customPrinting, attract: s.customAttract },
   };
 }
 

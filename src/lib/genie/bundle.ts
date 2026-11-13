@@ -5,6 +5,7 @@ import type { StoredLayout } from './schemas';
 import { galleryUrl, sessionUrl } from './urls';
 import { emailUsable, smsConfigured } from './messaging';
 import { bundleBoomerang } from './boomerang';
+import { bundleAttract } from './attract';
 import { galleryRetentionDates, getGalleryRetention, type GalleryRetention } from '@/lib/gallery/retention';
 
 export { appUrl, galleryUrl, sessionUrl } from './urls';
@@ -159,6 +160,8 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
       maxCopies: settings.printMaxCopies,
       defaultCopies: Math.min(settings.printDefaultCopies, settings.printMaxCopies),
     },
+    // Optional; only when there's attract media, so it changes the version only when the media or delay changes
+    ...(settings.attract ? { attract: bundleAttract(settings.attract, settings.attractReturnAfterSeconds) } : {}),
   };
 }
 

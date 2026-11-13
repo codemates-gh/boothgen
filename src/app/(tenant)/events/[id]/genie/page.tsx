@@ -6,9 +6,9 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat } from 'lucide-react';
+import { ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay } from 'lucide-react';
 import { Field, Toggle, fmtDate, fmtDateTime } from '@/components/genie/parts';
-import { Capture, CaptureFields, DefaultState, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, numbersFilled } from '@/components/genie/SettingsForms';
+import { Attract, AttractFields, Capture, CaptureFields, DefaultState, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
 import GenieTemplates, { ApprovedDesign, EventTemplate, templateMismatch } from './GenieTemplates';
 import GenieEventDevices from './GenieEventDevices';
 import GenieShares from './GenieShares';
@@ -21,7 +21,8 @@ type Settings = {
   printing: Printing;
   lookAtCamera: LookAtCamera;
   boomerang: Boomerang;
-  custom: { timeZone: boolean; capture: boolean; sharing: boolean; printing: boolean };
+  attract: Attract;
+  custom: { timeZone: boolean; capture: boolean; sharing: boolean; printing: boolean; attract: boolean };
 };
 type Dashboard = {
   event: { id: string; title: string; eventDate: string; startTime: string | null; endTime: string | null };
@@ -30,25 +31,26 @@ type Dashboard = {
   approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
   defaults: { saved: boolean; timeZone: string };
 };
-type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'boomerang'> & { filters: Omit<Settings['filters'], 'available'> };
+type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'boomerang' | 'attract'> & { filters: Omit<Settings['filters'], 'available'> };
 
 
 function toForm(s: Settings): Form {
   const { available: _a, ...filters } = s.filters;
   return {
     enabled: s.enabled, timeZone: s.timeZone, capture: { ...s.capture }, filters, sharing: { ...s.sharing }, printing: { ...s.printing },
-    lookAtCamera: { ...s.lookAtCamera }, boomerang: { ...s.boomerang },
+    lookAtCamera: { ...s.lookAtCamera }, boomerang: { ...s.boomerang }, attract: { ...s.attract },
   };
 }
 
 // The save body: "look at the camera" and Boomerang go only when changed, so saving other sections leaves them out
 // of the bundle (Genie's own defaults apply until the operator sets them)
 function patchBody(form: Form, saved: Settings) {
-  const { lookAtCamera, boomerang, ...rest } = form;
+  const { lookAtCamera, boomerang, attract, ...rest } = form;
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const { overlay, ...b } = boomerang;
   return {
     ...rest,
+    attract: attractBody(attract),
     ...(same(lookAtCamera, saved.lookAtCamera) ? {} : { lookAtCamera: { ...lookAtCamera, text: lookAtCamera.text.trim() || 'LOOK AT CAMERA' } }),
     ...(same(boomerang, saved.boomerang) ? {} : { boomerang: { ...b, overlayUrl: overlay?.url ?? null } }),
   };
@@ -101,7 +103,7 @@ export default function EventGeniePage() {
 
   async function save() {
     if (!form) return;
-    if (!numbersFilled(form.capture, form.printing, { frames: form.boomerang.frameCount })) { setSaveError('Fill in every number before saving.'); return; }
+    if (!numbersFilled(form.capture, form.printing, { frames: form.boomerang.frameCount, attract: form.attract.returnAfterSeconds })) { setSaveError('Fill in every number before saving.'); return; }
     setSaving(true); setSaveError('');
     const r = await fetch(`/api/events/${eventId}/genie`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patchBody(form, data!.settings!)) });
     const d = await r.json().catch(() => ({}));
@@ -113,7 +115,7 @@ export default function EventGeniePage() {
   }
 
   // Puts a section back on the account's Genie defaults
-  async function resetSection(section: 'timeZone' | 'capture' | 'sharing' | 'printing', label: string) {
+  async function resetSection(section: 'timeZone' | 'capture' | 'sharing' | 'printing' | 'attract', label: string) {
     if (!confirm(`Use your Genie defaults for ${label} on this event? Changes you made here for ${label} are replaced, and it follows your defaults from now on.`)) return;
     setSaveError('');
     const r = await fetch(`/api/events/${eventId}/genie`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reset: [section] }) });
@@ -223,6 +225,11 @@ export default function EventGeniePage() {
                   <div className="border-t pt-4">
                     <LookAtCameraFields value={form.lookAtCamera} disabled={locked} onChange={p => set('lookAtCamera', p)}/>
                   </div>
+                </Section>
+
+                <Section icon={MonitorPlay} title="Attract screen" description="What the iPad shows between guests."
+                  right={<DefaultState custom={data.settings.custom.attract} disabled={locked} onReset={() => resetSection('attract', 'the attract screen')}/>}>
+                  <AttractFields value={form.attract} disabled={locked} onChange={p => set('attract', p)}/>
                 </Section>
 
                 <Section icon={Repeat} title="Boomerang" description="A short looping clip guests can choose instead of photos. This event only.">

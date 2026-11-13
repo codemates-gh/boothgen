@@ -1,10 +1,11 @@
 'use client';
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Info } from 'lucide-react';
 import { Field, Toggle } from './parts';
 
@@ -17,6 +18,11 @@ export type Capture = {
 };
 export type Sharing = { smsEnabled: boolean; emailEnabled: boolean; qrEnabled: boolean; guestLinkScope: 'own' | 'all'; smsBody: string; emailSubject: string; emailBody: string; smsConsentText: string };
 export type Printing = { enabled: boolean; maxCopies: number; defaultCopies: number };
+export type AttractMedia = { url: string; kind: 'image' | 'video'; width: number; height: number; bytes: number; durationMs: number | null };
+export type Attract = { media: AttractMedia | null; returnAfterSeconds: number };
+
+// Save body for the attract section
+export const attractBody = (a: Attract) => ({ mediaUrl: a.media?.url ?? null, returnAfterSeconds: a.returnAfterSeconds });
 
 export const MERGE_HELP: [string, string][] = [
   ['{{firstName}}', "Guest's first name (blank if they skip it)"],
@@ -197,4 +203,97 @@ export function PrintingFields({ value, onChange, disabled }: { value: Printing;
 // Every number field filled in (number inputs hold NaN while empty)
 export function numbersFilled(...groups: object[]): boolean {
   return groups.every(g => Object.values(g).every(v => typeof v !== 'number' || Number.isFinite(v)));
+}
+
+const ATTRACT_TYPES: Record<string, { kind: 'image' | 'video'; max: number }> = {
+  'image/jpeg': { kind: 'image', max: 20 }, 'image/png': { kind: 'image', max: 20 },
+  'video/mp4': { kind: 'video', max: 200 }, 'video/quicktime': { kind: 'video', max: 200 },
+};
+// PUT with upload progress (fetch can't report it); resolves false when it fails
+function putWithProgress(url: string, file: File, onProgress: (pct: number) => void): Promise<boolean> {
+  return new Promise(resolve => {
+    const x = new XMLHttpRequest();
+    x.open('PUT', url);
+    x.setRequestHeader('Content-Type', file.type);
+    x.upload.onprogress = e => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
+    x.onload = () => resolve(x.status >= 200 && x.status < 300);
+    x.onerror = () => resolve(false);
+    x.send(file);
+  });
+}
+const mb = (bytes: number) => (bytes / 1024 / 1024).toFixed(bytes < 10 * 1024 * 1024 ? 1 : 0) + ' MB';
+
+// Attract screen: none, a still image or a looping video. Uploads are shrunk on the server once, before saving.
+export function AttractFields({ value, onChange, disabled }: { value: Attract; onChange: (p: Partial<Attract>) => void; disabled?: boolean }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [phase, setPhase] = useState<'' | 'uploading' | 'shrinking'>('');
+  const [pct, setPct] = useState(0);
+  const [error, setError] = useState('');
+  const [note, setNote] = useState('');
+
+  async function upload(file: File) {
+    setError(''); setNote('');
+    const type = ATTRACT_TYPES[file.type];
+    if (!type) { setError('Use a JPG or PNG image, or an MP4 or MOV video.'); return; }
+    if (file.size > type.max * 1024 * 1024) { setError(type.kind === 'image' ? 'Images must be 20 MB or smaller.' : 'Videos must be 200 MB or smaller.'); return; }
+    setPhase('uploading'); setPct(0);
+    try {
+      const r = await fetch('/api/genie-attract/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contentType: file.type, bytes: file.size }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Could not start the upload');
+      if (!(await putWithProgress(d.uploadUrl, file, setPct))) throw new Error("The upload didn't go through. Check your connection and try again.");
+      setPhase('shrinking');
+      const e = await fetch('/api/genie-attract/encode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: d.url }) });
+      const ed = await e.json().catch(() => ({}));
+      if (!e.ok) throw new Error(ed.error || "That file couldn't be converted. Try a different one.");
+      onChange({ media: ed.media });
+      setNote(`Shrunk from ${mb(ed.sourceBytes)} to ${mb(ed.media.bytes)}.${ed.trimmed ? ' Only the first 30 seconds are used.' : ''}`);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+    setPhase('');
+  }
+
+  const m = value.media;
+  const busy = phase !== '';
+  return (
+    <>
+      <p className="text-xs text-gray-500">
+        Shown full screen while the booth waits for guests; a touch opens the start screen. It fills the screen (centred, edges cropped), so use a landscape file for a landscape booth.
+        Short loops look best: 10–20 seconds. We shrink it for the iPad automatically (about 10 MB for 20 seconds of video), and video plays without sound.
+      </p>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        {m && (
+          <div className="w-48 aspect-video rounded border border-gray-200 bg-gray-900 overflow-hidden flex-shrink-0">
+            {m.kind === 'video'
+              ? <video src={m.url} className="w-full h-full object-cover" autoPlay loop muted playsInline/>
+              : <img src={m.url} alt="Attract screen" className="w-full h-full object-cover"/>}
+          </div>
+        )}
+        <div className="space-y-2">
+          {m && (
+            <p className="text-sm text-gray-700">
+              {m.kind === 'video' ? 'Video' : 'Image'} · {m.width}×{m.height} · {mb(m.bytes)}{m.durationMs ? ` · ${(m.durationMs / 1000).toFixed(1)} s` : ''}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <input ref={fileRef} type="file" accept="image/jpeg,image/png,video/mp4,video/quicktime" className="hidden" onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) upload(f); }}/>
+            <Button type="button" variant="outline" size="sm" disabled={disabled || busy} onClick={() => fileRef.current?.click()}>
+              {phase === 'uploading' ? `Uploading… ${pct}%` : phase === 'shrinking' ? 'Shrinking it for the iPad…' : m ? 'Replace' : 'Upload image or video'}
+            </Button>
+            {m && <Button type="button" variant="outline" size="sm" disabled={disabled || busy} onClick={() => { onChange({ media: null }); setNote(''); }}>Remove</Button>}
+          </div>
+          {!m && !busy && <p className="text-xs text-gray-400">None: the booth opens on the start screen. Image: JPG or PNG up to 20 MB. Video: MP4 or MOV up to 200 MB; we use the first 30 seconds.</p>}
+          {phase === 'shrinking' && <p className="text-xs text-gray-400">A video can take a minute or two. Keep this page open.</p>}
+          {note && <p className="text-xs text-green-700">{note} Save to use it.</p>}
+          {error && <p className="text-sm text-red-600">{error}</p>}
+        </div>
+      </div>
+      <div className="border-t pt-4">
+        <Field label="Return to the attract screen after (sec)" hint="How long the start screen stays up without a touch, including after a session, before the attract screen comes back. 5–600">
+          <Num value={value.returnAfterSeconds} min={5} max={600} disabled={disabled} onChange={n => onChange({ returnAfterSeconds: n })}/>
+        </Field>
+      </div>
+    </>
+  );
 }

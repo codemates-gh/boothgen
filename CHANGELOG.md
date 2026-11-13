@@ -4,6 +4,12 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.77.0] — 2026-11-13
+
+### Added
+- **Attract screen** (Genie → Event Defaults, with a per-event override on Event → Genie): a full-screen image or looping video the iPad shows while it waits for guests; a touch opens the start screen. Set "Return to the attract screen after" (5–600 seconds, 30 by default) for how long the start screen stays up without a touch, including after a session. Upcoming events follow the default until you change it for an event; "Use default" puts an event back on it
+- **Uploads are shrunk for the iPad automatically**: images become a JPEG at most 2048 px wide (usually under 1 MB); videos (MP4 or MOV, up to 200 MB) become a silent H.264 MP4 at most 1080p and 30 fps, using the first 30 seconds (about 10 MB for 20 seconds). The editor shows the shrunk size and length. The file is made once, so saving other settings doesn't make iPads download it again, and a replaced file is deleted once nothing uses it
+
 ## [2.76.0] — 2026-11-13
 
 ### Added

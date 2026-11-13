@@ -1,4 +1,4 @@
-import type { Event, EventGenieSettings, GenieDefaults, Prisma } from '@prisma/client';
+import { Prisma, type Event, type EventGenieSettings, type GenieDefaults } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { GENIE_SETTINGS_DEFAULTS, effectiveLockedAt } from './bundle';
 
@@ -8,12 +8,13 @@ export const DEFAULT_SECTIONS = {
   capture: ['shotCount', 'initialCountdownSeconds', 'betweenShotsCountdownSeconds', 'showPerShotPreview', 'allowPerShotRetake', 'perShotPreviewSeconds', 'allowReviewRetake', 'retakesPerShot', 'idleTimeoutSeconds', 'boomerangEdgeLight'],
   sharing: ['smsEnabled', 'emailEnabled', 'qrEnabled', 'guestLinkScope', 'smsBody', 'emailSubject', 'emailBody', 'smsConsentText'],
   printing: ['printingEnabled', 'printMaxCopies', 'printDefaultCopies'],
+  attract: ['attract', 'attractReturnAfterSeconds'],
 } as const;
 export type DefaultSection = keyof typeof DEFAULT_SECTIONS;
 export const SECTION_NAMES = Object.keys(DEFAULT_SECTIONS) as DefaultSection[];
 
-export const CUSTOM_FLAG: Record<DefaultSection, 'customTimeZone' | 'customCapture' | 'customSharing' | 'customPrinting'> = {
-  timeZone: 'customTimeZone', capture: 'customCapture', sharing: 'customSharing', printing: 'customPrinting',
+export const CUSTOM_FLAG: Record<DefaultSection, 'customTimeZone' | 'customCapture' | 'customSharing' | 'customPrinting' | 'customAttract'> = {
+  timeZone: 'customTimeZone', capture: 'customCapture', sharing: 'customSharing', printing: 'customPrinting', attract: 'customAttract',
 };
 
 type DefaultsValues = Omit<GenieDefaults, 'id' | 'tenantId' | 'templateIds' | 'createdAt' | 'updatedAt'>;
@@ -25,6 +26,7 @@ export const BUILT_IN_DEFAULTS: DefaultsValues = {
   perShotPreviewSeconds: 2, allowReviewRetake: false, retakesPerShot: 1, idleTimeoutSeconds: 60, boomerangEdgeLight: true,
   smsEnabled: true, emailEnabled: true, qrEnabled: true, guestLinkScope: 'own', ...GENIE_SETTINGS_DEFAULTS,
   printingEnabled: true, printMaxCopies: 4, printDefaultCopies: 1,
+  attract: null, attractReturnAfterSeconds: 30,
 };
 
 export async function getDefaults(tenantId: string): Promise<{ values: DefaultsValues; templateIds: string[]; saved: boolean }> {
@@ -34,21 +36,30 @@ export async function getDefaults(tenantId: string): Promise<{ values: DefaultsV
   return { values, templateIds: Array.isArray(templateIds) ? (templateIds as string[]) : [], saved: true };
 }
 
+// Values to write (a JSON column's null is written as SQL NULL)
 export function sectionValues(src: Record<string, unknown>, section: DefaultSection): Record<string, unknown> {
-  return Object.fromEntries(DEFAULT_SECTIONS[section].map(k => [k, src[k]]));
+  return Object.fromEntries(DEFAULT_SECTIONS[section].map(k => [k, src[k] === null && k === 'attract' ? Prisma.DbNull : src[k]]));
+}
+
+// Key order doesn't matter for JSON columns (Postgres jsonb reorders keys)
+function stable(v: unknown): string {
+  if (v === null || typeof v !== 'object') return JSON.stringify(v);
+  if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';
+  return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + stable((v as Record<string, unknown>)[k])).join(',') + '}';
 }
 
 export function sameSection(a: Record<string, unknown>, b: Record<string, unknown>, section: DefaultSection): boolean {
-  return DEFAULT_SECTIONS[section].every(k => a[k] === b[k]);
+  return DEFAULT_SECTIONS[section].every(k => a[k] === b[k] || stable(a[k] ?? null) === stable(b[k] ?? null));
 }
 
 // Settings for a new event: every section from the defaults, none customized
 export function newEventSettingsData(defaults: DefaultsValues, timeZone?: string) {
   return {
     ...defaults,
+    attract: defaults.attract ?? Prisma.DbNull,
     ...(timeZone ? { timeZone } : {}),
     customTimeZone: !!timeZone && timeZone !== defaults.timeZone,
-    customCapture: false, customSharing: false, customPrinting: false,
+    customCapture: false, customSharing: false, customPrinting: false, customAttract: false,
   };
 }
 

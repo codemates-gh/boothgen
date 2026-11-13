@@ -5,16 +5,16 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
-import { Sparkles, Camera, Share2, Printer, Settings2, LayoutTemplate, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { Sparkles, Camera, Share2, Printer, Settings2, LayoutTemplate, ChevronUp, ChevronDown, X, MonitorPlay } from 'lucide-react';
 import { Field, Layout, LayoutPreview } from '@/components/genie/parts';
-import { Capture, CaptureFields, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, numbersFilled } from '@/components/genie/SettingsForms';
+import { Attract, AttractFields, Capture, CaptureFields, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
 
 type LibraryTemplate = { id: string; name: string; scope: 'standard' | 'mine'; layout: Layout | null };
-type Defaults = { saved: boolean; timeZone: string; capture: Capture; sharing: Sharing; printing: Printing; templateIds: string[] };
+type Defaults = { saved: boolean; timeZone: string; capture: Capture; sharing: Sharing; printing: Printing; attract: Attract; templateIds: string[] };
 type Form = Omit<Defaults, 'saved'>;
 
 // Only the editable settings: the GET also returns read-only extras (templates, eventsFollowing) the PUT rejects
-const toForm = (d: Defaults): Form => JSON.parse(JSON.stringify({ timeZone: d.timeZone, capture: d.capture, sharing: d.sharing, printing: d.printing, templateIds: d.templateIds }));
+const toForm = (d: Defaults): Form => JSON.parse(JSON.stringify({ timeZone: d.timeZone, capture: d.capture, sharing: d.sharing, printing: d.printing, attract: d.attract, templateIds: d.templateIds }));
 
 export default function GenieDefaultsPage() {
   const [data, setData] = useState<Defaults & { eventsFollowing: number } | null>(null);
@@ -39,9 +39,9 @@ export default function GenieDefaultsPage() {
 
   async function save() {
     if (!form) return;
-    if (!numbersFilled(form.capture, form.printing)) { setError('Fill in every number before saving.'); return; }
+    if (!numbersFilled(form.capture, form.printing, { n: form.attract.returnAfterSeconds })) { setError('Fill in every number before saving.'); return; }
     setSaving(true); setError(''); setNotice('');
-    const r = await fetch('/api/genie-defaults', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+    const r = await fetch('/api/genie-defaults', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, attract: attractBody(form.attract) }) });
     const d = await r.json().catch(() => ({}));
     setSaving(false);
     if (!r.ok) { setError(d.error || 'Could not save'); return; }
@@ -84,6 +84,10 @@ export default function GenieDefaultsPage() {
 
             <Section icon={Camera} title="Capture" description="What guests go through at the booth.">
               <CaptureFields value={form.capture} onChange={p => set('capture', p)}/>
+            </Section>
+
+            <Section icon={MonitorPlay} title="Attract screen" description="What the iPad shows between guests.">
+              <AttractFields value={form.attract} onChange={p => set('attract', p)}/>
             </Section>
 
             <Section icon={LayoutTemplate} title="Templates" description="Added to an event, in this order, when you set up Genie for it. The client's design-brief pick goes first. Later changes here don't change existing events.">

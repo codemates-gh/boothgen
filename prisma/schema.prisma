@@ -1326,6 +1326,8 @@ model EventGenieSettings {
   customCapture  Boolean @default(true)
   customSharing  Boolean @default(true)
   customPrinting Boolean @default(true)
+  // Attract screen; existing events follow the defaults (they had none to customize)
+  customAttract  Boolean @default(false)
 
   // CaptureConfig
   shotCount                    Int     @default(3)
@@ -1343,6 +1345,9 @@ model EventGenieSettings {
   // (Genie: look-at-camera on with its own wording, boomerang off)
   lookAtCamera                 Json?
   boomerang                    Json?
+  // Attract screen (AttractMedia in src/lib/genie/attract.ts; null = none) and its return delay
+  attract                      Json?
+  attractReturnAfterSeconds    Int     @default(30)
 
   // ProcessingStep[] applied to every photo before the guest's filter
   processing Json @default("[]")
@@ -1547,6 +1552,10 @@ model GenieDefaults {
   printingEnabled    Boolean @default(true)
   printMaxCopies     Int     @default(4)
   printDefaultCopies Int     @default(1)
+
+  // Attract screen (AttractMedia in src/lib/genie/attract.ts; null = none) and its return delay
+  attract                   Json?
+  attractReturnAfterSeconds Int   @default(30)
 
   // BoothDesignTemplate ids added (in this order) when Genie is set up for an event
   templateIds Json @default("[]")

@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
           lockedAt: effectiveLockedAt(e, s),
           locksAt: eventLocksAt(e, s.timeZone),
           timeZone: s.timeZone,
-          followsDefaults: !s.customCapture || !s.customSharing || !s.customPrinting || !s.customTimeZone,
+          followsDefaults: !s.customCapture || !s.customSharing || !s.customPrinting || !s.customTimeZone || !s.customAttract,
           shares: { total: sh.reduce((n, x) => n + x._count._all, 0), failed: sh.find(x => x.status === 'failed')?._count._all ?? 0 },
         } : null,
       };

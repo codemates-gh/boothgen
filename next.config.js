@@ -3,6 +3,8 @@ const nextConfig = {
   images: { remotePatterns: [{ protocol: 'https', hostname: '**' }] },
   experimental: {
     serverActions: { bodySizeLimit: '10mb' },
+    // The ffmpeg binary the attract-screen encoder runs (src/lib/genie/attractEncode.ts)
+    outputFileTracingIncludes: { '/api/genie-attract/encode': ['./node_modules/ffmpeg-static/ffmpeg'] },
   },
   outputFileTracingIncludes: {
     '/blog': ['./content/blog/**/*'],

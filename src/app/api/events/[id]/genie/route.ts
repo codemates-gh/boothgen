@@ -11,6 +11,7 @@ import { requireGenieAdmin } from '@/lib/genie/admin';
 import { designApprovalPending, effectiveLockedAt, eventLocksAt, isValidTimeZone } from '@/lib/genie/bundle';
 import { SettingsPatch, boomerangData, findAdminEvent, lockedError, providerWarnings, settingsUpdateData, settingsView, templateView } from '@/lib/genie/eventAdmin';
 import { galleryRetentionDates, getGalleryRetention } from '@/lib/gallery/retention';
+import { attractData, deleteUnusedAttractMedia, storedAttract } from '@/lib/genie/attract';
 
 // Everything the event's Genie dashboard shows
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -105,6 +106,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if ('error' in b) return NextResponse.json({ error: b.error, path: 'boomerang.overlayUrl' }, { status: 400 });
     result.data.boomerang = b.value;
   }
+  if (parsed.data.attract) {
+    const a = await attractData(parsed.data.attract, s.attract, auth.tenantId);
+    if ('error' in a) return NextResponse.json({ error: a.error, path: 'attract.mediaUrl' }, { status: 400 });
+    Object.assign(result.data, a.data);
+  }
   const defaults = (await getDefaults(auth.tenantId)).values;
   // Sections put back on the defaults
   for (const section of parsed.data.reset ?? []) Object.assign(result.data, sectionValues(defaults, section), { [CUSTOM_FLAG[section]]: false });
@@ -112,5 +118,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   // Sections saved here are custom only when they now differ from the defaults
   const touched = SECTION_NAMES.filter(sec => (sec === 'printing' ? parsed.data.printing : parsed.data[sec]) !== undefined && !parsed.data.reset?.includes(sec));
   if (touched.length) saved = await prisma.eventGenieSettings.update({ where: { id: s.id }, data: customFlags(saved, defaults, touched) });
+  // A replaced attract file nothing else uses is deleted
+  const oldAttract = storedAttract(s.attract)?.media.url;
+  if (oldAttract && oldAttract !== storedAttract(saved.attract)?.media.url) await deleteUnusedAttractMedia([oldAttract]);
   return NextResponse.json(settingsView(saved));
 }
