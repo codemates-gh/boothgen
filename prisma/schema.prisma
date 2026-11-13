@@ -1337,6 +1337,8 @@ model EventGenieSettings {
   allowReviewRetake            Boolean @default(false)
   retakesPerShot               Int     @default(1)
   idleTimeoutSeconds           Int     @default(60)
+  // CaptureConfig.boomerang.edgeLight: white border lighting the live view while a boomerang records
+  boomerangEdgeLight           Boolean @default(true)
   // CaptureConfig.lookAtCamera / .boomerang (per event, not account defaults); null = absent from the bundle
   // (Genie: look-at-camera on with its own wording, boomerang off)
   lookAtCamera                 Json?
@@ -1531,6 +1533,7 @@ model GenieDefaults {
   allowReviewRetake            Boolean @default(false)
   retakesPerShot               Int     @default(1)
   idleTimeoutSeconds           Int     @default(60)
+  boomerangEdgeLight           Boolean @default(true)
 
   smsEnabled     Boolean @default(true)
   emailEnabled   Boolean @default(true)

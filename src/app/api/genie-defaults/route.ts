@@ -16,6 +16,7 @@ function view(d: Awaited<ReturnType<typeof getDefaults>>) {
       shotCount: v.shotCount, initialCountdownSeconds: v.initialCountdownSeconds, betweenShotsCountdownSeconds: v.betweenShotsCountdownSeconds,
       showPerShotPreview: v.showPerShotPreview, allowPerShotRetake: v.allowPerShotRetake, perShotPreviewSeconds: v.perShotPreviewSeconds,
       allowReviewRetake: v.allowReviewRetake, retakesPerShot: v.retakesPerShot, idleTimeoutSeconds: v.idleTimeoutSeconds,
+      boomerangEdgeLight: v.boomerangEdgeLight,
     },
     sharing: {
       smsEnabled: v.smsEnabled, emailEnabled: v.emailEnabled, qrEnabled: v.qrEnabled, guestLinkScope: v.guestLinkScope as 'own' | 'all',

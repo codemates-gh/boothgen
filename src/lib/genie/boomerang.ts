@@ -8,11 +8,11 @@ export function storedBoomerang(v: unknown): StoredBoomerang | null {
   return v && typeof v === 'object' ? v as StoredBoomerang : null;
 }
 
-// BoomerangConfig as the bundle sends it
-export function bundleBoomerang(v: unknown) {
+// BoomerangConfig as the bundle sends it; edgeLight comes from the Capture section (account default / event override)
+export function bundleBoomerang(v: unknown, edgeLight: boolean) {
   const b = storedBoomerang(v);
   if (!b) return undefined;
   const { overlaySize: _s, overlay, ...rest } = b;
-  return { ...rest, ...(overlay ? { overlay } : {}) };
+  return { ...rest, edgeLight, ...(overlay ? { overlay } : {}) };
 }
 

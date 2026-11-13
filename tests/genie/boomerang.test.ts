@@ -152,7 +152,7 @@ describe('Look at the camera and Boomerang settings', () => {
     const b = await (await deviceBundle(req('/x', { token }), ev(event.id))).json();
     expect(b.bundleVersion).toBe(v1 + 1);
     expect(b.capture.lookAtCamera).toEqual({ enabled: true, text: 'Eyes up here!', frequency: 'firstPhoto' });
-    expect(b.capture.boomerang).toEqual({ ...BOOMERANG, overlay: { url, sha256: expect.stringMatching(/^[0-9a-f]{64}$/), contentType: 'image/png', bytes: 33 } });
+    expect(b.capture.boomerang).toEqual({ ...BOOMERANG, edgeLight: true, overlay: { url, sha256: expect.stringMatching(/^[0-9a-f]{64}$/), contentType: 'image/png', bytes: 33 } });
     const validate = await bundleValidator();
     if (validate) expect(validate(b)).toBeNull();
 
@@ -161,6 +161,16 @@ describe('Look at the camera and Boomerang settings', () => {
     expect((await (await deviceBundle(req('/x', { token }), ev(event.id))).json()).capture.boomerang.overlay.url).toBe(url);
     await PATCH(req('/x', { method: 'PATCH', body: { boomerang: { ...BOOMERANG, overlayUrl: null } } }), p(event.id));
     expect((await (await deviceBundle(req('/x', { token }), ev(event.id))).json()).capture.boomerang.overlay).toBeUndefined();
+  });
+
+  it('sends the edge light from the Capture section: on by default, off when the event turns it off', async () => {
+    const { event, token } = await setup();
+    await PATCH(req('/x', { method: 'PATCH', body: { boomerang: BOOMERANG } }), p(event.id));
+    expect((await (await deviceBundle(req('/x', { token }), ev(event.id))).json()).capture.boomerang.edgeLight).toBe(true);
+    const dash = await (await DASH(req('/x'), p(event.id))).json();
+    const r = await PATCH(req('/x', { method: 'PATCH', body: { capture: { ...dash.settings.capture, boomerangEdgeLight: false } } }), p(event.id));
+    expect((await r.json()).custom.capture).toBe(true);
+    expect((await (await deviceBundle(req('/x', { token }), ev(event.id))).json()).capture.boomerang.edgeLight).toBe(false);
   });
 
   it("refuses an overlay in the wrong shape, without transparency, or from another account's storage", async () => {

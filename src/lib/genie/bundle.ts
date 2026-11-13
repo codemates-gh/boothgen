@@ -129,7 +129,7 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
       idleTimeoutSeconds: settings.idleTimeoutSeconds,
       // Optional; left out until the operator sets them, so existing bundles (and their version) don't change
       ...(settings.lookAtCamera ? { lookAtCamera: settings.lookAtCamera } : {}),
-      ...(settings.boomerang ? { boomerang: bundleBoomerang(settings.boomerang) } : {}),
+      ...(settings.boomerang ? { boomerang: bundleBoomerang(settings.boomerang, settings.boomerangEdgeLight) } : {}),
     },
     templates: [...event.genieTemplates].sort((a, b) => a.sortOrder - b.sortOrder).map(eventTemplateJson),
     processing: settings.processing,

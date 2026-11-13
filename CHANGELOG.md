@@ -4,6 +4,11 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.76.0] — 2026-11-13
+
+### Added
+- **Edge light while a boomerang records** (Genie → Event Defaults → Capture, and each event's Capture section): a steady bright-white border around the iPad's live view for the second or so a boomerang records, so guests see it's capturing and their faces are lit. On by default; turn it off for your account or per event. Steady rather than flashing, so the clip doesn't flicker
+
 ## [2.75.0] — 2026-11-13
 
 ### Added

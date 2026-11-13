@@ -13,6 +13,7 @@ import { Field, Toggle } from './parts';
 export type Capture = {
   shotCount: number; initialCountdownSeconds: number; betweenShotsCountdownSeconds: number; showPerShotPreview: boolean; allowPerShotRetake: boolean;
   perShotPreviewSeconds: number; allowReviewRetake: boolean; retakesPerShot: number; idleTimeoutSeconds: number;
+  boomerangEdgeLight: boolean;
 };
 export type Sharing = { smsEnabled: boolean; emailEnabled: boolean; qrEnabled: boolean; guestLinkScope: 'own' | 'all'; smsBody: string; emailSubject: string; emailBody: string; smsConsentText: string };
 export type Printing = { enabled: boolean; maxCopies: number; defaultCopies: number };
@@ -130,6 +131,8 @@ export function CaptureFields({ value, onChange, disabled, children }: { value: 
           </div>
         )}
         <Toggle checked={value.allowReviewRetake} disabled={disabled} onChange={v => onChange({ allowReviewRetake: v })} label="Retake from the final review" hint="Guests can retake any photo before printing and sharing."/>
+        <Toggle checked={value.boomerangEdgeLight} disabled={disabled} onChange={v => onChange({ boomerangEdgeLight: v })} label="Edge light while a boomerang records"
+          hint="A bright white border around the live view for the second or so a boomerang records: guests see it's capturing, and it lights their faces on the iPad camera. Steady, not flashing, so the clip doesn't flicker."/>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-4">
         <Field label="Retakes allowed" hint="Per photo with Keep / Retake; per session from the final review. 0–3">

@@ -73,6 +73,8 @@ export const SettingsPatch = z.object({
     allowReviewRetake: z.boolean(),
     retakesPerShot: int(0, 3),
     idleTimeoutSeconds: int(10, 600),
+    // Optional so older pages that don't send it keep the saved value
+    boomerangEdgeLight: z.boolean().optional(),
   }).strict(),
   filters: z.object({
     guestFiltersEnabled: z.boolean(),
@@ -175,6 +177,7 @@ export function settingsView(s: EventGenieSettings) {
       allowReviewRetake: s.allowReviewRetake,
       retakesPerShot: s.retakesPerShot,
       idleTimeoutSeconds: s.idleTimeoutSeconds,
+      boomerangEdgeLight: s.boomerangEdgeLight,
     },
     lookAtCamera: (s.lookAtCamera as LookAtCamera | null) ?? LOOK_AT_CAMERA_DEFAULT,
     boomerang: (() => {

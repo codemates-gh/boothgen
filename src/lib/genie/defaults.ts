@@ -5,7 +5,7 @@ import { GENIE_SETTINGS_DEFAULTS, effectiveLockedAt } from './bundle';
 // Sections that have account-wide defaults. Field names are the same on GenieDefaults and EventGenieSettings.
 export const DEFAULT_SECTIONS = {
   timeZone: ['timeZone'],
-  capture: ['shotCount', 'initialCountdownSeconds', 'betweenShotsCountdownSeconds', 'showPerShotPreview', 'allowPerShotRetake', 'perShotPreviewSeconds', 'allowReviewRetake', 'retakesPerShot', 'idleTimeoutSeconds'],
+  capture: ['shotCount', 'initialCountdownSeconds', 'betweenShotsCountdownSeconds', 'showPerShotPreview', 'allowPerShotRetake', 'perShotPreviewSeconds', 'allowReviewRetake', 'retakesPerShot', 'idleTimeoutSeconds', 'boomerangEdgeLight'],
   sharing: ['smsEnabled', 'emailEnabled', 'qrEnabled', 'guestLinkScope', 'smsBody', 'emailSubject', 'emailBody', 'smsConsentText'],
   printing: ['printingEnabled', 'printMaxCopies', 'printDefaultCopies'],
 } as const;
@@ -22,7 +22,7 @@ type DefaultsValues = Omit<GenieDefaults, 'id' | 'tenantId' | 'templateIds' | 'c
 export const BUILT_IN_DEFAULTS: DefaultsValues = {
   timeZone: 'America/New_York',
   shotCount: 3, initialCountdownSeconds: 5, betweenShotsCountdownSeconds: 3, showPerShotPreview: true, allowPerShotRetake: true,
-  perShotPreviewSeconds: 2, allowReviewRetake: false, retakesPerShot: 1, idleTimeoutSeconds: 60,
+  perShotPreviewSeconds: 2, allowReviewRetake: false, retakesPerShot: 1, idleTimeoutSeconds: 60, boomerangEdgeLight: true,
   smsEnabled: true, emailEnabled: true, qrEnabled: true, guestLinkScope: 'own', ...GENIE_SETTINGS_DEFAULTS,
   printingEnabled: true, printMaxCopies: 4, printDefaultCopies: 1,
 };
