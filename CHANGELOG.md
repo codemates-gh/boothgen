@@ -4,6 +4,11 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.78.1] — 2026-11-13
+
+### Changed
+- **Attract screen** wording and preview match the iPad: the whole image or video is shown, centred, with black bars where its shape differs from the screen (it was cropped to fill before). Match the booth screen's shape to avoid the bars
+
 ## [2.78.0] — 2026-11-13
 
 ### Added

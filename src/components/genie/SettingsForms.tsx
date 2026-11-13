@@ -259,15 +259,15 @@ export function AttractFields({ value, onChange, disabled }: { value: Attract; o
   return (
     <>
       <p className="text-xs text-gray-500">
-        Shown full screen while the booth waits for guests; a touch opens the start screen. It fills the screen (centred, edges cropped), so use a landscape file for a landscape booth.
+        Shown full screen while the booth waits for guests; a touch opens the start screen. The whole file is shown, centred, with black bars where its shape differs from the screen; match the booth screen's shape (e.g. portrait 3:4 for an iPad standing upright) to avoid the bars.
         Short loops look best: 10–20 seconds. We shrink it for the iPad automatically (about 10 MB for 20 seconds of video), and video plays without sound.
       </p>
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         {m && (
           <div className="w-48 aspect-video rounded border border-gray-200 bg-gray-900 overflow-hidden flex-shrink-0">
             {m.kind === 'video'
-              ? <video src={m.url} className="w-full h-full object-cover" autoPlay loop muted playsInline/>
-              : <img src={m.url} alt="Attract screen" className="w-full h-full object-cover"/>}
+              ? <video src={m.url} className="w-full h-full object-contain" autoPlay loop muted playsInline/>
+              : <img src={m.url} alt="Attract screen" className="w-full h-full object-contain"/>}
           </div>
         )}
         <div className="space-y-2">
