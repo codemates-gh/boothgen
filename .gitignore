@@ -15,3 +15,6 @@ public/build-info.json
 
 # Genie local seed assets (npm run genie:seed)
 public/genie-seed/
+
+# Example env file (copy to .env and fill in)
+!.env.example

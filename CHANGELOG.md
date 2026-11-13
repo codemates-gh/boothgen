@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.80.0] — 2026-11-13
+
+### Added
+- **Download the Genie print box (Windows)** from Genie → Devices. A new Print Box card links to the latest installer, with a note that Windows SmartScreen asks for "More info → Run anyway" because the installer isn't signed yet
+- `boothgen.com/downloads/print-box/<file>` forwards (temporary redirect, never cached, no sign-in needed) to the print box files in the `genie-downloads` R2 bucket. Print boxes from 0.4.1 download their installer and updates through it
+
+**Env var required**: `GENIE_DOWNLOADS_URL` = the bucket's public r2.dev URL, no trailing slash (see `.env.example`). Without it the download links return 404
+
+---
+
 ## [2.79.1] — 2026-11-13
 
 ### Fixed

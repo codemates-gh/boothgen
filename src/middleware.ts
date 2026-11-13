@@ -24,6 +24,8 @@ const PUBLIC_PREFIX = [
   '/api/genie',
   // Dev API for reports assigned to Dev: checks its own bearer key (REPORTS_DEV_TOKEN)
   '/api/dev',
+  // Genie print box installer + auto-update feed (redirects to R2; print boxes fetch anonymously)
+  '/downloads',
 ];
 
 // Whole path segments only: '/g' covers '/g/<token>' but not '/gallery' or '/genie'

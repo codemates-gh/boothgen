@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
-import { Sparkles, Tablet, KeyRound, Plus, Pencil, Trash2, HardDrive, Lock } from 'lucide-react';
+import { Sparkles, Tablet, KeyRound, Plus, Pencil, Trash2, HardDrive, Lock, Printer, Download } from 'lucide-react';
 
 type Device = {
   id: string; name: string; model: string | null; appVersion: string | null; prefix: string; lastSeenAt: string | null; createdAt: string;
@@ -189,6 +189,17 @@ export default function GenieDevicesPage() {
               <CardContent className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <p className="text-sm text-gray-500 flex-1">Locks the operator screens so guests can&apos;t leave the booth. All your devices use the same PIN.</p>
                 <Button variant="outline" onClick={() => { setPin(''); setModalError(''); setPinOpen(true); }}><Lock className="w-3.5 h-3.5 mr-1.5"/>{data.pinSet ? 'Change PIN' : 'Set PIN'}</Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2"><Printer className="w-4 h-4"/>Print Box</CardTitle></CardHeader>
+              <CardContent className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex-1">
+                  <p className="text-sm text-gray-500">Install the print box on the Windows PC connected to your printer. It updates itself after that.</p>
+                  <p className="text-xs text-gray-400 mt-1">Windows SmartScreen may warn about it because the installer isn&apos;t signed yet: click More info → Run anyway.</p>
+                </div>
+                <a href="/downloads/print-box/Genie-Print-Box-Setup.exe"><Button variant="outline"><Download className="w-3.5 h-3.5 mr-1.5"/>Download print box (Windows)</Button></a>
               </CardContent>
             </Card>
           </>
