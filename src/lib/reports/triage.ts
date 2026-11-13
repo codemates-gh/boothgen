@@ -43,6 +43,7 @@ export async function applyTriage(r: FullReport, actorId: string | null, d: Tria
   const tellWatchers = statusChanged || versionChanged || howChanged || !!original;
 
   const noteBody = newStatus === 'duplicate' && original ? `Marked as a duplicate of #${original.number}`
+    : statusChanged && newStatus === 'fix_ready' ? `Fix is live${fixedIn ? ` in version ${fixedIn}` : ''}, being checked`
     : statusChanged ? `Status changed to ${statusLabel(newStatus)}${newStatus === 'fixed' && fixedIn ? ` (version ${fixedIn})` : ''}`
     : howChanged ? 'Updated how to find it'
     : `Fixed in version ${fixedIn ?? '—'}`;

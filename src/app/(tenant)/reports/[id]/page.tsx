@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { AttachmentList, ReportThread, type ThreadNote } from '@/components/reports/ReportThread';
 import { HowToFind } from '@/components/reports/HowToFind';
 import { AttachmentPicker, useAttachments } from '@/components/reports/AttachmentPicker';
-import { areaLabel, severityLabel, statusBadge, statusLabel, typeLabel } from '@/lib/reports/options';
+import { areaLabel, reporterStatusLabel, severityLabel, statusBadge, typeLabel } from '@/lib/reports/options';
 
 type Report = {
   id: string; number: number; type: string; title: string; area: string; severity: string | null; deviceInfo: string | null; details: string;
@@ -73,13 +73,14 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                   <CardTitle>#{report.number} {report.title}</CardTitle>
                   <div className="flex gap-1.5 shrink-0">
                     {report.priority && <Badge variant="brand">{report.priority}</Badge>}
-                    <Badge variant={statusBadge(report.status)}>{statusLabel(report.status)}</Badge>
+                    <Badge variant={statusBadge(report.status)}>{reporterStatusLabel(report.status)}</Badge>
                   </div>
                 </div>
                 <p className="text-xs text-gray-400">
                   {typeLabel(report.type)} · {areaLabel(report.area)}{report.severity ? ` · ${severityLabel(report.severity)}` : ''} · by {report.isMine ? 'you' : report.reporterName} · {format(new Date(report.createdAt), 'MMM d, yyyy h:mm a')}
                 </p>
                 {report.status === 'fixed' && report.fixedInVersion && <p className="text-sm text-green-700 mt-1">Fixed in version {report.fixedInVersion}</p>}
+                {report.status === 'fix_ready' && <p className="text-sm text-[#0073E6] mt-1">The fix is live{report.fixedInVersion ? ` in version ${report.fixedInVersion}` : ''}. Booth Genius is checking it; you can try it now.</p>}
               </CardHeader>
               <CardContent className="space-y-4">
                 {report.deviceInfo && <p className="text-xs text-gray-500">Device: {report.deviceInfo}</p>}

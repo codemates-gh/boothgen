@@ -327,10 +327,27 @@ describe('Bug reports and suggestions', () => {
     expect((await DEV_SHOW(dev('/x'), p('#' + number))).status).toBe(200);
 
     sendEmail.mockClear();
-    const up = await (await DEV_UPDATE(dev('/x', { status: 'fixed', fixedInVersion: '2.74.0', note: 'Print now retries when the printer wakes up.' }), p(String(number)))).json();
-    expect(up.report).toMatchObject({ status: 'fixed', fixedInVersion: '2.74.0' });
-    expect(up.report.notes.slice(-2).map((n: any) => [n.author, n.body])).toEqual([['Dev', 'Status changed to Fixed (version 2.74.0)'], ['Dev', 'Print now retries when the printer wakes up.']]);
+    // Only staff mark a report Fixed; the Dev API stops at Fix ready
+    const refused = await DEV_UPDATE(dev('/x', { status: 'fixed', fixedInVersion: '2.74.0' }), p(String(number)));
+    expect(refused.status).toBe(403);
+    expect((await refused.json()).error).toMatch(/Only Booth Genius staff can mark a report Fixed/);
+    expect(sendEmail).not.toHaveBeenCalled();
+    const up = await (await DEV_UPDATE(dev('/x', { status: 'fix_ready', fixedInVersion: '2.74.0', note: 'Print now retries when the printer wakes up.' }), p(String(number)))).json();
+    expect(up.report).toMatchObject({ status: 'fix_ready', fixedInVersion: '2.74.0' });
+    expect(up.report.notes.slice(-2).map((n: any) => [n.author, n.body])).toEqual([['Dev', 'Fix is live in version 2.74.0, being checked'], ['Dev', 'Print now retries when the printer wakes up.']]);
     expect(sendEmail.mock.calls.map(c => c[0])).toEqual([reporter.email, reporter.email]);
+    expect(sendEmail.mock.calls[0][1]).toBe(`Report #${number}: the fix is live, being checked`);
+    expect(sendEmail.mock.calls[0][2]).toContain('Fix is live, being checked</strong> (version 2.74.0)');
+    expect((await (await DEV_LIST(dev('/x'))).json()).reports).toEqual([]); // waiting on staff, off Dev's queue
+    expect((await (await ADMIN_LIST(req('/x?status=fix_ready'))).json()).counts.fix_ready).toBe(1);
+
+    // Staff close it (the version is already there)
+    sendEmail.mockClear();
+    as(admin, undefined, true);
+    const closed = await (await TRIAGE(req('/x', { method: 'PATCH', body: { status: 'fixed', fixedInVersion: '2.74.0' } }), p(id))).json();
+    expect(closed.report).toMatchObject({ status: 'fixed', fixedInVersion: '2.74.0' });
+    expect(closed.report.notes.at(-1).body).toBe('Status changed to Fixed (version 2.74.0)');
+    expect(sendEmail.mock.calls.map(c => c[0])).toEqual([reporter.email]);
     as(reporter, tenant.id);
     expect((await (await DETAIL(req('/x'), p(id))).json()).report.notes.at(-1)).toMatchObject({ author: 'Booth Genius', fromAdmin: true });
     expect((await (await DEV_LIST(dev('/x'))).json()).reports).toEqual([]); // closed drops off the queue
@@ -367,7 +384,7 @@ describe('Bug reports and suggestions', () => {
     expect(await (await DEV_UPLOAD(dev({ contentType: 'image/png', bytes: 10 }))).json()).toMatchObject({ key: expect.stringMatching(/^reports\/dev\/.+\.png$/) });
     expect((await DEV_UPDATE(dev({ attachments: [shot('dev')] }), p(id))).status).toBe(400); // needs a note
     expect((await DEV_UPDATE(dev({ note: 'x', attachments: [shot(reporter.id)] }), p(id))).status).toBe(400); // not a Dev upload
-    const fixed = await (await DEV_UPDATE(dev({ status: 'fixed', fixedInVersion: '2.74.0', note: 'Fixed screen attached', attachments: [shot('dev', 'after.png')] }), p(id))).json();
+    const fixed = await (await DEV_UPDATE(dev({ status: 'fix_ready', fixedInVersion: '2.74.0', note: 'Fixed screen attached', attachments: [shot('dev', 'after.png')] }), p(id))).json();
     expect(fixed.report.notes.at(-1)).toMatchObject({ body: 'Fixed screen attached', attachments: [expect.objectContaining({ name: 'after.png', url: expect.stringContaining('reports/dev/after.png') })] });
     delete process.env.REPORTS_DEV_TOKEN;
   });

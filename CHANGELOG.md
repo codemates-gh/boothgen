@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.78.0] — 2026-11-13
+
+### Added
+- **"Fix ready" status for reports**: a fix is deployed and waiting for Booth Genius to check it. Reporters see "Fix is live, being checked" with the version, and they and followers are emailed. In Super Admin → Reports, the Fix ready filter shows what's waiting, and **Mark Fixed** closes a report in one click, keeping the version
+
+### Changed
+- **Only Booth Genius staff mark a report Fixed.** The Dev API and `scripts/dev-reports.mjs` now set Fix ready after deploying (and refuse Fixed); a Fix ready report leaves the Dev queue
+
 ## [2.77.0] — 2026-11-13
 
 ### Added

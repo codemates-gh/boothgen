@@ -29,6 +29,8 @@ export const REPORT_STATUSES = [
   { value: 'need_info', label: 'Need more info', badge: 'warning' },
   { value: 'confirmed', label: 'Confirmed', badge: 'info' },
   { value: 'in_progress', label: 'In progress', badge: 'brand' },
+  // The fix is deployed; Booth Genius checks it, then marks it Fixed (only staff can; the Dev API stops here)
+  { value: 'fix_ready', label: 'Fix ready', reporterLabel: 'Fix is live, being checked', badge: 'info' },
   { value: 'fixed', label: 'Fixed', badge: 'success' },
   { value: 'wont_fix', label: "Won't fix", badge: 'default' },
   { value: 'duplicate', label: 'Duplicate', badge: 'default' },
@@ -36,7 +38,7 @@ export const REPORT_STATUSES = [
 ] as const;
 
 // Still being worked on; the Reports board shows these by default
-export const OPEN_STATUSES = ['new', 'need_info', 'confirmed', 'in_progress'];
+export const OPEN_STATUSES = ['new', 'need_info', 'confirmed', 'in_progress', 'fix_ready'];
 
 export const REPORT_PRIORITIES = ['P1', 'P2', 'P3'] as const;
 
@@ -46,6 +48,13 @@ export const typeLabel = (v: string) => labelOf(REPORT_TYPES, v);
 export const areaLabel = (v: string) => labelOf(REPORT_AREAS, v);
 export const severityLabel = (v: string | null | undefined) => labelOf(REPORT_SEVERITIES, v);
 export const statusLabel = (v: string) => labelOf(REPORT_STATUSES, v);
+// What reporters and followers see (pages and emails)
+export const reporterStatusLabel = (v: string) => {
+  const s = REPORT_STATUSES.find(o => o.value === v);
+  return s && 'reporterLabel' in s ? s.reporterLabel : statusLabel(v);
+};
+// Statuses that show the fixed-in version
+export const showsVersion = (v: string) => v === 'fixed' || v === 'fix_ready';
 export const statusBadge = (v: string) => (REPORT_STATUSES.find(s => s.value === v)?.badge ?? 'default') as any;
 
 const values = <T extends readonly Opt[]>(list: T) => list.map(o => o.value) as unknown as [T[number]['value'], ...T[number]['value'][]];

@@ -217,6 +217,14 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
                 </div>
               </div>
 
+              {!pending && detail.status === 'fix_ready' && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 flex flex-wrap items-center gap-3">
+                  <p className="text-sm text-[#0073E6] flex-1 min-w-[200px]">Fix is live{detail.fixedInVersion ? ` in ${detail.fixedInVersion}` : ''}. Check it, then close the report; the reporter is emailed.</p>
+                  <Button size="sm" disabled={busy} onClick={() => triage({ status: 'fixed', fixedInVersion: fixedIn.trim() || detail.fixedInVersion || null })}>
+                    Mark Fixed{(fixedIn.trim() || detail.fixedInVersion) ? ` (${fixedIn.trim() || detail.fixedInVersion})` : ''}
+                  </Button>
+                </div>
+              )}
               {pending === 'exists' && (
                 <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 space-y-2">
                   <p className="text-sm font-medium text-green-800">Already exists: how to find it</p>

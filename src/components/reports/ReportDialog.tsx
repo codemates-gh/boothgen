@@ -8,7 +8,7 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Bug, Lightbulb, CheckCircle2, Users, ThumbsUp } from 'lucide-react';
 import { AttachmentPicker, useAttachments } from './AttachmentPicker';
-import { statusLabel, REPORT_AREAS, REPORT_SEVERITIES } from '@/lib/reports/options';
+import { reporterStatusLabel, REPORT_AREAS, REPORT_SEVERITIES } from '@/lib/reports/options';
 
 type Similar = { id: string; number: number; type: string; title: string; status: string; voteCount: number; isMine: boolean; hasVoted: boolean; canVote: boolean };
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -127,7 +127,7 @@ export function ReportDialog({ open, onClose }: { open: boolean; onClose: () => 
                 {similar.map(r => (
                   <li key={r.id} className="flex items-center gap-2 text-sm">
                     <Link href={`/reports/${r.id}`} target="_blank" className="flex-1 min-w-0 truncate text-gray-800 hover:text-[#0085FF]">#{r.number} {r.title}</Link>
-                    <span className="text-[11px] text-gray-500 shrink-0">{statusLabel(r.status)} · {r.voteCount} {r.type === 'suggestion' ? (r.voteCount === 1 ? 'vote' : 'votes') : 'affected'}</span>
+                    <span className="text-[11px] text-gray-500 shrink-0">{reporterStatusLabel(r.status)} · {r.voteCount} {r.type === 'suggestion' ? (r.voteCount === 1 ? 'vote' : 'votes') : 'affected'}</span>
                     {r.isMine ? <span className="text-[11px] text-gray-400 shrink-0">yours</span>
                       : r.hasVoted ? <span className="text-[11px] text-[#0085FF] shrink-0">{r.type === 'suggestion' ? 'voted' : 'joined'}</span>
                       : !r.canVote ? <span className="text-[11px] text-gray-400 shrink-0">closed</span>

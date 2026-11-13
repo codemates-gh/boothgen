@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { ReportDialog } from '@/components/reports/ReportDialog';
-import { REPORT_AREAS, REPORT_STATUSES, REPORT_TYPES, areaLabel, severityLabel, statusBadge, statusLabel, typeLabel } from '@/lib/reports/options';
+import { REPORT_AREAS, REPORT_STATUSES, REPORT_TYPES, areaLabel, reporterStatusLabel, severityLabel, showsVersion, statusBadge, typeLabel } from '@/lib/reports/options';
 
 type Row = {
   id: string; number: number; type: string; title: string; area: string; severity: string | null; status: string; priority: string | null;
@@ -51,7 +51,7 @@ export default function ReportsPage() {
           <Select className="w-44" value={filters.status} onChange={e => setF('status', e.target.value)}>
             <option value="open">Open</option>
             <option value="all">All statuses</option>
-            {REPORT_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            {REPORT_STATUSES.map(s => <option key={s.value} value={s.value}>{reporterStatusLabel(s.value)}</option>)}
           </Select>
           <Select className="w-36" value={filters.type} onChange={e => setF('type', e.target.value)}>
             <option value="">All types</option>
@@ -95,7 +95,7 @@ export default function ReportsPage() {
                       </span>
                       {r.severity && <Badge variant={SEV_VARIANT[r.severity]}>{severityLabel(r.severity)}</Badge>}
                       {r.priority && <Badge variant="brand">{r.priority}</Badge>}
-                      <Badge variant={statusBadge(r.status)}>{statusLabel(r.status)}{r.status === 'fixed' && r.fixedInVersion ? ` · ${r.fixedInVersion}` : ''}</Badge>
+                      <Badge variant={statusBadge(r.status)}>{reporterStatusLabel(r.status)}{showsVersion(r.status) && r.fixedInVersion ? ` · ${r.fixedInVersion}` : ''}</Badge>
                     </div>
                   </Link>
                 ))}

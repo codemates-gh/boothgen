@@ -4,7 +4,8 @@
 // Usage (from the repo root; the token can live in .env, which is not committed):
 //   node --env-file=.env scripts/dev-reports.mjs list [--all]
 //   node --env-file=.env scripts/dev-reports.mjs show 12 [--download <folder>]
-//   node --env-file=.env scripts/dev-reports.mjs update 12 --status fixed --fixed-in 2.74.0 --note "What changed"
+//   node --env-file=.env scripts/dev-reports.mjs update 12 --status fix_ready --fixed-in 2.74.0 --note "What changed + how to check"
+//        (after the fix is deployed; never --status fixed: only Booth Genius staff close a report, and the API refuses it)
 //        other flags: --priority P1|P2|P3  --internal (note only Super Admins see)  --unassign
 //                     --attach shot1.png,shot2.png (screenshots with the note, e.g. the fixed screen)
 //                     --how-to-find "Steps" --how-to-find-url /genie/sharing  --duplicate-of 7
@@ -70,6 +71,10 @@ if (cmd === 'list') {
     }
   }
 } else if (cmd === 'update' && ref) {
+  if (flags.status === 'fixed') {
+    console.error('Only Booth Genius staff mark a report Fixed. After deploying, use --status fix_ready --fixed-in <version> --note "<what changed + how to check>".');
+    process.exit(1);
+  }
   const body = {
     ...(flags.status ? { status: flags.status } : {}),
     ...(flags['fixed-in'] ? { fixedInVersion: flags['fixed-in'] } : {}),
@@ -98,6 +103,6 @@ if (cmd === 'list') {
   const { report } = await api('/' + encodeURIComponent(ref), body);
   console.log(`#${report.number} updated: ${report.status}${report.fixedInVersion ? ' (' + report.fixedInVersion + ')' : ''}`);
 } else {
-  console.log('Usage: dev-reports.mjs list [--all] | show <#> [--download <dir>] | update <#> --status … --fixed-in … --note "…"');
+  console.log('Usage: dev-reports.mjs list [--all] | show <#> [--download <dir>] | update <#> --status fix_ready --fixed-in <version> --note "…"');
   process.exit(1);
 }

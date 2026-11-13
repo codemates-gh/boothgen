@@ -2,7 +2,7 @@
 // fails the report, reply or triage change (in-app unread markers carry the notification either way).
 import { prisma } from '@/lib/prisma/client';
 import { sendEmail } from '@/lib/email/send';
-import { areaLabel, statusLabel, typeLabel } from './options';
+import { areaLabel, reporterStatusLabel, showsVersion, typeLabel } from './options';
 
 const appUrl = () => (process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com').replace(/\/$/, '');
 
@@ -65,7 +65,7 @@ export async function notifyWatchers(r: ReportForEmail, to: string[], change: {
   status?: string; fixedInVersion?: string | null; note?: string; howToFind?: string | null; howToFindUrl?: string | null; duplicateOf?: number | null;
 }) {
   const lines: string[] = [esc(r.title)];
-  if (change.status) lines.push('Status: <strong>' + esc(statusLabel(change.status)) + '</strong>' + (change.status === 'fixed' && change.fixedInVersion ? ' in version ' + esc(change.fixedInVersion) : '') + (change.status === 'duplicate' && change.duplicateOf ? ' of #' + change.duplicateOf + ' (you now get its updates)' : ''));
+  if (change.status) lines.push('Status: <strong>' + esc(reporterStatusLabel(change.status)) + '</strong>' + (showsVersion(change.status) && change.fixedInVersion ? ' (version ' + esc(change.fixedInVersion) + ')' : '') + (change.status === 'duplicate' && change.duplicateOf ? ' of #' + change.duplicateOf + ' (you now get its updates)' : ''));
   if (change.status === 'exists' && change.howToFind) {
     lines.push('<strong>This already exists in BoothGen.</strong> How to get to it:');
     lines.push(esc(change.howToFind));
@@ -73,7 +73,9 @@ export async function notifyWatchers(r: ReportForEmail, to: string[], change: {
   }
   if (change.note) lines.push(esc(excerpt(change.note)));
   const subject = change.status
-    ? (change.status === 'exists' ? `Already in BoothGen: #${r.number} ${r.title}` : `Report #${r.number} is now ${statusLabel(change.status)}`)
+    ? (change.status === 'exists' ? `Already in BoothGen: #${r.number} ${r.title}`
+      : change.status === 'fix_ready' ? `Report #${r.number}: the fix is live, being checked`
+      : `Report #${r.number} is now ${reporterStatusLabel(change.status)}`)
     : `New note on report #${r.number}`;
   await send([...new Set(to)], subject, layout(`Update on report #${r.number}`, lines, reporterLink(r.id), 'View the report'));
 }

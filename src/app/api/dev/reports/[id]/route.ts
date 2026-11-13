@@ -25,7 +25,7 @@ const Update = Triage.extend({
 
 // Update like Super Admin triage: status, fixed in version, how to find it, duplicate, priority, assignedToDev,
 // plus an optional note (everyone sees it and the reporter / followers are emailed, unless internal).
-// The note is added after the status change, so the thread reads "Status changed to Fixed" then the details.
+// The note is added after the status change, so the thread reads "Fix is live…" then the details. Never "fixed".
 export async function POST(req: NextRequest, { params }: Ctx) {
   const denied = devAuthorized(req);
   if (denied) return denied;
@@ -33,6 +33,10 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid change' }, { status: 400 });
   const r = await findReport(params.id);
   if (!r) return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+  // Only Booth Genius staff close a report: the Dev API stops at Fix ready (fix deployed, waiting to be checked)
+  if (parsed.data.status === 'fixed') {
+    return NextResponse.json({ error: 'Only Booth Genius staff can mark a report Fixed. Use status fix_ready once the fix is deployed.' }, { status: 403 });
+  }
   const { note, internal, attachments, ...triage } = parsed.data;
   if (attachments.length && !note) return NextResponse.json({ error: 'Attachments go with a note' }, { status: 400 });
   const uploadError = await checkUploads(uploadPrefix(null), attachments);
