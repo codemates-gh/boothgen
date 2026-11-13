@@ -8,6 +8,7 @@ import { triggerAutomation, scheduleEventDateAutomations, executeAutomation, not
 import { deleteFromR2, r2KeyFromUrl } from '@/lib/storage/r2';
 import { deleteTenant } from '@/lib/tenant/cleanup';
 import { sweepAbandonedAttractFiles } from '@/lib/genie/attract';
+import { sweepAbandonedPropImages } from '@/lib/genie/props';
 import { prepareShare, deliverShare, recordShareResult, markShareFailed } from '@/lib/genie/shares';
 
 export const processAutomation = inngest.createFunction(
@@ -698,6 +699,17 @@ export const sweepAbandonedAttract = inngest.createFunction(
     const r = await sweepAbandonedAttractFiles();
     console.log(`[ATTRACT_SWEEP] Deleted ${r.sources} unencoded uploads and ${r.unsaved} unsaved attract files`);
     return r;
+  }
+);
+
+// Daily at 5:25 AM UTC — delete prop PNGs that were uploaded but never saved as a prop (older than a day)
+export const sweepAbandonedProps = inngest.createFunction(
+  { id: 'sweep-abandoned-props' },
+  { cron: '25 5 * * *' },
+  async () => {
+    const deleted = await sweepAbandonedPropImages();
+    console.log(`[PROPS_SWEEP] Deleted ${deleted} unsaved prop images`);
+    return { deleted };
   }
 );
 

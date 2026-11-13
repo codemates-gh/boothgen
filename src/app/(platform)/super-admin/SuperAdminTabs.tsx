@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { LayoutDashboard, Users, CreditCard, Mail, FileText, Settings, BookOpen, BarChart2, Star, Layout, Bug } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, Mail, FileText, Settings, BookOpen, BarChart2, Star, Layout, Bug, Smile } from 'lucide-react';
 
 const TABS = [
   { id: 'overview',          label: 'Overview',           icon: LayoutDashboard },
@@ -8,6 +8,7 @@ const TABS = [
   { id: 'operators',         label: 'Operators',          icon: Users },
   { id: 'founding',          label: 'Founding Members',   icon: Star },
   { id: 'design-templates',  label: 'Design Templates',   icon: Layout },
+  { id: 'props',             label: 'Props',              icon: Smile },
   { id: 'reports',           label: 'Reports',            icon: Bug },
   { id: 'payment',           label: 'Payment Processing', icon: CreditCard },
   { id: 'email-logs',        label: 'Email Logs',         icon: Mail },

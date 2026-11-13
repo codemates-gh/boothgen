@@ -17,9 +17,10 @@ import SuperAdminTabs from './SuperAdminTabs';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import FoundingMembersCard from './FoundingMembersCard';
 import DesignTemplatesManager from './DesignTemplatesManager';
+import PropsManager from './PropsManager';
 import ReportsTriage from './ReportsTriage';
 
-const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
+const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'props', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
 type Tab = typeof VALID_TABS[number];
 
 const TENANT_BADGE: Record<string, 'warning' | 'success' | 'danger' | 'default'> = {
@@ -271,6 +272,17 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
               <p className="text-sm text-gray-500 mt-1">Design the Standard layouts. Published ones show in every operator's Standard templates (they can hide any) and in their clients' design picker. Approved designs go straight into Genie.</p>
             </div>
             <DesignTemplatesManager />
+          </>
+        )}
+
+        {/* PROPS */}
+        {tab === 'props' && (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Props</h1>
+              <p className="text-sm text-gray-500 mt-1">Virtual props guests can wear in Genie photos. Operators choose from the props that are on, per event.</p>
+            </div>
+            <PropsManager />
           </>
         )}
 

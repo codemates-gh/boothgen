@@ -14,6 +14,8 @@ const nextConfig = {
     '/api/super-admin/blog/file-source': ['./content/blog/**/*'],
     '/api/super-admin/blog/override': ['./content/blog/**/*'],
     '/api/super-admin/blog/[id]': ['./content/blog/**/*'],
+    // Starter props imported in Super Admin → Props (src/lib/genie/props.ts)
+    '/api/super-admin/props/import': ['./content/genie-props/**/*'],
   },
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },

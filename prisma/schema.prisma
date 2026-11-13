@@ -244,6 +244,7 @@ model Tenant {
   genieMessaging       GenieMessagingConfig?
   genieEventDevices    GenieEventDevice[]
   genieDefaults        GenieDefaults?
+  genieProps           GenieProp[]
   feedbackReports      FeedbackReport[]
 
   // Genie paid add-on entitlement (super admin toggle until billing exists)
@@ -1348,6 +1349,9 @@ model EventGenieSettings {
   // Attract screen (AttractMedia in src/lib/genie/attract.ts; null = none) and its return delay
   attract                      Json?
   attractReturnAfterSeconds    Int     @default(30)
+  // Virtual props (PropsConfig): off for new events; propIds = GenieProp ids in the guests' order
+  propsEnabled                 Boolean @default(false)
+  propIds                      Json    @default("[]")
 
   // ProcessingStep[] applied to every photo before the guest's filter
   processing Json @default("[]")
@@ -1665,4 +1669,46 @@ model FeedbackFollower {
   @@id([reportId, userId])
   @@index([userId])
   @@map("feedback_followers")
+}
+
+// Virtual props library (PropAsset in the Genie repo's shared/schemas). Standard props have tenantId null and are
+// switched on or off by Super Admin; My props belong to one account. Standard ids are the starter catalog's ids.
+model GenieProp {
+  id          String   @id @default(cuid())
+  tenantId    String?
+  name        String
+  category    String
+  subcategory String
+  // [{category, subcategory}]: other library sub-categories it is listed under
+  alsoIn      Json     @default("[]")
+  // RemoteAsset of the transparent PNG (content-addressed in R2)
+  image       Json
+  width       Float
+  height      Float
+  anchor      String // eyes | nose | mouth | chin
+  anchorX     Float
+  anchorY     Float
+  eyeDistance Float    @default(300)
+  // Standard: offered to operators; off hides it from libraries (events that chose it keep it)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("genie_props")
+}
+
+// Props library categories (managed in Super Admin): parentId null = category, else a sub-category of it.
+// ids are slugs, as in the starter catalog.
+model GeniePropCategory {
+  id        String  @id
+  parentId  String?
+  name      String
+  sortOrder Int     @default(0)
+
+  @@index([parentId])
+  @@map("genie_prop_categories")
 }

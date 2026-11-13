@@ -4,6 +4,20 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.81.0] — 2026-11-13
+
+### Added
+- **Virtual props for Genie** (Genie P7). Guests pick a prop (glasses, hats, mustaches, signs…) after choosing a design; the iPad puts it on every face and draws it into the photos
+- **Super Admin → Props**: the Standard props library. Import the 189 starter props (6 categories, 55 sub-categories) with one button, add your own, edit name, category, listings and placement, replace the PNG, and switch each prop on or off for every operator. Switched-off props leave operators' libraries; events that already chose one keep it. Categories and sub-categories are managed there too
+- **Genie → Props**: operators upload their own transparent PNGs (up to 2 MB) and place them on a reference face (drag and size; attaches to the eyes, nose, mouth or chin). Shown next to the Standard props
+- **Event → Genie → Props**: turn props on (off for new events), choose from Standard and My props by category, sub-category or search, reorder (that's the guests' order) and preview each on the face. More than about 10 shows a gentle note, never a block
+- The event bundle now carries `props` when they're on and some are chosen; a changed prop file bumps the bundle version
+- Unsaved prop uploads are cleaned up daily (after a day)
+
+**Database**: run `docs/genie/apply-production-props.sql` in Neon (production branch) before this deploys, then click **Import starter props** in Super Admin → Props
+
+---
+
 ## [2.80.0] — 2026-11-13
 
 ### Added

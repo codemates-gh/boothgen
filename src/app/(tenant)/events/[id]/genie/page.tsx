@@ -6,13 +6,15 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay } from 'lucide-react';
+import { ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile } from 'lucide-react';
 import { Field, Toggle, fmtDate, fmtDateTime } from '@/components/genie/parts';
 import { Attract, AttractFields, Capture, CaptureFields, DefaultState, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
 import GenieTemplates, { ApprovedDesign, EventTemplate, templateMismatch } from './GenieTemplates';
 import GenieEventDevices from './GenieEventDevices';
 import GenieShares from './GenieShares';
 import { Boomerang, BoomerangFields, LookAtCamera, LookAtCameraFields } from './CaptureExtras';
+import { EventPropsFields, type EventPropsValue } from './EventProps';
+import type { Prop } from '@/components/genie/Props';
 
 type Settings = {
   enabled: boolean; timeZone: string; bundleVersion: number; maxDevices: number; capture: Capture;
@@ -22,6 +24,7 @@ type Settings = {
   lookAtCamera: LookAtCamera;
   boomerang: Boomerang;
   attract: Attract;
+  props: EventPropsValue;
   custom: { timeZone: boolean; capture: boolean; sharing: boolean; printing: boolean; attract: boolean };
 };
 type Dashboard = {
@@ -30,8 +33,9 @@ type Dashboard = {
   providerWarnings: { channel: 'sms' | 'email'; message: string }[]; photosHiddenAt: string; photosDeletedAt: string; designApprovalPending: boolean;
   approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
   defaults: { saved: boolean; timeZone: string };
+  chosenProps: Prop[];
 };
-type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'boomerang' | 'attract'> & { filters: Omit<Settings['filters'], 'available'> };
+type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'boomerang' | 'attract' | 'props'> & { filters: Omit<Settings['filters'], 'available'> };
 
 
 function toForm(s: Settings): Form {
@@ -39,13 +43,14 @@ function toForm(s: Settings): Form {
   return {
     enabled: s.enabled, timeZone: s.timeZone, capture: { ...s.capture }, filters, sharing: { ...s.sharing }, printing: { ...s.printing },
     lookAtCamera: { ...s.lookAtCamera }, boomerang: { ...s.boomerang }, attract: { ...s.attract },
+    props: { enabled: s.props.enabled, propIds: [...s.props.propIds] },
   };
 }
 
 // The save body: "look at the camera" and Boomerang go only when changed, so saving other sections leaves them out
 // of the bundle (Genie's own defaults apply until the operator sets them)
 function patchBody(form: Form, saved: Settings) {
-  const { lookAtCamera, boomerang, attract, ...rest } = form;
+  const { lookAtCamera, boomerang, attract, props, ...rest } = form;
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const { overlay, ...b } = boomerang;
   return {
@@ -53,6 +58,8 @@ function patchBody(form: Form, saved: Settings) {
     attract: attractBody(attract),
     ...(same(lookAtCamera, saved.lookAtCamera) ? {} : { lookAtCamera: { ...lookAtCamera, text: lookAtCamera.text.trim() || 'LOOK AT CAMERA' } }),
     ...(same(boomerang, saved.boomerang) ? {} : { boomerang: { ...b, overlayUrl: overlay?.url ?? null } }),
+    // Props only when changed (a prop switched off since stays allowed while it's kept)
+    ...(same(props, saved.props) ? {} : { props }),
   };
 }
 
@@ -237,6 +244,10 @@ export default function EventGeniePage() {
                 </Section>
 
                 <GenieTemplates eventId={eventId} templates={data.templates} shotCount={form.capture.shotCount} locked={locked} onChange={() => { setBundle(null); load(false); }} approvedDesign={data.approvedDesign} briefTemplate={data.briefTemplate}/>
+
+                <Section icon={Smile} title="Props" description="Virtual glasses, hats and more that follow guests' faces. This event only.">
+                  <EventPropsFields value={form.props} chosen={data.chosenProps} disabled={locked} onChange={p => set('props', p)}/>
+                </Section>
 
                 <Section icon={Palette} title="Filters" description="Looks guests can pick on the review screen.">
                   <Toggle checked={form.filters.guestFiltersEnabled} disabled={locked} onChange={v => set('filters', { guestFiltersEnabled: v })} label="Let guests choose a filter" hint="Off: every photo uses the default filter."/>

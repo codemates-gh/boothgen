@@ -23,3 +23,10 @@ export async function requireTemplateEditor(): Promise<TemplateAuth | NextRespon
   if (session?.userId && superAdmin) return { tenantId: null, userId: session.userId, superAdmin: true };
   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 }
+
+// Super Admin API routes (JSON 401 instead of a sign-in redirect)
+export async function requireSuperAdminApi(): Promise<{ userId: string } | NextResponse> {
+  const session = await getServerSession(authOptions);
+  if (!session?.userId || session.globalRole !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  return { userId: session.userId };
+}

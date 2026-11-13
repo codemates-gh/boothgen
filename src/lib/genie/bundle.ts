@@ -1,11 +1,12 @@
 import { createHash } from 'crypto';
-import type { Event, EventGenieSettings, EventGenieTemplate, Gallery, GenieMessagingConfig, Prisma } from '@prisma/client';
+import type { Event, EventGenieSettings, EventGenieTemplate, Gallery, GenieMessagingConfig, GenieProp, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import type { StoredLayout } from './schemas';
 import { galleryUrl, sessionUrl } from './urls';
 import { emailUsable, smsConfigured } from './messaging';
 import { bundleBoomerang } from './boomerang';
 import { bundleAttract } from './attract';
+import { bundleProps, eventProps } from './props';
 import { galleryRetentionDates, getGalleryRetention, type GalleryRetention } from '@/lib/gallery/retention';
 
 export { appUrl, galleryUrl, sessionUrl } from './urls';
@@ -101,7 +102,8 @@ export type BundleResult =
   | { ok: true; bundle: Record<string, unknown>; bundleVersion: number }
   | { ok: false; status: 404 | 409; code: string; error: string };
 
-function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number) {
+function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number, props: GenieProp[]) {
+  const props_ = bundleProps(settings.propsEnabled, props);
   const photos = galleryRetentionDates(event.eventDate, retention);
   return {
     schemaVersion: BUNDLE_SCHEMA_VERSION,
@@ -162,6 +164,8 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
     },
     // Optional; only when there's attract media, so it changes the version only when the media or delay changes
     ...(settings.attract ? { attract: bundleAttract(settings.attract, settings.attractReturnAfterSeconds) } : {}),
+    // Optional; only when props are on and some are chosen (a replaced prop file changes the version)
+    ...(props_ ? { props: props_ } : {}),
   };
 }
 
@@ -183,11 +187,12 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
   if (event.genieTemplates.length === 0) return { ok: false, status: 409, code: 'no_templates', error: 'The event has no Genie templates yet' };
 
   const gallery = await ensureGallery(event);
-  const [messaging, retention] = await Promise.all([
+  const [messaging, retention, props] = await Promise.all([
     prisma.genieMessagingConfig.findUnique({ where: { tenantId } }),
     getGalleryRetention(),
+    settings.propsEnabled ? eventProps(settings.propIds, tenantId) : Promise.resolve([]),
   ]);
-  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion);
+  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props);
   const hash = contentHash(bundle);
 
   for (let attempt = 0; settings.bundleHash !== hash && attempt < 3; attempt++) {

@@ -42,7 +42,7 @@ export function artUrl(url: string): string {
   return '/api/genie-templates/assets/file?url=' + encodeURIComponent(url);
 }
 
-function ArtImg({ url, className }: { url: string; className: string }) {
+export function ArtImg({ url, className }: { url: string; className: string }) {
   const [src, setSrc] = useState(() => artUrl(url));
   useEffect(() => setSrc(artUrl(url)), [url]);
   return <img src={src} alt="" className={className} onError={() => { if (src !== url) setSrc(url); }}/>;

@@ -12,6 +12,7 @@ import { designApprovalPending, effectiveLockedAt, eventLocksAt, isValidTimeZone
 import { SettingsPatch, boomerangData, findAdminEvent, lockedError, providerWarnings, settingsUpdateData, settingsView, templateView } from '@/lib/genie/eventAdmin';
 import { galleryRetentionDates, getGalleryRetention } from '@/lib/gallery/retention';
 import { attractData, deleteUnusedAttractMedia, storedAttract } from '@/lib/genie/attract';
+import { eventProps, propView, propsData } from '@/lib/genie/props';
 
 // Everything the event's Genie dashboard shows
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -20,7 +21,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const event = await findAdminEvent(auth.tenantId, params.id);
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const [templates, messaging, retention, pending, approved, briefTemplate, defaults] = await Promise.all([
+  const [templates, messaging, retention, pending, approved, briefTemplate, defaults, chosenProps] = await Promise.all([
     prisma.eventGenieTemplate.findMany({ where: { eventId: event.id, tenantId: auth.tenantId }, orderBy: { sortOrder: 'asc' } }),
     prisma.genieMessagingConfig.findUnique({ where: { tenantId: auth.tenantId } }),
     getGalleryRetention(),
@@ -28,6 +29,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     latestApprovedDesign(auth.tenantId, event.id),
     briefLibraryTemplate(auth.tenantId, event.id),
     getDefaults(auth.tenantId),
+    event.genieSettings ? eventProps(event.genieSettings.propIds, auth.tenantId) : Promise.resolve([]),
   ]);
   const libIds = Array.from(new Set(templates.map(t => t.libraryTemplateId).filter((id): id is string => !!id)));
   const withAlternate = new Set((await prisma.boothDesignTemplate.findMany({
@@ -48,6 +50,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     approvedDesign: approved ? { id: approved.id, version: approved.version, filename: approved.filename, approvedAt: approved.approvedAt } : null,
     briefTemplate: briefTemplate ? { id: briefTemplate.id, name: briefTemplate.name } : null,
     defaults: { saved: defaults.saved, timeZone: defaults.values.timeZone },
+    // The event's props (including any Super Admin has since switched off), in the guests' order
+    chosenProps: chosenProps.map(propView),
   });
 }
 
@@ -110,6 +114,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const a = await attractData(parsed.data.attract, s.attract, auth.tenantId);
     if ('error' in a) return NextResponse.json({ error: a.error, path: 'attract.mediaUrl' }, { status: 400 });
     Object.assign(result.data, a.data);
+  }
+  if (parsed.data.props) {
+    const p = await propsData(parsed.data.props, s.propIds, auth.tenantId);
+    if ('error' in p) return NextResponse.json({ error: p.error, path: 'props' }, { status: 400 });
+    Object.assign(result.data, p.data);
   }
   const defaults = (await getDefaults(auth.tenantId)).values;
   // Sections put back on the defaults
