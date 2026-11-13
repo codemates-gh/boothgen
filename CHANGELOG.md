@@ -4,6 +4,11 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.74.1] — 2026-11-13
+
+### Fixed
+- **Checklist templates with items can be saved again** (Settings → Checklists). Creating a template with a list of items failed with an error and nothing was saved; items are now saved in order, and blank lines are skipped. Renaming a template or adding an item with an empty name now shows a "required" message instead of failing
+
 ## [2.74.0] — 2026-11-13
 
 ### Added

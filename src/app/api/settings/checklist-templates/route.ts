@@ -18,14 +18,19 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { name, items = [] } = await req.json();
-  if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 });
+  const { name, items } = await req.json().catch(() => ({}));
+  if (typeof name !== 'string' || !name.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 });
+  // Items may come as plain strings or as { label, position } objects (the Settings page sends objects)
+  const labels = (Array.isArray(items) ? items : [])
+    .map((it: unknown) => (typeof it === 'string' ? it : typeof (it as any)?.label === 'string' ? (it as any).label : ''))
+    .map((l: string) => l.trim())
+    .filter(Boolean);
   const template = await prisma.checklistTemplate.create({
     data: {
       tenantId: session.tenantId,
       name: name.trim(),
       items: {
-        create: (items as string[]).map((label: string, i: number) => ({ label, position: i })),
+        create: labels.map((label: string, i: number) => ({ label, position: i })),
       },
     },
     include: { items: { orderBy: { position: 'asc' } } },
