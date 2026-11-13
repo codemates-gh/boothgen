@@ -53,7 +53,7 @@ export default function CalendarPage() {
       setLeads(Array.isArray(lds) ? lds : []);
       setBlackouts(new Set(Array.isArray(bds) ? bds : []));
       if (tokenData?.token) {
-        const origin = window.location.origin.replace(/^http:\/\//, 'https://').replace(/^https:\/\/www\./, 'https://');
+        const origin = window.location.origin.replace(/^http:\/\//, 'https://');
         setIcalUrl(`${origin}/api/calendar/feed/${tokenData.token}`);
       }
       setLoading(false);
@@ -108,7 +108,7 @@ export default function CalendarPage() {
     const res = await fetch('/api/calendar/token', { method: 'POST' });
     const data = await res.json();
     if (data?.token) {
-      const origin = window.location.origin.replace(/^http:\/\//, 'https://').replace(/^https:\/\/www\./, 'https://');
+      const origin = window.location.origin.replace(/^http:\/\//, 'https://');
       setIcalUrl(`${origin}/api/calendar/feed/${data.token}`);
     }
   }
@@ -435,12 +435,17 @@ export default function CalendarPage() {
                     <span className="text-base">🍎</span> Apple Calendar
                   </p>
                   <ol className="space-y-1 list-decimal list-inside text-gray-500 leading-relaxed">
-                    <li>Copy the URL above</li>
-                    <li><strong>Mac:</strong> Open Calendar → File → <strong>New Calendar Subscription…</strong></li>
-                    <li>Paste the URL and click <strong>Subscribe</strong></li>
-                    <li>Choose refresh frequency and click <strong>OK</strong></li>
+                    <li>On your iPhone, iPad or Mac, tap <strong>Open in Apple Calendar</strong> below</li>
+                    <li>Tap <strong>Subscribe</strong></li>
+                    <li>Choose refresh frequency and tap <strong>OK</strong> (or Add)</li>
                   </ol>
-                  <p className="text-gray-400 mt-2 text-[11px]">iPhone: Settings → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar → paste URL.</p>
+                  <a
+                    href={icalUrl.replace(/^https:/, 'webcal:')}
+                    className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                  >
+                    🍎 Open in Apple Calendar
+                  </a>
+                  <p className="text-gray-400 mt-2 text-[11px]">Or add it by hand: iPhone Settings → Apps → Calendar → Calendar Accounts → Add Account → Other → Add Subscribed Calendar, and paste the URL (it starts with https://www.).</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="font-semibold text-gray-700 mb-2 flex items-center gap-1.5">

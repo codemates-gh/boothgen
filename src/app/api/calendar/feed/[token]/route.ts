@@ -7,13 +7,18 @@ function esc(s: string) {
   return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
 }
 
+// RFC 5545: lines longer than 75 octets continue on the next line after a space. Counted in UTF-8 bytes and never
+// splitting a character (the emoji in summaries are 4 bytes each), so calendar apps don't get broken text.
 function foldLine(line: string): string {
-  if (line.length <= 75) return line;
-  const chunks: string[] = [];
-  chunks.push(line.slice(0, 75));
-  let i = 75;
-  while (i < line.length) { chunks.push(' ' + line.slice(i, i + 74)); i += 74; }
-  return chunks.join('\r\n');
+  const out: string[] = [];
+  let cur = '', bytes = 0, limit = 75;
+  for (const ch of Array.from(line)) {
+    const n = Buffer.byteLength(ch, 'utf8');
+    if (bytes + n > limit) { out.push(cur); cur = ''; bytes = 0; limit = 74; }
+    cur += ch; bytes += n;
+  }
+  out.push(cur);
+  return out.join('\r\n ');
 }
 
 function icsDate(d: Date): string {
@@ -86,7 +91,7 @@ export async function GET(_: NextRequest, { params }: { params: { token: string 
     lines.push(foldLine(`DTSTART;VALUE=DATE:${dtStart}`));
     lines.push(foldLine(`DTEND;VALUE=DATE:${dtEnd}`));
     lines.push(foldLine(`SUMMARY:${summary}`));
-    lines.push(foldLine(`DESCRIPTION:${esc(descParts.join('\\n'))}`));
+    lines.push(foldLine(`DESCRIPTION:${esc(descParts.join('\n'))}`));
     if (ev.venueName) lines.push(foldLine(`LOCATION:${esc([ev.venueName, ev.venueAddress, ev.venueCity, ev.venueState].filter(Boolean).join(', '))}`));
     lines.push(`STATUS:${status}`);
     lines.push(foldLine(`DTSTAMP:${dtstamp}`));
@@ -137,7 +142,7 @@ export async function GET(_: NextRequest, { params }: { params: { token: string 
           `Milestone: ${ms.label}`,
           `Amount: ${fmt(ms.amountCents)}`,
           isOverdue ? `Status: OVERDUE` : `Status: Due ${msDue.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`,
-        ].join('\\n');
+        ].join('\n');
 
         lines.push('BEGIN:VEVENT');
         lines.push(foldLine(`UID:milestone-${ms.id}@boothgen.com`));

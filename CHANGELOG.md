@@ -4,6 +4,12 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.79.1] — 2026-11-13
+
+### Fixed
+- **Subscribing to the calendar on iPhone**: the subscription URL now keeps "www." (boothgen.com redirects to www.boothgen.com, and Apple Calendar fails on that redirect), and a new **Open in Apple Calendar** button opens the subscribe screen directly on iPhone, iPad or Mac, so nothing needs to be pasted. Report #1
+- Calendar entries: long titles with emoji are no longer garbled, and event and payment descriptions show real line breaks instead of "\n"
+
 ## [2.79.0] — 2026-11-13
 
 ### Added
