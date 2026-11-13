@@ -30,3 +30,13 @@ export async function requireSuperAdminApi(): Promise<{ userId: string } | NextR
   if (!session?.userId || session.globalRole !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   return { userId: session.userId };
 }
+
+// Library uploads (props, backdrops): Standard needs a BoothGen super admin; the account's own needs its Genie admin
+export async function requireLibraryEditor(scope: 'standard' | 'mine'): Promise<{ tenantId: string | null } | NextResponse> {
+  if (scope === 'standard') {
+    const sa = await requireSuperAdminApi();
+    return sa instanceof NextResponse ? NextResponse.json({ error: 'Only Booth Genius can change the Standard library' }, { status: 403 }) : { tenantId: null };
+  }
+  const auth = await requireGenieAdmin();
+  return auth instanceof NextResponse ? auth : { tenantId: auth.tenantId };
+}

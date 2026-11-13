@@ -18,9 +18,10 @@ import AnalyticsDashboard from './AnalyticsDashboard';
 import FoundingMembersCard from './FoundingMembersCard';
 import DesignTemplatesManager from './DesignTemplatesManager';
 import PropsManager from './PropsManager';
+import BackdropsManager from './BackdropsManager';
 import ReportsTriage from './ReportsTriage';
 
-const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'props', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
+const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'props', 'backdrops', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
 type Tab = typeof VALID_TABS[number];
 
 const TENANT_BADGE: Record<string, 'warning' | 'success' | 'danger' | 'default'> = {
@@ -283,6 +284,17 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
               <p className="text-sm text-gray-500 mt-1">Virtual props guests can wear in Genie photos. Operators choose from the props that are on, per event.</p>
             </div>
             <PropsManager />
+          </>
+        )}
+
+        {/* BACKDROPS */}
+        {tab === 'backdrops' && (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Backdrops</h1>
+              <p className="text-sm text-gray-500 mt-1">Virtual backdrops for Genie background removal: the iPad cuts guests out of the real background and puts them on one of these. Operators choose per event.</p>
+            </div>
+            <BackdropsManager />
           </>
         )}
 

@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import type { Event, EventGenieSettings, EventGenieTemplate, Gallery, GenieMessagingConfig, GenieProp, Prisma } from '@prisma/client';
+import type { Event, EventGenieSettings, EventGenieTemplate, Gallery, GenieBackdrop, GenieMessagingConfig, GenieProp, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import type { StoredLayout } from './schemas';
 import { galleryUrl, sessionUrl } from './urls';
@@ -7,6 +7,7 @@ import { emailUsable, smsConfigured } from './messaging';
 import { bundleBoomerang } from './boomerang';
 import { bundleAttract } from './attract';
 import { bundleProps, eventProps } from './props';
+import { bundleBackdrops, eventBackdrops } from './backdrops';
 import { galleryRetentionDates, getGalleryRetention, type GalleryRetention } from '@/lib/gallery/retention';
 
 export { appUrl, galleryUrl, sessionUrl } from './urls';
@@ -102,8 +103,9 @@ export type BundleResult =
   | { ok: true; bundle: Record<string, unknown>; bundleVersion: number }
   | { ok: false; status: 404 | 409; code: string; error: string };
 
-function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number, props: GenieProp[]) {
+function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number, props: GenieProp[], backdrops: GenieBackdrop[]) {
   const props_ = bundleProps(settings.propsEnabled, props);
+  const backdrops_ = bundleBackdrops(settings, backdrops);
   const photos = galleryRetentionDates(event.eventDate, retention);
   return {
     schemaVersion: BUNDLE_SCHEMA_VERSION,
@@ -166,6 +168,8 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
     ...(settings.attract ? { attract: bundleAttract(settings.attract, settings.attractReturnAfterSeconds) } : {}),
     // Optional; only when props are on and some are chosen (a replaced prop file changes the version)
     ...(props_ ? { props: props_ } : {}),
+    // Optional; only when the virtual backdrop is on and some backdrops are chosen
+    ...(backdrops_ ? { backgroundRemoval: backdrops_ } : {}),
   };
 }
 
@@ -187,12 +191,13 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
   if (event.genieTemplates.length === 0) return { ok: false, status: 409, code: 'no_templates', error: 'The event has no Genie templates yet' };
 
   const gallery = await ensureGallery(event);
-  const [messaging, retention, props] = await Promise.all([
+  const [messaging, retention, props, backdrops] = await Promise.all([
     prisma.genieMessagingConfig.findUnique({ where: { tenantId } }),
     getGalleryRetention(),
     settings.propsEnabled ? eventProps(settings.propIds, tenantId) : Promise.resolve([]),
+    settings.backdropsEnabled ? eventBackdrops(settings.backdropIds, tenantId) : Promise.resolve([]),
   ]);
-  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props);
+  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props, backdrops);
   const hash = contentHash(bundle);
 
   for (let attempt = 0; settings.bundleHash !== hash && attempt < 3; attempt++) {

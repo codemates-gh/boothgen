@@ -23,7 +23,7 @@ function ffmpegPath(): string {
   return process.env.FFMPEG_PATH || path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg');
 }
 
-function run(args: string[]): Promise<{ code: number | null; stderr: string }> {
+export function run(args: string[]): Promise<{ code: number | null; stderr: string }> {
   return new Promise((resolve, reject) => {
     const p = spawn(ffmpegPath(), ['-hide_banner', '-nostdin', ...args], { stdio: ['ignore', 'ignore', 'pipe'] });
     let stderr = '';
@@ -37,7 +37,7 @@ function run(args: string[]): Promise<{ code: number | null; stderr: string }> {
 type Probe = { durationMs: number | null; width: number; height: number; fps: number | null } | null;
 
 // What ffmpeg reports for a file (its first video stream), or null when there's no picture in it
-async function probe(file: string): Promise<Probe> {
+export async function probe(file: string): Promise<Probe> {
   const { stderr } = await run(['-i', file]);
   const v = stderr.match(/Stream #\d+:\d+.*?: Video: .*?, (\d{2,5})x(\d{2,5})/);
   if (!v) return null;

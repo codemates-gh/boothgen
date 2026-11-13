@@ -245,6 +245,7 @@ model Tenant {
   genieEventDevices    GenieEventDevice[]
   genieDefaults        GenieDefaults?
   genieProps           GenieProp[]
+  genieBackdrops       GenieBackdrop[]
   feedbackReports      FeedbackReport[]
 
   // Genie paid add-on entitlement (super admin toggle until billing exists)
@@ -1352,6 +1353,12 @@ model EventGenieSettings {
   // Virtual props (PropsConfig): off for new events; propIds = GenieProp ids in the guests' order
   propsEnabled                 Boolean @default(false)
   propIds                      Json    @default("[]")
+  // Virtual backdrop (BackdropsConfig): off for new events; backdropIds = GenieBackdrop ids in the guests' order
+  backdropsEnabled             Boolean @default(false)
+  backdropIds                  Json    @default("[]")
+  backdropDefaultId            String?
+  backdropGuestPicks           Boolean @default(true)
+  backdropEdgeSoftness         String  @default("medium") // soft | medium | sharp
 
   // ProcessingStep[] applied to every photo before the guest's filter
   processing Json @default("[]")
@@ -1711,4 +1718,26 @@ model GeniePropCategory {
 
   @@index([parentId])
   @@map("genie_prop_categories")
+}
+
+// Virtual backdrops (BackdropAsset in the Genie repo's shared/schemas): Standard (tenantId null, switched on or off in
+// Super Admin) and My backdrops per account. Files are JPEGs at most 1800 px on the long side, content-addressed in R2.
+model GenieBackdrop {
+  id        String   @id @default(cuid())
+  tenantId  String?
+  name      String
+  // RemoteAsset of the JPEG, and of its ~360 px thumbnail
+  image     Json
+  thumbnail Json?
+  width     Int
+  height    Int
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("genie_backdrops")
 }

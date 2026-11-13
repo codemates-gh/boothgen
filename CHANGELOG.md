@@ -4,6 +4,19 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.82.0] — 2026-11-13
+
+### Added
+- **Background removal (virtual backdrop) for Genie** (Genie P8). The iPad cuts guests out of the real background and puts them on a backdrop in every photo (not Boomerangs), on the device, so it works offline
+- **Super Admin → Backdrops**: the Standard backdrops library. Import the 8 starter backdrops with one button, upload, rename, replace the picture, and switch each one on or off for every operator (events that already chose one keep it)
+- **Genie → Backdrops**: operators upload their own (JPG or PNG up to 25 MB), rename and delete them; deleting one an event uses warns first. Uploads are shrunk to the 4x6 print size (1800 px on the long side), saved as JPEG with a thumbnail, with transparency flattened onto white; small pictures get a "may look soft" note
+- **Event → Genie → Virtual backdrop**: turn it on (off for new events), choose and reorder backdrops (with Upload right there), pick the default, let guests choose or not, and set edge softness (Soft / Medium / Sharp)
+- The event bundle carries `backgroundRemoval` when it's on and backdrops are chosen; a changed backdrop file bumps the bundle version. Unsaved backdrop uploads are cleaned up daily
+
+**Database**: run `docs/genie/apply-production-backdrops.sql` in Neon (production branch) before this deploys, then click **Import starter backdrops** in Super Admin → Backdrops
+
+---
+
 ## [2.81.0] — 2026-11-13
 
 ### Added

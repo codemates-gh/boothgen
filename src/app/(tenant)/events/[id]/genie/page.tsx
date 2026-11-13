@@ -6,7 +6,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile } from 'lucide-react';
+import { ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon } from 'lucide-react';
 import { Field, Toggle, fmtDate, fmtDateTime } from '@/components/genie/parts';
 import { Attract, AttractFields, Capture, CaptureFields, DefaultState, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
 import GenieTemplates, { ApprovedDesign, EventTemplate, templateMismatch } from './GenieTemplates';
@@ -15,6 +15,8 @@ import GenieShares from './GenieShares';
 import { Boomerang, BoomerangFields, LookAtCamera, LookAtCameraFields } from './CaptureExtras';
 import { EventPropsFields, type EventPropsValue } from './EventProps';
 import type { Prop } from '@/components/genie/Props';
+import { EventBackdropsFields, type EventBackdropsValue } from './EventBackdrops';
+import type { Backdrop } from '@/components/genie/Backdrops';
 
 type Settings = {
   enabled: boolean; timeZone: string; bundleVersion: number; maxDevices: number; capture: Capture;
@@ -25,6 +27,7 @@ type Settings = {
   boomerang: Boomerang;
   attract: Attract;
   props: EventPropsValue;
+  backgroundRemoval: EventBackdropsValue;
   custom: { timeZone: boolean; capture: boolean; sharing: boolean; printing: boolean; attract: boolean };
 };
 type Dashboard = {
@@ -34,8 +37,9 @@ type Dashboard = {
   approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
   defaults: { saved: boolean; timeZone: string };
   chosenProps: Prop[];
+  chosenBackdrops: Backdrop[];
 };
-type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'boomerang' | 'attract' | 'props'> & { filters: Omit<Settings['filters'], 'available'> };
+type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval'> & { filters: Omit<Settings['filters'], 'available'> };
 
 
 function toForm(s: Settings): Form {
@@ -44,13 +48,14 @@ function toForm(s: Settings): Form {
     enabled: s.enabled, timeZone: s.timeZone, capture: { ...s.capture }, filters, sharing: { ...s.sharing }, printing: { ...s.printing },
     lookAtCamera: { ...s.lookAtCamera }, boomerang: { ...s.boomerang }, attract: { ...s.attract },
     props: { enabled: s.props.enabled, propIds: [...s.props.propIds] },
+    backgroundRemoval: { ...s.backgroundRemoval, backdropIds: [...s.backgroundRemoval.backdropIds] },
   };
 }
 
 // The save body: "look at the camera" and Boomerang go only when changed, so saving other sections leaves them out
 // of the bundle (Genie's own defaults apply until the operator sets them)
 function patchBody(form: Form, saved: Settings) {
-  const { lookAtCamera, boomerang, attract, props, ...rest } = form;
+  const { lookAtCamera, boomerang, attract, props, backgroundRemoval, ...rest } = form;
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const { overlay, ...b } = boomerang;
   return {
@@ -60,6 +65,7 @@ function patchBody(form: Form, saved: Settings) {
     ...(same(boomerang, saved.boomerang) ? {} : { boomerang: { ...b, overlayUrl: overlay?.url ?? null } }),
     // Props only when changed (a prop switched off since stays allowed while it's kept)
     ...(same(props, saved.props) ? {} : { props }),
+    ...(same(backgroundRemoval, saved.backgroundRemoval) ? {} : { backgroundRemoval }),
   };
 }
 
@@ -244,6 +250,10 @@ export default function EventGeniePage() {
                 </Section>
 
                 <GenieTemplates eventId={eventId} templates={data.templates} shotCount={form.capture.shotCount} locked={locked} onChange={() => { setBundle(null); load(false); }} approvedDesign={data.approvedDesign} briefTemplate={data.briefTemplate}/>
+
+                <Section icon={ImageIcon} title="Virtual backdrop" description="Background removal: guests on a backdrop instead of the room. This event only.">
+                  <EventBackdropsFields value={form.backgroundRemoval} chosen={data.chosenBackdrops} disabled={locked} onChange={p => set('backgroundRemoval', p)}/>
+                </Section>
 
                 <Section icon={Smile} title="Props" description="Virtual glasses, hats and more that follow guests' faces. This event only.">
                   <EventPropsFields value={form.props} chosen={data.chosenProps} disabled={locked} onChange={p => set('props', p)}/>

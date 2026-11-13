@@ -9,6 +9,7 @@ import { deleteFromR2, r2KeyFromUrl } from '@/lib/storage/r2';
 import { deleteTenant } from '@/lib/tenant/cleanup';
 import { sweepAbandonedAttractFiles } from '@/lib/genie/attract';
 import { sweepAbandonedPropImages } from '@/lib/genie/props';
+import { sweepAbandonedBackdropFiles } from '@/lib/genie/backdrops';
 import { prepareShare, deliverShare, recordShareResult, markShareFailed } from '@/lib/genie/shares';
 
 export const processAutomation = inngest.createFunction(
@@ -702,14 +703,16 @@ export const sweepAbandonedAttract = inngest.createFunction(
   }
 );
 
-// Daily at 5:25 AM UTC — delete prop PNGs that were uploaded but never saved as a prop (older than a day)
+// Daily at 5:25 AM UTC — delete prop PNGs and backdrop files that were uploaded but never saved
 export const sweepAbandonedProps = inngest.createFunction(
   { id: 'sweep-abandoned-props' },
   { cron: '25 5 * * *' },
   async () => {
     const deleted = await sweepAbandonedPropImages();
     console.log(`[PROPS_SWEEP] Deleted ${deleted} unsaved prop images`);
-    return { deleted };
+    const backdrops = await sweepAbandonedBackdropFiles();
+    console.log(`[BACKDROPS_SWEEP] Deleted ${backdrops.sources} unprocessed uploads and ${backdrops.unsaved} unsaved backdrop files`);
+    return { deleted, backdrops };
   }
 );
 

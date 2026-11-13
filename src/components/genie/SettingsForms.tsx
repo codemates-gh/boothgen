@@ -225,7 +225,7 @@ function videoInfo(file: File): Promise<{ durationMs: number | null; width: numb
   });
 }
 // PUT with upload progress (fetch can't report it); resolves false when it fails
-function putWithProgress(url: string, file: File, onProgress: (pct: number) => void): Promise<boolean> {
+export function putWithProgress(url: string, file: File, onProgress: (pct: number) => void): Promise<boolean> {
   return new Promise(resolve => {
     const x = new XMLHttpRequest();
     x.open('PUT', url);

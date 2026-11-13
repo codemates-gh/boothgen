@@ -13,6 +13,7 @@ import { SettingsPatch, boomerangData, findAdminEvent, lockedError, providerWarn
 import { galleryRetentionDates, getGalleryRetention } from '@/lib/gallery/retention';
 import { attractData, deleteUnusedAttractMedia, storedAttract } from '@/lib/genie/attract';
 import { eventProps, propView, propsData } from '@/lib/genie/props';
+import { backdropView, backdropsData, eventBackdrops } from '@/lib/genie/backdrops';
 
 // Everything the event's Genie dashboard shows
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -21,7 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const event = await findAdminEvent(auth.tenantId, params.id);
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const [templates, messaging, retention, pending, approved, briefTemplate, defaults, chosenProps] = await Promise.all([
+  const [templates, messaging, retention, pending, approved, briefTemplate, defaults, chosenProps, chosenBackdrops] = await Promise.all([
     prisma.eventGenieTemplate.findMany({ where: { eventId: event.id, tenantId: auth.tenantId }, orderBy: { sortOrder: 'asc' } }),
     prisma.genieMessagingConfig.findUnique({ where: { tenantId: auth.tenantId } }),
     getGalleryRetention(),
@@ -30,6 +31,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     briefLibraryTemplate(auth.tenantId, event.id),
     getDefaults(auth.tenantId),
     event.genieSettings ? eventProps(event.genieSettings.propIds, auth.tenantId) : Promise.resolve([]),
+    event.genieSettings ? eventBackdrops(event.genieSettings.backdropIds, auth.tenantId) : Promise.resolve([]),
   ]);
   const libIds = Array.from(new Set(templates.map(t => t.libraryTemplateId).filter((id): id is string => !!id)));
   const withAlternate = new Set((await prisma.boothDesignTemplate.findMany({
@@ -52,6 +54,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     defaults: { saved: defaults.saved, timeZone: defaults.values.timeZone },
     // The event's props (including any Super Admin has since switched off), in the guests' order
     chosenProps: chosenProps.map(propView),
+    chosenBackdrops: chosenBackdrops.map(backdropView),
   });
 }
 
@@ -119,6 +122,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const p = await propsData(parsed.data.props, s.propIds, auth.tenantId);
     if ('error' in p) return NextResponse.json({ error: p.error, path: 'props' }, { status: 400 });
     Object.assign(result.data, p.data);
+  }
+  if (parsed.data.backgroundRemoval) {
+    const b = await backdropsData(parsed.data.backgroundRemoval, s.backdropIds, auth.tenantId);
+    if ('error' in b) return NextResponse.json({ error: b.error, path: 'backgroundRemoval' }, { status: 400 });
+    Object.assign(result.data, b.data);
   }
   const defaults = (await getDefaults(auth.tenantId)).values;
   // Sections put back on the defaults

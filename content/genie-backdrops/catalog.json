@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "size": {
+    "width": 1800,
+    "height": 1200
+  },
+  "backdrops": [
+    {
+      "id": "gold-bokeh",
+      "name": "Gold Bokeh",
+      "svg": "svg/gold-bokeh.svg",
+      "jpg": "jpg/gold-bokeh.jpg",
+      "thumbnail": "thumb/gold-bokeh.jpg",
+      "size": {
+        "width": 1800,
+        "height": 1200
+      }
+    },
+    {
+      "id": "blush-gradient",
+      "name": "Blush Gradient",
+      "svg": "svg/blush-gradient.svg",
+      "jpg": "jpg/blush-gradient.jpg",
+      "thumbnail": "thumb/blush-gradient.jpg",
+      "size": {
+        "width": 1800,
+        "height": 1200
+      }
+    },
+    {
+      "id": "studio-grey",
+      "name": "Studio Grey",
+      "svg": "svg/studio-grey.svg",
+      "jpg": "jpg/studio-grey.jpg",
+      "thumbnail": "thumb/studio-grey.jpg",
+      "size": {
+        "width": 1800,
+        "height": 1200
+      }
+    },
+    {
+      "id": "neon-night",
+      "name": "Neon Night",
+      "svg": "svg/neon-night.svg",
+      "jpg": "jpg/neon-night.jpg",
+      "thumbnail": "thumb/neon-night.jpg",
+      "size": {
+        "width": 1800,
+        "height": 1200
+      }
+    },
+    {
+      "id": "starry-night",
+      "name": "Starry Night",
+      "svg": "svg/starry-night.svg",
+      "jpg": "jpg/starry-night.jpg",
+      "thumbnail": "thumb/starry-night.jpg",
+      "size": {
+        "width": 1800,
+        "height": 1200
+      }
+    },
+    {
+      "id": "confetti-party",
+      "name": "Confetti Party",
+      "svg": "svg/confetti-party.svg",
+      "jpg": "jpg/confetti-party.jpg",
+      "thumbnail": "thumb/confetti-party.jpg",
+      "size": {
+        "width": 1800,
+        "height": 1200
+      }
+    },
+    {
+      "id": "sunset-beach",
+      "name": "Sunset Beach",
+      "svg": "svg/sunset-beach.svg",
+      "jpg": "jpg/sunset-beach.jpg",
+      "thumbnail": "thumb/sunset-beach.jpg",
+      "size": {
+        "width": 1800,
+        "height": 1200
+      }
+    },
+    {
+      "id": "glamour-sparkle",
+      "name": "Glamour Sparkle",
+      "svg": "svg/glamour-sparkle.svg",
+      "jpg": "jpg/glamour-sparkle.jpg",
+      "thumbnail": "thumb/glamour-sparkle.jpg",
+      "size": {
+        "width": 1800,
+        "height": 1200
+      }
+    }
+  ]
+}

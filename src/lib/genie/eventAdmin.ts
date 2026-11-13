@@ -9,6 +9,7 @@ import { verifyAsset } from './templateAssets';
 import { storedBoomerang, type StoredBoomerang } from './boomerang';
 import { AttractPatch, attractView } from './attract';
 import { PropsPatch, storedPropIds } from './props';
+import { BackdropsPatch, backdropsView } from './backdrops';
 
 // ── Lock ────────────────────────────────────────────────────────────────────
 // Locks when the event starts (see effectiveLockedAt in bundle.ts); iPads ignore newer bundle versions after that,
@@ -106,6 +107,8 @@ export const SettingsPatch = z.object({
   attract: AttractPatch,
   // Virtual props (per event only); saved by propsData
   props: PropsPatch,
+  // Virtual backdrop (per event only); saved by backdropsData
+  backgroundRemoval: BackdropsPatch,
   // Sections to put back on the account defaults (they follow default changes again)
   reset: z.array(z.enum(['timeZone', 'capture', 'sharing', 'printing', 'attract'])).min(1),
 }).partial().strict();
@@ -210,6 +213,7 @@ export function settingsView(s: EventGenieSettings) {
     printing: { enabled: s.printingEnabled, maxCopies: s.printMaxCopies, defaultCopies: s.printDefaultCopies },
     attract: attractView(s.attract, s.attractReturnAfterSeconds),
     props: { enabled: s.propsEnabled, propIds: storedPropIds(s.propIds) },
+    backgroundRemoval: backdropsView(s),
     // Which sections were customized for this event (false = follows the account's Genie defaults)
     custom: { timeZone: s.customTimeZone, capture: s.customCapture, sharing: s.customSharing, printing: s.customPrinting, attract: s.customAttract },
   };
