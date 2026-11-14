@@ -7,12 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { settingsTabs } from '@/lib/product';
 import Image from 'next/image';
 import { Camera, Upload } from 'lucide-react';
 
-const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
 
 export default function BrandingSettingsPage() {
+  const tabs = settingsTabs(useSession().data?.tenant?.product);
   const [form, setForm] = useState({ companyName:'', primaryColor:'#F97316', secondaryColor:'#EA6100', replyToEmail:'', supportPhone:'', websiteUrl:'', businessAddress:'', invoiceFooterText:'', emailHeaderHtml:'', currency:'usd', taxLabel:'Tax', country:'' });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);

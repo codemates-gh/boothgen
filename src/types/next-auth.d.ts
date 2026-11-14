@@ -7,7 +7,7 @@ declare module 'next-auth' {
     globalRole: string;
     tenantId?: string;
     tenantRole?: string;
-    tenant?: { id: string; slug: string; name: string; status: string };
+    tenant?: { id: string; slug: string; name: string; status: string; product: string };
   }
 }
 declare module 'next-auth/jwt' {
@@ -19,5 +19,7 @@ declare module 'next-auth/jwt' {
     tenantSlug?: string;
     tenantName?: string;
     tenantStatus?: string;
+    tenantProduct?: string;
+    tenantRefreshedAt?: number;
   }
 }

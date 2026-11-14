@@ -4,6 +4,20 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.86.0] — 2026-11-14
+
+### Added
+- **Genie-only accounts, stage 1 (access and menus)**: an account is now either **Genius** (the full CRM, every account so far) or **Genie only**. Super Admin → Operators → Genie column sets it; Genie only turns Genie on
+- A Genie-only operator gets a booth menu (Events, Event Defaults, Gallery, Layouts, Template Settings, Props, Backdrops, Devices, Sharing), Settings with Branding and Profile only, and a "Get Genius CRM" link. Signing in or opening the dashboard goes to the booth events
+- CRM pages (leads, clients, quotes, invoices, contracts, calendar, messages, automation, analytics, CRM event pages, CRM settings) show "… is part of Genius" instead; CRM APIs answer 403 `genius_required`. Blocked on the server, not only hidden. An event's Genie page stays open, with "Back to Events" and no client design approval notice
+- Sign-in sessions re-read the account every 5 minutes, so a product change reaches signed-in operators without signing out
+
+Not yet: per-event payment and watermark (stage 2), sign-up and pricing pages (stage 3). Plan: `docs/genie/genie-only-plan.md`
+
+**Database**: run `docs/genie/apply-production-product.sql` in Neon (production branch) before this deploys
+
+---
+
 ## [2.85.1] — 2026-11-14
 
 ### Added

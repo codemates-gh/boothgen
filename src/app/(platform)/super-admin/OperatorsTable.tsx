@@ -17,6 +17,7 @@ interface Operator {
   slug: string;
   status: TenantStatus;
   genieEnabled: boolean;
+  product: string;
   createdAt: Date;
   branding: { companyName: string | null } | null;
   memberships: { user: { name: string; email: string } }[];
@@ -56,22 +57,41 @@ const STATUS_OPTIONS: { value: TenantStatus; label: string }[] = [
 type Mode = 'idle' | 'upgrade' | 'status' | 'delete' | 'subscription';
 type SubConfirm = 'cancel-now' | 'refund' | null;
 
-// Genie add-on switch (a paid add-on; set by hand until billing exists)
+// Genie add-on switch (a paid add-on; set by hand until billing exists), and the account's product:
+// Genius (CRM) or Genie only. Genie-only accounts always have Genie on.
 function GenieCell({ op }: { op: Operator }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  async function toggle() {
-    const name = op.branding?.companyName ?? op.name;
-    if (!confirm(op.genieEnabled ? `Turn Genie off for ${name}? Their iPads stop syncing and Genie pages hide.` : `Turn Genie on for ${name}?`)) return;
+  const name = op.branding?.companyName ?? op.name;
+  const genieOnly = op.product === 'genie';
+  async function patch(body: object) {
     setBusy(true);
-    await fetch(`/api/super-admin/tenants/${op.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ genieEnabled: !op.genieEnabled }) });
+    await fetch(`/api/super-admin/tenants/${op.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     setBusy(false);
     router.refresh();
   }
+  function toggle() {
+    if (!confirm(op.genieEnabled ? `Turn Genie off for ${name}? Their iPads stop syncing and Genie pages hide.` : `Turn Genie on for ${name}?`)) return;
+    patch({ genieEnabled: !op.genieEnabled });
+  }
+  function setProduct(product: string) {
+    if (product === op.product) return;
+    if (!confirm(product === 'genie'
+      ? `Make ${name} Genie only? Their CRM pages (leads, clients, quotes, invoices, contracts…) are hidden and blocked. Nothing is deleted.`
+      : `Give ${name} the full Genius CRM again? Their CRM pages come back as they were.`)) return;
+    patch({ product });
+  }
   return (
-    <button onClick={toggle} disabled={busy} title={op.genieEnabled ? 'Turn Genie off' : 'Turn Genie on'} className="disabled:opacity-50">
-      <Badge variant={op.genieEnabled ? 'success' : 'default'}>{busy ? '…' : op.genieEnabled ? 'On' : 'Off'}</Badge>
-    </button>
+    <div className="flex flex-col items-start gap-1">
+      <button onClick={toggle} disabled={busy || genieOnly} title={genieOnly ? 'Genie-only accounts always have Genie' : op.genieEnabled ? 'Turn Genie off' : 'Turn Genie on'} className="disabled:opacity-50 disabled:cursor-default">
+        <Badge variant={op.genieEnabled ? 'success' : 'default'}>{busy ? '…' : op.genieEnabled ? 'On' : 'Off'}</Badge>
+      </button>
+      <select value={op.product} onChange={e => setProduct(e.target.value)} disabled={busy} aria-label="Product"
+        className="text-xs border border-gray-200 rounded px-1.5 py-0.5 bg-white text-gray-600 disabled:opacity-50">
+        <option value="crm">Genius</option>
+        <option value="genie">Genie only</option>
+      </select>
+    </div>
   );
 }
 

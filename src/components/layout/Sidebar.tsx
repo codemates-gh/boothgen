@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send, CalendarCheck, SlidersHorizontal, Bug, ClipboardList, Smile, Image as ImageIcon } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send, CalendarCheck, SlidersHorizontal, Bug, ClipboardList, Smile, Image as ImageIcon, Sparkles } from 'lucide-react';
 import { ReportDialog } from '@/components/reports/ReportDialog';
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 import { APP_VERSION } from '@/lib/version';
@@ -67,6 +67,35 @@ const genieSection: NavSection = {
   ],
 };
 
+// Genie-only accounts: the booth, its designs and galleries; no CRM (src/lib/product.ts)
+const genieOnlySections: NavSection[] = [
+  {
+    label: 'Booth',
+    items: [
+      { href: '/genie/events', label: 'Events', icon: CalendarCheck },
+      { href: '/genie/defaults', label: 'Event Defaults', icon: SlidersHorizontal },
+      { href: '/gallery', label: 'Gallery', icon: Camera },
+    ],
+  },
+  {
+    label: 'Designs',
+    items: [
+      { href: '/templates', label: 'Layouts', icon: LayoutTemplate },
+      { href: '/templates/settings', label: 'Template Settings', icon: SlidersHorizontal },
+      { href: '/genie/props', label: 'Props', icon: Smile },
+      { href: '/genie/backdrops', label: 'Backdrops', icon: ImageIcon },
+    ],
+  },
+  {
+    label: 'Setup',
+    items: [
+      { href: '/genie/devices', label: 'Devices', icon: Tablet },
+      { href: '/genie/sharing', label: 'Sharing', icon: Send },
+    ],
+  },
+];
+const genieOnlyNav: NavItem[] = genieOnlySections.flatMap(s => s.items);
+
 // Flat list for team member nav (no sections needed)
 const adminNav: NavItem[] = adminSections.flatMap(s => s.items);
 
@@ -102,7 +131,7 @@ function NavLink({ href, label, Icon, pro, active, close, count }: { href: strin
   );
 }
 
-export function Sidebar({ isFoundingMember, genieEnabled }: { isFoundingMember?: boolean; genieEnabled?: boolean }) {
+export function Sidebar({ isFoundingMember, genieEnabled, genieOnly }: { isFoundingMember?: boolean; genieEnabled?: boolean; genieOnly?: boolean }) {
   const path = usePathname();
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
@@ -175,11 +204,11 @@ export function Sidebar({ isFoundingMember, genieEnabled }: { isFoundingMember?:
               );
             })
           ) : (
-            (genieEnabled ? [...adminSections, genieSection] : adminSections).map((section, si) => (
+            (genieOnly ? genieOnlySections : genieEnabled ? [...adminSections, genieSection] : adminSections).map((section, si) => (
               <div key={section.label} className={si > 0 ? 'mt-4' : ''}>
                 <p className="pl-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/25">{section.label}</p>
                 {section.items.map(({ href, label, icon: Icon, pro }) => {
-                  const allItems = adminNav;
+                  const allItems = genieOnly ? genieOnlyNav : adminNav;
                   const active = path === href || (path.startsWith(href + '/') && !allItems.some(item => item.href !== href && (path === item.href || path.startsWith(item.href + '/'))));
                   return (
                     <NavLink key={href} href={href} label={label} Icon={Icon} pro={pro} active={active} close={close} />
@@ -204,6 +233,9 @@ export function Sidebar({ isFoundingMember, genieEnabled }: { isFoundingMember?:
             close={close}
             count={reportsUnread}
           />
+          {genieOnly && (
+            <NavLink href="/upgrade" label="Get Genius CRM" Icon={Sparkles} active={path === '/upgrade'} close={close} />
+          )}
           {!isTeamMember && (
             <>
               <NavLink

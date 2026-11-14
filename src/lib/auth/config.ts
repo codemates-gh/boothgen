@@ -52,6 +52,10 @@ export const authOptions: NextAuthOptions = {
           await refreshTenant(token);
         }
       }
+      // Re-read the account now and then, so a product or role change reaches the middleware without a new sign-in
+      if (!account && trigger !== 'update' && token.userId && Date.now() - (token.tenantRefreshedAt ?? 0) > TENANT_REFRESH_MS) {
+        await refreshTenant(token);
+      }
       if (trigger === 'update') {
         await refreshTenant(token);
         if (token.userId) {
@@ -67,18 +71,21 @@ export const authOptions: NextAuthOptions = {
       if (token.tenantId) {
         session.tenantId = token.tenantId;
         session.tenantRole = token.tenantRole;
-        session.tenant = { id: token.tenantId, slug: token.tenantSlug!, name: token.tenantName!, status: token.tenantStatus! };
+        session.tenant = { id: token.tenantId, slug: token.tenantSlug!, name: token.tenantName!, status: token.tenantStatus!, product: token.tenantProduct ?? 'crm' };
       }
       return session;
     },
   },
 };
 
+const TENANT_REFRESH_MS = 5 * 60 * 1000;
+
 async function refreshTenant(token: any) {
   if (!token.userId) return;
+  token.tenantRefreshedAt = Date.now();
   const m = await prisma.tenantMembership.findFirst({
     where: { userId: token.userId, status: 'ACTIVE' },
-    include: { tenant: { select: { id: true, slug: true, name: true, status: true } } },
+    include: { tenant: { select: { id: true, slug: true, name: true, status: true, product: true } } },
     orderBy: { joinedAt: 'desc' },
   });
   if (m) {
@@ -87,8 +94,9 @@ async function refreshTenant(token: any) {
     token.tenantSlug = m.tenant.slug;
     token.tenantName = m.tenant.name;
     token.tenantStatus = m.tenant.status;
+    token.tenantProduct = m.tenant.product;
   } else {
     delete token.tenantId; delete token.tenantRole;
-    delete token.tenantSlug; delete token.tenantName; delete token.tenantStatus;
+    delete token.tenantSlug; delete token.tenantName; delete token.tenantStatus; delete token.tenantProduct;
   }
 }

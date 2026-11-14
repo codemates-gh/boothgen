@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -74,6 +75,7 @@ function patchBody(form: Form, saved: Settings) {
 
 export default function EventGeniePage() {
   const { id: eventId } = useParams<{ id: string }>();
+  const { data: session } = useSession();
   const [data, setData] = useState<Dashboard | null>(null);
   const [notEnabled, setNotEnabled] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -148,6 +150,8 @@ export default function EventGeniePage() {
 
   const set = <K extends keyof Form>(key: K, patch: Partial<Form[K]>) => setForm(f => f && ({ ...f, [key]: typeof f[key] === 'object' ? { ...(f[key] as object), ...patch } : patch }));
   const cap = (patch: Partial<Capture>) => set('capture', patch);
+  // Genie-only accounts have no CRM event page or client design approval
+  const genieOnly = session?.tenant?.product === 'genie';
 
   const mismatched = form && data ? data.templates.filter(t => templateMismatch(t)) : [];
 
@@ -155,7 +159,9 @@ export default function EventGeniePage() {
     <>
       <TopBar title="Genie"/>
       <div className="p-4 sm:p-8 space-y-6 max-w-5xl pb-28">
-        <Link href={`/events/${eventId}`} className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Back to Event</Link>
+        {genieOnly
+          ? <Link href="/genie/events" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Back to Events</Link>
+          : <Link href={`/events/${eventId}`} className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Back to Event</Link>}
 
         {notEnabled ? (
           <Card>
@@ -182,7 +188,7 @@ export default function EventGeniePage() {
               </div>
             </div>
 
-            {data.designApprovalPending && (
+            {data.designApprovalPending && !genieOnly && (
               <div className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                 <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
                 <span>The client hasn&apos;t approved the design yet. Genie still runs; make sure the templates match what they approve. <Link href={`/events/${eventId}/designs`} className="underline">View designs</Link></span>

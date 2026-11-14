@@ -11,6 +11,8 @@ export function TopBar({ title }: { title: string }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string>('');
   const isTeamMember = session?.tenantRole === 'TEAM_MEMBER';
+  // Search covers CRM records (clients, events, invoices), which Genie-only accounts don't have
+  const noSearch = isTeamMember || session?.tenant?.product === 'genie';
 
   useEffect(() => {
     fetch('/api/settings/branding')
@@ -29,7 +31,7 @@ export function TopBar({ title }: { title: string }) {
   }, []);
 
   useEffect(() => {
-    if (isTeamMember) return;
+    if (noSearch) return;
     function handler(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
@@ -38,7 +40,7 @@ export function TopBar({ title }: { title: string }) {
     }
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isTeamMember]);
+  }, [noSearch]);
 
   const userName = session?.user?.name ?? '';
   const userInitials = userName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || 'U';
@@ -48,7 +50,7 @@ export function TopBar({ title }: { title: string }) {
       <header className="h-14 lg:h-14 bg-white border-b border-gray-100 flex items-center justify-between px-4 lg:px-6 fixed right-0 left-0 lg:left-64 top-0 z-30 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <h1 className="text-[15px] lg:text-base font-semibold text-[#1F1F3D] pl-10 lg:pl-0 truncate tracking-[-0.01em]">{title}</h1>
         <div className="flex items-center gap-2">
-          {!isTeamMember && (
+          {!noSearch && (
             <>
               <button
                 onClick={() => setSearchOpen(true)}

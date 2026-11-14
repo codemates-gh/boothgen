@@ -6,12 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
+import { settingsTabs } from '@/lib/product';
 import { KeyRound } from 'lucide-react';
 
-const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
 
 export default function ProfileSettingsPage() {
-  const { update } = useSession();
+  const { data: session, update } = useSession();
+  const tabs = settingsTabs(session?.tenant?.product);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [hasPassword, setHasPassword] = useState(false);

@@ -1,5 +1,6 @@
 import { getToken } from 'next-auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { genieOnlyBlock, GENIE_HOME, UPGRADE_PATH } from '@/lib/product';
 
 // '/' must match exactly — startsWith('/') is true for every route and breaks auth
 const PUBLIC_EXACT = new Set(['/']);
@@ -65,12 +66,23 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
+  // Genie-only accounts: no CRM pages or APIs. The tenant layout re-checks pages against the database.
+  if (token.tenantProduct === 'genie') {
+    const block = genieOnlyBlock(pathname);
+    if (block?.kind === 'home') return NextResponse.redirect(new URL(GENIE_HOME, req.url));
+    if (block?.kind === 'page') return NextResponse.redirect(new URL(UPGRADE_PATH + '?from=' + encodeURIComponent(pathname), req.url));
+    if (block?.kind === 'api') return NextResponse.json({ error: 'This is part of Genius, the BoothGen CRM', code: 'genius_required' }, { status: 403 });
+  }
+
   // Block team members from admin-only pages
   if (token.tenantRole === 'TEAM_MEMBER' && TEAM_MEMBER_BLOCKED.some(p => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL('/events', req.url));
   }
 
-  return NextResponse.next();
+  // Pass the path on so the tenant layout can re-check Genie-only access against the database
+  const headers = new Headers(req.headers);
+  headers.set('x-pathname', pathname);
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)'] };

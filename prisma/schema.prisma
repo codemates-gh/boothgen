@@ -248,6 +248,8 @@ model Tenant {
   genieBackdrops       GenieBackdrop[]
   feedbackReports      FeedbackReport[]
 
+  // What the account bought: "crm" (Genius, the full CRM) or "genie" (Genie only). See src/lib/product.ts
+  product               String    @default("crm")
   // Genie paid add-on entitlement (super admin toggle until billing exists)
   genieEnabled          Boolean   @default(false)
   genieEnabledAt        DateTime?
