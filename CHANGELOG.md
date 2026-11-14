@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.85.0] — 2026-11-14
+
+### Added
+- **Beautify (Glamour) filter** for Genie: smooths skin (every skin tone) with a soft glow, keeping edges sharp. Offer it on an event's Genie page → Filters. Needs Genie 0.5.0 (15) or later on the iPad; older builds ignore it
+- **Thank-you screen** settings in Capture (Genie → Event Defaults, with a per-event override): how long it shows (1–30 s), the title and a second line. Unchanged from Genie's own screen (5 s, "Thank you!", "Your photos are on their way."), it's left out of the bundle. Needs Genie 0.5.0 (14) or later
+
+**Database**: run `docs/genie/apply-production-thank-you.sql` in Neon (production branch) before this deploys
+
+---
+
 ## [2.84.0] — 2026-11-14
 
 ### Fixed

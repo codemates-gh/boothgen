@@ -16,6 +16,7 @@ export type Capture = {
   shotCount: number; initialCountdownSeconds: number; betweenShotsCountdownSeconds: number; showPerShotPreview: boolean; allowPerShotRetake: boolean;
   perShotPreviewSeconds: number; allowReviewRetake: boolean; retakesPerShot: number; idleTimeoutSeconds: number;
   boomerangEdgeLight: boolean;
+  thankYouSeconds: number; thankYouTitle: string; thankYouSubtitle: string;
 };
 export type Sharing = { smsEnabled: boolean; emailEnabled: boolean; qrEnabled: boolean; guestLinkScope: 'own' | 'all'; smsBody: string; emailSubject: string; emailBody: string; smsConsentText: string };
 export type Printing = { enabled: boolean; maxCopies: number; defaultCopies: number };
@@ -148,6 +149,17 @@ export function CaptureFields({ value, onChange, disabled, children }: { value: 
         <Field label="Review screen timeout (sec)" hint="How long the final photo with Print / Share stays up without a tap before going back to the start screen. Also applies to any screen waiting for the guest. 10–600">
           <Num value={value.idleTimeoutSeconds} min={10} max={600} disabled={disabled} onChange={n => onChange({ idleTimeoutSeconds: n })}/>
         </Field>
+      </div>
+      <div className="border-t pt-4 space-y-3">
+        <div>
+          <p className="font-medium text-sm">Thank-you screen</p>
+          <p className="text-xs text-gray-500 mt-0.5">Shown after a guest taps Done (or the review screen times out), then the booth goes back to the start. Needs Genie 0.5.0 (14) or later.</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Field label="Shows for (sec)" hint="1–30"><Num value={value.thankYouSeconds} min={1} max={30} disabled={disabled} onChange={n => onChange({ thankYouSeconds: n })}/></Field>
+          <Field label="Title" hint={`${value.thankYouTitle.length}/40`}><Input value={value.thankYouTitle} maxLength={40} disabled={disabled} onChange={e => onChange({ thankYouTitle: e.target.value })}/></Field>
+          <Field label="Second line" hint={`${value.thankYouSubtitle.length}/100 · leave empty for none`}><Input value={value.thankYouSubtitle} maxLength={100} disabled={disabled} onChange={e => onChange({ thankYouSubtitle: e.target.value })}/></Field>
+        </div>
       </div>
     </>
   );

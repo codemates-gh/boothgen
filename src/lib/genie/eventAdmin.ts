@@ -34,6 +34,8 @@ export const FILTER_CATALOG = [
   { id: 'warm', name: 'Warm', steps: [{ type: 'colorPreset', preset: 'warm', intensity: 0.5 }] },
   { id: 'sepia', name: 'Sepia', steps: [{ type: 'colorPreset', preset: 'sepia', intensity: 0.8 }] },
   { id: 'bw', name: 'Black & White', steps: [{ type: 'colorPreset', preset: 'blackAndWhite', intensity: 1 }] },
+  // Skin smoothing with a soft glow (Genie 0.5.0 build 15+; older builds ignore the step)
+  { id: 'glamour', name: 'Beautify (Glamour)', steps: [{ type: 'beautify', intensity: 0.7 }] },
 ] as const;
 
 type StoredFilter = { id: string; name: string; steps: unknown[] };
@@ -78,6 +80,10 @@ export const SettingsPatch = z.object({
     idleTimeoutSeconds: int(10, 600),
     // Optional so older pages that don't send it keep the saved value
     boomerangEdgeLight: z.boolean().optional(),
+    // Thank-you screen; optional so older pages keep the saved values
+    thankYouSeconds: int(1, 30).optional(),
+    thankYouTitle: z.string().trim().min(1, "The thank-you title can't be empty").max(40, 'Keep the thank-you title to 40 characters').optional(),
+    thankYouSubtitle: z.string().trim().max(100, 'Keep the thank-you line to 100 characters').optional(),
   }).strict(),
   filters: z.object({
     guestFiltersEnabled: z.boolean(),
@@ -190,6 +196,7 @@ export function settingsView(s: EventGenieSettings) {
       retakesPerShot: s.retakesPerShot,
       idleTimeoutSeconds: s.idleTimeoutSeconds,
       boomerangEdgeLight: s.boomerangEdgeLight,
+      thankYouSeconds: s.thankYouSeconds, thankYouTitle: s.thankYouTitle, thankYouSubtitle: s.thankYouSubtitle,
     },
     lookAtCamera: (s.lookAtCamera as LookAtCamera | null) ?? LOOK_AT_CAMERA_DEFAULT,
     liveView: { mirrorLiveView: s.mirrorLiveView, showDesignWhilePosing: s.showDesignWhilePosing },

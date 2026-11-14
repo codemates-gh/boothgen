@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import type { Event, EventGenieSettings, EventGenieTemplate, Gallery, GenieBackdrop, GenieMessagingConfig, GenieProp, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
-import type { StoredLayout } from './schemas';
+import { THANK_YOU_DEFAULT, type StoredLayout } from './schemas';
 import { galleryUrl, sessionUrl } from './urls';
 import { emailUsable, smsConfigured } from './messaging';
 import { bundleBoomerang } from './boomerang';
@@ -137,6 +137,7 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
       showDesignWhilePosing: settings.showDesignWhilePosing,
       // Optional; left out until the operator sets them, so existing bundles (and their version) don't change
       ...(settings.lookAtCamera ? { lookAtCamera: settings.lookAtCamera } : {}),
+      ...(thankYouChanged(settings) ? { thankYou: { seconds: settings.thankYouSeconds, title: settings.thankYouTitle, subtitle: settings.thankYouSubtitle } } : {}),
       ...(settings.boomerang ? { boomerang: bundleBoomerang(settings.boomerang, settings.boomerangEdgeLight) } : {}),
     },
     templates: [...event.genieTemplates].sort((a, b) => a.sortOrder - b.sortOrder).map(eventTemplateJson),
@@ -174,6 +175,11 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
     // Optional; only when the virtual backdrop is on and some backdrops are chosen
     ...(backdrops_ ? { backgroundRemoval: backdrops_ } : {}),
   };
+}
+
+// Left out of the bundle while it's Genie's own default screen, so existing bundles (and versions) don't change
+function thankYouChanged(s: Pick<EventGenieSettings, 'thankYouSeconds' | 'thankYouTitle' | 'thankYouSubtitle'>) {
+  return s.thankYouSeconds !== THANK_YOU_DEFAULT.thankYouSeconds || s.thankYouTitle !== THANK_YOU_DEFAULT.thankYouTitle || s.thankYouSubtitle !== THANK_YOU_DEFAULT.thankYouSubtitle;
 }
 
 function contentHash(bundle: Record<string, unknown>): string {

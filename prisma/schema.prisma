@@ -1343,6 +1343,10 @@ model EventGenieSettings {
   idleTimeoutSeconds           Int     @default(60)
   // CaptureConfig.boomerang.edgeLight: white border lighting the live view while a boomerang records
   boomerangEdgeLight           Boolean @default(true)
+  // CaptureConfig.thankYou: the screen after Done (absent from the bundle while it's the Genie default)
+  thankYouSeconds              Int     @default(5)
+  thankYouTitle                String  @default("Thank you!")
+  thankYouSubtitle             String  @default("Your photos are on their way.")
   // CaptureConfig.lookAtCamera / .boomerang (per event, not account defaults); null = absent from the bundle
   // (Genie: look-at-camera on with its own wording, boomerang off)
   lookAtCamera                 Json?
@@ -1553,6 +1557,10 @@ model GenieDefaults {
   retakesPerShot               Int     @default(1)
   idleTimeoutSeconds           Int     @default(60)
   boomerangEdgeLight           Boolean @default(true)
+  // CaptureConfig.thankYou: the screen after Done (absent from the bundle while it's the Genie default)
+  thankYouSeconds              Int     @default(5)
+  thankYouTitle                String  @default("Thank you!")
+  thankYouSubtitle             String  @default("Your photos are on their way.")
 
   smsEnabled     Boolean @default(true)
   emailEnabled   Boolean @default(true)

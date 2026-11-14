@@ -1,11 +1,12 @@
 import { Prisma, type Event, type EventGenieSettings, type GenieDefaults } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { GENIE_SETTINGS_DEFAULTS, effectiveLockedAt } from './bundle';
+import { THANK_YOU_DEFAULT } from './schemas';
 
 // Sections that have account-wide defaults. Field names are the same on GenieDefaults and EventGenieSettings.
 export const DEFAULT_SECTIONS = {
   timeZone: ['timeZone'],
-  capture: ['shotCount', 'initialCountdownSeconds', 'betweenShotsCountdownSeconds', 'showPerShotPreview', 'allowPerShotRetake', 'perShotPreviewSeconds', 'allowReviewRetake', 'retakesPerShot', 'idleTimeoutSeconds', 'boomerangEdgeLight'],
+  capture: ['shotCount', 'initialCountdownSeconds', 'betweenShotsCountdownSeconds', 'showPerShotPreview', 'allowPerShotRetake', 'perShotPreviewSeconds', 'allowReviewRetake', 'retakesPerShot', 'idleTimeoutSeconds', 'boomerangEdgeLight', 'thankYouSeconds', 'thankYouTitle', 'thankYouSubtitle'],
   sharing: ['smsEnabled', 'emailEnabled', 'qrEnabled', 'guestLinkScope', 'smsBody', 'emailSubject', 'emailBody', 'smsConsentText'],
   printing: ['printingEnabled', 'printMaxCopies', 'printDefaultCopies'],
   attract: ['attract', 'attractReturnAfterSeconds'],
@@ -24,6 +25,7 @@ export const BUILT_IN_DEFAULTS: DefaultsValues = {
   timeZone: 'America/New_York',
   shotCount: 3, initialCountdownSeconds: 5, betweenShotsCountdownSeconds: 3, showPerShotPreview: true, allowPerShotRetake: true,
   perShotPreviewSeconds: 2, allowReviewRetake: false, retakesPerShot: 1, idleTimeoutSeconds: 60, boomerangEdgeLight: true,
+  ...THANK_YOU_DEFAULT,
   smsEnabled: true, emailEnabled: true, qrEnabled: true, guestLinkScope: 'own', ...GENIE_SETTINGS_DEFAULTS,
   printingEnabled: true, printMaxCopies: 4, printDefaultCopies: 1,
   attract: null, attractReturnAfterSeconds: 30,

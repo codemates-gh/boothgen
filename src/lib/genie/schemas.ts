@@ -68,7 +68,7 @@ export const PrintLogEntry = z.object({
 }).strict();
 
 export const ProcessingStep = z.object({
-  type: z.enum(['colorPreset', 'sharpen', 'toneCurve', 'jpegQuality']),
+  type: z.enum(['colorPreset', 'sharpen', 'toneCurve', 'jpegQuality', 'beautify']),
   preset: z.enum(['none', 'blackAndWhite', 'sepia', 'warm']).optional(),
   intensity: z.number().min(0).max(1).optional(),
   radius: z.number().min(0).max(20).optional(),
@@ -76,7 +76,7 @@ export const ProcessingStep = z.object({
   quality: z.number().min(0.1).max(1).optional(),
 }).strict().superRefine((s, ctx) => {
   const need: Record<string, (keyof typeof s)[]> = {
-    colorPreset: ['preset', 'intensity'], sharpen: ['radius', 'intensity'], toneCurve: ['curvePoints'], jpegQuality: ['quality'],
+    colorPreset: ['preset', 'intensity'], sharpen: ['radius', 'intensity'], toneCurve: ['curvePoints'], jpegQuality: ['quality'], beautify: ['intensity'],
   };
   for (const key of need[s.type]) if (s[key] === undefined) ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${s.type} requires ${key}`, path: [key] });
 });
@@ -113,6 +113,9 @@ export const LookAtCamera = z.object({
 }).strict();
 export type LookAtCamera = z.infer<typeof LookAtCamera>;
 export const LOOK_AT_CAMERA_DEFAULT: LookAtCamera = { enabled: true, text: 'LOOK AT CAMERA', frequency: 'everyPhoto' };
+
+// CaptureConfig.thankYou: absent = Genie's own screen (5 s, "Thank you!", "Your photos are on their way.")
+export const THANK_YOU_DEFAULT = { thankYouSeconds: 5, thankYouTitle: 'Thank you!', thankYouSubtitle: 'Your photos are on their way.' };
 
 // CaptureConfig.boomerang: absent = off
 export const BOOMERANG_FORMATS = ['square', 'portrait4x6', 'landscape6x4'] as const;
