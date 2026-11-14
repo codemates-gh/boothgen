@@ -78,5 +78,16 @@ describe('photo live view settings', () => {
     expect(b.filters.filters.find((f: any) => f.id === 'glamour')).toEqual({ id: 'glamour', name: 'Beautify (Glamour)', steps: [{ type: 'beautify', intensity: 0.7 }] });
     const validate = await bundleValidator();
     if (validate) expect(validate(b)).toBeNull();
+
+    // Strength: saved on the filter, kept when a later save leaves it out, and refused outside 0.3–1
+    expect(d.settings.filters.glamourIntensity).toBe(0.7);
+    const f = { guestFiltersEnabled: true, defaultFilterId: 'original', filterIds: ['original', 'glamour'] };
+    expect((await PATCH(req('/x', { method: 'PATCH', body: { filters: { ...f, glamourIntensity: 0.2 } } }), { params: { id: event.id } })).status).toBe(400);
+    const r2 = await PATCH(req('/x', { method: 'PATCH', body: { filters: { ...f, glamourIntensity: 0.9 } } }), { params: { id: event.id } });
+    expect((await r2.json()).filters.glamourIntensity).toBe(0.9);
+    await PATCH(req('/x', { method: 'PATCH', body: { filters: f } }), { params: { id: event.id } });
+    const b2 = await (await deviceBundle(req('/x', { token }), { params: { eventId: event.id } })).json();
+    expect(b2.filters.filters.find((x: any) => x.id === 'glamour').steps).toEqual([{ type: 'beautify', intensity: 0.9 }]);
+    if (validate) expect(validate(b2)).toBeNull();
   });
 });

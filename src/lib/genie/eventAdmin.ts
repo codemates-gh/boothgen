@@ -40,6 +40,13 @@ export const FILTER_CATALOG = [
 
 type StoredFilter = { id: string; name: string; steps: unknown[] };
 
+// Beautify (Glamour) strength saved on the event; 0.7 until set
+export function glamourIntensity(current: unknown): number {
+  const f = (Array.isArray(current) ? current as StoredFilter[] : []).find(x => x?.id === 'glamour');
+  const n = (f?.steps?.[0] as { intensity?: unknown } | undefined)?.intensity;
+  return typeof n === 'number' && n >= 0.3 && n <= 1 ? n : 0.7;
+}
+
 // Catalog filters plus any custom ones already on the event
 export function availableFilters(current: unknown): StoredFilter[] {
   const list: StoredFilter[] = FILTER_CATALOG.map(f => ({ id: f.id, name: f.name, steps: [...f.steps] }));
@@ -89,6 +96,8 @@ export const SettingsPatch = z.object({
     guestFiltersEnabled: z.boolean(),
     defaultFilterId: z.string().min(1),
     filterIds: z.array(z.string().min(1)).min(1, 'Choose at least one filter'),
+    // Beautify (Glamour) strength; absent keeps the saved one
+    glamourIntensity: z.number().min(0.3).max(1).optional(),
   }).strict(),
   sharing: z.object({
     smsEnabled: z.boolean(),
@@ -133,7 +142,9 @@ export function settingsUpdateData(patch: SettingsPatch, current: EventGenieSett
     const chosen = patch.filters.filterIds.map(id => available.find(f => f.id === id));
     if (chosen.some(f => !f)) return { error: 'Unknown filter' };
     if (!patch.filters.filterIds.includes(patch.filters.defaultFilterId)) return { error: 'The default filter must be one of the offered filters' };
-    data.filters = chosen;
+    // Beautify (Glamour) at the chosen strength (rounded to 0.05)
+    const intensity = Math.round((patch.filters.glamourIntensity ?? glamourIntensity(current.filters)) * 20) / 20;
+    data.filters = chosen.map(f => f!.id === 'glamour' ? { ...f!, steps: [{ type: 'beautify', intensity }] } : f);
     data.defaultFilterId = patch.filters.defaultFilterId;
     data.guestFiltersEnabled = patch.filters.guestFiltersEnabled;
   }
@@ -210,6 +221,7 @@ export function settingsView(s: EventGenieSettings) {
       defaultFilterId: s.defaultFilterId,
       filterIds: (Array.isArray(s.filters) ? s.filters as StoredFilter[] : []).map(f => f.id),
       available: availableFilters(s.filters).map(f => ({ id: f.id, name: f.name })),
+      glamourIntensity: glamourIntensity(s.filters),
     },
     sharing: {
       smsEnabled: s.smsEnabled,

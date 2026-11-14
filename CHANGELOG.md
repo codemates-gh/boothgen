@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.85.1] — 2026-11-14
+
+### Added
+- **Beautify (Glamour) strength**: a slider next to the filter on an event's Genie page → Filters (30–100%, 70% until changed), shown when the filter is offered. Every guest at that event gets that strength
+
+---
+
 ## [2.85.0] — 2026-11-14
 
 ### Added

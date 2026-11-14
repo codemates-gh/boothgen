@@ -20,7 +20,7 @@ import type { Backdrop } from '@/components/genie/Backdrops';
 
 type Settings = {
   enabled: boolean; timeZone: string; bundleVersion: number; maxDevices: number; capture: Capture;
-  filters: { guestFiltersEnabled: boolean; defaultFilterId: string; filterIds: string[]; available: { id: string; name: string }[] };
+  filters: { guestFiltersEnabled: boolean; defaultFilterId: string; filterIds: string[]; available: { id: string; name: string }[]; glamourIntensity: number };
   sharing: Sharing;
   printing: Printing;
   lookAtCamera: LookAtCamera;
@@ -279,6 +279,14 @@ export default function EventGeniePage() {
                               set('filters', { filterIds: ids, defaultFilterId: ids.includes(form.filters.defaultFilterId) ? form.filters.defaultFilterId : ids[0] });
                             }}/>
                           <span className="text-sm flex-1">{f.name}</span>
+                          {f.id === 'glamour' && on && (
+                            <label className="flex items-center gap-2 text-xs text-gray-600" title="How strong the skin smoothing and glow are">
+                              Strength
+                              <input type="range" min={0.3} max={1} step={0.05} value={form.filters.glamourIntensity} disabled={locked} className="w-28 accent-brand"
+                                onChange={e => set('filters', { glamourIntensity: Number(e.target.value) })}/>
+                              <span className="w-8 tabular-nums">{Math.round(form.filters.glamourIntensity * 100)}%</span>
+                            </label>
+                          )}
                           <label className={'flex items-center gap-1.5 text-xs ' + (on ? 'text-gray-600 cursor-pointer' : 'text-gray-300')}>
                             <input type="radio" name="defaultFilter" checked={form.filters.defaultFilterId === f.id} disabled={locked || !on} onChange={() => set('filters', { defaultFilterId: f.id })}/>
                             Default
