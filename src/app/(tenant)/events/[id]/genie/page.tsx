@@ -24,6 +24,7 @@ type Settings = {
   sharing: Sharing;
   printing: Printing;
   lookAtCamera: LookAtCamera;
+  liveView: { mirrorLiveView: boolean; showDesignWhilePosing: boolean };
   boomerang: Boomerang;
   attract: Attract;
   props: EventPropsValue;
@@ -39,14 +40,14 @@ type Dashboard = {
   chosenProps: Prop[];
   chosenBackdrops: Backdrop[];
 };
-type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval'> & { filters: Omit<Settings['filters'], 'available'> };
+type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'liveView' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval'> & { filters: Omit<Settings['filters'], 'available'> };
 
 
 function toForm(s: Settings): Form {
   const { available: _a, ...filters } = s.filters;
   return {
     enabled: s.enabled, timeZone: s.timeZone, capture: { ...s.capture }, filters, sharing: { ...s.sharing }, printing: { ...s.printing },
-    lookAtCamera: { ...s.lookAtCamera }, boomerang: { ...s.boomerang }, attract: { ...s.attract },
+    lookAtCamera: { ...s.lookAtCamera }, liveView: { ...s.liveView }, boomerang: { ...s.boomerang }, attract: { ...s.attract },
     props: { enabled: s.props.enabled, propIds: [...s.props.propIds] },
     backgroundRemoval: { ...s.backgroundRemoval, backdropIds: [...s.backgroundRemoval.backdropIds] },
   };
@@ -235,6 +236,12 @@ export default function EventGeniePage() {
                       </div>
                     )}
                   </CaptureFields>
+                  <div className="border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Toggle checked={form.liveView.mirrorLiveView} disabled={locked} onChange={v => set('liveView', { mirrorLiveView: v })} label="Mirror the live view"
+                      hint="Like a mirror while guests pose. The photos themselves are never mirrored."/>
+                    <Toggle checked={form.liveView.showDesignWhilePosing} disabled={locked} onChange={v => set('liveView', { showDesignWhilePosing: v })} label="Show the design while guests pose"
+                      hint="Where the live view leaves room (a 2x6 strip on an iPad in portrait), the design fills in as each photo is kept."/>
+                  </div>
                   <div className="border-t pt-4">
                     <LookAtCameraFields value={form.lookAtCamera} disabled={locked} onChange={p => set('lookAtCamera', p)}/>
                   </div>

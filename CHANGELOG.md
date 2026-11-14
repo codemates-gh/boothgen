@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.83.0] — 2026-11-14
+
+### Added
+- **Mirror the live view** (Event → Genie → Capture): on by default, like a mirror while guests pose; the photos themselves are never mirrored
+- **Show the design while guests pose** (Event → Genie → Capture): off by default; where the live view leaves room (a 2x6 strip on an iPad in portrait), the design fills in as each photo is kept
+- Both are sent to iPads in the event bundle's capture settings (Genie CaptureConfig, Genie commit 00d7bc6). Every event's bundle version goes up once, because the two settings are now always included
+
+**Database**: run `docs/genie/apply-production-live-view.sql` in Neon (production branch) before this deploys
+
+---
+
 ## [2.82.0] — 2026-11-13
 
 ### Added

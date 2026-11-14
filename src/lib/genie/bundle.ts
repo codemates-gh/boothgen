@@ -132,6 +132,9 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
       allowReviewRetake: settings.allowReviewRetake,
       retakesPerShot: settings.retakesPerShot,
       idleTimeoutSeconds: settings.idleTimeoutSeconds,
+      // Photo sessions' live view (per event)
+      mirrorLiveView: settings.mirrorLiveView,
+      showDesignWhilePosing: settings.showDesignWhilePosing,
       // Optional; left out until the operator sets them, so existing bundles (and their version) don't change
       ...(settings.lookAtCamera ? { lookAtCamera: settings.lookAtCamera } : {}),
       ...(settings.boomerang ? { boomerang: bundleBoomerang(settings.boomerang, settings.boomerangEdgeLight) } : {}),

@@ -101,6 +101,8 @@ export const SettingsPatch = z.object({
   }).strict().refine(p => p.defaultCopies <= p.maxCopies, { message: 'Default copies must not exceed max copies', path: ['defaultCopies'] }),
   // Per event only (no account defaults)
   lookAtCamera: LookAtCamera,
+  // Photo sessions' live view (per event only)
+  liveView: z.object({ mirrorLiveView: z.boolean(), showDesignWhilePosing: z.boolean() }).strict(),
   // overlayUrl: a PNG uploaded through /api/genie-templates/assets; null removes the overlay, absent keeps it
   boomerang: BoomerangSettings.extend({ overlayUrl: z.string().url().nullable().optional() }).strict(),
   // Attract screen (account default with per-event override); saved by attractData
@@ -131,6 +133,7 @@ export function settingsUpdateData(patch: SettingsPatch, current: EventGenieSett
   }
   if (patch.sharing) Object.assign(data, patch.sharing);
   if (patch.lookAtCamera) data.lookAtCamera = patch.lookAtCamera;
+  if (patch.liveView) Object.assign(data, patch.liveView);
   if (patch.printing) {
     data.printingEnabled = patch.printing.enabled;
     data.printMaxCopies = patch.printing.maxCopies;
@@ -189,6 +192,7 @@ export function settingsView(s: EventGenieSettings) {
       boomerangEdgeLight: s.boomerangEdgeLight,
     },
     lookAtCamera: (s.lookAtCamera as LookAtCamera | null) ?? LOOK_AT_CAMERA_DEFAULT,
+    liveView: { mirrorLiveView: s.mirrorLiveView, showDesignWhilePosing: s.showDesignWhilePosing },
     boomerang: (() => {
       const b = storedBoomerang(s.boomerang);
       const { overlay, overlaySize, ...settings }: StoredBoomerang = b ?? BOOMERANG_DEFAULT;
