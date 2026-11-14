@@ -89,6 +89,11 @@ Suggestions (Claude):
     per event, per operator; Super Admin view) and **review the cap after at least 20 paid events**. Suggestion: a
     high safety limit from day one, e.g. 2,000 per event, only to stop a bug or abuse.
   - Monthly Genie plan for busy operators: TBD later.
+  - **AI features (when Genie gets them) cost extra, paid with credits** (G). Suggestions: prepaid credit packs on the
+    account (not per event); each AI generation uses credits by model cost, priced with margin; credits never charged
+    for a failed generation; a per-event and per-guest limit the operator sets, so one event can't drain the balance;
+    low-balance warning by email; AI calls go through BoothGen (not straight from the iPad) so they're metered and the
+    provider keys stay off devices; AI usage in the same per-event analytics. Same for Genie only and Genius.
   - A 3rd or 4th iPad = pay for the event again (each payment covers 2 iPads). Expected to be rare.
   - Event packs: later.
   - Payment can happen any time. Until the event is paid, the booth screen and the photos carry a watermark.
