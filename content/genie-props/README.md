@@ -35,3 +35,12 @@ works for Apple Vision (iPad) and ML Kit / MediaPipe (Android).
 
 Hats and headbands assume the head top is about 1.6 eye distances above the eyes; operators may want a
 per-prop size/offset nudge in BoothGen once real tracking is tested.
+
+**Head width (2026-11-14).** A head is about 2.4 eye distances (720 units) wide. The first library drew most
+headwear for a head 1.4–1.8 eye distances wide, so hats looked like toy hats on real faces. Beanies were redrawn;
+the other head props are scaled by `generate-props.js` with the factors in `head-fit.json`, about the bottom centre
+of their artwork, so each keeps its place on the forehead and grows wider and taller (brims ≈ 2.6–3.4 eye
+distances, caps and bands ≈ 2.0–2.4 at the height they sit). Check any change with:
+
+    node assets/props/measure-props.js          # each head prop's width at its base, in eye distances
+    node assets/props/preview-on-head.js out.png [--filter hat-]   # every head prop on a head, as the iPad places it

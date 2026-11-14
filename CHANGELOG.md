@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.84.0] — 2026-11-14
+
+### Fixed
+- **Starter hats and headwear now fit real heads.** 55 Standard props (hats, beanies, crowns, tiaras, ears, horns, antlers, boppers, party hats, mortarboards, flower crowns…) were drawn for a head about half the real width; new art from Genie (commit a44b67e)
+
+### Changed
+- **Super Admin → Props → Import / update starter props** now also updates the art and placement of starter props whose art changed, keeping their names, categories and on/off. Events that offer them get the new art on the iPad's next sync
+
+**After deploying**: click **Import / update starter props** once (expect 55 updated)
+
+---
+
 ## [2.83.0] — 2026-11-14
 
 ### Added

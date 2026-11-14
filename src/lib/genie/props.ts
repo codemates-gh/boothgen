@@ -210,8 +210,10 @@ type Catalog = {
   props: { id: string; name: string; category: string; subcategory: string; alsoIn?: { category: string; subcategory: string }[]; png: string; size: { width: number; height: number }; anchor: PropAnchor; anchorPoint: [number, number]; eyeDistance: number }[];
 };
 
-// Adds the categories and props that aren't there yet; never changes ones Super Admin already has (or edited)
-export async function importStarterProps(dir = path.join(process.cwd(), 'content', 'genie-props')): Promise<{ categories: number; props: number; skipped: number }> {
+// Adds the categories and props that aren't there yet. For starter props already there whose art changed in the catalog
+// (a different PNG), refreshes only the art and placement (image, size, anchorPoint); names, categories, listings and
+// on/off stay as Super Admin left them.
+export async function importStarterProps(dir = path.join(process.cwd(), 'content', 'genie-props')): Promise<{ categories: number; props: number; updated: number; skipped: number }> {
   const catalog: Catalog = JSON.parse(await fs.readFile(path.join(dir, 'catalog.json'), 'utf8'));
   let categories = 0;
   const existingCats = new Set((await prisma.geniePropCategory.findMany({ select: { id: true } })).map(c => c.id));
@@ -219,8 +221,27 @@ export async function importStarterProps(dir = path.join(process.cwd(), 'content
     const rows = [{ id: c.id, parentId: null as string | null, name: c.name, sortOrder: ci }, ...c.subcategories.map((s, si) => ({ id: s.id, parentId: c.id, name: s.name, sortOrder: si }))];
     for (const r of rows) if (!existingCats.has(r.id)) { await prisma.geniePropCategory.create({ data: r }); categories++; }
   }
-  const existing = new Set((await prisma.genieProp.findMany({ where: { tenantId: null }, select: { id: true } })).map(p => p.id));
+  const existingRows = await prisma.genieProp.findMany({ where: { tenantId: null }, select: { id: true, image: true } });
+  const existing = new Map(existingRows.map(p => [p.id, p.image as RemoteAsset]));
   const todo = catalog.props.map((p, i) => ({ p, i })).filter(({ p }) => !existing.has(p.id));
+
+  // Art refresh for props that are already there
+  let updated = 0;
+  for (const p of catalog.props) {
+    const current = existing.get(p.id);
+    if (!current) continue;
+    const buf = await fs.readFile(path.join(dir, p.png));
+    if (createHash('sha256').update(buf).digest('hex') === current.sha256) continue;
+    const stored = await storePropImage(buf, 'standard', null);
+    if ('error' in stored) throw new Error(`${p.id}: ${stored.error}`);
+    await prisma.genieProp.update({
+      where: { id: p.id },
+      data: { image: stored.image, width: p.size.width, height: p.size.height, anchorX: p.anchorPoint[0], anchorY: p.anchorPoint[1] },
+    });
+    await deleteUnusedPropImages([current.url]);
+    updated++;
+  }
+
   let props = 0;
   for (let b = 0; b < todo.length; b += 8) {
     await Promise.all(todo.slice(b, b + 8).map(async ({ p, i }) => {
@@ -236,5 +257,5 @@ export async function importStarterProps(dir = path.join(process.cwd(), 'content
       props++;
     }));
   }
-  return { categories, props, skipped: catalog.props.length - todo.length };
+  return { categories, props, updated, skipped: catalog.props.length - todo.length - updated };
 }

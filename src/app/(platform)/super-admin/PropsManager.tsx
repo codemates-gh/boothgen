@@ -56,7 +56,7 @@ export default function PropsManager() {
     const d = await r.json().catch(() => ({}));
     setImporting(false);
     if (!r.ok) { setError(d.error || 'The import failed'); load(); return; }
-    setNotice(d.props || d.categories ? `Added ${d.props} props and ${d.categories} categories.` : 'Every starter prop is already in the library.');
+    setNotice(d.props || d.categories || d.updated ? `Added ${d.props} props and ${d.categories} categories; updated the art of ${d.updated}.` : 'Every starter prop is already in the library and up to date.');
     load();
   }
 
@@ -71,7 +71,7 @@ export default function PropsManager() {
         </p>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setCatsOpen(true)}><FolderTree className="w-4 h-4 mr-1.5"/>Categories</Button>
-          <Button variant="outline" onClick={importStarter} disabled={importing}><Download className="w-4 h-4 mr-1.5"/>{importing ? 'Importing… (about a minute)' : 'Import starter props'}</Button>
+          <Button variant="outline" onClick={importStarter} disabled={importing} title="Adds missing starter props and updates the art of ones whose art changed. Names, categories and on/off are kept."><Download className="w-4 h-4 mr-1.5"/>{importing ? 'Importing… (about a minute)' : 'Import / update starter props'}</Button>
           <Button onClick={() => setEditing('new')} disabled={!categories.length} title={categories.length ? undefined : 'Add a category first'}><Plus className="w-4 h-4 mr-1.5"/>Add Prop</Button>
         </div>
       </div>

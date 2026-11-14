@@ -307,12 +307,33 @@ describe('starter import and cleanup', () => {
         { id: 'test-imp-b', name: 'B', category: 'test-imp', subcategory: 'test-imp-sub', png: 'png/b.png', size: { width: 600, height: 600 }, anchor: 'chin', anchorPoint: [300, 20], eyeDistance: 300 },
       ],
     }));
-    expect(await importStarterProps(src)).toEqual({ categories: 2, props: 2, skipped: 0 });
+    expect(await importStarterProps(src)).toEqual({ categories: 2, props: 2, updated: 0, skipped: 0 });
     await prisma.genieProp.update({ where: { id: 'test-imp-a' }, data: { name: 'Edited' } });
-    expect(await importStarterProps(src)).toEqual({ categories: 0, props: 0, skipped: 2 });
+    expect(await importStarterProps(src)).toEqual({ categories: 0, props: 0, updated: 0, skipped: 2 });
     const a = await prisma.genieProp.findUniqueOrThrow({ where: { id: 'test-imp-a' } });
     expect(a.name).toBe('Edited');
     expect([a.anchorX, a.anchorY]).toEqual([450, 190]);
+
+    // New art for B (bigger, new anchor): only its art and placement change; an event that chose it gets the new
+    // bundle; a switched-off prop stays off
+    await prisma.genieProp.update({ where: { id: 'test-imp-b' }, data: { name: 'Kept Name', isActive: false } });
+    const event = await seedEvent(tenantId, clientId);
+    await prisma.eventGenieSettings.update({ where: { eventId: event.id }, data: { propsEnabled: true, propIds: ['test-imp-b'] } });
+    const { token } = await seedDevice(tenantId);
+    const before = await (await deviceBundle(req('/x', { token }), { params: { eventId: event.id } })).json();
+    const oldKey = (before.props.items[0].image.url as string).slice(BASE.length);
+    writeFileSync(path.join(src, 'png', 'b.png'), transparentPng);
+    const cat = JSON.parse(readFileSync(path.join(src, 'catalog.json'), 'utf8'));
+    cat.props[1] = { ...cat.props[1], size: { width: 900, height: 900 }, anchorPoint: [450, -100] };
+    writeFileSync(path.join(src, 'catalog.json'), JSON.stringify(cat));
+    expect(await importStarterProps(src)).toEqual({ categories: 0, props: 0, updated: 1, skipped: 1 });
+    const b = await prisma.genieProp.findUniqueOrThrow({ where: { id: 'test-imp-b' } });
+    expect([b.name, b.isActive, b.width, b.height, b.anchorX, b.anchorY]).toEqual(['Kept Name', false, 900, 900, 450, -100]);
+    const after = await (await deviceBundle(req('/x', { token }), { params: { eventId: event.id } })).json();
+    expect(after.bundleVersion).toBe(before.bundleVersion + 1);
+    expect(after.props.items[0]).toMatchObject({ id: 'test-imp-b', size: { width: 900, height: 900 }, anchorPoint: { x: 450, y: -100 } });
+    expect(after.props.items[0].image.sha256).not.toBe(before.props.items[0].image.sha256);
+    expect(files.has(oldKey)).toBe(false);
   });
 
   it('sweeps uploads older than a day that no prop uses', async () => {

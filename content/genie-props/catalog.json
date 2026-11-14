@@ -1128,16 +1128,16 @@
       "png": "png/hat-top-black.png",
       "size": {
         "width": 900,
-        "height": 640
+        "height": 872
       },
       "pngSize": {
         "width": 1024,
-        "height": 728
+        "height": 992
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        880
+        1112
       ],
       "eyeDistance": 300
     },
@@ -1156,16 +1156,16 @@
       "png": "png/hat-top-red-band.png",
       "size": {
         "width": 900,
-        "height": 640
+        "height": 872
       },
       "pngSize": {
         "width": 1024,
-        "height": 728
+        "height": 992
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        880
+        1112
       ],
       "eyeDistance": 300
     },
@@ -1184,16 +1184,16 @@
       "png": "png/hat-bowler.png",
       "size": {
         "width": 900,
-        "height": 460
+        "height": 566
       },
       "pngSize": {
         "width": 1024,
-        "height": 523
+        "height": 644
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        700
+        806
       ],
       "eyeDistance": 300
     },
@@ -1211,16 +1211,16 @@
       "svg": "svg/hat-cowboy-brown.svg",
       "png": "png/hat-cowboy-brown.png",
       "size": {
-        "width": 900,
+        "width": 1066,
         "height": 520
       },
       "pngSize": {
         "width": 1024,
-        "height": 592
+        "height": 500
       },
       "anchor": "eyes",
       "anchorPoint": [
-        450,
+        533,
         750
       ],
       "eyeDistance": 300
@@ -1239,16 +1239,16 @@
       "svg": "svg/hat-cowboy-black.svg",
       "png": "png/hat-cowboy-black.png",
       "size": {
-        "width": 900,
+        "width": 1066,
         "height": 520
       },
       "pngSize": {
         "width": 1024,
-        "height": 592
+        "height": 500
       },
       "anchor": "eyes",
       "anchorPoint": [
-        450,
+        533,
         750
       ],
       "eyeDistance": 300
@@ -1271,16 +1271,16 @@
       "svg": "svg/hat-cowboy-pink.svg",
       "png": "png/hat-cowboy-pink.png",
       "size": {
-        "width": 900,
+        "width": 1066,
         "height": 520
       },
       "pngSize": {
         "width": 1024,
-        "height": 592
+        "height": 500
       },
       "anchor": "eyes",
       "anchorPoint": [
-        450,
+        533,
         750
       ],
       "eyeDistance": 300
@@ -1307,16 +1307,16 @@
       "svg": "svg/hat-sun.svg",
       "png": "png/hat-sun.png",
       "size": {
-        "width": 900,
+        "width": 1032,
         "height": 500
       },
       "pngSize": {
         "width": 1024,
-        "height": 569
+        "height": 496
       },
       "anchor": "eyes",
       "anchorPoint": [
-        450,
+        516,
         720
       ],
       "eyeDistance": 300
@@ -1420,16 +1420,16 @@
       "png": "png/hat-bucket.png",
       "size": {
         "width": 900,
-        "height": 480
+        "height": 513
       },
       "pngSize": {
         "width": 1024,
-        "height": 546
+        "height": 584
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        720
+        753
       ],
       "eyeDistance": 300
     },
@@ -1452,16 +1452,16 @@
       "png": "png/ears-bunny.png",
       "size": {
         "width": 900,
-        "height": 760
+        "height": 836
       },
       "pngSize": {
         "width": 1024,
-        "height": 865
+        "height": 951
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        1040
+        1116
       ],
       "eyeDistance": 300
     },
@@ -1664,16 +1664,16 @@
       "png": "png/horn-unicorn.png",
       "size": {
         "width": 900,
-        "height": 580
+        "height": 589
       },
       "pngSize": {
         "width": 1024,
-        "height": 660
+        "height": 670
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        880
+        889
       ],
       "eyeDistance": 300
     },
@@ -1692,16 +1692,16 @@
       "png": "png/antennae-alien.png",
       "size": {
         "width": 900,
-        "height": 560
+        "height": 579
       },
       "pngSize": {
         "width": 1024,
-        "height": 637
+        "height": 659
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        840
+        859
       ],
       "eyeDistance": 300
     },
@@ -1720,16 +1720,16 @@
       "png": "png/halo-gold.png",
       "size": {
         "width": 900,
-        "height": 260
+        "height": 285
       },
       "pngSize": {
         "width": 1024,
-        "height": 296
+        "height": 324
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        720
+        745
       ],
       "eyeDistance": 300
     },
@@ -2758,16 +2758,16 @@
       "png": "png/partyhat-blue.png",
       "size": {
         "width": 900,
-        "height": 640
+        "height": 849
       },
       "pngSize": {
         "width": 1024,
-        "height": 728
+        "height": 966
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        1080
+        1289
       ],
       "eyeDistance": 300
     },
@@ -2781,16 +2781,16 @@
       "png": "png/partyhat-pink.png",
       "size": {
         "width": 900,
-        "height": 640
+        "height": 849
       },
       "pngSize": {
         "width": 1024,
-        "height": 728
+        "height": 966
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        1080
+        1289
       ],
       "eyeDistance": 300
     },
@@ -2809,16 +2809,16 @@
       "png": "png/partyhat-gold.png",
       "size": {
         "width": 900,
-        "height": 640
+        "height": 853
       },
       "pngSize": {
         "width": 1024,
-        "height": 728
+        "height": 971
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        1080
+        1293
       ],
       "eyeDistance": 300
     },
@@ -2837,16 +2837,16 @@
       "png": "png/partyhat-rainbow.png",
       "size": {
         "width": 900,
-        "height": 640
+        "height": 852
       },
       "pngSize": {
         "width": 1024,
-        "height": 728
+        "height": 969
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        1080
+        1292
       ],
       "eyeDistance": 300
     },
@@ -2865,16 +2865,16 @@
       "png": "png/crown-birthday.png",
       "size": {
         "width": 900,
-        "height": 460
+        "height": 628
       },
       "pngSize": {
         "width": 1024,
-        "height": 523
+        "height": 715
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        780
+        948
       ],
       "eyeDistance": 300
     },
@@ -2893,16 +2893,16 @@
       "png": "png/crown-royal.png",
       "size": {
         "width": 900,
-        "height": 460
+        "height": 628
       },
       "pngSize": {
         "width": 1024,
-        "height": 523
+        "height": 715
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        780
+        948
       ],
       "eyeDistance": 300
     },
@@ -3026,16 +3026,16 @@
       "svg": "svg/mortarboard-black.svg",
       "png": "png/mortarboard-black.png",
       "size": {
-        "width": 900,
+        "width": 1038,
         "height": 560
       },
       "pngSize": {
         "width": 1024,
-        "height": 637
+        "height": 552
       },
       "anchor": "eyes",
       "anchorPoint": [
-        450,
+        519,
         810
       ],
       "eyeDistance": 300
@@ -3049,16 +3049,16 @@
       "svg": "svg/mortarboard-blue.svg",
       "png": "png/mortarboard-blue.png",
       "size": {
-        "width": 900,
+        "width": 1038,
         "height": 560
       },
       "pngSize": {
         "width": 1024,
-        "height": 637
+        "height": 552
       },
       "anchor": "eyes",
       "anchorPoint": [
-        450,
+        519,
         810
       ],
       "eyeDistance": 300
@@ -3072,16 +3072,16 @@
       "svg": "svg/mortarboard-red.svg",
       "png": "png/mortarboard-red.png",
       "size": {
-        "width": 900,
+        "width": 1038,
         "height": 560
       },
       "pngSize": {
         "width": 1024,
-        "height": 637
+        "height": 552
       },
       "anchor": "eyes",
       "anchorPoint": [
-        450,
+        519,
         810
       ],
       "eyeDistance": 300
@@ -3255,17 +3255,17 @@
       "svg": "svg/hat-holiday.svg",
       "png": "png/hat-holiday.png",
       "size": {
-        "width": 900,
-        "height": 640
+        "width": 1296,
+        "height": 752
       },
       "pngSize": {
         "width": 1024,
-        "height": 728
+        "height": 594
       },
       "anchor": "eyes",
       "anchorPoint": [
-        450,
-        890
+        648,
+        1002
       ],
       "eyeDistance": 300
     },
@@ -3283,17 +3283,17 @@
       "svg": "svg/hat-elf.svg",
       "png": "png/hat-elf.png",
       "size": {
-        "width": 900,
-        "height": 680
+        "width": 1096,
+        "height": 1034
       },
       "pngSize": {
         "width": 1024,
-        "height": 774
+        "height": 966
       },
       "anchor": "eyes",
       "anchorPoint": [
-        450,
-        910
+        548,
+        1264
       ],
       "eyeDistance": 300
     },
@@ -3315,17 +3315,17 @@
       "svg": "svg/hat-witch.svg",
       "png": "png/hat-witch.png",
       "size": {
-        "width": 900,
-        "height": 760
+        "width": 940,
+        "height": 920
       },
       "pngSize": {
         "width": 1024,
-        "height": 865
+        "height": 1002
       },
       "anchor": "eyes",
       "anchorPoint": [
-        450,
-        990
+        470,
+        1150
       ],
       "eyeDistance": 300
     },
@@ -3344,16 +3344,16 @@
       "png": "png/hat-top-shamrock.png",
       "size": {
         "width": 900,
-        "height": 640
+        "height": 872
       },
       "pngSize": {
         "width": 1024,
-        "height": 728
+        "height": 992
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        880
+        1112
       ],
       "eyeDistance": 300
     },
@@ -3372,16 +3372,16 @@
       "png": "png/hat-top-stars-stripes.png",
       "size": {
         "width": 900,
-        "height": 640
+        "height": 872
       },
       "pngSize": {
         "width": 1024,
-        "height": 728
+        "height": 992
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        880
+        1112
       ],
       "eyeDistance": 300
     },
@@ -3400,16 +3400,16 @@
       "png": "png/hat-pilgrim.png",
       "size": {
         "width": 900,
-        "height": 640
+        "height": 872
       },
       "pngSize": {
         "width": 1024,
-        "height": 728
+        "height": 992
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        880
+        1112
       ],
       "eyeDistance": 300
     },
@@ -3431,17 +3431,17 @@
       "svg": "svg/hat-jester.svg",
       "png": "png/hat-jester.png",
       "size": {
-        "width": 900,
-        "height": 620
+        "width": 1264,
+        "height": 908
       },
       "pngSize": {
         "width": 1024,
-        "height": 705
+        "height": 736
       },
       "anchor": "eyes",
       "anchorPoint": [
-        450,
-        850
+        632,
+        1138
       ],
       "eyeDistance": 300
     },
@@ -3460,16 +3460,16 @@
       "png": "png/boppers-hearts.png",
       "size": {
         "width": 900,
-        "height": 580
+        "height": 601
       },
       "pngSize": {
         "width": 1024,
-        "height": 660
+        "height": 684
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        860
+        881
       ],
       "eyeDistance": 300
     },
@@ -3492,16 +3492,16 @@
       "png": "png/boppers-stars.png",
       "size": {
         "width": 900,
-        "height": 580
+        "height": 622
       },
       "pngSize": {
         "width": 1024,
-        "height": 660
+        "height": 708
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        860
+        902
       ],
       "eyeDistance": 300
     },
@@ -3520,16 +3520,16 @@
       "png": "png/boppers-gold-stars.png",
       "size": {
         "width": 900,
-        "height": 580
+        "height": 622
       },
       "pngSize": {
         "width": 1024,
-        "height": 660
+        "height": 708
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        860
+        902
       ],
       "eyeDistance": 300
     },
@@ -3543,16 +3543,16 @@
       "png": "png/crown-new-year.png",
       "size": {
         "width": 900,
-        "height": 460
+        "height": 628
       },
       "pngSize": {
         "width": 1024,
-        "height": 523
+        "height": 715
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        780
+        948
       ],
       "eyeDistance": 300
     },
@@ -3761,16 +3761,16 @@
       "svg": "svg/hat-pirate.svg",
       "png": "png/hat-pirate.png",
       "size": {
-        "width": 900,
+        "width": 912,
         "height": 500
       },
       "pngSize": {
         "width": 1024,
-        "height": 569
+        "height": 561
       },
       "anchor": "eyes",
       "anchorPoint": [
-        450,
+        456,
         680
       ],
       "eyeDistance": 300
@@ -3789,17 +3789,17 @@
       "svg": "svg/hat-chef.svg",
       "png": "png/hat-chef.png",
       "size": {
-        "width": 900,
-        "height": 640
+        "width": 952,
+        "height": 922
       },
       "pngSize": {
         "width": 1024,
-        "height": 728
+        "height": 992
       },
       "anchor": "eyes",
       "anchorPoint": [
-        450,
-        900
+        476,
+        1182
       ],
       "eyeDistance": 300
     },
@@ -3818,16 +3818,16 @@
       "png": "png/hat-hard-hat.png",
       "size": {
         "width": 900,
-        "height": 480
+        "height": 558
       },
       "pngSize": {
         "width": 1024,
-        "height": 546
+        "height": 635
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        710
+        788
       ],
       "eyeDistance": 300
     },
@@ -3846,16 +3846,16 @@
       "png": "png/hat-captain.png",
       "size": {
         "width": 900,
-        "height": 480
+        "height": 490
       },
       "pngSize": {
         "width": 1024,
-        "height": 546
+        "height": 558
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        720
+        730
       ],
       "eyeDistance": 300
     },
@@ -3874,16 +3874,16 @@
       "png": "png/hat-fire-helmet.png",
       "size": {
         "width": 900,
-        "height": 520
+        "height": 608
       },
       "pngSize": {
         "width": 1024,
-        "height": 592
+        "height": 692
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        750
+        838
       ],
       "eyeDistance": 300
     },
@@ -3902,16 +3902,16 @@
       "png": "png/hat-wizard.png",
       "size": {
         "width": 900,
-        "height": 780
+        "height": 995
       },
       "pngSize": {
-        "width": 1024,
-        "height": 887
+        "width": 926,
+        "height": 1024
       },
       "anchor": "eyes",
       "anchorPoint": [
         450,
-        1020
+        1235
       ],
       "eyeDistance": 300
     },
@@ -3929,17 +3929,17 @@
       "svg": "svg/hat-alpine.svg",
       "png": "png/hat-alpine.png",
       "size": {
-        "width": 900,
-        "height": 480
+        "width": 942,
+        "height": 646
       },
       "pngSize": {
         "width": 1024,
-        "height": 546
+        "height": 702
       },
       "anchor": "eyes",
       "anchorPoint": [
-        450,
-        720
+        471,
+        886
       ],
       "eyeDistance": 300
     },
