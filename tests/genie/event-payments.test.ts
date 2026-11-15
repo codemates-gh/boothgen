@@ -9,6 +9,8 @@ vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ userId: 'u1
 vi.mock('@/lib/auth/config', () => ({ authOptions: {} }));
 vi.mock('@/lib/inngest/client', () => ({ inngest: { send: vi.fn() } }));
 const created: any[] = [];
+const refunds: any[] = [];
+let refundError: any = null;
 let retrieved: any = null;
 vi.mock('@/lib/stripe', () => ({
   stripe: {
@@ -18,6 +20,7 @@ vi.mock('@/lib/stripe', () => ({
         retrieve: vi.fn(async () => retrieved),
       },
     },
+    refunds: { create: vi.fn(async (args: any) => { if (refundError) throw refundError; refunds.push(args); return { id: 're_test' }; }) },
   },
 }));
 
@@ -28,6 +31,7 @@ import { boothEventsClient } from '@/lib/genie/boothEvents';
 import { hasProAccess } from '@/lib/auth/session';
 import { genieUsage } from '@/lib/genie/usage';
 import { POST as PAY, PUT as CONFIRM } from '@/app/api/genie-events/[id]/pay/route';
+import { POST as ADMIN_PAYMENTS } from '@/app/api/super-admin/genie-payments/route';
 import { DELETE } from '@/app/api/genie-events/[id]/route';
 import { GET as DASH } from '@/app/api/events/[id]/genie/route';
 import { GET as USAGE, PATCH as SET_PRICE } from '@/app/api/super-admin/genie-usage/route';
@@ -49,7 +53,7 @@ const checkout = (tenantId: string, eventId: string, over: Record<string, unknow
   metadata: { kind: PAYMENT_KIND, tenantId, eventId }, ...over,
 } as any);
 
-beforeEach(async () => { await resetDb(); created.length = 0; retrieved = null; globalRole = 'USER'; await prisma.systemSetting.deleteMany({ where: { key: 'genie_event_price_cents' } }); });
+beforeEach(async () => { await resetDb(); created.length = 0; refunds.length = 0; refundError = null; retrieved = null; globalRole = 'USER'; await prisma.systemSetting.deleteMany({ where: { key: 'genie_event_price_cents' } }); });
 afterAll(async () => { await resetDb(); await prisma.systemSetting.deleteMany({ where: { key: 'genie_event_price_cents' } }); await prisma.$disconnect(); });
 
 describe('who pays and the watermark', () => {
@@ -180,5 +184,72 @@ describe('usage (Super Admin)', () => {
     expect((await SET_PRICE(req('/x', { method: 'PATCH', body: { priceCents: 10 } }))).status).toBe(400);
     expect((await SET_PRICE(req('/x', { method: 'PATCH', body: { priceCents: 1700 } }))).status).toBe(200);
     expect((await (await USAGE(req('/api/super-admin/genie-usage'))).json()).priceCents).toBe(1700);
+  });
+});
+
+describe('comps and refunds (Super Admin)', () => {
+  const admin = (body: unknown) => ADMIN_PAYMENTS(req('/x', { method: 'POST', body }));
+  const settings = (eventId: string) => prisma.eventGenieSettings.findUniqueOrThrow({ where: { eventId } });
+
+  it('comps an event: paid at $0, no watermark, and more iPads with each comp', async () => {
+    const { tenant, event } = await setup();
+    expect((await admin({ action: 'comp', eventId: event.id })).status).toBe(401);
+    globalRole = 'SUPER_ADMIN';
+    expect((await admin({ action: 'comp', eventId: event.id })).status).toBe(200);
+    expect(await eventBilling(tenant, event.id)).toMatchObject({ paid: true, watermark: false, payments: 1 });
+    await admin({ action: 'comp', eventId: event.id });
+    expect((await settings(event.id)).maxDevices).toBe(4);
+    const [row] = (await genieUsage(new Date('2026-01-01'))).filter(r => r.eventId === event.id);
+    expect(row.paymentList).toHaveLength(2);
+    expect(row.paymentList.every(p => p.comp && p.amountCents === 0)).toBe(true);
+    expect(row.paidCents).toBe(0);
+    expect(refunds).toHaveLength(0);
+  });
+
+  it('refunds a Stripe payment in full: back to unpaid, 2 iPads, and a late webhook can\'t undo it', async () => {
+    const { tenant, event } = await setup();
+    globalRole = 'SUPER_ADMIN';
+    const s1 = checkout(tenant.id, event.id), s2 = checkout(tenant.id, event.id);
+    await recordCheckout(s1); await recordCheckout(s2);
+    expect((await settings(event.id)).maxDevices).toBe(4);
+    const pay1 = await prisma.genieEventPayment.findUniqueOrThrow({ where: { stripeCheckoutSessionId: s1.id } });
+    const pay2 = await prisma.genieEventPayment.findUniqueOrThrow({ where: { stripeCheckoutSessionId: s2.id } });
+
+    retrieved = { ...s1, payment_intent: 'pi_test_1' };
+    expect((await admin({ action: 'refund', paymentId: pay1.id })).status).toBe(200);
+    expect(refunds[0]).toMatchObject({ payment_intent: 'pi_test_1' });
+    expect((await settings(event.id)).maxDevices).toBe(2);
+    expect(await eventBilling(tenant, event.id)).toMatchObject({ paid: true, payments: 1 });
+
+    retrieved = { ...s2, payment_intent: 'pi_test_2' };
+    await admin({ action: 'refund', paymentId: pay2.id });
+    expect(await eventBilling(tenant, event.id)).toMatchObject({ paid: false, watermark: true });
+    const b = await buildEventBundle(tenant.id, event.id);
+    expect(b.ok && b.bundle.watermark).toBe(true);
+
+    // Stripe re-sends the original checkout webhook: stays refunded
+    await recordCheckout(s1);
+    expect((await prisma.genieEventPayment.findUniqueOrThrow({ where: { id: pay1.id } })).status).toBe('refunded');
+    // Refunding twice is refused
+    expect((await admin({ action: 'refund', paymentId: pay1.id })).status).toBe(409);
+
+    const dash = await (await DASH(req('/x'), p(event.id))).json();
+    expect(dash.billing.history.map((h: any) => h.status)).toEqual(['refunded', 'refunded']);
+  });
+
+  it('records a refund already made in the Stripe dashboard, and reports other Stripe errors', async () => {
+    const { tenant, event } = await setup();
+    globalRole = 'SUPER_ADMIN';
+    const s = checkout(tenant.id, event.id);
+    await recordCheckout(s);
+    const pay = await prisma.genieEventPayment.findUniqueOrThrow({ where: { stripeCheckoutSessionId: s.id } });
+    retrieved = { ...s, payment_intent: 'pi_x' };
+    refundError = Object.assign(new Error('Card declined the refund'), { code: 'card_error' });
+    const bad = await admin({ action: 'refund', paymentId: pay.id });
+    expect(bad.status).toBe(502);
+    expect((await prisma.genieEventPayment.findUniqueOrThrow({ where: { id: pay.id } })).status).toBe('paid');
+    refundError = Object.assign(new Error('already'), { code: 'charge_already_refunded' });
+    expect((await admin({ action: 'refund', paymentId: pay.id })).status).toBe(200);
+    expect((await prisma.genieEventPayment.findUniqueOrThrow({ where: { id: pay.id } })).status).toBe('refunded');
   });
 });

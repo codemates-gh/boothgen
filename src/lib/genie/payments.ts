@@ -82,7 +82,8 @@ export async function recordCheckout(session: Pick<Stripe.Checkout.Session, 'id'
   const event = await prisma.event.findFirst({ where: { id: eventId, tenantId }, select: { id: true } });
   if (!event) return false;
   const existing = await prisma.genieEventPayment.findUnique({ where: { stripeCheckoutSessionId: session.id }, select: { status: true } });
-  if (existing?.status === 'paid') return true;
+  // Already recorded, or refunded since (a late or repeated webhook must not undo a refund)
+  if (existing?.status === 'paid' || existing?.status === 'refunded') return true;
   const now = new Date();
   await prisma.genieEventPayment.upsert({
     where: { stripeCheckoutSessionId: session.id },
@@ -92,8 +93,55 @@ export async function recordCheckout(session: Pick<Stripe.Checkout.Session, 'id'
       amountCents: session.amount_total ?? 0, currency: session.currency ?? 'usd', ipads: IPADS_PER_PAYMENT,
     },
   });
-  // Each payment adds 2 iPads to the event
-  const paid = await prisma.genieEventPayment.count({ where: { eventId, status: 'paid' } });
-  await prisma.eventGenieSettings.updateMany({ where: { eventId, maxDevices: { lt: IPADS_PER_PAYMENT * paid } }, data: { maxDevices: IPADS_PER_PAYMENT * paid } });
+  await syncIpads(eventId);
   return true;
+}
+
+// Each payment adds 2 iPads to the event; never fewer than 2 (unpaid events still run 2, with the watermark)
+async function syncIpads(eventId: string) {
+  const paid = await prisma.genieEventPayment.count({ where: { eventId, status: 'paid' } });
+  await prisma.eventGenieSettings.updateMany({ where: { eventId }, data: { maxDevices: IPADS_PER_PAYMENT * Math.max(1, paid) } });
+}
+
+// ── Super Admin: comps and refunds ────────────────────────────────────────
+// A comp is a $0 payment BoothGen gives (test events, goodwill). Its id starts with "comp_" instead of a Stripe
+// Checkout Session id.
+export const COMP_PREFIX = 'comp_';
+export const isComp = (p: { stripeCheckoutSessionId: string }) => p.stripeCheckoutSessionId.startsWith(COMP_PREFIX);
+
+export async function compEvent(eventId: string) {
+  const event = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true, tenantId: true, genieSettings: { select: { id: true } } } });
+  if (!event?.genieSettings) return null;
+  const payment = await prisma.genieEventPayment.create({
+    data: {
+      tenantId: event.tenantId, eventId, stripeCheckoutSessionId: COMP_PREFIX + crypto.randomUUID(),
+      amountCents: 0, status: 'paid', paidAt: new Date(), ipads: IPADS_PER_PAYMENT,
+    },
+  });
+  await syncIpads(eventId);
+  return payment;
+}
+
+export type RefundResult = { ok: true } | { ok: false; status: 404 | 409 | 502; error: string };
+
+// Refunds a Stripe payment in full (or removes a comp). The event goes back to unpaid (watermark) unless it has
+// other payments; iPads already on the event stay until released.
+export async function refundPayment(paymentId: string): Promise<RefundResult> {
+  const p = await prisma.genieEventPayment.findUnique({ where: { id: paymentId } });
+  if (!p) return { ok: false, status: 404, error: 'Payment not found' };
+  if (p.status !== 'paid') return { ok: false, status: 409, error: p.status === 'refunded' ? 'Already refunded' : 'This payment was never completed' };
+  if (!isComp(p)) {
+    try {
+      const session = await stripe.checkout.sessions.retrieve(p.stripeCheckoutSessionId);
+      const intent = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
+      if (!intent) return { ok: false, status: 409, error: 'Stripe has no payment for this checkout' };
+      await stripe.refunds.create({ payment_intent: intent, metadata: { kind: PAYMENT_KIND, paymentId: p.id } });
+    } catch (err: any) {
+      // Refunded already in the Stripe dashboard: record it here too
+      if (err?.code !== 'charge_already_refunded') return { ok: false, status: 502, error: 'Stripe: ' + (err?.message ?? 'refund failed') };
+    }
+  }
+  await prisma.genieEventPayment.update({ where: { id: p.id }, data: { status: 'refunded' } });
+  await syncIpads(p.eventId);
+  return { ok: true };
 }

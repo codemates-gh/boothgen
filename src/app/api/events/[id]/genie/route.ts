@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma/client';
 import { briefLibraryTemplate, libraryWhere } from '@/lib/genie/library';
 import { isBoothClient, setUpGenie } from '@/lib/genie/boothEvents';
 import { messagingRoutes } from '@/lib/genie/messaging';
-import { IPADS_PER_PAYMENT, eventBilling, eventPriceCents } from '@/lib/genie/payments';
+import { IPADS_PER_PAYMENT, eventBilling, eventPriceCents, isComp } from '@/lib/genie/payments';
 import { CUSTOM_FLAG, SECTION_NAMES, customFlags, getDefaults, sectionValues } from '@/lib/genie/defaults';
 import { latestApprovedDesign } from '@/lib/genie/approvedDesign';
 import { requireGenieAdmin } from '@/lib/genie/admin';
@@ -44,7 +44,12 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: auth.tenantId }, select: { id: true, product: true } });
   const b = await eventBilling(tenant, event.id);
   const billing = b.paysPerEvent
-    ? { paysPerEvent: true, paid: b.paid, payments: b.payments, ipadsCovered: b.ipadsCovered, ipadsPerPayment: IPADS_PER_PAYMENT, priceCents: await eventPriceCents() }
+    ? {
+      paysPerEvent: true, paid: b.paid, payments: b.payments, ipadsCovered: b.ipadsCovered, ipadsPerPayment: IPADS_PER_PAYMENT, priceCents: await eventPriceCents(),
+      // Receipt lines: completed payments, comps and refunds
+      history: (await prisma.genieEventPayment.findMany({ where: { eventId: event.id, status: { in: ['paid', 'refunded'] } }, orderBy: { createdAt: 'asc' } }))
+        .map(p => ({ amountCents: p.amountCents, status: p.status, paidAt: p.paidAt, comp: isComp(p) })),
+    }
     : { paysPerEvent: false };
   return NextResponse.json({
     event: { id: event.id, title: event.title, eventDate: event.eventDate, startTime: event.startTime, endTime: event.endTime, venueName: event.venueName, boothEvent: isBoothClient(event.client) },

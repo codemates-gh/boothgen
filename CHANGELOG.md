@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.93.0] — 2026-11-15
+
+### Added
+- **Super Admin → Genie Usage: comp and refund.** Each Genie-only event shows its payments. **Comp event** marks it paid at $0 (test events, goodwill; another comp adds 2 more iPads). **Refund** returns a Stripe payment in full and **Remove** takes back a comp, both after an on-page confirmation. The event goes back to unpaid (watermark on the next sync) unless it has another payment, and its iPad limit follows the payments left. A refund already made in the Stripe dashboard is recorded too, and a late or repeated Stripe webhook can't undo a refund
+- **Event Genie page: payment history** under the paid box ("Paid $15 on Nov 15, 2026", "Covered by BoothGen", refunds struck through)
+
+---
+
 ## [2.92.2] — 2026-11-15
 
 ### Changed

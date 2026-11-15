@@ -37,7 +37,7 @@ type Settings = {
 };
 type Dashboard = {
   event: { id: string; title: string; eventDate: string; startTime: string | null; endTime: string | null; venueName: string | null; boothEvent: boolean };
-  billing: { paysPerEvent: false } | { paysPerEvent: true; paid: boolean; payments: number; ipadsCovered: number; ipadsPerPayment: number; priceCents: number };
+  billing: { paysPerEvent: false } | { paysPerEvent: true; paid: boolean; payments: number; ipadsCovered: number; ipadsPerPayment: number; priceCents: number; history: { amountCents: number; status: string; paidAt: string | null; comp: boolean }[] };
   settings: Settings | null; lockedAt: string | null; locksAt: string; templates: EventTemplate[];
   providerWarnings: { channel: 'sms' | 'email'; message: string }[]; photosHiddenAt: string; photosDeletedAt: string; designApprovalPending: boolean;
   approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
@@ -244,6 +244,15 @@ export default function EventGeniePage() {
               </div>
             ))}
             {payError && <p className="text-sm text-red-600">{payError}</p>}
+            {data.billing.paysPerEvent && data.billing.history.length > 0 && (
+              <ul className="text-xs text-gray-500 space-y-0.5 -mt-3">
+                {data.billing.history.map((h, i) => (
+                  <li key={i} className={h.status === 'refunded' ? 'line-through text-gray-400' : ''}>
+                    {h.comp ? 'Covered by BoothGen' : `Paid ${fmtCents(h.amountCents)}`}{h.paidAt ? ' on ' + fmtDate(h.paidAt) : ''}{h.status === 'refunded' ? (h.comp ? ' (removed)' : ' (refunded)') : ''}
+                  </li>
+                ))}
+              </ul>
+            )}
 
             {data.designApprovalPending && !genieOnly && (
               <div className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
