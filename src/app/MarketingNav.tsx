@@ -7,7 +7,7 @@ import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 // Genie (the photo booth app) and Genius (the photo booth CRM) by BoothGen
 const NAV_LINKS = [
   { label: 'Genie', sub: 'Photo booth app', href: '/photo-booth-app' },
-  { label: 'Genius', sub: 'CRM', href: '/photo-booth-crm' },
+  { label: 'Genius', sub: 'Photo booth CRM', href: '/photo-booth-crm' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Blog', href: '/blog' },
   { label: 'Support', href: '/support' },

@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.92.1] — 2026-11-15
+
+### Changed
+- Website menu: "Genius · Photo booth CRM" (was "Genius · CRM"), matching "Genie · Photo booth app"
+
+---
+
 ## [2.92.0] — 2026-11-15
 
 ### Changed
