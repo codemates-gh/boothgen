@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.94.2] — 2026-11-15
+
+### Changed
+- **Support center brought up to date.** The free Commission Plan is gone from the Billing, Invoices and FAQ articles and from the AI support assistant; they now describe Genius Pro (flat rate, 14-day trial, Genie included, no cut of bookings), Genie per event, and what happens to old Commission Plan accounts
+- **New Genie section in the support center**: Getting Started with Genie, Paying for Genie Events (price, iPads, watermark, refund rule), Texting & Emailing Guests Their Photos, and Genie, Genius & Genius Pro. The event price shown follows the price set in Super Admin
+
+---
+
 ## [2.94.1] — 2026-11-15
 
 ### Added

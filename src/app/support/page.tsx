@@ -5,6 +5,7 @@ import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 import { SupportSearch } from './SupportSearch';
 import { SupportChat } from './SupportChat';
 import { prisma } from '@/lib/prisma/client';
+import { eventPriceCents } from '@/lib/genie/payments';
 
 export const metadata: Metadata = {
   title: 'Support Center',
@@ -92,6 +93,107 @@ Set your default deposit percentage (applied automatically when building new quo
   },
 
   // ─── LEADS ──────────────────────────────────────────────────────────────────
+  // ─── GENIE (PHOTO BOOTH APP) ────────────────────────────────────────────────
+  {
+    id: 'genie-getting-started',
+    category: 'Genie (Photo Booth App)',
+    categoryIcon: '📲',
+    title: 'Getting Started with Genie',
+    slug: 'genie-getting-started',
+    content: `Genie is BoothGen's iPad photo booth app. It runs the booth, makes the prints and sends guests their photos by text or email. You can use Genie on its own (a Genie account) or together with Genius, the photo booth CRM.
+
+**Step 1 — Create your account**
+Sign up at boothgen.com and choose Genie. Confirm your email from the link we send, then pick your business name and time zone.
+
+**Step 2 — Set your event defaults**
+Go to Event Defaults. Choose the templates, capture settings and sharing options new events start with. Saving also updates upcoming events that follow the defaults.
+
+**Step 3 — Pick your layouts**
+Go to Layouts to choose a print layout and design it with your text, colors and logo. Add Props and Backdrops if you use them.
+
+**Step 4 — Pair your iPads**
+Install Genie from the App Store. In BoothGen, go to Devices → Pair a Device, create a code and enter it in Genie on the iPad. Codes last 10 minutes. Set an Attendant PIN on the same page so guests can't leave the booth screen.
+
+**Step 5 — Create a booth event**
+Go to Events → New Booth Event. Enter the event name, date and times. The event starts from your defaults; open it to change anything for that event only.
+
+**Step 6 — Pay for the event**
+Genie accounts pay per event (see "Paying for Genie Events"). Pay before the event so the booth runs without the watermark.
+
+**Step 7 — Test before the event**
+Open the event on the iPad, take a test session and send the photos to your own phone and email.`,
+  },
+  {
+    id: 'genie-event-payments',
+    category: 'Genie (Photo Booth App)',
+    categoryIcon: '📲',
+    title: 'Paying for Genie Events',
+    slug: 'genie-event-payments',
+    content: `Genie accounts have no monthly fee. You pay [[genie_price]] per event.
+
+**What one payment covers**
+- One event, on up to 2 iPads at the same time
+- Guest texts and emails sent through BoothGen
+- The gallery for that event
+
+Need a 3rd or 4th iPad at the same event? Pay again from the event page; each payment adds 2 more iPads.
+
+**How to pay**
+Open the event (Events → the event) and click Pay [[genie_price]]. You pay by card through Stripe and come back to the event page, which then shows "Paid".
+
+**Before you pay: the watermark**
+Everything works on an unpaid event: sessions, prints, uploads, texts and emails. The only difference is a BoothGen watermark on the booth screen and on the photos. Photos taken before you paid keep the watermark, so pay before the event starts. The iPad picks up the payment on its next sync.
+
+**Refunds**
+A payment is refundable until the event starts and before any photos are taken. Email support@boothgen.com to ask. After that, photos have already been made without the watermark, so we can't refund the payment unless something on BoothGen's side went wrong.
+
+**Genius Pro accounts**
+Genie is included with Genius Pro: no per-event payment and no watermark.`,
+  },
+  {
+    id: 'genie-sharing',
+    category: 'Genie (Photo Booth App)',
+    categoryIcon: '📲',
+    title: 'Texting & Emailing Guests Their Photos',
+    slug: 'genie-sharing',
+    content: `Guests type their phone number or email on the booth and get a link to their photos. Choose how those messages go out in Sharing.
+
+**BoothGen (included)**
+Texts go out from BoothGen's number and emails come from your business name via BoothGen; replies go to your email. Nothing to set up, and it's included in the event price.
+
+**Your own accounts**
+- **My own Twilio** — texts go out from your own Twilio number. Enter your Twilio details in Sharing.
+- **My own email account** — emails come from your own domain, through Resend or SMTP. The address must be verified in your Resend account; we check it when you save.
+
+You can mix them, for example BoothGen for texts and your own domain for email.
+
+**Testing**
+Each channel has a test button. Send a test to yourself after any change and check that it arrived.
+
+**Guest gallery**
+Every session gets its own photo page. You can also turn on a live event gallery so guests see everyone's photos during the event.`,
+  },
+  {
+    id: 'genie-and-genius',
+    category: 'Genie (Photo Booth App)',
+    categoryIcon: '📲',
+    title: 'Genie, Genius & Genius Pro',
+    slug: 'genie-and-genius',
+    content: `BoothGen has two products. Genie runs the booth; Genius runs the business.
+
+**Genie (photo booth app)**
+For operators who just need the booth. Events, layouts, props, backdrops, iPads, galleries and guest sharing. [[genie_price]] per event, no monthly fee.
+
+**Genius Pro (photo booth CRM)**
+Everything to run the business: leads, quotes, contracts, invoices, the client portal, email automation, the calendar and team access, plus photo gallery delivery. A flat monthly or annual rate with a 14-day free trial. Genie is included, with no per-event payments.
+
+**Moving from Genie to Genius**
+Click "Get Genius CRM" in the menu and subscribe to Genius Pro. Your Genie events, layouts and galleries stay as they are, and the CRM opens right away.
+
+**When Genius Pro ends**
+If your Genius Pro subscription ends (or your trial ends without subscribing), your account moves to Genie. Your data is kept, but client portal links, inquiry forms and automated emails stop until you subscribe again. Booth events then pay per event.`,
+  },
+
   {
     id: 'leads-overview',
     category: 'Leads',
@@ -223,8 +325,8 @@ When a client accepts a quote, an invoice is automatically generated with the li
 **Stripe Connect**
 Clients pay via credit or debit card using Stripe. The card processing UI appears directly in the client portal's Invoice tab. Funds are deposited to your connected Stripe account, minus Stripe's processing fee (~2.9% + $0.30 per transaction).
 
-**Platform Commission (Commission Plan only)**
-If you're on the free Commission Plan, a small percentage is automatically deducted from each payment. Upgrade to the Pro Plan to eliminate all commissions.
+**No BoothGen cut**
+BoothGen doesn't take a percentage of your bookings. The only deduction is Stripe's own processing fee.
 
 **Invoice Statuses**
 - DRAFT — Not yet sent
@@ -743,34 +845,31 @@ Quotes built with corporate pricing show a purple "Corporate" badge next to the 
     slug: 'billing',
     content: `Manage your BoothGen subscription and Stripe Connect account from Settings → Billing.
 
-**Commission Plan (Free)**
-- No monthly fee
-- A platform commission % is deducted from each payment collected through Stripe
-- Includes all features EXCEPT photo gallery
-- Best for operators starting out or running fewer than ~4–5 events per month
+**Genius Pro**
+- Flat monthly or annual subscription; annual billing saves compared to monthly
+- 14-day free trial
+- Everything in Genius, including photo gallery delivery
+- Genie, the photo booth app, included with no per-event payments
+- No cut of your bookings — you keep everything Stripe sends you, minus Stripe's own fee
 
-**Pro Plan**
-- Flat monthly or annual subscription fee
-- Zero commission on any booking — you keep 100% of what Stripe sends you
-- Includes Photo Gallery (Pro) feature
-- Annual billing saves ~15–20% compared to monthly
-- Best for operators with consistent booking volume
+**Genie only**
+Operators who only need the booth can use Genie without Genius: no monthly fee, [[genie_price]] per event. See "Genie, Genius & Genius Pro".
+
+**The old Commission Plan**
+The free Commission Plan is no longer offered. If your account was on it, subscribe to Genius Pro to keep using Genius. Without Pro, your account moves to Genie: your data is kept, but client portal links, inquiry forms and automated emails stop until you subscribe.
 
 **Switching Plans**
-Go to Settings → Billing to upgrade to Pro or manage your subscription. You can cancel at any time — you'll retain Pro access until the end of your billing period.
+Go to Settings → Billing to subscribe to Genius Pro or manage your subscription. You can cancel at any time — you'll keep Pro until the end of your billing period, then your account moves to Genie.
 
 **Stripe Connect — Two separate Stripe relationships**
 BoothGen uses Stripe in two distinct ways that are easy to confuse:
 
-1. **BoothGen subscription billing** — If you're on the Pro plan, Stripe charges your card the monthly fee. This is BoothGen paying *you* nothing — it's you paying BoothGen.
+1. **BoothGen subscription billing** — If you're on Genius Pro, Stripe charges your card the subscription fee. This is you paying BoothGen.
 2. **Stripe Connect (client payments)** — This is a separate connection that routes your *clients'* invoice payments directly to your bank account. BoothGen never holds your funds.
 
-Both Free and Pro plan operators need to set up Stripe Connect to accept online payments. Go to Settings → Billing → Connect Stripe. If you already have a Stripe account, just log in during the flow — Stripe will link your existing account. No new account required. Takes about 60 seconds.
+Genius operators need to set up Stripe Connect to accept online payments from clients. Go to Settings → Billing → Connect Stripe. If you already have a Stripe account, just log in during the flow — Stripe will link your existing account. No new account required. Takes about 60 seconds.
 
 Once connected, your Stripe account status shows as "Connected" and clients can pay invoices online. If you disconnect Stripe, clients will no longer be able to pay online until you reconnect.
-
-**Commission Rate**
-The current commission rate is displayed in Settings → Billing and on the marketing page. This rate is set by the BoothGen platform and may change over time.
 
 **When to Use "Update Stripe"**
 If you are already connected to Stripe and need to make changes, click "Update Stripe" from Settings → Billing → Stripe Connect. Use this button when you need to:
@@ -894,16 +993,16 @@ The colored bar at the top of the checklist fills from left to right as items ar
 A: No. Clients access everything through a unique portal link — no account, no password, no app download required.
 
 **Q: Can I use BoothGen without connecting Stripe?**
-A: Stripe Connect is required to use BoothGen. Connecting your Stripe account is what enables online client payments and is how the platform commission is processed for Commission Plan operators. Without it, clients cannot pay invoices online and your account will not be fully functional. Setup takes about 5 minutes — go to Settings → Billing → Connect Stripe. If you already have a Stripe account, just log in during the flow and it links automatically.
+A: Stripe Connect is required to use BoothGen. Connecting your Stripe account is what enables online client payments. Without it, clients cannot pay invoices online and your account will not be fully functional. Setup takes about 5 minutes — go to Settings → Billing → Connect Stripe. If you already have a Stripe account, just log in during the flow and it links automatically.
 
 **Q: Is there a limit to how many events or clients I can have?**
-A: No. Both plans include unlimited events and clients.
+A: No. Genius Pro includes unlimited events and clients. Genie accounts can create as many booth events as they like and pay per event they run.
 
 **Q: What happens to my data if I cancel?**
 A: When your account is cancelled, your data is removed from the platform. We recommend reaching out to support@boothgen.com before cancelling if you need assistance retrieving any records.
 
-**Q: Can clients see the commission % being deducted?**
-A: No. Clients see only the invoice total and payment amounts. The commission is a backend deduction handled between BoothGen and your Stripe account — transparent to you, invisible to clients.
+**Q: Does BoothGen take a cut of my bookings?**
+A: No. Genius Pro is a flat subscription and BoothGen takes no percentage of your bookings. Stripe charges its standard processing fee on card payments.
 
 **Q: How do I handle a client who wants to pay in installments?**
 A: Use the Deposit + Balance milestone system for two-payment arrangements. For more complex payment plans, create custom milestone entries manually from the invoice detail page.
@@ -1236,6 +1335,7 @@ If something looks wrong after importing, click "Undo Import" from the import hi
 
 const CATEGORIES = [
   { label: 'Getting Started', icon: '🚀', color: 'bg-blue-50 border-blue-200 text-blue-700', desc: 'Account setup, branding, first steps' },
+  { label: 'Genie (Photo Booth App)', icon: '📲', color: 'bg-purple-50 border-purple-200 text-purple-700', desc: 'iPads, booth events, paying per event, guest texts' },
   { label: 'Leads', icon: '📥', color: 'bg-green-50 border-green-200 text-green-700', desc: 'Lead capture, responding, converting' },
   { label: 'Events', icon: '🎉', color: 'bg-orange-50 border-orange-200 text-orange-700', desc: 'Managing events, cancellations, refunds' },
   { label: 'Messages', icon: '💬', color: 'bg-teal-50 border-teal-200 text-teal-700', desc: 'Client email threads and inbox' },
@@ -1262,7 +1362,8 @@ function resolveArticles(settings: Record<string, string>) {
     text
       .replace(/\[\[gallery_expire_days\]\]/g, settings.gallery_expire_days ?? '2')
       .replace(/\[\[gallery_delete_days\]\]/g, settings.gallery_delete_days ?? '5')
-      .replace(/\[\[message_retention_months\]\]/g, settings.message_retention_months ?? '12');
+      .replace(/\[\[message_retention_months\]\]/g, settings.message_retention_months ?? '12')
+      .replace(/\[\[genie_price\]\]/g, settings.genie_price ?? '$15');
   return ARTICLES.map(a => ({ ...a, content: replace(a.content) }));
 }
 
@@ -1270,7 +1371,9 @@ export default async function SupportPage() {
   const settings = await prisma.systemSetting.findMany({
     where: { key: { in: ['chatbot_enabled', 'gallery_expire_days', 'gallery_delete_days', 'message_retention_months'] } },
   });
-  const map = Object.fromEntries(settings.map(s => [s.key, s.value]));
+  const map: Record<string, string> = Object.fromEntries(settings.map(s => [s.key, s.value]));
+  const cents = await eventPriceCents();
+  map.genie_price = cents % 100 === 0 ? `$${cents / 100}` : `$${(cents / 100).toFixed(2)}`;
   const chatbotEnabled = map.chatbot_enabled !== 'false';
   const articles = resolveArticles(map);
 
