@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma/client';
 import { sendPaymentConfirmationEmail, sendHostNotificationEmail, sendEmail } from '@/lib/email/send';
 import { triggerAutomation } from '@/lib/inngest/trigger';
 import type Stripe from 'stripe';
-import { PAYMENT_KIND as GENIE_PAYMENT_KIND, recordCheckout } from '@/lib/genie/payments';
+import { PAYMENT_KIND as GENIE_PAYMENT_KIND, recordCheckout, recordStripeRefundOrDispute } from '@/lib/genie/payments';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
 
@@ -142,6 +142,18 @@ export async function POST(req: NextRequest) {
             }
           }
         }
+        break;
+      }
+
+      // Genie event payments refunded in the Stripe dashboard or disputed by the operator's bank
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge;
+        if (charge.refunded) await recordStripeRefundOrDispute('refunded', typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id);
+        break;
+      }
+      case 'charge.dispute.created': {
+        const dispute = event.data.object as Stripe.Dispute;
+        await recordStripeRefundOrDispute('disputed', typeof dispute.payment_intent === 'string' ? dispute.payment_intent : dispute.payment_intent?.id);
         break;
       }
 

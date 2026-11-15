@@ -12,12 +12,16 @@ const created: any[] = [];
 const refunds: any[] = [];
 let refundError: any = null;
 let retrieved: any = null;
+let listed: any[] = [];
+const emails: { to: string; subject: string }[] = [];
+vi.mock('@/lib/email/send', () => ({ sendEmail: vi.fn(async (to: string, subject: string) => { emails.push({ to, subject }); }) }));
 vi.mock('@/lib/stripe', () => ({
   stripe: {
     checkout: {
       sessions: {
         create: vi.fn(async (args: any) => { created.push(args); return { id: 'cs_test_' + randomUUID(), url: 'https://checkout.stripe.test/pay' }; }),
         retrieve: vi.fn(async () => retrieved),
+        list: vi.fn(async () => ({ data: listed })),
       },
     },
     refunds: { create: vi.fn(async (args: any) => { if (refundError) throw refundError; refunds.push(args); return { id: 're_test' }; }) },
@@ -26,7 +30,7 @@ vi.mock('@/lib/stripe', () => ({
 
 import { prisma } from '@/lib/prisma/client';
 import { buildEventBundle } from '@/lib/genie/bundle';
-import { eventBilling, recordCheckout, PAYMENT_KIND } from '@/lib/genie/payments';
+import { eventBilling, recordCheckout, recordStripeRefundOrDispute, PAYMENT_KIND } from '@/lib/genie/payments';
 import { boothEventsClient } from '@/lib/genie/boothEvents';
 import { hasProAccess } from '@/lib/auth/session';
 import { genieUsage } from '@/lib/genie/usage';
@@ -53,7 +57,7 @@ const checkout = (tenantId: string, eventId: string, over: Record<string, unknow
   metadata: { kind: PAYMENT_KIND, tenantId, eventId }, ...over,
 } as any);
 
-beforeEach(async () => { await resetDb(); created.length = 0; refunds.length = 0; refundError = null; retrieved = null; globalRole = 'USER'; await prisma.systemSetting.deleteMany({ where: { key: 'genie_event_price_cents' } }); });
+beforeEach(async () => { await resetDb(); created.length = 0; refunds.length = 0; refundError = null; retrieved = null; listed = []; emails.length = 0; globalRole = 'USER'; await prisma.systemSetting.deleteMany({ where: { key: 'genie_event_price_cents' } }); });
 afterAll(async () => { await resetDb(); await prisma.systemSetting.deleteMany({ where: { key: 'genie_event_price_cents' } }); await prisma.$disconnect(); });
 
 describe('who pays and the watermark', () => {
@@ -251,5 +255,49 @@ describe('comps and refunds (Super Admin)', () => {
     refundError = Object.assign(new Error('already'), { code: 'charge_already_refunded' });
     expect((await admin({ action: 'refund', paymentId: pay.id })).status).toBe(200);
     expect((await prisma.genieEventPayment.findUniqueOrThrow({ where: { id: pay.id } })).status).toBe('refunded');
+  });
+});
+
+describe('refunds and chargebacks made outside BoothGen', () => {
+  it('a full refund in the Stripe dashboard marks the event unpaid', async () => {
+    const { tenant, event } = await setup();
+    const s1 = checkout(tenant.id, event.id);
+    await recordCheckout(s1);
+    listed = [{ id: s1.id, metadata: s1.metadata }];
+    expect(await recordStripeRefundOrDispute('refunded', 'pi_dash')).toBe(true);
+    expect(await eventBilling(tenant, event.id)).toMatchObject({ paid: false, watermark: true });
+    expect(await recordStripeRefundOrDispute('refunded', 'pi_dash')).toBe(false); // already recorded
+    listed = [];
+    expect(await recordStripeRefundOrDispute('refunded', 'pi_other')).toBe(false); // not a Genie payment
+  });
+
+  it('a chargeback marks the payment disputed and emails BoothGen the usage', async () => {
+    vi.stubEnv('SUPER_ADMIN_NOTIFY_EMAIL', 'admin@boothgen.test');
+    const { tenant, event } = await setup();
+    const s1 = checkout(tenant.id, event.id);
+    await recordCheckout(s1);
+    listed = [{ id: s1.id, metadata: s1.metadata }];
+    expect(await recordStripeRefundOrDispute('disputed', 'pi_dispute')).toBe(true);
+    expect(await eventBilling(tenant, event.id)).toMatchObject({ paid: false, watermark: true });
+    expect(emails[0]).toMatchObject({ to: 'admin@boothgen.test' });
+    expect(emails[0].subject).toContain('Chargeback');
+    const pay = await prisma.genieEventPayment.findUniqueOrThrow({ where: { stripeCheckoutSessionId: s1.id } });
+    expect(pay.status).toBe('disputed');
+    // Can't be refunded from BoothGen while disputed
+    globalRole = 'SUPER_ADMIN';
+    const res = await ADMIN_PAYMENTS(req('/x', { method: 'POST', body: { action: 'refund', paymentId: pay.id } }));
+    expect(res.status).toBe(409);
+    const [row] = (await genieUsage(new Date('2026-01-01'))).filter(r => r.eventId === event.id);
+    expect(row.paymentList[0].status).toBe('disputed');
+    vi.unstubAllEnvs();
+  });
+
+  it('usage says whether the event has started', async () => {
+    const { event } = await setup();
+    let [row] = (await genieUsage(new Date('2026-01-01'))).filter(r => r.eventId === event.id);
+    expect(row.started).toBe(false);
+    await prisma.eventGenieSettings.update({ where: { eventId: event.id }, data: { lockedAt: new Date() } });
+    [row] = (await genieUsage(new Date('2026-01-01'))).filter(r => r.eventId === event.id);
+    expect(row.started).toBe(true);
   });
 });

@@ -115,7 +115,7 @@ export default async function PricingPage() {
                 <span className="text-4xl font-extrabold text-gray-900">{geniePrice}</span>
                 <span className="text-gray-400 mb-1">/event</span>
               </div>
-              <p className="text-gray-500 text-sm mt-2">No monthly fee. Pay only for the events you run; each payment covers up to 2 tablets.</p>
+              <p className="text-gray-500 text-sm mt-2">No monthly fee. Pay only for the events you run; each payment covers up to 2 tablets. Refundable until the event starts and before any photos are taken.</p>
             </div>
             <ul className="space-y-3 mb-8">
               {GENIE_FEATURES.map(f => (

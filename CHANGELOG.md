@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.94.1] — 2026-11-15
+
+### Added
+- **Refund safeguards for Genie events.** The Refund confirmation in Super Admin → Genie Usage shows the event's sessions, photos, texts and emails, and warns when the event has started or has photos (those photos stay unwatermarked after a refund)
+- **Refund rule in writing**: "Refundable until the event starts and before any photos are taken" in the event's Pay box, the pricing page and a new FAQ question
+- **Refunds and chargebacks made outside BoothGen**: a full refund in the Stripe dashboard marks the payment refunded, and a chargeback marks it disputed and emails Super Admin the event's usage as evidence; either way the event is unpaid again (watermark from the next sync). Disputed payments show in Genie Usage and on the event, and can't be refunded from BoothGen while disputed. Needs the `charge.refunded` and `charge.dispute.created` events on the Stripe webhook
+
+---
+
 ## [2.94.0] — 2026-11-15
 
 ### Added

@@ -47,7 +47,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     ? {
       paysPerEvent: true, paid: b.paid, payments: b.payments, ipadsCovered: b.ipadsCovered, ipadsPerPayment: IPADS_PER_PAYMENT, priceCents: await eventPriceCents(),
       // Receipt lines: completed payments, comps and refunds
-      history: (await prisma.genieEventPayment.findMany({ where: { eventId: event.id, status: { in: ['paid', 'refunded'] } }, orderBy: { createdAt: 'asc' } }))
+      history: (await prisma.genieEventPayment.findMany({ where: { eventId: event.id, status: { in: ['paid', 'refunded', 'disputed'] } }, orderBy: { createdAt: 'asc' } }))
         .map(p => ({ amountCents: p.amountCents, status: p.status, paidAt: p.paidAt, comp: isComp(p) })),
     }
     : { paysPerEvent: false };

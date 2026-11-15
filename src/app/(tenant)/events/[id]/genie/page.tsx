@@ -239,7 +239,7 @@ export default function EventGeniePage() {
               </div>
             ) : (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                <span className="flex items-start gap-2 flex-1"><AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>Not paid yet: the booth screen and the photos show a watermark. {fmtCents(data.billing.priceCents)} covers this event on up to {data.billing.ipadsPerPayment} iPads, with texts and email. Pay before the event; photos taken before paying keep the watermark.</span>
+                <span className="flex items-start gap-2 flex-1"><AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>Not paid yet: the booth screen and the photos show a watermark. {fmtCents(data.billing.priceCents)} covers this event on up to {data.billing.ipadsPerPayment} iPads, with texts and email. Pay before the event; photos taken before paying keep the watermark. Refundable until the event starts and before any photos are taken.</span>
                 <Button size="sm" onClick={pay} disabled={payBusy}><CreditCard className="w-3.5 h-3.5 mr-1"/>{payBusy ? 'Opening…' : `Pay ${fmtCents(data.billing.priceCents)}`}</Button>
               </div>
             ))}
@@ -247,8 +247,8 @@ export default function EventGeniePage() {
             {data.billing.paysPerEvent && data.billing.history.length > 0 && (
               <ul className="text-xs text-gray-500 space-y-0.5 -mt-3">
                 {data.billing.history.map((h, i) => (
-                  <li key={i} className={h.status === 'refunded' ? 'line-through text-gray-400' : ''}>
-                    {h.comp ? 'Covered by BoothGen' : `Paid ${fmtCents(h.amountCents)}`}{h.paidAt ? ' on ' + fmtDate(h.paidAt) : ''}{h.status === 'refunded' ? (h.comp ? ' (removed)' : ' (refunded)') : ''}
+                  <li key={i} className={h.status !== 'paid' ? 'line-through text-gray-400' : ''}>
+                    {h.comp ? 'Covered by BoothGen' : `Paid ${fmtCents(h.amountCents)}`}{h.paidAt ? ' on ' + fmtDate(h.paidAt) : ''}{h.status === 'refunded' ? (h.comp ? ' (removed)' : ' (refunded)') : h.status === 'disputed' ? ' (disputed)' : ''}
                   </li>
                 ))}
               </ul>
