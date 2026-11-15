@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.86.2] — 2026-11-14
+
+### Changed
+- **Settings → Profile → Change Password**: a hint that the password is for email sign-in, and that "Sign in with Google" keeps working when it changes
+
+---
+
 ## [2.86.1] — 2026-11-14
 
 ### Fixed

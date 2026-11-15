@@ -123,6 +123,7 @@ export default function ProfileSettingsPage() {
                 <KeyRound className="w-4 h-4 text-gray-500" />
                 <CardTitle>Change Password</CardTitle>
               </div>
+              <p className="text-xs text-gray-400 mt-1">For signing in with your email and password. If you also use &quot;Sign in with Google&quot;, that keeps working: changing this password doesn&apos;t affect it.</p>
             </CardHeader>
             <CardContent className="space-y-4 max-w-sm">
               <div>
