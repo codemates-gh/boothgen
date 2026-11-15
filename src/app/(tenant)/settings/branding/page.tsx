@@ -8,13 +8,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { settingsTabs } from '@/lib/product';
+import { isGenieOnly, settingsTabs } from '@/lib/product';
 import Image from 'next/image';
 import { Camera, Upload } from 'lucide-react';
 
 
 export default function BrandingSettingsPage() {
-  const tabs = settingsTabs(useSession().data?.tenant?.product);
+  const product = useSession().data?.tenant?.product;
+  const tabs = settingsTabs(product);
+  const crm = !isGenieOnly({ product }); // Currency, tax, address, signature and invoice footer are Genius (CRM) only
   const [form, setForm] = useState({ companyName:'', primaryColor:'#F97316', secondaryColor:'#EA6100', replyToEmail:'', supportPhone:'', websiteUrl:'', businessAddress:'', invoiceFooterText:'', emailHeaderHtml:'', currency:'usd', taxLabel:'Tax', country:'' });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -143,7 +145,7 @@ export default function BrandingSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        {crm && <Card>
           <CardHeader><CardTitle>Currency &amp; Tax</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -170,7 +172,7 @@ export default function BrandingSettingsPage() {
             </div>
             <div className="flex justify-end"><Button onClick={save} disabled={saving}>{saving ? 'Saving...' : saved ? '✓ Saved' : 'Save Changes'}</Button></div>
           </CardContent>
-        </Card>
+        </Card>}
 
         <Card>
           <CardHeader><CardTitle>Company Branding</CardTitle></CardHeader>
@@ -180,14 +182,14 @@ export default function BrandingSettingsPage() {
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Secondary Color</label><div className="flex gap-2"><input type="color" value={form.secondaryColor} onChange={e => set('secondaryColor',e.target.value)} className="h-10 w-12 rounded border border-gray-300 p-1 cursor-pointer"/><Input value={form.secondaryColor} onChange={e => set('secondaryColor',e.target.value)} className="font-mono"/></div></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Reply-to Email</label><Input type="email" value={form.replyToEmail} onChange={e => set('replyToEmail',e.target.value)} placeholder="hello@yourdomain.com"/></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Support Phone</label><Input value={form.supportPhone} onChange={e => set('supportPhone',e.target.value)} placeholder="(555) 123-4567"/></div>
-            <div className="sm:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Business Address</label><Input value={form.businessAddress} onChange={e => set('businessAddress',e.target.value)} placeholder="123 Main St, Laurel, MD 20707"/><p className="text-xs text-gray-400 mt-1">Used to show local weather on the dashboard.</p></div>
+            {crm && <div className="sm:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Business Address</label><Input value={form.businessAddress} onChange={e => set('businessAddress',e.target.value)} placeholder="123 Main St, Laurel, MD 20707"/><p className="text-xs text-gray-400 mt-1">Used to show local weather on the dashboard.</p></div>}
             <div className="sm:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Website URL</label><Input value={form.websiteUrl} onChange={e => set('websiteUrl',e.target.value)} placeholder="https://yourbusiness.com"/></div>
-            <div className="sm:col-span-2">
+            {crm && <><div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Email Signature</label>
               <p className="text-xs text-gray-400 mb-1.5">Available as <code className="bg-gray-100 px-1 rounded">{'{{host.signature}}'}</code> in email templates</p>
               <Textarea value={form.emailHeaderHtml} onChange={e => set('emailHeaderHtml',e.target.value)} placeholder={"Warm regards,\nYour Name\nYour Company\n(555) 123-4567"} className="h-28 resize-none"/>
             </div>
-            <div className="sm:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Invoice Footer</label><Textarea value={form.invoiceFooterText} onChange={e => set('invoiceFooterText',e.target.value)} placeholder="Thank you for your business!"/></div>
+            <div className="sm:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Invoice Footer</label><Textarea value={form.invoiceFooterText} onChange={e => set('invoiceFooterText',e.target.value)} placeholder="Thank you for your business!"/></div></>}
             <div className="sm:col-span-2 flex justify-end"><Button onClick={save} disabled={saving}>{saving ? 'Saving...' : saved ? '✓ Saved' : 'Save Changes'}</Button></div>
           </CardContent>
         </Card>

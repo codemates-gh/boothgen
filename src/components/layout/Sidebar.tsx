@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send, CalendarCheck, SlidersHorizontal, Bug, ClipboardList, Smile, Image as ImageIcon, Sparkles } from 'lucide-react';
 import { ReportDialog } from '@/components/reports/ReportDialog';
@@ -133,7 +133,16 @@ function NavLink({ href, label, Icon, pro, active, close, count }: { href: strin
 
 export function Sidebar({ isFoundingMember, genieEnabled, genieOnly }: { isFoundingMember?: boolean; genieEnabled?: boolean; genieOnly?: boolean }) {
   const path = usePathname();
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
+  // The menu comes from the database; the browser session can lag after Super Admin switches the account (Genius ↔
+  // Genie only). Refresh it so Search, the settings tabs and the middleware agree with the menu.
+  const sessionGenieOnly = session?.tenant?.product === 'genie';
+  const synced = useRef(false); // once per page load, so a mismatch that doesn't clear can't loop
+  useEffect(() => {
+    if (synced.current || !session || genieOnly === undefined || genieOnly === sessionGenieOnly) return;
+    synced.current = true;
+    updateSession();
+  }, [session, genieOnly, sessionGenieOnly, updateSession]);
   const [isOpen, setIsOpen] = useState(false);
   const [teamMemberAccess, setTeamMemberAccess] = useState<string[]>(['events']);
   const close = () => setIsOpen(false);

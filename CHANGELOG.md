@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.86.1] — 2026-11-14
+
+### Fixed
+- **Genie only, right after the switch**: when Super Admin switches an account (Genius ↔ Genie only), the operator's browser session now refreshes on the next page, so Search, the Settings tabs and the blocked pages match the menu right away instead of after up to 5 minutes
+- **Settings → Branding for Genie only**: hides the Genius (CRM) fields: Currency & Tax, Business Address (dashboard weather), Email Signature and Invoice Footer. Logo, company name, colors, reply-to email, support phone and website stay
+
+---
+
 ## [2.86.0] — 2026-11-14
 
 ### Added
