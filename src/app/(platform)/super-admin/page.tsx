@@ -19,9 +19,10 @@ import FoundingMembersCard from './FoundingMembersCard';
 import DesignTemplatesManager from './DesignTemplatesManager';
 import PropsManager from './PropsManager';
 import BackdropsManager from './BackdropsManager';
+import GenieUsage from './GenieUsage';
 import ReportsTriage from './ReportsTriage';
 
-const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'props', 'backdrops', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
+const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'props', 'backdrops', 'genie-usage', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
 type Tab = typeof VALID_TABS[number];
 
 const TENANT_BADGE: Record<string, 'warning' | 'success' | 'danger' | 'default'> = {
@@ -284,6 +285,17 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
               <p className="text-sm text-gray-500 mt-1">Virtual props guests can wear in Genie photos. Operators choose from the props that are on, per event.</p>
             </div>
             <PropsManager />
+          </>
+        )}
+
+        {/* GENIE USAGE */}
+        {tab === 'genie-usage' && (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Genie Usage</h1>
+              <p className="text-sm text-gray-500 mt-1">Texts, emails, sessions and photos per Genie event, and per-event payments. Review the text cap after at least 20 paid events.</p>
+            </div>
+            <GenieUsage />
           </>
         )}
 

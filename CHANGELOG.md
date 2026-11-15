@@ -4,6 +4,21 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.88.0] — 2026-11-14
+
+### Added
+- **Genie-only accounts, stage 2b (pay per event)**: a Genie-only account pays per event ($15 by default) from the event's Genie page (**Pay $15**, Stripe Checkout). One payment covers 2 iPads; **Add 2 iPads** pays again for 2 more. Genius accounts with Genie don't pay per event yet
+- Until an event is paid, everything works but the iPad is told to show a watermark on the booth screen and the photos (bundle `watermark: true`, sent only for unpaid events). The iPad side is Genie work. Photos taken before paying keep the watermark
+- Genie → Events marks unpaid events; a paid event can't be deleted. The payment is recorded when the operator comes back from Stripe, and by the Stripe webhook as a backup
+- Galleries and photo uploads no longer need Pro on Genie-only accounts
+- **Super Admin → Genie Usage**: per Genie event, iPads, sessions, photos, texts, emails, failed messages and payments, with totals (average and most texts per event) for reviewing the text cap after at least 20 paid events; and the Genie-only event price
+- Booth events no longer send the "Booth events" placeholder as the client name to the iPad
+
+### Database
+- New table `genie_event_payments` (`docs/genie/apply-production-event-payments.sql`)
+
+---
+
 ## [2.87.0] — 2026-11-14
 
 ### Added

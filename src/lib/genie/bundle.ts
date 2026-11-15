@@ -8,6 +8,8 @@ import { bundleBoomerang } from './boomerang';
 import { bundleAttract } from './attract';
 import { bundleProps, eventProps } from './props';
 import { bundleBackdrops, eventBackdrops } from './backdrops';
+import { isBoothClient } from './boothClient';
+import { eventBilling } from './payments';
 import { galleryRetentionDates, getGalleryRetention, type GalleryRetention } from '@/lib/gallery/retention';
 
 export { appUrl, galleryUrl, sessionUrl } from './urls';
@@ -94,7 +96,7 @@ function eventTemplateJson(t: EventGenieTemplate) {
 }
 
 type BundleEvent = Event & {
-  client: { firstName: string; lastName: string };
+  client: { firstName: string; lastName: string; email: string };
   genieSettings: EventGenieSettings | null;
   genieTemplates: EventGenieTemplate[];
 };
@@ -103,7 +105,7 @@ export type BundleResult =
   | { ok: true; bundle: Record<string, unknown>; bundleVersion: number }
   | { ok: false; status: 404 | 409; code: string; error: string };
 
-function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number, props: GenieProp[], backdrops: GenieBackdrop[]) {
+function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number, props: GenieProp[], backdrops: GenieBackdrop[], watermark: boolean) {
   const props_ = bundleProps(settings.propsEnabled, props);
   const backdrops_ = bundleBackdrops(settings, backdrops);
   const photos = galleryRetentionDates(event.eventDate, retention);
@@ -113,7 +115,8 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
     event: {
       id: event.id,
       title: event.title,
-      clientName: `${event.client.firstName} ${event.client.lastName}`.trim(),
+      // Booth events have no real client
+      ...(isBoothClient(event.client) ? {} : { clientName: `${event.client.firstName} ${event.client.lastName}`.trim() }),
       eventDate: event.eventDate.toISOString(),
       ...(event.startTime ? { startTime: event.startTime.toISOString() } : {}),
       ...(event.endTime ? { endTime: event.endTime.toISOString() } : {}),
@@ -121,6 +124,9 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
       ...(event.venueName ? { venueName: event.venueName } : {}),
     },
     validUntil: bundleValidUntil(event, settings.timeZone).toISOString(),
+    // Unpaid pay-per-event events: Genie draws a watermark on the booth screen and the photos. Left out when false so
+    // other bundles (and their versions) don't change.
+    ...(watermark ? { watermark: true } : {}),
     lockedAt: effectiveLockedAt(event, settings)?.toISOString() ?? null,
     capture: {
       shotCount: settings.shotCount,
@@ -191,7 +197,7 @@ function contentHash(bundle: Record<string, unknown>): string {
 export async function buildEventBundle(tenantId: string, eventId: string): Promise<BundleResult> {
   const event = await prisma.event.findFirst({
     where: { id: eventId, tenantId },
-    include: { client: { select: { firstName: true, lastName: true } }, genieSettings: true, genieTemplates: true },
+    include: { client: { select: { firstName: true, lastName: true, email: true } }, genieSettings: true, genieTemplates: true, tenant: { select: { id: true, product: true } } },
   });
   if (!event) return { ok: false, status: 404, code: 'not_found', error: 'Event not found' };
   let settings = event.genieSettings;
@@ -200,13 +206,14 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
   if (event.genieTemplates.length === 0) return { ok: false, status: 409, code: 'no_templates', error: 'The event has no Genie templates yet' };
 
   const gallery = await ensureGallery(event);
-  const [messaging, retention, props, backdrops] = await Promise.all([
+  const [messaging, retention, props, backdrops, billing] = await Promise.all([
     prisma.genieMessagingConfig.findUnique({ where: { tenantId } }),
     getGalleryRetention(),
     settings.propsEnabled ? eventProps(settings.propIds, tenantId) : Promise.resolve([]),
     settings.backdropsEnabled ? eventBackdrops(settings.backdropIds, tenantId) : Promise.resolve([]),
+    eventBilling(event.tenant, event.id),
   ]);
-  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props, backdrops);
+  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props, backdrops, billing.watermark);
   const hash = contentHash(bundle);
 
   for (let attempt = 0; settings.bundleHash !== hash && attempt < 3; attempt++) {

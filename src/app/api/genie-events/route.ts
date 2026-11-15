@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { effectiveLockedAt, eventLocksAt } from '@/lib/genie/bundle';
+import { eventsBilling } from '@/lib/genie/payments';
 import { BoothEventInput, boothEventFields, boothEventsClient, isBoothClient, setUpGenie } from '@/lib/genie/boothEvents';
 
 // Events for the Genie → Events overview: upcoming (and the last 7 days) or all past ones with ?past=1
@@ -32,6 +33,8 @@ export async function GET(req: NextRequest) {
     prisma.genieShare.groupBy({ by: ['eventId', 'status'], where: { eventId: { in: ids } }, _count: { _all: true } }),
   ]);
   const slotsBy = new Map(slots.map(s => [s.eventId, s._count._all]));
+  const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: auth.tenantId }, select: { id: true, product: true } });
+  const billing = await eventsBilling(tenant, ids);
   return NextResponse.json({
     events: events.map(e => {
       const s = e.genieSettings;
@@ -40,6 +43,9 @@ export async function GET(req: NextRequest) {
         id: e.id, title: e.title, eventDate: e.eventDate, status: e.status, venueName: e.venueName,
         clientName: isBoothClient(e.client) ? null : `${e.client.firstName} ${e.client.lastName}`.trim(),
         boothEvent: isBoothClient(e.client),
+        // Pay per event (Genie only): unpaid events run with a watermark
+        paysPerEvent: billing.get(e.id)!.paysPerEvent,
+        paid: billing.get(e.id)!.paid,
         genie: s ? {
           enabled: s.enabled,
           templates: e._count.genieTemplates,

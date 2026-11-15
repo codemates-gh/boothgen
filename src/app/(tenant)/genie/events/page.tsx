@@ -11,7 +11,7 @@ import { BoothEventModal } from '@/components/genie/BoothEventModal';
 import { fmtDate, fmtDateTime } from '@/components/genie/parts';
 
 type Row = {
-  id: string; title: string; eventDate: string; status: string; venueName: string | null; clientName: string | null; boothEvent: boolean;
+  id: string; title: string; eventDate: string; status: string; venueName: string | null; clientName: string | null; boothEvent: boolean; paysPerEvent: boolean; paid: boolean;
   genie: {
     enabled: boolean; templates: number; ipads: number; maxDevices: number; sessions: number;
     lockedAt: string | null; locksAt: string; timeZone: string; followsDefaults: boolean; shares: { total: number; failed: number };
@@ -102,6 +102,7 @@ export default function GenieEventsPage() {
                             <td className="px-6 py-3">
                               <GenieStatus g={e.genie}/>
                               {e.genie?.followsDefaults && <p className="text-xs text-gray-400 mt-1">Uses defaults</p>}
+                              {e.genie && e.paysPerEvent && !e.paid && <p className="mt-1"><Badge variant="warning">Unpaid</Badge></p>}
                             </td>
                             <td className="px-6 py-3 text-sm text-gray-600">{e.genie ? e.genie.templates : '—'}</td>
                             <td className="px-6 py-3 text-sm text-gray-600">{e.genie ? `${e.genie.ipads} of ${e.genie.maxDevices}` : '—'}</td>

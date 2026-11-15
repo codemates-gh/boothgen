@@ -36,12 +36,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json({ ok: true });
 }
 
-// Only an event with no photos yet: deleting removes everything that belongs to it
+// Only an unpaid event with no photos yet: deleting removes everything that belongs to it
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const event = await findBoothEvent(auth.tenantId, params.id);
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (await prisma.genieEventPayment.count({ where: { eventId: event.id, status: 'paid' } })) {
+    return NextResponse.json({ error: 'This event is paid, so it can\'t be deleted', code: 'paid' }, { status: 409 });
+  }
   if (await prisma.genieSession.count({ where: { eventId: event.id } })) {
     return NextResponse.json({ error: 'This event has guest photos, so it can\'t be deleted', code: 'has_photos' }, { status: 409 });
   }

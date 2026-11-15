@@ -246,6 +246,7 @@ model Tenant {
   genieDefaults        GenieDefaults?
   genieProps           GenieProp[]
   genieBackdrops       GenieBackdrop[]
+  geniePayments        GenieEventPayment[]
   feedbackReports      FeedbackReport[]
 
   // What the account bought: "crm" (Genius, the full CRM) or "genie" (Genie only). See src/lib/product.ts
@@ -448,6 +449,7 @@ model Event {
   geniePrintReports    GeniePrintReport[]
   genieTemplates       EventGenieTemplate[]
   genieDevices         GenieEventDevice[]
+  geniePayments        GenieEventPayment[]
 
   @@index([tenantId])
   @@index([tenantId, eventDate])
@@ -1430,6 +1432,28 @@ model GenieSession {
   @@index([tenantId])
   @@index([eventId])
   @@map("genie_sessions")
+}
+
+// A Genie event payment (Genie-only accounts: $15 per event, covering 2 iPads; a 3rd or 4th iPad = pay again).
+// Plan: docs/genie/genie-only-plan.md
+model GenieEventPayment {
+  id                      String    @id @default(cuid())
+  tenantId                String
+  eventId                 String
+  stripeCheckoutSessionId String    @unique
+  amountCents             Int
+  currency                String    @default("usd")
+  ipads                   Int       @default(2) // iPads this payment covers
+  status                  String    @default("pending") // pending | paid
+  paidAt                  DateTime?
+  createdAt               DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([eventId])
+  @@map("genie_event_payments")
 }
 
 model GenieShare {

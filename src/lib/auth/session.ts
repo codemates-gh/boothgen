@@ -16,7 +16,11 @@ export async function requireTenantSession() {
   return session as typeof session & { tenantId: string; tenant: NonNullable<typeof session.tenant> };
 }
 
+// Galleries and photo uploads. Genie-only accounts pay per event instead, so galleries are always on for them
+// (unpaid events carry a watermark).
 export async function hasProAccess(tenantId: string): Promise<boolean> {
+  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { product: true } });
+  if (tenant?.product === 'genie') return true;
   const sub = await prisma.stripeSubscription.findUnique({
     where: { tenantId },
     select: { plan: true, status: true },

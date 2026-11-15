@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma/client';
+import { PAYMENT_KIND as GENIE_PAYMENT_KIND, recordCheckout } from '@/lib/genie/payments';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: NextRequest) {
@@ -17,6 +18,8 @@ export async function POST(req: NextRequest) {
 
   if (event.type === 'checkout.session.completed') {
     const checkoutSession = obj as Stripe.Checkout.Session;
+    // Genie event payment (pay per event); also handled by /api/webhooks/stripe, recording is idempotent
+    if (checkoutSession.metadata?.kind === GENIE_PAYMENT_KIND) await recordCheckout(checkoutSession);
     if (checkoutSession.mode === 'subscription' && checkoutSession.subscription) {
       const tenantId = checkoutSession.client_reference_id ?? checkoutSession.metadata?.tenantId;
       if (tenantId) {

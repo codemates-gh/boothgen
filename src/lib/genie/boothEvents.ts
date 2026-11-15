@@ -8,7 +8,8 @@ import { isValidTimeZone, tzOffsetMs } from '@/lib/genie/bundle';
 // Booth events: events made from Genie → Events without the CRM (Genie-only accounts, or anyone who just needs a booth).
 // Every event needs a client, so they all go on one "Booth events" client per account. Plan: docs/genie/genie-only-plan.md
 
-export const BOOTH_CLIENT_EMAIL = 'booth-events@boothgen.invalid';
+import { BOOTH_CLIENT_EMAIL } from '@/lib/genie/boothClient';
+export { BOOTH_CLIENT_EMAIL, isBoothClient } from '@/lib/genie/boothClient';
 
 export async function boothEventsClient(tenantId: string) {
   return prisma.client.upsert({
@@ -17,8 +18,6 @@ export async function boothEventsClient(tenantId: string) {
     create: { tenantId, email: BOOTH_CLIENT_EMAIL, firstName: 'Booth', lastName: 'events', notes: 'Holds events created from Genie → Events.' },
   });
 }
-
-export const isBoothClient = (c: { email: string } | null | undefined) => c?.email === BOOTH_CLIENT_EMAIL;
 
 // A wall-clock date and time in a time zone → the instant. date "2026-12-12", time "18:30".
 export function zonedTime(date: string, time: string, timeZone: string): Date {

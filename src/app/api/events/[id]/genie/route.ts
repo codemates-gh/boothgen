@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { briefLibraryTemplate, libraryWhere } from '@/lib/genie/library';
 import { isBoothClient, setUpGenie } from '@/lib/genie/boothEvents';
+import { IPADS_PER_PAYMENT, eventBilling, eventPriceCents } from '@/lib/genie/payments';
 import { CUSTOM_FLAG, SECTION_NAMES, customFlags, getDefaults, sectionValues } from '@/lib/genie/defaults';
 import { latestApprovedDesign } from '@/lib/genie/approvedDesign';
 import { requireGenieAdmin } from '@/lib/genie/admin';
@@ -39,9 +40,15 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   })).map(t => t.id));
   const s = event.genieSettings;
   const photos = galleryRetentionDates(event.eventDate, retention);
+  const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: auth.tenantId }, select: { id: true, product: true } });
+  const b = await eventBilling(tenant, event.id);
+  const billing = b.paysPerEvent
+    ? { paysPerEvent: true, paid: b.paid, payments: b.payments, ipadsCovered: b.ipadsCovered, ipadsPerPayment: IPADS_PER_PAYMENT, priceCents: await eventPriceCents() }
+    : { paysPerEvent: false };
   return NextResponse.json({
     event: { id: event.id, title: event.title, eventDate: event.eventDate, startTime: event.startTime, endTime: event.endTime, venueName: event.venueName, boothEvent: isBoothClient(event.client) },
     settings: s ? settingsView(s) : null,
+    billing,
     lockedAt: s ? effectiveLockedAt(event, s) : null,
     locksAt: eventLocksAt(event, s?.timeZone ?? 'America/New_York'),
     templates: templates.map(t => ({ ...templateView(t), alternateAvailable: !!t.libraryTemplateId && withAlternate.has(t.libraryTemplateId) })),

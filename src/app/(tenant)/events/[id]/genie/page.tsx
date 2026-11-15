@@ -7,10 +7,11 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon } from 'lucide-react';
+import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon } from 'lucide-react';
 import { Field, Toggle, fmtDate, fmtDateTime } from '@/components/genie/parts';
 import { Attract, AttractFields, Capture, CaptureFields, DefaultState, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
 import { Modal } from '@/components/ui/modal';
+import { fmtCents } from '@/lib/utils';
 import { BoothEventModal, localTime } from '@/components/genie/BoothEventModal';
 import GenieTemplates, { ApprovedDesign, EventTemplate, templateMismatch } from './GenieTemplates';
 import GenieEventDevices from './GenieEventDevices';
@@ -36,6 +37,7 @@ type Settings = {
 };
 type Dashboard = {
   event: { id: string; title: string; eventDate: string; startTime: string | null; endTime: string | null; venueName: string | null; boothEvent: boolean };
+  billing: { paysPerEvent: false } | { paysPerEvent: true; paid: boolean; payments: number; ipadsCovered: number; ipadsPerPayment: number; priceCents: number };
   settings: Settings | null; lockedAt: string | null; locksAt: string; templates: EventTemplate[];
   providerWarnings: { channel: 'sms' | 'email'; message: string }[]; photosHiddenAt: string; photosDeletedAt: string; designApprovalPending: boolean;
   approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
@@ -104,6 +106,26 @@ export default function EventGeniePage() {
   }, [eventId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Back from Stripe Checkout (?paid=<session id>): record the payment now rather than waiting for the webhook
+  const [payBusy, setPayBusy] = useState(false);
+  const [payError, setPayError] = useState('');
+  useEffect(() => {
+    const sessionId = new URLSearchParams(window.location.search).get('paid');
+    if (!sessionId) return;
+    window.history.replaceState(null, '', window.location.pathname);
+    fetch(`/api/genie-events/${eventId}/pay`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId }) })
+      .finally(() => load(false));
+  }, [eventId, load]);
+
+  async function pay() {
+    setPayBusy(true); setPayError('');
+    const r = await fetch(`/api/genie-events/${eventId}/pay`, { method: 'POST' });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.url) { window.location.href = d.url; return; }
+    setPayBusy(false);
+    setPayError(d.error || 'Could not start the payment');
+  }
 
   useEffect(() => { if (!savedAt) return; const t = setTimeout(() => setSavedAt(null), 4000); return () => clearTimeout(t); }, [savedAt]);
 
@@ -209,6 +231,19 @@ export default function EventGeniePage() {
                 </div>
               )}
             </div>
+
+            {data.billing.paysPerEvent && data.settings && (data.billing.paid ? (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                <span className="flex items-start gap-2 flex-1"><CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0"/>Paid. Covers up to {data.billing.ipadsCovered} iPads, with texts and email.</span>
+                <Button variant="outline" size="sm" onClick={pay} disabled={payBusy}>{payBusy ? 'Opening…' : `Add ${data.billing.ipadsPerPayment} iPads (${fmtCents(data.billing.priceCents)})`}</Button>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <span className="flex items-start gap-2 flex-1"><AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>Not paid yet: the booth screen and the photos show a watermark. {fmtCents(data.billing.priceCents)} covers this event on up to {data.billing.ipadsPerPayment} iPads, with texts and email. Pay before the event; photos taken before paying keep the watermark.</span>
+                <Button size="sm" onClick={pay} disabled={payBusy}><CreditCard className="w-3.5 h-3.5 mr-1"/>{payBusy ? 'Opening…' : `Pay ${fmtCents(data.billing.priceCents)}`}</Button>
+              </div>
+            ))}
+            {payError && <p className="text-sm text-red-600">{payError}</p>}
 
             {data.designApprovalPending && !genieOnly && (
               <div className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">

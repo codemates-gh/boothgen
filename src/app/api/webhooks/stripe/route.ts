@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma/client';
 import { sendPaymentConfirmationEmail, sendHostNotificationEmail, sendEmail } from '@/lib/email/send';
 import { triggerAutomation } from '@/lib/inngest/trigger';
 import type Stripe from 'stripe';
+import { PAYMENT_KIND as GENIE_PAYMENT_KIND, recordCheckout } from '@/lib/genie/payments';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
 
@@ -146,6 +147,8 @@ export async function POST(req: NextRequest) {
 
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
+        // Genie event payment (pay per event)
+        if (session.metadata?.kind === GENIE_PAYMENT_KIND) { await recordCheckout(session); break; }
         if (session.metadata?.source !== 'founding_member') break;
 
         const tier        = parseInt(session.metadata.founding_tier ?? '1') || 1;
