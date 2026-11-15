@@ -5,19 +5,31 @@ import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 import { seedTenantEmailDefaults } from '@/lib/tenant/seed-email-defaults';
 import { sendEmail } from '@/lib/email/send';
+import { Prisma } from '@prisma/client';
+import { isValidTimeZone } from '@/lib/genie/bundle';
+import { BUILT_IN_DEFAULTS } from '@/lib/genie/defaults';
 
 function slugify(s: string) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36); }
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { name } = await req.json();
+  const { name, product: productIn, timeZone } = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: 'Company name required' }, { status: 400 });
+  // One account per person for now (G: one login per account at launch)
+  if (await prisma.tenantMembership.findFirst({ where: { userId: session.userId, role: 'HOST_ADMIN', status: 'ACTIVE' } })) {
+    return NextResponse.json({ error: 'You already have a business account. Sign out and back in to open it.' }, { status: 409 });
+  }
+  // Genie (pay per event) unless they chose Genius, the CRM with its free trial
+  const genie = productIn !== 'genius' && productIn !== 'crm';
+  if (genie && timeZone !== undefined && !isValidTimeZone(timeZone)) return NextResponse.json({ error: 'Unknown time zone' }, { status: 400 });
   const slug = slugify(name.trim());
   const tenant = await prisma.tenant.create({
     data: {
-      name: name.trim(), slug, status: 'TRIAL',
-      trialEndsAt: new Date(Date.now() + 14 * 86400000),
+      name: name.trim(), slug,
+      ...(genie
+        ? { product: 'genie', status: 'ACTIVE' as const, genieEnabled: true, genieEnabledAt: new Date(), ...(timeZone ? { genieDefaults: { create: { ...BUILT_IN_DEFAULTS, attract: BUILT_IN_DEFAULTS.attract ?? Prisma.DbNull, timeZone } } } : {}) }
+        : { status: 'TRIAL' as const, trialEndsAt: new Date(Date.now() + 14 * 86400000) }),
       branding: { create: { companyName: name.trim(), primaryColor: '#F97316', secondaryColor: '#EA6100' } },
       memberships: { create: { userId: session.userId, role: 'HOST_ADMIN', status: 'ACTIVE', joinedAt: new Date() } },
     },
@@ -41,7 +53,7 @@ export async function POST(req: NextRequest) {
   <p style="margin:0 0 4px;color:#374151;font-size:14px;">Owner: ${user?.name ?? 'Unknown'}</p>
   <p style="margin:0 0 4px;color:#374151;font-size:14px;">Email: ${user?.email ?? 'Unknown'}</p>
   <p style="margin:0 0 4px;color:#374151;font-size:14px;">Slug: /${tenant.slug}</p>
-  <p style="margin:8px 0 0;color:#15803d;font-size:13px;">Status: TRIAL · Plan: Commission</p>
+  <p style="margin:8px 0 0;color:#15803d;font-size:13px;">${genie ? 'Genie only (pay per event)' : 'Genius · Status: TRIAL'}</p>
 </div>
 <p style="margin:0 0 24px"><a href="${adminUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View in Super Admin</a></p>
 <p style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">Booth Genius internal notification</p>

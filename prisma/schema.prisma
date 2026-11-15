@@ -264,16 +264,19 @@ model Tenant {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  clerkUserId  String?    @unique
-  email        String     @unique
-  name         String
-  avatarUrl    String?
-  passwordHash String?
-  globalRole   GlobalRole @default(USER)
-  lastLoginAt  DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id              String     @id @default(cuid())
+  clerkUserId     String?    @unique
+  email           String     @unique
+  name            String
+  avatarUrl       String?
+  passwordHash    String?
+  // When the email address was confirmed (link in the sign-up email, Google sign-in, an accepted invite or a password
+  // reset). Email-and-password sign-in needs it. Accounts from before confirmation existed were marked confirmed.
+  emailVerifiedAt DateTime?
+  globalRole      GlobalRole @default(USER)
+  lastLoginAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   memberships          TenantMembership[]
   hostSignedContracts  Contract[]            @relation("HostSignedBy")

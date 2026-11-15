@@ -3,6 +3,7 @@ import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma/client';
+import { EMAIL_NOT_VERIFIED } from '@/lib/auth/emailVerification';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -23,6 +24,8 @@ export const authOptions: NextAuthOptions = {
         if (!user || !user.passwordHash) return null;
         const valid = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!valid) return null;
+        // The sign-in page offers to send the confirmation link again
+        if (!user.emailVerifiedAt) throw new Error(EMAIL_NOT_VERIFIED);
         return { id: user.id, email: user.email, name: user.name, image: user.avatarUrl };
       },
     }),
@@ -45,8 +48,10 @@ export const authOptions: NextAuthOptions = {
           const dbUser = await prisma.user.upsert({
             where: { email: token.email! },
             update: { name: token.name ?? '', avatarUrl: token.picture ?? null, lastLoginAt: new Date() },
-            create: { email: token.email!, name: token.name ?? '', avatarUrl: token.picture ?? null },
+            create: { email: token.email!, name: token.name ?? '', avatarUrl: token.picture ?? null, emailVerifiedAt: new Date() },
           });
+          // Google confirmed the address
+          if (!dbUser.emailVerifiedAt) await prisma.user.update({ where: { id: dbUser.id }, data: { emailVerifiedAt: new Date() } });
           token.userId = dbUser.id;
           token.globalRole = dbUser.globalRole;
           await refreshTenant(token);

@@ -16,7 +16,9 @@ export async function POST(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'Invalid token' }, { status: 400 });
 
     const hash = await bcrypt.hash(password, 10);
-    await prisma.user.update({ where: { id: userId }, data: { passwordHash: hash } });
+    // The reset link reached their inbox, so the address is confirmed too
+    const u = await prisma.user.findUnique({ where: { id: userId }, select: { emailVerifiedAt: true } });
+    await prisma.user.update({ where: { id: userId }, data: { passwordHash: hash, ...(u?.emailVerifiedAt ? {} : { emailVerifiedAt: new Date() }) } });
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 });

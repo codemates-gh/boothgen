@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Calendar, Lock, AlertTriangle, Plus } from 'lucide-react';
+import { Sparkles, Calendar, Lock, AlertTriangle, Plus, Tablet, SlidersHorizontal, Palette, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BoothEventModal } from '@/components/genie/BoothEventModal';
 import { fmtDate, fmtDateTime } from '@/components/genie/parts';
@@ -76,6 +76,28 @@ export default function GenieEventsPage() {
               <CardContent className="p-0">
                 {!rows ? <p className="text-sm text-gray-400 p-6">Loading…</p> : rows.length === 0 ? (
                   <div className="text-center py-12 text-gray-500">
+                    {!past && (
+                      // New accounts: the few things to do before the first event
+                      <div className="max-w-xl mx-auto text-left mb-8">
+                        <p className="text-sm font-semibold text-gray-800 mb-3">Get started</p>
+                        <ol className="space-y-2">
+                          {([
+                            [Tablet, '/genie/devices', 'Pair your iPad', 'Install Genie from the App Store, then pair it with a code from Devices.'],
+                            [SlidersHorizontal, '/genie/defaults', 'Check your event defaults', 'Countdown, photos, sharing and the layouts every new event starts with.'],
+                            [Palette, '/settings/branding', 'Add your logo and colors', 'Shown on guest photo pages and emails.'],
+                            [Send, '/genie/sharing', 'Check guest texts and email', 'How guests get their photos.'],
+                          ] as const).map(([Icon, href, title, hint], i) => (
+                            <li key={href}>
+                              <Link href={href} className="flex items-start gap-3 border border-gray-200 rounded-lg px-3 py-2.5 hover:border-gray-300 hover:bg-gray-50">
+                                <span className="text-xs font-semibold text-gray-400 w-4 mt-0.5">{i + 1}</span>
+                                <Icon className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0"/>
+                                <span><span className="block text-sm font-medium text-gray-800">{title}</span><span className="block text-xs text-gray-500">{hint}</span></span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
                     <Calendar className="w-10 h-10 mx-auto mb-3 text-gray-300"/>
                     <p className="text-sm">{past ? 'No past events.' : 'No upcoming events.'}</p>
                     {!past && <Button variant="outline" size="sm" className="mt-4" onClick={() => setCreating(true)} disabled={!defaultTz}><Plus className="w-4 h-4 mr-1"/>New Booth Event</Button>}

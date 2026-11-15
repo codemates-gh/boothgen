@@ -4,6 +4,20 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.91.0] — 2026-11-14
+
+### Added
+- **Genie-only accounts, stage 3 (sign-up)**: sign-up is Genie by default. `/sign-up` says "Get Genie" ($15 per event) with a link to "Sign up for Genius"; `/sign-up?product=genius` is the CRM. The home and pricing page buttons for the CRM go to the Genius sign-up
+- **Email confirmation**: email-and-password sign-ups get a "Confirm your Booth Genius email" link (24 hours) and a "Check your email" screen; sign-in refuses an unconfirmed account and offers "Send the link again". The welcome email now comes after confirming. Google sign-ins, accepted invites and password resets count as confirmed; every existing account was marked confirmed
+- **Onboarding**: choose Genie or Genius (pre-picked from the sign-up link), business name, and for Genie the time zone (from the browser). Genie makes a Genie-only account (Genie on, no trial, defaults in that time zone) and opens Genie → Events; Genius starts the 14-day trial as before. One business account per login
+- **Get started** steps on an empty Genie → Events: pair an iPad, check event defaults, add a logo, check guest texts and email
+- **Pricing page**: a Genie plan ($15 per event from Super Admin → Genie Usage, up to 2 iPads, texts and email included) next to the Genius plans
+
+### Database
+- `users.emailVerifiedAt`, existing users marked confirmed (`docs/genie/apply-production-email-verified.sql`)
+
+---
+
 ## [2.90.0] — 2026-11-14
 
 ### Added

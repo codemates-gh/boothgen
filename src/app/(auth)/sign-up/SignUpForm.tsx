@@ -4,7 +4,7 @@ import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Script from 'next/script';
-import { Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, CheckCircle2, MailCheck } from 'lucide-react';
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 
 declare global {
@@ -17,9 +17,13 @@ declare global {
 interface Props {
   hasTerms: boolean;
   hasPrivacy: boolean;
+  product: 'genie' | 'genius';
 }
 
-export default function SignUpForm({ hasTerms, hasPrivacy }: Props) {
+export default function SignUpForm({ hasTerms, hasPrivacy, product }: Props) {
+  const [sentTo, setSentTo] = useState(''); // the confirmation email went here
+  const [resent, setResent] = useState(false);
+  const onboarding = '/onboarding?product=' + product;
   const [form, setForm] = useState({ name:'', email:'', password:'', confirm:'' });
   const [website, setWebsite] = useState(''); // honeypot — bots fill this
   const [turnstileToken, setTurnstileToken] = useState('');
@@ -52,11 +56,30 @@ export default function SignUpForm({ hasTerms, hasPrivacy }: Props) {
     if (hasLegal && !agreed) { setError('Please accept the Terms of Service and Privacy Policy'); return; }
     if (!turnstileToken) { setError('Please wait for the security check to complete'); return; }
     setLoading(true); setError('');
-    const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name, email: form.email, password: form.password, website, turnstileToken }) });
+    const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name, email: form.email, password: form.password, website, turnstileToken, product }) });
     const data = await res.json();
     if (!res.ok) { setError(data.error ?? 'Registration failed'); setLoading(false); return; }
-    await signIn('credentials', { email: form.email, password: form.password, callbackUrl: '/onboarding', redirect: true });
+    // Confirm the email first: the link in it signs them in and continues to onboarding
+    setLoading(false);
+    setSentTo(form.email.trim());
   }
+
+  async function resend() {
+    await fetch('/api/auth/resend-verification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: sentTo }) }).catch(() => {});
+    setResent(true);
+  }
+
+  if (sentTo) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm text-center">
+        <MailCheck className="w-12 h-12 mx-auto text-brand mb-4"/>
+        <h1 className="text-xl font-bold text-gray-900 mb-2">Check your email</h1>
+        <p className="text-sm text-gray-600">We sent a confirmation link to <span className="font-medium text-gray-800">{sentTo}</span>. Click it to finish setting up your account.</p>
+        <p className="text-xs text-gray-400 mt-4">Nothing after a few minutes? Check spam, or</p>
+        <button onClick={resend} disabled={resent} className="text-sm text-brand font-semibold hover:underline disabled:text-gray-400 disabled:no-underline mt-1">{resent ? 'Sent again' : 'send the link again'}</button>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -67,8 +90,13 @@ export default function SignUpForm({ hasTerms, hasPrivacy }: Props) {
           <div className="mb-4">
             <BoothGeniusIcon size={68} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-          <p className="text-gray-500 text-sm mt-1">Start your free trial today</p>
+          <h1 className="text-2xl font-bold text-gray-900">{product === 'genie' ? 'Get Genie' : 'Get Genius'}</h1>
+          <p className="text-gray-500 text-sm mt-1 text-center">{product === 'genie'
+            ? 'The iPad photo booth app. Free to set up; $15 per event.'
+            : 'The photo booth CRM: leads, quotes, contracts, invoices and Genie.'}</p>
+          <Link href={'/sign-up?product=' + (product === 'genie' ? 'genius' : 'genie')} className="text-xs text-brand hover:underline mt-2">
+            {product === 'genie' ? 'Want the full CRM? Sign up for Genius' : 'Just the booth app? Sign up for Genie'}
+          </Link>
         </div>
 
         {error && (
@@ -160,7 +188,7 @@ export default function SignUpForm({ hasTerms, hasPrivacy }: Props) {
           <div className="relative flex justify-center"><span className="bg-white px-3 text-xs text-gray-400 font-medium">or sign up with</span></div>
         </div>
 
-        <button onClick={() => signIn('google', { callbackUrl: '/onboarding' })}
+        <button onClick={() => signIn('google', { callbackUrl: onboarding })}
           className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 font-medium hover:bg-gray-50 transition-colors">
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

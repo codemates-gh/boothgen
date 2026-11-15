@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma/client';
 import Link from 'next/link';
 import { MarketingNav } from '@/app/MarketingNav';
-import { Check, Lock, Zap } from 'lucide-react';
+import { Check, Lock, Zap, Tablet } from 'lucide-react';
+import { eventPriceCents } from '@/lib/genie/payments';
 import BreakevenCalculator from './BreakevenCalculator';
 import type { Metadata } from 'next';
 
@@ -70,9 +71,20 @@ const PRO_ONLY_FEATURES = [
   'Post-event photo gallery with access codes',
 ];
 
+const GENIE_FEATURES = [
+  'Layouts, props and virtual backdrops',
+  'Guest texts and email included',
+  'Live galleries and QR photo pages',
+  'Printing and boomerangs',
+  "Set up and test free; pay when you're ready",
+  'Upgrade to Genius anytime and keep everything',
+];
+
 export default async function PricingPage() {
   const { commissionPct, proMonthlyPrice, earlyAdopterCap, spotsRemaining, subscriptionsOpen, cadEquivalent } = await getPricing();
 
+  const genieCents = await eventPriceCents();
+  const geniePrice = genieCents % 100 === 0 ? `$${genieCents / 100}` : `$${(genieCents / 100).toFixed(2)}`;
   const pctDisplay = commissionPct % 1 === 0 ? `${commissionPct}` : `${commissionPct}`;
 
   return (
@@ -129,7 +141,7 @@ export default async function PricingPage() {
             </ul>
 
             <Link
-              href="/sign-up"
+              href="/sign-up?product=genius"
               className="block w-full text-center py-3.5 rounded-xl border-2 border-orange-500 text-orange-600 font-bold hover:bg-orange-50 transition-colors"
             >
               Start Free — No Credit Card
@@ -202,7 +214,7 @@ export default async function PricingPage() {
 
             {subscriptionsOpen ? (
               <Link
-                href="/sign-up"
+                href="/sign-up?product=genius"
                 className="block w-full text-center py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold transition-colors"
               >
                 Lock In My Rate →
@@ -220,6 +232,28 @@ export default async function PricingPage() {
               {subscriptionsOpen ? 'This rate won\'t last. Spots fill fast.' : 'We\'ll notify you when new pricing opens.'}
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* Genie only: the booth app without the CRM, pay per event */}
+      <section className="pb-16 px-4">
+        <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-gray-200 p-8 grid sm:grid-cols-[1fr_auto] gap-6 items-center">
+          <div>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Tablet className="w-3.5 h-3.5"/>Just need the booth? Genie</p>
+            <div className="flex items-end gap-1 mb-2">
+              <span className="text-4xl font-extrabold text-gray-900">{geniePrice}</span>
+              <span className="text-gray-400 mb-1">/event</span>
+            </div>
+            <p className="text-gray-500 text-sm mb-4">The Genie iPad photo booth app on its own: no monthly fee, pay only for the events you run. Each event covers up to 2 iPads.</p>
+            <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
+              {GENIE_FEATURES.map(f => (
+                <li key={f} className="flex items-start gap-2.5 text-sm text-gray-700"><Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />{f}</li>
+              ))}
+            </ul>
+          </div>
+          <Link href="/sign-up?product=genie" className="block text-center px-8 py-3.5 rounded-xl border-2 border-orange-500 text-orange-600 font-bold hover:bg-orange-50 transition-colors whitespace-nowrap">
+            Get Genie
+          </Link>
         </div>
       </section>
 

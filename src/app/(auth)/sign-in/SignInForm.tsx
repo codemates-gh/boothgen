@@ -3,11 +3,16 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
 
 export default function SignInForm() {
-  const [email, setEmail] = useState('');
+  const searchParamsInit = useSearchParams();
+  const [email, setEmail] = useState(searchParamsInit.get('email') ?? '');
+  const [unverified, setUnverified] = useState(false);
+  const [resent, setResent] = useState(false);
+  const verified = searchParamsInit.get('verified') === '1';
+  const expired = searchParamsInit.get('verify') === 'expired';
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -21,8 +26,14 @@ export default function SignInForm() {
     setLoading(true); setError('');
     const res = await signIn('credentials', { email, password, redirect: false, callbackUrl });
     setLoading(false);
-    if (res?.error) setError('Incorrect email or password.');
+    if (res?.error === 'EMAIL_NOT_VERIFIED') { setUnverified(true); setResent(false); }
+    else if (res?.error) setError('Incorrect email or password.');
     else if (res?.ok) router.push(callbackUrl);
+  }
+
+  async function resend() {
+    await fetch('/api/auth/resend-verification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }).catch(() => {});
+    setResent(true);
   }
 
   return (
@@ -35,6 +46,16 @@ export default function SignInForm() {
           <h1 className="text-2xl font-bold text-gray-900">Booth Genius</h1>
           <p className="text-gray-500 text-sm mt-1">Sign in to your account</p>
         </div>
+        {verified && !error && !unverified && <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm mb-6"><CheckCircle2 className="w-4 h-4 flex-shrink-0"/>Email confirmed. Sign in to continue.</div>}
+        {expired && !unverified && <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm mb-6"><AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0"/>That confirmation link expired or was already replaced. Sign in to get a new one.</div>}
+        {unverified && (
+          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm mb-6">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
+            <span>Confirm your email first: click the link we sent to {email}.{' '}
+              <button type="button" onClick={resend} disabled={resent} className="font-semibold underline disabled:no-underline">{resent ? 'Sent again' : 'Send the link again'}</button>
+            </span>
+          </div>
+        )}
         {error && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-6"><AlertCircle className="w-4 h-4 flex-shrink-0"/>{error}</div>}
         <form onSubmit={handleEmail} className="space-y-4 mb-6">
           <div>

@@ -40,6 +40,8 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     where: { id: membership.id },
     data: { status: 'ACTIVE', inviteToken: null, joinedAt: new Date() },
   });
+  // The invite went to this address, so it's confirmed
+  await prisma.user.updateMany({ where: { id: membership.userId, emailVerifiedAt: null }, data: { emailVerifiedAt: new Date() } });
 
   return NextResponse.json({ ok: true, email: membership.user.email });
 }
