@@ -35,7 +35,7 @@ export async function requireSuperAdminApi(): Promise<{ userId: string } | NextR
 export async function requireLibraryEditor(scope: 'standard' | 'mine'): Promise<{ tenantId: string | null } | NextResponse> {
   if (scope === 'standard') {
     const sa = await requireSuperAdminApi();
-    return sa instanceof NextResponse ? NextResponse.json({ error: 'Only Booth Genius can change the Standard library' }, { status: 403 }) : { tenantId: null };
+    return sa instanceof NextResponse ? NextResponse.json({ error: 'Only BoothGen can change the Standard library' }, { status: 403 }) : { tenantId: null };
   }
   const auth = await requireGenieAdmin();
   return auth instanceof NextResponse ? auth : { tenantId: auth.tenantId };

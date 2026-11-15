@@ -1,15 +1,15 @@
 import Link from 'next/link';
 import { CheckCircle, Mail } from 'lucide-react';
-import { BoothGeniusLogo } from '@/components/brand/BoothGeniusLogo';
+import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 
-export const metadata = { title: 'Welcome, Founding Member — Booth Genius', robots: 'noindex' };
+export const metadata = { title: 'Welcome, Founding Member — BoothGen', robots: 'noindex' };
 
 export default function LifetimeSuccessPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white border-b border-gray-100 px-4 py-4">
         <div className="max-w-5xl mx-auto">
-          <Link href="/"><BoothGeniusLogo size="sm" showTagline={false} /></Link>
+          <Link href="/"><BoothGenLogo size="sm" showTagline={false} /></Link>
         </div>
       </header>
 
@@ -19,7 +19,7 @@ export default function LifetimeSuccessPage() {
 
           <h1 className="text-3xl font-extrabold text-gray-900 mb-3">You&apos;re a Founding Member!</h1>
           <p className="text-gray-500 text-base mb-8">
-            Your payment was processed. Check your inbox — we&apos;re sending you a setup link to create your Booth Genius account.
+            Your payment was processed. Check your inbox — we&apos;re sending you a setup link to create your BoothGen account.
           </p>
 
           <div className="bg-gray-50 rounded-xl border border-gray-200 p-5 mb-8 text-left space-y-3">
@@ -27,7 +27,7 @@ export default function LifetimeSuccessPage() {
               <Mail className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-gray-800">Check your email</p>
-                <p className="text-xs text-gray-500 mt-0.5">A setup link is on its way. You can use any email for your Booth Genius account — it doesn&apos;t need to match your payment email.</p>
+                <p className="text-xs text-gray-500 mt-0.5">A setup link is on its way. You can use any email for your BoothGen account — it doesn&apos;t need to match your payment email.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">

@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
   const m = await getMessaging(auth.tenantId);
   const config = m.config;
-  const text = 'This is a test message from Genie (Booth Genius). Your ' + (channel === 'sms' ? 'text messages' : 'emails') + ' to guests are set up correctly.';
+  const text = 'This is a test message from Genie (BoothGen). Your ' + (channel === 'sms' ? 'text messages' : 'emails') + ' to guests are set up correctly.';
   let result: SendResult;
   const viaBoothGen = (channel === 'sms' ? m.routes.sms : m.routes.email) === 'boothgen';
   if (viaBoothGen) {

@@ -4,7 +4,7 @@ function shell(body: string): string {
   return `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#ffffff;color:#111827">`
     + `<div style="padding:32px 32px 0">${body}</div>`
     + `<div style="margin:32px 0 0;padding:20px 32px;background:#f9fafb;border-top:1px solid #e5e7eb">`
-    + `<p style="color:#9ca3af;font-size:12px;margin:0">{{host.company_name}} · Sent via Booth Genius</p>`
+    + `<p style="color:#9ca3af;font-size:12px;margin:0">{{host.company_name}} · Sent via BoothGen</p>`
     + `</div></div>`;
 }
 

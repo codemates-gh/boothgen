@@ -2,7 +2,7 @@ import { getAllPosts } from '@/lib/blog';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { MarketingNav } from '@/app/MarketingNav';
-import { BoothGeniusLogo } from '@/components/brand/BoothGeniusLogo';
+import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 import { format } from 'date-fns';
 import { Clock, ArrowRight } from 'lucide-react';
 
@@ -14,10 +14,10 @@ export const metadata: Metadata = {
   keywords: ['photo booth business tips', 'photo booth operator guide', 'photo booth CRM blog', 'booth rental software tips'],
   alternates: { canonical: 'https://boothgen.com/blog' },
   openGraph: {
-    title: 'Booth Genius Blog — Photo Booth Business Tips & Insights',
+    title: 'BoothGen Blog — Photo Booth Business Tips & Insights',
     description: 'Practical guides for photo booth operators: CRM, automation, client experience, and business growth.',
     url: 'https://boothgen.com/blog',
-    images: [{ url: '/api/og?title=The+Booth+Genius+Blog&subtitle=Tips+%26+insights+for+photo+booth+operators', width: 1200, height: 630, alt: 'Booth Genius Blog' }],
+    images: [{ url: '/api/og?title=The+BoothGen+Blog&subtitle=Tips+%26+insights+for+photo+booth+operators', width: 1200, height: 630, alt: 'BoothGen Blog' }],
   },
 };
 
@@ -31,7 +31,7 @@ export default async function BlogIndexPage() {
         {/* Hero */}
         <section className="bg-gradient-to-br from-[#1e1247] to-[#2d1b6e] py-20 px-4 text-center">
           <div className="max-w-2xl mx-auto">
-            <p className="text-orange-400 text-sm font-bold uppercase tracking-widest mb-4">The Booth Genius Blog</p>
+            <p className="text-orange-400 text-sm font-bold uppercase tracking-widest mb-4">The BoothGen Blog</p>
             <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4">Grow Your Photo Booth Business</h1>
             <p className="text-lg text-purple-200">Practical guides, feature deep-dives, and business tips for photo booth operators — straight from people who&apos;ve run the business.</p>
           </div>
@@ -47,7 +47,7 @@ export default async function BlogIndexPage() {
                 <Link key={post.slug} href={`/blog/${post.slug}`}
                   className="group flex flex-col border border-gray-200 rounded-2xl overflow-hidden hover:border-orange-300 hover:shadow-lg transition-all">
                   <div className="flex-1 p-6">
-                    <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide mb-3">Booth Genius</p>
+                    <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide mb-3">BoothGen</p>
                     <h2 className="font-bold text-gray-900 text-base leading-snug mb-3 group-hover:text-orange-600 transition-colors">
                       {post.title}
                     </h2>
@@ -69,7 +69,7 @@ export default async function BlogIndexPage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-100 py-10 px-4 text-center">
-        <div className="flex justify-center mb-4"><BoothGeniusLogo size="sm" showTagline={false}/></div>
+        <div className="flex justify-center mb-4"><BoothGenLogo size="sm" showTagline={false}/></div>
         <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-400 mb-4">
           <Link href="/" className="hover:text-gray-600">Home</Link>
           <Link href="/pricing" className="hover:text-gray-600">Pricing</Link>
@@ -77,7 +77,7 @@ export default async function BlogIndexPage() {
           <Link href="/support" className="hover:text-gray-600">Support</Link>
           <Link href="/contact" className="hover:text-gray-600">Contact</Link>
         </div>
-        <p className="text-xs text-gray-300">© {new Date().getFullYear()} Booth Genius. All rights reserved.</p>
+        <p className="text-xs text-gray-300">© {new Date().getFullYear()} BoothGen. All rights reserved.</p>
       </footer>
     </>
   );

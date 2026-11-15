@@ -75,7 +75,7 @@ export async function deliverShare(p: Extract<PreparedShare, { ready: true }>): 
     if (!share?.smsConsentAt) return { ok: false, error: 'No SMS consent recorded', retryable: false };
     if (m.routes.sms === 'boothgen') {
       const sent = await prisma.genieShare.count({ where: { eventId: p.eventId, channel: 'sms', provider: 'boothgen', status: { in: ['sent', 'delivered'] } } });
-      if (sent >= BOOTHGEN_SMS_LIMIT_PER_EVENT) return { ok: false, error: `This event reached the limit of ${BOOTHGEN_SMS_LIMIT_PER_EVENT} texts. Contact Booth Genius support.`, retryable: false, provider: 'boothgen' };
+      if (sent >= BOOTHGEN_SMS_LIMIT_PER_EVENT) return { ok: false, error: `This event reached the limit of ${BOOTHGEN_SMS_LIMIT_PER_EVENT} texts. Contact BoothGen support.`, retryable: false, provider: 'boothgen' };
     }
     return sendSms(m, p.to, p.text);
   }

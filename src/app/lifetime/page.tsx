@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma/client';
 import Link from 'next/link';
-import { BoothGeniusLogo } from '@/components/brand/BoothGeniusLogo';
+import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 import { Check, Star, Shield, ArrowRight, Users } from 'lucide-react';
 import { ClaimForm } from './ClaimForm';
 import type { Metadata } from 'next';
@@ -8,7 +8,7 @@ import type { Metadata } from 'next';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Founding Member Access — Booth Genius',
+  title: 'Founding Member Access — BoothGen',
   description: 'One payment. Full Pro access. Zero monthly fees and zero commission cuts — for life.',
   robots: 'noindex',
 };
@@ -66,7 +66,7 @@ export default async function LifetimePage() {
       {/* Minimal nav — no links that distract from converting */}
       <header className="bg-white border-b border-gray-100 px-4 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/"><BoothGeniusLogo size="sm" showTagline={false} /></Link>
+          <Link href="/"><BoothGenLogo size="sm" showTagline={false} /></Link>
           <span className="text-xs text-gray-400 font-medium uppercase tracking-widest">Founding Member Offer</span>
         </div>
       </header>
@@ -202,7 +202,7 @@ export default async function LifetimePage() {
             <div>
               <h2 className="text-lg font-bold text-green-900 mb-2">14-Day Full Refund Guarantee</h2>
               <p className="text-sm text-green-800">
-                If Booth Genius isn&apos;t the right fit for your business within 14 days of purchase, message us and we&apos;ll refund every dollar. No hoops, no hold times, no questions asked.
+                If BoothGen isn&apos;t the right fit for your business within 14 days of purchase, message us and we&apos;ll refund every dollar. No hoops, no hold times, no questions asked.
               </p>
             </div>
           </div>
@@ -228,7 +228,7 @@ export default async function LifetimePage() {
             <ClaimForm enabled={enabled && spotsLeft > 0} price={price} round={round} />
 
             <p className="text-xs text-gray-400 text-center mt-4">
-              After payment you&apos;ll receive a setup link via email. You can use any email for your Booth Genius account — it doesn&apos;t need to match your payment email.
+              After payment you&apos;ll receive a setup link via email. You can use any email for your BoothGen account — it doesn&apos;t need to match your payment email.
             </p>
           </div>
         </div>
@@ -242,7 +242,7 @@ export default async function LifetimePage() {
             {[
               {
                 q: 'What happens after I pay?',
-                a: "You'll receive an email with a unique link to create your Booth Genius account. You can use any email you want for the account — it doesn't need to match your payment email.",
+                a: "You'll receive an email with a unique link to create your BoothGen account. You can use any email you want for the account — it doesn't need to match your payment email.",
               },
               {
                 q: 'What features are included in Pro?',
@@ -250,7 +250,7 @@ export default async function LifetimePage() {
               },
               {
                 q: 'Is this available in Canada?',
-                a: 'Yes. Booth Genius is built specifically for US and Canadian photo booth operators.',
+                a: 'Yes. BoothGen is built specifically for US and Canadian photo booth operators.',
               },
               {
                 q: 'What if I already use the regular monthly plan?',
@@ -279,7 +279,7 @@ export default async function LifetimePage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-200 py-8 text-center text-xs text-gray-400">
-        <p>© {new Date().getFullYear()} Booth Genius · Available for US & Canada operators</p>
+        <p>© {new Date().getFullYear()} BoothGen · Available for US & Canada operators</p>
         <p className="mt-1">
           <Link href="/pricing" className="hover:text-gray-600">Regular plans</Link>
           {' · '}

@@ -20,7 +20,7 @@ export async function notifyAdminOfFailure(executionId: string, errorMessage: st
     const tenantName = exec.tenant?.branding?.companyName ?? exec.tenant?.name ?? 'Unknown';
     await sendEmail(
       ADMIN_EMAIL,
-      `[Booth Genius] Automation email failed — ${tenantName}`,
+      `[BoothGen] Automation email failed — ${tenantName}`,
       `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
 <h2 style="font-size:18px;color:#dc2626;margin:0 0 16px">⚠️ Automation Email Failure</h2>
 <p style="margin:0 0 20px;color:#374151">An automated email failed to send after all retries were exhausted.</p>
@@ -35,7 +35,7 @@ export async function notifyAdminOfFailure(executionId: string, errorMessage: st
 <a href="${appUrl}/super-admin" style="background:#F97316;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">View Email Activity Log</a>
 </div>`,
       undefined,
-      `Booth Genius <${process.env.EMAIL_FROM ?? 'noreply@boothgen.com'}>`
+      `BoothGen <${process.env.EMAIL_FROM ?? 'noreply@boothgen.com'}>`
     );
   } catch (err) {
     console.error('[AUTOMATION_FAILURE_ALERT]', err);

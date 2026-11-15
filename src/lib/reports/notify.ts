@@ -15,7 +15,7 @@ function layout(heading: string, lines: string[], link: string, button: string) 
     '<h2 style="font-size:18px;color:#111827">' + heading + '</h2>' +
     lines.map(l => '<p style="color:#374151;font-size:14px;white-space:pre-wrap">' + l + '</p>').join('') +
     '<p style="margin:24px 0"><a href="' + link + '" style="background:#F97316;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">' + button + '</a></p>' +
-    '<p style="color:#9ca3af;font-size:12px">Booth Genius</p></div>';
+    '<p style="color:#9ca3af;font-size:12px">BoothGen</p></div>';
 }
 
 const excerpt = (s: string, n = 400) => (s.length > n ? s.slice(0, n) + '…' : s);

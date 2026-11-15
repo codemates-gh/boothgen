@@ -368,7 +368,7 @@ export default function CalendarPage() {
             <div className="px-5 pt-5 pb-4 border-b border-gray-100">
               <h3 className="font-semibold text-sm text-gray-800 mb-1">Subscribe to Your Calendar</h3>
               <p className="text-xs text-gray-500">
-                Sync your Booth Genius schedule to Google Calendar, Apple Calendar, or Outlook. The feed updates automatically — no re-import needed.
+                Sync your BoothGen schedule to Google Calendar, Apple Calendar, or Outlook. The feed updates automatically — no re-import needed.
               </p>
             </div>
 

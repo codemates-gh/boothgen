@@ -60,7 +60,7 @@ export async function GET() {
     }
 
     const buildInfo = await fetch(
-      new URL("/build-info.json", process.env.NEXT_PUBLIC_SITE_URL || "https://boothgenius.com")
+      new URL("/build-info.json", process.env.NEXT_PUBLIC_SITE_URL || "https://boothgen.com")
     )
       .then((r) => r.json())
       .catch(() => null);

@@ -24,10 +24,10 @@ function getClientIp(req: NextRequest): string {
   return req.headers.get('x-real-ip') ?? 'unknown';
 }
 
-const DEFAULT_SUBJECT = 'Reset your Booth Genius password';
+const DEFAULT_SUBJECT = 'Reset your BoothGen password';
 const DEFAULT_BODY = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
   <h2 style="font-size:20px;color:#111827">Hi {{user_name}},</h2>
-  <p>We received a request to reset the password for your Booth Genius account.</p>
+  <p>We received a request to reset the password for your BoothGen account.</p>
   <p style="margin:24px 0">
     <a href="{{reset_url}}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Reset Password</a>
   </p>

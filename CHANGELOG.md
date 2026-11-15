@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.92.0] — 2026-11-15
+
+### Changed
+- **Booth Genius is now BoothGen.** The company name matches boothgen.com everywhere: the app, sign-in and sign-up, emails (confirm, welcome, password reset, invites, quotes, contracts, guest photos "via BoothGen"), the client portal and inquiry form badge, the support center and AI assistant, pricing, blog, legal page headers and Super Admin. Products: **Genie, the photo booth app** and **Genius, the photo booth CRM**. Tagline: "The next generation of photo booths."
+- **New logo**: the "BoothGen" wordmark ("Gen" in gold), no lamp. Where a square is needed (browser tab, app sidebar, sign-in), a mark made from the Genie icon's gold sparkle on the same purple
+- **New website, Genie first**: the home page leads with Genie (props, backdrops, boomerangs, instant sharing, live galleries, $15 per event), then what operators get, the Genie and Genius flow from lead to gallery, plans side by side, the story and an FAQ. New pages **/photo-booth-app** (Genie) and **/photo-booth-crm** (Genius, the previous home page updated with the design workflow, the template designer and Genie). Menu: Genie · Genius · Pricing · Blog · Support · Contact, with "Get Genie"
+- Links that pointed to boothgenius.com (not ours) now point to boothgen.com
+
+---
+
 ## [2.91.0] — 2026-11-14
 
 ### Added

@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
                 B
               </div>
               <span style={{ color: 'white', fontSize: '20px', fontWeight: '700' }}>
-                Booth Genius
+                BoothGen
               </span>
             </div>
           </div>
@@ -198,7 +198,7 @@ export async function GET(req: NextRequest) {
               display: 'flex',
             }}
           >
-            Booth Genius
+            BoothGen
           </span>
         </div>
 

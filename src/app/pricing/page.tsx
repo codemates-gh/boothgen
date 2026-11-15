@@ -10,18 +10,18 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Pricing — Free to Start, Pro When You\'re Ready',
-  description: 'Booth Genius is free to start with a small commission per booking, or go Pro for a flat monthly rate with zero commission. No hidden fees. No credit card required.',
+  description: 'BoothGen is free to start with a small commission per booking, or go Pro for a flat monthly rate with zero commission. No hidden fees. No credit card required.',
   keywords: ['photo booth software pricing', 'photo booth CRM cost', 'booth rental software plans', 'free photo booth management'],
   alternates: { canonical: 'https://boothgen.com/pricing' },
   openGraph: {
-    title: 'Booth Genius Pricing — Free to Start, Pro When You\'re Ready',
+    title: 'BoothGen Pricing — Free to Start, Pro When You\'re Ready',
     description: 'Start free with a commission plan or lock in flat-rate Pro pricing. No monthly fee to start. Built for photo booth operators.',
     url: 'https://boothgen.com/pricing',
-    images: [{ url: '/api/og?title=Simple%2C+Honest+Pricing&subtitle=Free+commission+plan+or+flat+Pro+rate+%E2%80%94+no+surprises', width: 1200, height: 630, alt: 'Booth Genius Pricing' }],
+    images: [{ url: '/api/og?title=Simple%2C+Honest+Pricing&subtitle=Free+commission+plan+or+flat+Pro+rate+%E2%80%94+no+surprises', width: 1200, height: 630, alt: 'BoothGen Pricing' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Booth Genius Pricing — Free to Start, Pro When You\'re Ready',
+    title: 'BoothGen Pricing — Free to Start, Pro When You\'re Ready',
     description: 'Start free with a commission plan or lock in flat-rate Pro pricing.',
     images: ['/api/og?title=Simple%2C+Honest+Pricing&subtitle=Free+commission+plan+or+flat+Pro+rate+%E2%80%94+no+surprises'],
   },
@@ -281,11 +281,11 @@ export default async function PricingPage() {
           <div className="bg-gray-100 rounded-xl p-6 text-xs text-gray-500 leading-relaxed">
             <p className="font-semibold text-gray-600 mb-2">Payment Processing Disclosure</p>
             <p className="mb-3">
-              Booth Genius subscription fees are charged in <strong>USD</strong>. Canadian operators are billed the USD amount and their card issuer applies the conversion; the CA$ equivalent shown above is approximate based on the current exchange rate and updates daily.{' '}
-              All booking payments processed through Booth Genius are subject to Stripe's standard payment processing fee of <strong>2.9% + $0.30 per transaction</strong>. This fee is charged by Stripe directly and applies to <strong>both the Free and Pro plans</strong>. It is separate from and in addition to Booth Genius platform pricing. On the Free plan, Stripe's fee and the Booth Genius {pctDisplay}% platform fee are both deducted from each booking. On the Pro plan, only Stripe's fee applies per transaction — Booth Genius does not take a per-booking cut. Booth Genius is not a bank and does not hold funds; all payments are processed and held by Stripe.
+              BoothGen subscription fees are charged in <strong>USD</strong>. Canadian operators are billed the USD amount and their card issuer applies the conversion; the CA$ equivalent shown above is approximate based on the current exchange rate and updates daily.{' '}
+              All booking payments processed through BoothGen are subject to Stripe's standard payment processing fee of <strong>2.9% + $0.30 per transaction</strong>. This fee is charged by Stripe directly and applies to <strong>both the Free and Pro plans</strong>. It is separate from and in addition to BoothGen platform pricing. On the Free plan, Stripe's fee and the BoothGen {pctDisplay}% platform fee are both deducted from each booking. On the Pro plan, only Stripe's fee applies per transaction — BoothGen does not take a per-booking cut. BoothGen is not a bank and does not hold funds; all payments are processed and held by Stripe.
             </p>
             <p>
-              <strong className="text-gray-600">Note for Canadian operators:</strong> When you connect your Stripe account, it is domiciled in Canada. Payments from Canadian-issued cards carry no international card fee. However, if one of your clients pays with a card issued outside Canada (for example, a US or international card), Stripe may apply an additional <strong>1.5% international card fee</strong> on top of the standard 2.9% + $0.30. This is a Stripe fee charged directly to your account — it is not a Booth Genius fee and does not apply to the vast majority of Canadian-client bookings.
+              <strong className="text-gray-600">Note for Canadian operators:</strong> When you connect your Stripe account, it is domiciled in Canada. Payments from Canadian-issued cards carry no international card fee. However, if one of your clients pays with a card issued outside Canada (for example, a US or international card), Stripe may apply an additional <strong>1.5% international card fee</strong> on top of the standard 2.9% + $0.30. This is a Stripe fee charged directly to your account — it is not a BoothGen fee and does not apply to the vast majority of Canadian-client bookings.
             </p>
           </div>
         </div>
@@ -293,7 +293,7 @@ export default async function PricingPage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-200 py-8 text-center text-xs text-gray-400">
-        <p>© {new Date().getFullYear()} Booth Genius. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} BoothGen. All rights reserved.</p>
         <p className="mt-1">
           <Link href="/" className="hover:text-gray-600">Home</Link>
           {' · '}

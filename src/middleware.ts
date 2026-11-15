@@ -10,7 +10,7 @@ const PUBLIC_PREFIX = [
   '/sign-in', '/sign-up', '/forgot-password', '/reset-password',
   '/onboarding', '/invite',
   // Marketing pages
-  '/pricing', '/blog', '/contact', '/privacy', '/terms', '/support', '/lifetime',
+  '/pricing', '/blog', '/contact', '/privacy', '/terms', '/support', '/lifetime', '/photo-booth-app', '/photo-booth-crm',
   // Client-facing pages (unauthenticated)
   '/portal', '/embed', '/g',
   // Static assets (belt-and-suspenders; matcher already excludes most)

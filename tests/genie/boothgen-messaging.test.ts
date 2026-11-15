@@ -112,7 +112,7 @@ describe('sending through BoothGen', () => {
     const saved = await send(share.id);
     const [key, msg] = resendSend.mock.calls[0];
     expect(key).toBe('re_platform');
-    expect(msg).toMatchObject({ from: 'Nolasco Photo Booth via Booth Genius <photos@mail.boothgen.test>', reply_to: 'hi@nolasco.test', to: 'sam@example.com' });
+    expect(msg).toMatchObject({ from: 'Nolasco Photo Booth via BoothGen <photos@mail.boothgen.test>', reply_to: 'hi@nolasco.test', to: 'sam@example.com' });
     expect(saved).toMatchObject({ status: 'sent', provider: 'boothgen' });
   });
 

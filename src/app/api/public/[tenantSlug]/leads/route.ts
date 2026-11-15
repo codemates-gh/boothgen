@@ -135,7 +135,7 @@ export async function POST(req: NextRequest, { params }: { params: { tenantSlug:
   ${message ? `<tr><td style="padding:8px 0;color:#6b7280;font-size:14px;vertical-align:top">Message</td><td style="padding:8px 0;font-size:14px">${message}</td></tr>` : ''}
 </table>
 <p style="margin:24px 0"><a href="${appUrl}/leads" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">View Inquiry</a></p>
-<p style="color:#6b7280;font-size:12px;">Sent by Booth Genius</p>
+<p style="color:#6b7280;font-size:12px;">Sent by BoothGen</p>
 </div>`,
         replyTo
       );

@@ -71,7 +71,7 @@ export function SetupForm({ token, paymentEmail, name: paymentName, company: pay
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <p className="text-xs text-gray-500 mb-1">Your Stripe receipt was sent to: <span className="font-medium text-gray-700">{paymentEmail}</span></p>
-        <p className="text-xs text-gray-400">Your Booth Genius account can use a different email if you prefer.</p>
+        <p className="text-xs text-gray-400">Your BoothGen account can use a different email if you prefer.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

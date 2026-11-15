@@ -1,26 +1,26 @@
 export const dynamic = 'force-dynamic';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { BoothGeniusLogo } from '@/components/brand/BoothGeniusLogo';
+import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 import { SupportSearch } from './SupportSearch';
 import { SupportChat } from './SupportChat';
 import { prisma } from '@/lib/prisma/client';
 
 export const metadata: Metadata = {
   title: 'Support Center',
-  description: 'Help guides, feature documentation, and step-by-step workflows for Booth Genius — the photo booth business platform.',
+  description: 'Help guides, feature documentation, and step-by-step workflows for BoothGen — the photo booth business platform.',
   alternates: { canonical: 'https://boothgen.com/support' },
   openGraph: {
-    title: 'Booth Genius Support Center',
-    description: 'Help guides, feature documentation, and step-by-step workflows for Booth Genius.',
+    title: 'BoothGen Support Center',
+    description: 'Help guides, feature documentation, and step-by-step workflows for BoothGen.',
     url: 'https://boothgen.com/support',
-    images: [{ url: '/api/og?title=Support+Center&subtitle=Guides+and+documentation+for+Booth+Genius', width: 1200, height: 630, alt: 'Booth Genius Support Center' }],
+    images: [{ url: '/api/og?title=Support+Center&subtitle=Guides+and+documentation+for+BoothGen', width: 1200, height: 630, alt: 'BoothGen Support Center' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Booth Genius Support Center',
-    description: 'Help guides and documentation for Booth Genius.',
-    images: ['/api/og?title=Support+Center&subtitle=Guides+and+documentation+for+Booth+Genius'],
+    title: 'BoothGen Support Center',
+    description: 'Help guides and documentation for BoothGen.',
+    images: ['/api/og?title=Support+Center&subtitle=Guides+and+documentation+for+BoothGen'],
   },
 };
 
@@ -30,7 +30,7 @@ export const ARTICLES = [
     id: 'onboarding-overview',
     category: 'Getting Started',
     categoryIcon: '🚀',
-    title: 'Setting Up Your Booth Genius Account',
+    title: 'Setting Up Your BoothGen Account',
     slug: 'getting-started',
     content: `Follow these steps after creating your account to get fully set up in under 30 minutes.
 
@@ -38,10 +38,10 @@ export const ARTICLES = [
 When you first sign in, you'll be guided through a short onboarding flow asking for your business name and time zone. Complete this to unlock your dashboard.
 
 **Step 2 — Set Up Your Branding**
-Go to Settings → Branding. Upload your business logo (PNG or JPG, recommended 400×120px horizontal), choose your primary brand color, and fill in your company name, reply-to email address, support phone number, business address, and website URL. Everything clients see — emails, portal, invoices — will carry your brand, not Booth Genius. Your business address is also used to show accurate local weather on your dashboard.
+Go to Settings → Branding. Upload your business logo (PNG or JPG, recommended 400×120px horizontal), choose your primary brand color, and fill in your company name, reply-to email address, support phone number, business address, and website URL. Everything clients see — emails, portal, invoices — will carry your brand, not BoothGen. Your business address is also used to show accurate local weather on your dashboard.
 
 **Step 3 — Connect Stripe**
-Go to Settings → Billing → Connect Stripe. You'll be redirected to Stripe's secure onboarding flow. If you already have a Stripe account, just log in — it links your existing account, no new account needed. This step is separate from any Booth Genius subscription payment; it's what routes your clients' payments directly to your bank. Booth Genius never holds your money. Required before clients can pay invoices online.
+Go to Settings → Billing → Connect Stripe. You'll be redirected to Stripe's secure onboarding flow. If you already have a Stripe account, just log in — it links your existing account, no new account needed. This step is separate from any BoothGen subscription payment; it's what routes your clients' payments directly to your bank. BoothGen never holds your money. Required before clients can pay invoices online.
 
 **Step 4 — Add Your Service Packages**
 Go to Settings → Packages. Create packages for your common booth rental options (e.g. "3-Hour Booth — $800", "4-Hour Booth — $1,000"). These populate as quick-add buttons when building quotes, so you don't have to re-type services for every booking.
@@ -50,7 +50,7 @@ Go to Settings → Packages. Create packages for your common booth rental option
 Go to Settings → Contracts → Templates. Create at least one contract template using merge tags like {{client_name}}, {{event_date}}, {{total_amount}}, {{venue_name}}. This template auto-populates when a client accepts a quote and signs digitally.
 
 **Step 6 — Set Up Lead Capture**
-Go to Settings → Lead Capture (Embed tab). Copy the JavaScript snippet and paste it into your website's HTML — typically in the footer or on a Contact/Book Now page. When a visitor submits the form, a lead will appear automatically in your Booth Genius dashboard. To prevent leads from requesting dates you can't cover, use Calendar → Block Dates to mark unavailable days before going live.
+Go to Settings → Lead Capture (Embed tab). Copy the JavaScript snippet and paste it into your website's HTML — typically in the footer or on a Contact/Book Now page. When a visitor submits the form, a lead will appear automatically in your BoothGen dashboard. To prevent leads from requesting dates you can't cover, use Calendar → Block Dates to mark unavailable days before going live.
 
 **Step 7 — Review Your Default Email Templates**
 Your account comes with six pre-built email templates and automation rules that cover every major client touchpoint — inquiry auto-reply, quote notification, contract, invoice, booking confirmation, and gallery delivery. Go to Email Templates in the sidebar to preview and customize the wording for each one. Go to Automation to see and adjust the rules that fire them.
@@ -64,7 +64,7 @@ Create a test event manually (Events → New Event), build a quote, send it to y
     categoryIcon: '🚀',
     title: 'Customizing Your Brand & Portal Appearance',
     slug: 'branding',
-    content: `Your client portal and all outgoing emails use your branding — never Booth Genius's.
+    content: `Your client portal and all outgoing emails use your branding — never BoothGen's.
 
 **Logo**
 Upload from Settings → Branding → Logo. Appears in your client portal header and outgoing emails. Recommended: horizontal format, transparent PNG background, at least 400px wide.
@@ -98,7 +98,7 @@ Set your default deposit percentage (applied automatically when building new quo
     categoryIcon: '📥',
     title: 'Managing Leads & Inquiries',
     slug: 'leads',
-    content: `Leads are potential clients who have expressed interest. Booth Genius tracks every lead from first contact through booking.
+    content: `Leads are potential clients who have expressed interest. BoothGen tracks every lead from first contact through booking.
 
 **How Leads Come In**
 1. **Embed Form** — A visitor fills out your inquiry form embedded on your website. A lead is automatically created, and you receive an email notification.
@@ -115,7 +115,7 @@ Set your default deposit percentage (applied automatically when building new quo
 Open a lead to see the inquiry details — event date, event type, venue, guest count, hours needed, and any additional message. Use the message thread to send replies. Your reply goes to the client's email, and their response comes back into the thread. Message threads are retained for **[[message_retention_months]] months** after the event date (for leads converted to events) or after the message date (for unconverted leads). A booking made a year in advance won't be purged until [[message_retention_months]] months after the event actually takes place.
 
 **Converting to an Event**
-Click "Convert to Event" on any lead. Booth Genius creates a new Event and Client record pre-filled with the lead's information. From there you can create a quote immediately.
+Click "Convert to Event" on any lead. BoothGen creates a new Event and Client record pre-filled with the lead's information. From there you can create a quote immediately.
 
 **Lead Form Fields**
 Customize which fields appear on your embedded inquiry form in Settings → Lead Capture. Toggle fields like venue, guest count, and hours to match what's most relevant to your business.`,
@@ -172,7 +172,7 @@ If the event's client is flagged as "Corporate" in their client record, the quot
     categoryIcon: '✍️',
     title: 'Digital Contracts & E-Signatures',
     slug: 'contracts',
-    content: `Booth Genius includes built-in digital contracts — no DocuSign or HelloSign required.
+    content: `BoothGen includes built-in digital contracts — no DocuSign or HelloSign required.
 
 **How It Works**
 1. You create a contract template in Settings → Contracts → Templates
@@ -211,7 +211,7 @@ Create different templates for corporate events, weddings, school events, etc. W
     categoryIcon: '💳',
     title: 'Invoices, Deposits & Online Payments',
     slug: 'invoicing',
-    content: `Booth Genius handles the full payment lifecycle — deposits, milestones, balances, and card processing via Stripe.
+    content: `BoothGen handles the full payment lifecycle — deposits, milestones, balances, and card processing via Stripe.
 
 **How Invoices Are Created**
 When a client accepts a quote, an invoice is automatically generated with the line items, tax, and discount from the quote. You can also create a standalone invoice manually from Invoices → New Invoice.
@@ -240,7 +240,7 @@ If a client has an overdue balance and a gallery exists, the gallery will be loc
 If a client pays by cash, check, or Venmo outside of Stripe, you can record the payment manually from the invoice detail page. Mark the amount and payment method — the invoice status will update accordingly.
 
 **Refunds**
-To refund a client payment, open the event detail page and click "Cancel Event." Choose from three options: no refund, refund deposit only, or refund all payments. If the client paid via Stripe, the refund is processed automatically — they typically see the credit within 5–10 business days. For a custom partial refund (e.g. 75% of a deposit), go to your Stripe dashboard to issue it there. If the original payment was recorded manually (cash, check), Booth Genius marks the milestone as REFUNDED in the system but does not move money — handle the return yourself. See "Cancelling an Event & Issuing a Refund" for full details.`,
+To refund a client payment, open the event detail page and click "Cancel Event." Choose from three options: no refund, refund deposit only, or refund all payments. If the client paid via Stripe, the refund is processed automatically — they typically see the credit within 5–10 business days. For a custom partial refund (e.g. 75% of a deposit), go to your Stripe dashboard to issue it there. If the original payment was recorded manually (cash, check), BoothGen marks the milestone as REFUNDED in the system but does not move money — handle the return yourself. See "Cancelling an Event & Issuing a Refund" for full details.`,
   },
 
   // ─── CLIENT PORTAL ──────────────────────────────────────────────────────────
@@ -286,7 +286,7 @@ The portal is fully responsive. Clients can accept quotes, sign contracts, and p
     categoryIcon: '📸',
     title: 'Photo Gallery Delivery',
     slug: 'gallery',
-    content: `The Photo Gallery feature lets you deliver event photos directly through Booth Genius — no separate photo delivery subscription required. Gallery is available on the Pro plan only.
+    content: `The Photo Gallery feature lets you deliver event photos directly through BoothGen — no separate photo delivery subscription required. Gallery is available on the Pro plan only.
 
 **Uploading Photos**
 From an event detail page, go to the Gallery tab. Click "Upload Photos" to bulk-upload JPG or PNG files. Photos are stored securely in cloud storage and displayed in the client portal immediately after upload.
@@ -494,10 +494,10 @@ SUMMER25 (20% off): −$284.00
 A visitor on your website fills out your embedded inquiry form (installed from Settings → Lead Capture). A Lead is created in your dashboard, and you get an email notification with their event details.
 
 **Step 2 — Review & Respond**
-Open the lead in Booth Genius. Review their event date, type, venue, and guest count. Send a reply through the built-in message thread — your reply arrives in their email inbox. Update the lead status to CONTACTED.
+Open the lead in BoothGen. Review their event date, type, venue, and guest count. Send a reply through the built-in message thread — your reply arrives in their email inbox. Update the lead status to CONTACTED.
 
 **Step 3 — Convert to Event**
-Click "Convert to Event." Booth Genius creates a new Event and Client record with the lead's info pre-filled. The lead status changes to CONVERTED.
+Click "Convert to Event." BoothGen creates a new Event and Client record with the lead's info pre-filled. The lead status changes to CONVERTED.
 
 **Step 4 — Build the Quote**
 From the event page, click "New Quote." Add your packages and any additional line items. Apply a coupon if relevant. Set the deposit % (e.g. 50%) and confirm the balance due date. Attach your contract template. Click "Send Quote."
@@ -509,7 +509,7 @@ The client receives an email with their portal link. They open boothgen.com/port
 Immediately after accepting, the client is taken to the Contract tab where the auto-generated contract awaits. They read it and type their name to sign digitally. You receive a notification that the contract was signed.
 
 **Step 7 — Counter-Sign**
-Log in to Booth Genius and go to the event's Contract tab (or the Contracts section). Open the contract and add your counter-signature to make it fully executed.
+Log in to BoothGen and go to the event's Contract tab (or the Contracts section). Open the contract and add your counter-signature to make it fully executed.
 
 **Step 8 — Deposit Payment**
 The client returns to their portal (or clicks the Invoice tab directly from the contract confirmation screen). They see the deposit amount due and pay by credit card via Stripe. The deposit lands in your Stripe account within 2 business days.
@@ -518,7 +518,7 @@ The client returns to their portal (or clicks the Invoice tab directly from the 
 If you design custom overlays or templates, upload a mockup to the event's Design tab. The client reviews it in their portal and clicks "Approve" or "Request Revision."
 
 **Step 10 — Day of Event**
-Run your event. Open the event detail page and work through the event's Checklist — check off tasks as you set up. Booth Genius keeps all client info, venue details, special notes, and your task list accessible from the mobile-friendly dashboard.
+Run your event. Open the event detail page and work through the event's Checklist — check off tasks as you set up. BoothGen keeps all client info, venue details, special notes, and your task list accessible from the mobile-friendly dashboard.
 
 **Step 11 — Upload Gallery Photos (Pro)**
 After the event, upload photos from the event's Gallery tab. Once you publish the gallery, the client gets an automated email notification. They can view and download photos from their portal. Share the Guest Gallery Link (not the portal link) with wedding guests or family members.
@@ -590,7 +590,7 @@ A color legend at the bottom of the calendar shows what each color means. Lead i
 
 **When to Use Blackout Dates**
 - Holidays or personal time off
-- Dates you're already committed to outside of Booth Genius (another job booked on another platform)
+- Dates you're already committed to outside of BoothGen (another job booked on another platform)
 - "Buffer" days — if you need a day of rest after a large event
 - Seasonal closures
 
@@ -603,7 +603,7 @@ Re-enter block mode (click "Block Dates") and click the red date again. It retur
     categoryIcon: '📅',
     title: 'Subscribing to Your Calendar in Google / Apple',
     slug: 'ical-subscription',
-    content: `Your Booth Genius events can appear directly in Google Calendar, Apple Calendar, or any calendar app that supports iCal subscriptions — so you always have your schedule in one place without manually copying dates.
+    content: `Your BoothGen events can appear directly in Google Calendar, Apple Calendar, or any calendar app that supports iCal subscriptions — so you always have your schedule in one place without manually copying dates.
 
 **Getting Your Subscription URL**
 1. Go to Calendar in the sidebar
@@ -617,7 +617,7 @@ This URL is private to your account. Anyone with this URL can read your event sc
 2. Click the + icon next to "Other calendars" in the left sidebar
 3. Select "From URL"
 4. Paste your subscription URL and click "Add calendar"
-5. Your Booth Genius events appear as a new calendar (you can rename and recolor it)
+5. Your BoothGen events appear as a new calendar (you can rename and recolor it)
 
 Google Calendar typically syncs every 12–24 hours — new events may not appear instantly.
 
@@ -707,7 +707,7 @@ Packages can be edited at any time. Changes to a package only affect new quotes 
     categoryIcon: '⚙️',
     title: 'Corporate Client Pricing',
     slug: 'corporate-pricing',
-    content: `Corporate clients often have larger budgets, different requirements, and expect higher-tier pricing. Booth Genius lets you set a corporate price on each package and flag individual clients so the right rate applies automatically every time.
+    content: `Corporate clients often have larger budgets, different requirements, and expect higher-tier pricing. BoothGen lets you set a corporate price on each package and flag individual clients so the right rate applies automatically every time.
 
 **Step 1 — Set Corporate Prices on Packages**
 Go to Settings → Packages. When creating or editing any package, you'll see two price fields:
@@ -741,7 +741,7 @@ Quotes built with corporate pricing show a purple "Corporate" badge next to the 
     categoryIcon: '⚙️',
     title: 'Billing & Plan Management',
     slug: 'billing',
-    content: `Manage your Booth Genius subscription and Stripe Connect account from Settings → Billing.
+    content: `Manage your BoothGen subscription and Stripe Connect account from Settings → Billing.
 
 **Commission Plan (Free)**
 - No monthly fee
@@ -760,17 +760,17 @@ Quotes built with corporate pricing show a purple "Corporate" badge next to the 
 Go to Settings → Billing to upgrade to Pro or manage your subscription. You can cancel at any time — you'll retain Pro access until the end of your billing period.
 
 **Stripe Connect — Two separate Stripe relationships**
-Booth Genius uses Stripe in two distinct ways that are easy to confuse:
+BoothGen uses Stripe in two distinct ways that are easy to confuse:
 
-1. **Booth Genius subscription billing** — If you're on the Pro plan, Stripe charges your card the monthly fee. This is Booth Genius paying *you* nothing — it's you paying Booth Genius.
-2. **Stripe Connect (client payments)** — This is a separate connection that routes your *clients'* invoice payments directly to your bank account. Booth Genius never holds your funds.
+1. **BoothGen subscription billing** — If you're on the Pro plan, Stripe charges your card the monthly fee. This is BoothGen paying *you* nothing — it's you paying BoothGen.
+2. **Stripe Connect (client payments)** — This is a separate connection that routes your *clients'* invoice payments directly to your bank account. BoothGen never holds your funds.
 
 Both Free and Pro plan operators need to set up Stripe Connect to accept online payments. Go to Settings → Billing → Connect Stripe. If you already have a Stripe account, just log in during the flow — Stripe will link your existing account. No new account required. Takes about 60 seconds.
 
 Once connected, your Stripe account status shows as "Connected" and clients can pay invoices online. If you disconnect Stripe, clients will no longer be able to pay online until you reconnect.
 
 **Commission Rate**
-The current commission rate is displayed in Settings → Billing and on the marketing page. This rate is set by the Booth Genius platform and may change over time.
+The current commission rate is displayed in Settings → Billing and on the marketing page. This rate is set by the BoothGen platform and may change over time.
 
 **When to Use "Update Stripe"**
 If you are already connected to Stripe and need to make changes, click "Update Stripe" from Settings → Billing → Stripe Connect. Use this button when you need to:
@@ -778,7 +778,7 @@ If you are already connected to Stripe and need to make changes, click "Update S
 - Update your business name, address, or tax ID
 - Add or verify an owner or representative
 - Respond to a Stripe request for additional verification
-You will be redirected to Stripe's secure portal and returned to Booth Genius when done. Your existing bookings and payment history are not affected.`,
+You will be redirected to Stripe's secure portal and returned to BoothGen when done. Your existing bookings and payment history are not affected.`,
   },
 
   {
@@ -801,7 +801,7 @@ Your login email is shown but cannot be changed from this screen. If you need to
 **Changing Your Password**
 If your account uses email/password sign-in, a "Change Password" section appears below your profile details. Enter your current password to verify your identity, then enter and confirm your new password (minimum 8 characters). Click "Update Password" to save.
 
-This section is hidden for accounts that sign in with Google — Google accounts don't have a Booth Genius password to change. To update your Google account password, do so through your Google account settings.
+This section is hidden for accounts that sign in with Google — Google accounts don't have a BoothGen password to change. To update your Google account password, do so through your Google account settings.
 
 **Note for Team Members**
 Each team member has their own profile. Team members log in with their own email and password and can update their own display name and password from their Settings → Profile page.`,
@@ -849,7 +849,7 @@ Templates are applied from the event detail page, not from Settings. See "Event 
     categoryIcon: '✅',
     title: 'Using Event Checklists',
     slug: 'event-checklists',
-    content: `Every event in Booth Genius has a built-in checklist — a personal task list for that specific booking. Use it to track setup steps, equipment, or anything else that needs to happen before, during, or after the event.
+    content: `Every event in BoothGen has a built-in checklist — a personal task list for that specific booking. Use it to track setup steps, equipment, or anything else that needs to happen before, during, or after the event.
 
 **Finding the Checklist**
 Open any event detail page and scroll to the bottom. You'll see a "Checklist" card. The card shows a progress bar (X/Y done) once you have items.
@@ -893,8 +893,8 @@ The colored bar at the top of the checklist fills from left to right as items ar
     content: `**Q: Do my clients need to create an account?**
 A: No. Clients access everything through a unique portal link — no account, no password, no app download required.
 
-**Q: Can I use Booth Genius without connecting Stripe?**
-A: Stripe Connect is required to use Booth Genius. Connecting your Stripe account is what enables online client payments and is how the platform commission is processed for Commission Plan operators. Without it, clients cannot pay invoices online and your account will not be fully functional. Setup takes about 5 minutes — go to Settings → Billing → Connect Stripe. If you already have a Stripe account, just log in during the flow and it links automatically.
+**Q: Can I use BoothGen without connecting Stripe?**
+A: Stripe Connect is required to use BoothGen. Connecting your Stripe account is what enables online client payments and is how the platform commission is processed for Commission Plan operators. Without it, clients cannot pay invoices online and your account will not be fully functional. Setup takes about 5 minutes — go to Settings → Billing → Connect Stripe. If you already have a Stripe account, just log in during the flow and it links automatically.
 
 **Q: Is there a limit to how many events or clients I can have?**
 A: No. Both plans include unlimited events and clients.
@@ -903,7 +903,7 @@ A: No. Both plans include unlimited events and clients.
 A: When your account is cancelled, your data is removed from the platform. We recommend reaching out to support@boothgen.com before cancelling if you need assistance retrieving any records.
 
 **Q: Can clients see the commission % being deducted?**
-A: No. Clients see only the invoice total and payment amounts. The commission is a backend deduction handled between Booth Genius and your Stripe account — transparent to you, invisible to clients.
+A: No. Clients see only the invoice total and payment amounts. The commission is a backend deduction handled between BoothGen and your Stripe account — transparent to you, invisible to clients.
 
 **Q: How do I handle a client who wants to pay in installments?**
 A: Use the Deposit + Balance milestone system for two-payment arrangements. For more complex payment plans, create custom milestone entries manually from the invoice detail page.
@@ -917,7 +917,7 @@ A: Click "Revise Quote" to reset the quote to Draft. This will invalidate the pr
 **Q: Can multiple team members work at the same time?**
 A: Yes. Multiple users can be logged in and working simultaneously. There's no locking system — just be careful not to edit the same record at the same time.
 
-**Q: Does Booth Genius work on mobile?**
+**Q: Does BoothGen work on mobile?**
 A: Yes. The operator dashboard is mobile-friendly. The client portal is fully mobile-optimized. Everything works on iOS and Android browsers.
 
 **Q: How do I issue a refund to a client?**
@@ -932,7 +932,7 @@ A: Chrome, Safari, Firefox, and Edge — all current versions. Internet Explorer
 **Q: How do I contact support?**
 A: Email us at support@boothgen.com. You can also use the AI chat assistant on this page for instant answers to common questions.
 
-**Q: Does Booth Genius have AI features?**
+**Q: Does BoothGen have AI features?**
 A: Yes — two of them. The AI Support Assistant is a chatbot built into your dashboard and this support page. Click the orange chat bubble in the bottom-right corner to ask any question about the platform and get an instant answer. The AI Email Drafting tool is in the Lead detail page: open a lead, go to the Compose tab, and click "Draft with AI." It reads the client's name, event details, and inquiry message and writes a ready-to-edit email reply for you.
 
 **Q: How do I charge corporate clients more than regular clients?**
@@ -951,13 +951,13 @@ A: When building the quote, select the event. The "Corporate Client" banner will
     categoryIcon: '🤖',
     title: 'AI Support Assistant',
     slug: 'ai-support-assistant',
-    content: `The AI Support Assistant is a chatbot built into every page of your Booth Genius dashboard and the public support center at boothgen.com/support. It knows the full Booth Genius platform and can answer questions about leads, quotes, contracts, invoices, galleries, automation, team management, and more.
+    content: `The AI Support Assistant is a chatbot built into every page of your BoothGen dashboard and the public support center at boothgen.com/support. It knows the full BoothGen platform and can answer questions about leads, quotes, contracts, invoices, galleries, automation, team management, and more.
 
 **How to open it**
 Look for the orange chat bubble in the bottom-right corner of any page. Click it to open the assistant. Type your question and press Enter or click Send.
 
 **What it can answer**
-Any how-to question about Booth Genius. For example: "How do I share gallery photos with guests without showing them the invoice?", "Where do I set the deposit percentage?", "How do I resend a contract?", or "What does the PARTIALLY_PAID status mean?"
+Any how-to question about BoothGen. For example: "How do I share gallery photos with guests without showing them the invoice?", "Where do I set the deposit percentage?", "How do I resend a contract?", or "What does the PARTIALLY_PAID status mean?"
 
 **What happens if it can't answer**
 If the assistant doesn't know the answer, it will say so and offer a link to contact our support team. You can also click "Contact our support team" in the chat to send us a message directly.
@@ -998,7 +998,7 @@ Draft with AI only fills in the compose fields. You must click "Send Email" your
     categoryIcon: '📅',
     title: 'Managing Events',
     slug: 'events',
-    content: `Events are the central record in Booth Genius — every quote, contract, invoice, message, and gallery for a booking lives inside one event.
+    content: `Events are the central record in BoothGen — every quote, contract, invoice, message, and gallery for a booking lives inside one event.
 
 **Creating an Event**
 Events can be created three ways:
@@ -1038,7 +1038,7 @@ Events past their date automatically move to COMPLETED overnight. You can also c
     categoryIcon: '📅',
     title: 'Cancelling an Event & Issuing a Refund',
     slug: 'event-cancellation',
-    content: `If a client cancels or you need to cancel a booking, Booth Genius handles the status change and optional refund in one step directly from the event detail page.
+    content: `If a client cancels or you need to cancel a booking, BoothGen handles the status change and optional refund in one step directly from the event detail page.
 
 **How to Cancel**
 Open the event detail page. In the header action buttons, click "Cancel Event." A confirmation panel appears with three options:
@@ -1050,10 +1050,10 @@ Open the event detail page. In the header action buttons, click "Cancel Event." 
 **How Stripe Refunds Work**
 If the client paid online via Stripe, the refund is processed automatically — the client typically sees the credit on their card within 5–10 business days. No action in the Stripe dashboard is needed.
 
-If the original payment was recorded manually (cash, check, Venmo), Booth Genius marks the milestone as REFUNDED in the system but does not move any money — you must return the funds to the client yourself.
+If the original payment was recorded manually (cash, check, Venmo), BoothGen marks the milestone as REFUNDED in the system but does not move any money — you must return the funds to the client yourself.
 
 **Partial Refunds**
-Booth Genius supports refunding the deposit only or all payments — not a custom percentage. For a custom partial amount (e.g. returning 75% of a deposit), go to your Stripe dashboard → find the payment → issue a partial refund there, then manually update the milestone status in Booth Genius.
+BoothGen supports refunding the deposit only or all payments — not a custom percentage. For a custom partial amount (e.g. returning 75% of a deposit), go to your Stripe dashboard → find the payment → issue a partial refund there, then manually update the milestone status in BoothGen.
 
 **After Cancellation**
 The event status changes to CANCELLED. Cancelled events are separated from your active event list and can be found using the Cancelled filter. No further automation emails are triggered.
@@ -1207,7 +1207,7 @@ The Profitability tab is hidden entirely from team members. Only HOST_ADMIN user
     categoryIcon: '⚙️',
     title: 'Importing Clients & Events via CSV',
     slug: 'csv-import',
-    content: `The CSV Import tool lets you bring existing client and event records into Booth Genius in bulk — useful when migrating from another platform or a spreadsheet system.
+    content: `The CSV Import tool lets you bring existing client and event records into BoothGen in bulk — useful when migrating from another platform or a spreadsheet system.
 
 **Where to Find It**
 Go to Settings → Import (the Import tab in the Settings navigation row).
@@ -1219,7 +1219,7 @@ Click "Download CSV Template" to get a blank spreadsheet with the correct column
 Open the template in Excel, Google Sheets, or Numbers. Required fields are: client first name, client last name, and event date. Everything else (email, phone, venue, event title, notes) is optional but recommended for a complete import.
 
 **Step 3 — Upload and Preview**
-Click "Upload CSV" and select your completed file. Booth Genius runs a preview pass — it shows each row that will be imported and flags any errors such as missing required fields, invalid date formats, or duplicate entries. Review the preview carefully before proceeding.
+Click "Upload CSV" and select your completed file. BoothGen runs a preview pass — it shows each row that will be imported and flags any errors such as missing required fields, invalid date formats, or duplicate entries. Review the preview carefully before proceeding.
 
 **Step 4 — Confirm Import**
 Click "Confirm Import" to create the records. Client and event records are created from each row. Imported events are created in COMPLETED status by default (past bookings are assumed).
@@ -1229,7 +1229,7 @@ If something looks wrong after importing, click "Undo Import" from the import hi
 
 **Tips**
 - Run a small test import first (5–10 rows) to verify the format before importing hundreds of records
-- Client emails are matched against existing records — if an email already exists in Booth Genius, a new event is added to that client rather than creating a duplicate client record
+- Client emails are matched against existing records — if an email already exists in BoothGen, a new event is added to that client rather than creating a duplicate client record
 - Use the Notes field to carry over context from your previous system (e.g. "VIP client — gave 20% discount")`,
   },
 ];
@@ -1279,7 +1279,7 @@ export default async function SupportPage() {
       {/* Nav */}
       <header className="border-b border-gray-100 bg-white/95 backdrop-blur sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link href="/"><BoothGeniusLogo size="sm" showTagline={false} /></Link>
+          <Link href="/"><BoothGenLogo size="sm" showTagline={false} /></Link>
           <div className="flex items-center gap-4 text-sm text-gray-500">
             <Link href="/" className="hover:text-gray-900 transition-colors hidden sm:block">← Back to Home</Link>
             <Link href="/sign-in" className="px-4 py-1.5 bg-orange-500 text-white font-semibold rounded-lg text-sm hover:bg-orange-600 transition-colors">Sign In</Link>
@@ -1374,7 +1374,7 @@ export default async function SupportPage() {
       {/* Footer */}
       <footer className="border-t border-gray-100 py-8 px-4 text-center">
         <p className="text-sm text-gray-400">Still need help? Email us at <a href="mailto:support@boothgen.com" className="text-orange-500 hover:underline">support@boothgen.com</a></p>
-        <p className="text-xs text-gray-300 mt-2">© {new Date().getFullYear()} Booth Genius. All rights reserved.</p>
+        <p className="text-xs text-gray-300 mt-2">© {new Date().getFullYear()} BoothGen. All rights reserved.</p>
       </footer>
 
       {/* AI Chat Widget */}

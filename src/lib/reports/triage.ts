@@ -20,7 +20,7 @@ export type TriageInput = z.infer<typeof Triage>;
 
 // Applies a triage change. Reporter and followers are told about status / version changes. "Already exists" needs
 // the steps to find the feature; "Duplicate" needs the original, and moves votes and followers there.
-// actorId: the Super Admin making the change (null for the Dev API; its notes show as Booth Genius).
+// actorId: the Super Admin making the change (null for the Dev API; its notes show as BoothGen).
 export async function applyTriage(r: FullReport, actorId: string | null, d: TriageInput): Promise<{ error: string } | { ok: true }> {
   const viewer = { userId: actorId };
   const newStatus = d.status ?? r.status;

@@ -75,7 +75,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       body: `<strong>${quote.client.firstName} ${quote.client.lastName}</strong> has accepted quote <strong>${quote.quoteNumber}</strong> for <strong>${quote.event.title}</strong> and signed with the name "${clientName}". A contract has been automatically created and is ready to review.`,
       ctaLabel: 'View Event',
       ctaUrl: `${appUrl}/events/${quote.eventId}`,
-      from: companyName ? `${companyName} via Booth Genius <${process.env.EMAIL_FROM ?? 'noreply@boothgen.com'}>` : undefined,
+      from: companyName ? `${companyName} via BoothGen <${process.env.EMAIL_FROM ?? 'noreply@boothgen.com'}>` : undefined,
     }).catch(e => console.error('[quote/accept] host notification error:', e));
   }
 

@@ -56,7 +56,7 @@ function SourceChoice({ channel, config, onChange, busy }: { channel: 'sms' | 'e
   // What the account uses now; with nothing chosen it's their own when set up, else BoothGen's
   const current: Source = saved ?? (own ? 'own' : 'boothgen');
   const options: [Source, string, string][] = [
-    ['boothgen', 'Booth Genius (included)', channel === 'sms' ? 'Texts go out from Booth Genius\'s number. Included in the event price.' : 'Emails come from your business name via Booth Genius, and replies go to your email.'],
+    ['boothgen', 'BoothGen (included)', channel === 'sms' ? 'Texts go out from BoothGen\'s number. Included in the event price.' : 'Emails come from your business name via BoothGen, and replies go to your email.'],
     ['own', channel === 'sms' ? 'My own Twilio' : 'My own email account', channel === 'sms' ? 'Texts go out from your own Twilio number.' : 'Emails come from your own domain (Resend or SMTP).'],
   ];
   return (
@@ -71,7 +71,7 @@ function SourceChoice({ channel, config, onChange, busy }: { channel: 'sms' | 'e
   );
 }
 
-// Booth Genius sends this channel: nothing to set up, just a test
+// BoothGen sends this channel: nothing to set up, just a test
 function BoothGenChannel({ channel, ready, error, testTo, setTestTo, testing, onTest, result }: {
   channel: 'sms' | 'email'; ready: boolean; error?: string;
   testTo: string; setTestTo: (v: string) => void; testing: boolean; onTest: () => void; result: { ok: boolean; error?: string } | null;
@@ -79,7 +79,7 @@ function BoothGenChannel({ channel, ready, error, testTo, setTestTo, testing, on
   if (!ready) return (
     <div className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
       <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
-      <span>Booth Genius {channel === 'sms' ? 'texting' : 'email'} is being set up and isn&apos;t on yet. {channel === 'sms' ? 'Texts' : 'Emails'} stay hidden on the iPad until it is, or until you use your own account.</span>
+      <span>BoothGen {channel === 'sms' ? 'texting' : 'email'} is being set up and isn&apos;t on yet. {channel === 'sms' ? 'Texts' : 'Emails'} stay hidden on the iPad until it is, or until you use your own account.</span>
     </div>
   );
   return (
@@ -175,7 +175,7 @@ export default function GenieSharingPage() {
             <div>
               <h2 className="text-base font-semibold text-gray-800 mb-1">Guest Messaging</h2>
               <p className="text-sm text-gray-500">{config.boothgen.allowed
-                ? 'Genie texts and emails guests their photos through Booth Genius (included in the event price), or through your own Twilio and email accounts. A channel that isn\'t set up is hidden on the iPad.'
+                ? 'Genie texts and emails guests their photos through BoothGen (included in the event price), or through your own Twilio and email accounts. A channel that isn\'t set up is hidden on the iPad.'
                 : 'Genie sends guests their photos from your own Twilio and email accounts. A channel you haven\'t set up is hidden on the iPad.'}</p>
             </div>
 
@@ -183,7 +183,7 @@ export default function GenieSharingPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2"><MessageSquare className="w-4 h-4"/>Text Messages</CardTitle>
-                  {config.routes.sms === 'boothgen' ? <Badge variant="success">Booth Genius</Badge> : <Status {...config.sms}/>}
+                  {config.routes.sms === 'boothgen' ? <Badge variant="success">BoothGen</Badge> : <Status {...config.sms}/>}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -226,7 +226,7 @@ export default function GenieSharingPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2"><Mail className="w-4 h-4"/>Email</CardTitle>
-                  {config.routes.email === 'boothgen' ? <Badge variant="success">Booth Genius</Badge> : <Status {...config.email}/>}
+                  {config.routes.email === 'boothgen' ? <Badge variant="success">BoothGen</Badge> : <Status {...config.email}/>}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">

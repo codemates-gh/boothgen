@@ -49,7 +49,7 @@ describe('email confirmation', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ verify: true });
     expect(sent).toHaveLength(1);
-    expect(sent[0]).toMatchObject({ to: e, subject: 'Confirm your Booth Genius email' });
+    expect(sent[0]).toMatchObject({ to: e, subject: 'Confirm your BoothGen email' });
 
     await expect(authorize(e)).rejects.toThrow('EMAIL_NOT_VERIFIED');
     expect(await authorize(e, 'wrong-password')).toBeNull(); // a wrong password says nothing about confirmation
@@ -62,7 +62,7 @@ describe('email confirmation', () => {
     expect(to.pathname).toBe('/sign-in');
     expect(to.searchParams.get('verified')).toBe('1');
     expect(to.searchParams.get('callbackUrl')).toBe('/onboarding?product=genius');
-    expect(sent.map(m => m.subject)).toContain('Welcome to Booth Genius!');
+    expect(sent.map(m => m.subject)).toContain('Welcome to BoothGen!');
 
     expect(await authorize(e)).toMatchObject({ email: e });
   });

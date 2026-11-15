@@ -1,23 +1,23 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { BoothGeniusLogo } from '@/components/brand/BoothGeniusLogo';
+import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 import { Mail, MessageCircle, Clock, HelpCircle, Bug, CreditCard, Lightbulb, Handshake } from 'lucide-react';
 import { MarketingContactForm } from '../MarketingContactForm';
 
 export const metadata: Metadata = {
   title: 'Contact Us',
-  description: 'Reach out to the Booth Genius team with questions, technical issues, billing inquiries, or partnership opportunities.',
+  description: 'Reach out to the BoothGen team with questions, technical issues, billing inquiries, or partnership opportunities.',
   alternates: { canonical: 'https://boothgen.com/contact' },
   openGraph: {
-    title: 'Contact Booth Genius',
-    description: 'Reach out to the Booth Genius team with questions, technical issues, billing inquiries, or partnership opportunities.',
+    title: 'Contact BoothGen',
+    description: 'Reach out to the BoothGen team with questions, technical issues, billing inquiries, or partnership opportunities.',
     url: 'https://boothgen.com/contact',
-    images: [{ url: '/api/og?title=Contact+Us&subtitle=We%E2%80%99re+here+to+help', width: 1200, height: 630, alt: 'Contact Booth Genius' }],
+    images: [{ url: '/api/og?title=Contact+Us&subtitle=We%E2%80%99re+here+to+help', width: 1200, height: 630, alt: 'Contact BoothGen' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Contact Booth Genius',
-    description: 'Reach out to the Booth Genius team with questions, technical issues, or partnership opportunities.',
+    title: 'Contact BoothGen',
+    description: 'Reach out to the BoothGen team with questions, technical issues, or partnership opportunities.',
     images: ['/api/og?title=Contact+Us&subtitle=We%E2%80%99re+here+to+help'],
   },
 };
@@ -45,7 +45,7 @@ const TOPICS = [
     icon: Lightbulb,
     color: 'bg-yellow-50 text-yellow-600 border-yellow-100',
     label: 'Feature Request',
-    desc: 'Have an idea that would make Booth Genius even smarter?',
+    desc: 'Have an idea that would make BoothGen even smarter?',
   },
   {
     icon: Handshake,
@@ -67,7 +67,7 @@ export default function ContactPage() {
       {/* Nav */}
       <header className="border-b border-gray-100 bg-white/95 backdrop-blur sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link href="/"><BoothGeniusLogo size="sm" showTagline={false} /></Link>
+          <Link href="/"><BoothGenLogo size="sm" showTagline={false} /></Link>
           <div className="flex items-center gap-4 text-sm text-gray-500">
             <Link href="/support" className="hover:text-gray-900 transition-colors hidden sm:block">Support</Link>
             <Link href="/" className="hover:text-gray-900 transition-colors hidden sm:block">← Back to Home</Link>
@@ -156,7 +156,7 @@ export default function ContactPage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-100 py-8 px-4 text-center">
-        <p className="text-sm text-gray-400">© {new Date().getFullYear()} Booth Genius. All rights reserved.</p>
+        <p className="text-sm text-gray-400">© {new Date().getFullYear()} BoothGen. All rights reserved.</p>
         <nav className="flex flex-wrap justify-center gap-5 mt-3 text-xs text-gray-400">
           <Link href="/" className="hover:text-gray-600 transition-colors">Home</Link>
           <Link href="/support" className="hover:text-gray-600 transition-colors">Support</Link>

@@ -18,15 +18,15 @@ const TEMPLATES = [
       '{{user_name}}': 'Jane Smith',
       '{{app_url}}': 'https://boothgen.com',
     } as Record<string, string>,
-    defaultSubject: 'Welcome to Booth Genius!',
+    defaultSubject: 'Welcome to BoothGen!',
     defaultBody: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
-  <h2 style="font-size:22px;color:#111827">Welcome to Booth Genius, {{user_name}}!</h2>
+  <h2 style="font-size:22px;color:#111827">Welcome to BoothGen, {{user_name}}!</h2>
   <p style="color:#374151">We're thrilled to have you on board. Your account is ready — set up your company profile and start managing your photo booth business in minutes.</p>
   <p style="margin:28px 0">
     <a href="{{app_url}}/onboarding" style="background:#F97316;color:#fff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">Get Started</a>
   </p>
   <p style="color:#6b7280;font-size:13px;">If you have any questions, just reply to this email — we're here to help.</p>
-  <p style="color:#6b7280;font-size:13px;">— The Booth Genius Team</p>
+  <p style="color:#6b7280;font-size:13px;">— The BoothGen Team</p>
 </div>`,
   },
   {
@@ -43,10 +43,10 @@ const TEMPLATES = [
       '{{reset_url}}': 'https://boothgen.com/reset-password?token=preview',
       '{{app_url}}': 'https://boothgen.com',
     },
-    defaultSubject: 'Reset your Booth Genius password',
+    defaultSubject: 'Reset your BoothGen password',
     defaultBody: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
   <h2 style="font-size:20px;color:#111827">Hi {{user_name}},</h2>
-  <p>We received a request to reset the password for your Booth Genius account.</p>
+  <p>We received a request to reset the password for your BoothGen account.</p>
   <p style="margin:24px 0">
     <a href="{{reset_url}}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Reset Password</a>
   </p>
@@ -98,7 +98,7 @@ export default function PlatformEmailTemplates({ initial }: Props) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><Mail className="w-4 h-4" />Platform Email Templates</CardTitle>
-        <p className="text-sm text-gray-500">Customize system emails sent by Booth Genius. Use the "Insert Variable" button to add dynamic content.</p>
+        <p className="text-sm text-gray-500">Customize system emails sent by BoothGen. Use the "Insert Variable" button to add dynamic content.</p>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Template tabs */}

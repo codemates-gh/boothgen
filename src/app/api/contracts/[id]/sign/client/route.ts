@@ -130,7 +130,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       body: `<strong>${clientName}</strong> has signed the contract for <strong>${(contract.event as any)?.title ?? 'an event'}</strong>. An invoice has been automatically created and sent to the client.`,
       ctaLabel: 'View Event',
       ctaUrl: `${appUrl}/events/${contract.eventId}`,
-      from: companyName ? `${companyName} via Booth Genius <${process.env.EMAIL_FROM ?? 'noreply@boothgen.com'}>` : undefined,
+      from: companyName ? `${companyName} via BoothGen <${process.env.EMAIL_FROM ?? 'noreply@boothgen.com'}>` : undefined,
     }).catch(e => console.error('[contract/sign] host notification error:', e));
   }
 

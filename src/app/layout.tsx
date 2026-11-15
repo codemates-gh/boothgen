@@ -8,20 +8,19 @@ const poppins = Poppins({ subsets: ['latin'], weight: ['400', '500', '600', '700
 export const metadata: Metadata = {
   metadataBase: new URL('https://boothgen.com'),
   title: {
-    default: 'Booth Genius — CRM for Photo Booth Operators',
-    template: '%s | Booth Genius',
+    default: 'BoothGen: Photo Booth App and CRM',
+    template: '%s | BoothGen',
   },
-  description: 'Booth Genius is the all-in-one CRM for photo booth operators. Manage leads, quotes, contracts, invoices, photo galleries, and client portals — free to start.',
-  keywords: ['photo booth CRM', 'photo booth software', 'photo booth business management', 'booth rental software', 'event photo booth platform'],
+  description: 'The next generation of photo booths. Genie, the photo booth app, runs your booth: props, backdrops, boomerangs, instant sharing and live galleries for $15 per event. Genius, the photo booth CRM, runs your business.',
+  keywords: ['photo booth app', 'iPad photo booth app', 'photo booth CRM', 'photo booth software', 'photo booth business management', 'booth rental software', 'event photo booth platform'],
   robots: { index: true, follow: true },
   openGraph: {
-    siteName: 'Booth Genius',
+    siteName: 'BoothGen',
     type: 'website',
     locale: 'en_US',
   },
   twitter: {
     card: 'summary_large_image',
-    site: '@boothgenius',
   },
 };
 

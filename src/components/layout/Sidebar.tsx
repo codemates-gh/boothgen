@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send, CalendarCheck, SlidersHorizontal, Bug, ClipboardList, Smile, Image as ImageIcon, Sparkles } from 'lucide-react';
 import { ReportDialog } from '@/components/reports/ReportDialog';
-import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
+import { BoothGenIcon } from '@/components/brand/BoothGenLogo';
 import { APP_VERSION } from '@/lib/version';
 
 type NavItem = { href: string; label: string; icon: any; pro?: boolean };
@@ -197,8 +197,8 @@ export function Sidebar({ isFoundingMember, genieEnabled, genieOnly }: { isFound
       )}>
         <div className="px-4 py-4 border-b border-white/10 shrink-0">
           <div className="flex items-center gap-3">
-            <BoothGeniusIcon size={32} />
-            <p className="text-white font-semibold text-sm leading-tight truncate flex-1">Booth Genius</p>
+            <BoothGenIcon size={32} />
+            <p className="text-white font-semibold text-sm leading-tight truncate flex-1">Booth<span className="text-[#F7B731]">Gen</span></p>
             <button onClick={close} className="lg:hidden text-white/50 hover:text-white" aria-label="Close menu">
               <X className="w-4 h-4" />
             </button>

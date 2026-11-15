@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Eye, EyeOff, CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
+import { BoothGenIcon } from '@/components/brand/BoothGenLogo';
 import Link from 'next/link';
 
 type InviteInfo = {
@@ -50,7 +50,7 @@ export default function AcceptInvitePage() {
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
         <div className="flex flex-col items-center mb-6">
           <div className="mb-4">
-            <BoothGeniusIcon size={68} />
+            <BoothGenIcon size={68} />
           </div>
           <h1 className="text-xl font-bold text-gray-900">Team Invitation</h1>
         </div>

@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
       const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
 <h2 style="font-size:18px;color:#111827;margin:0 0 8px">💬 ${leadName} replied</h2>
 ${preview ? `<p style="color:#374151;background:#f3f4f6;border-left:3px solid #f97316;padding:12px 16px;border-radius:4px;margin:16px 0;font-style:italic">"${preview}"</p>` : ''}
-<p style="margin:24px 0"><a href="${linkUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View &amp; Reply in Booth Genius</a></p>
+<p style="margin:24px 0"><a href="${linkUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View &amp; Reply in BoothGen</a></p>
 <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:16px">${companyName}</p>
 </div>`;
 
@@ -201,7 +201,7 @@ ${preview ? `<p style="color:#374151;background:#f3f4f6;border-left:3px solid #f
       const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
 <h2 style="font-size:18px;color:#111827;margin:0 0 8px">💬 ${clientName} replied</h2>
 ${preview ? `<p style="color:#374151;background:#f3f4f6;border-left:3px solid #f97316;padding:12px 16px;border-radius:4px;margin:16px 0;font-style:italic">"${preview}"</p>` : ''}
-<p style="margin:24px 0"><a href="${linkUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View &amp; Reply in Booth Genius</a></p>
+<p style="margin:24px 0"><a href="${linkUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View &amp; Reply in BoothGen</a></p>
 <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:16px">${companyName}</p>
 </div>`;
 

@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   <p style="margin:8px 0 0;color:#15803d;font-size:13px;">${genie ? 'Genie only (pay per event)' : 'Genius · Status: TRIAL'}</p>
 </div>
 <p style="margin:0 0 24px"><a href="${adminUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View in Super Admin</a></p>
-<p style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">Booth Genius internal notification</p>
+<p style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">BoothGen internal notification</p>
 </div>`,
     ).catch(e => console.error('[create-tenant] admin notify error:', e));
   }

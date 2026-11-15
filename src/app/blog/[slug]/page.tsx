@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import { MarketingNav } from '@/app/MarketingNav';
-import { BoothGeniusLogo } from '@/components/brand/BoothGeniusLogo';
+import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { Clock, ArrowLeft } from 'lucide-react';
@@ -46,8 +46,8 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     url: `https://boothgen.com/blog/${post.slug}`,
     datePublished: post.publishedAt?.toISOString(),
     image: `/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.description.slice(0, 80))}`,
-    author: { '@type': 'Organization', name: 'Booth Genius', url: 'https://boothgen.com' },
-    publisher: { '@type': 'Organization', name: 'Booth Genius', url: 'https://boothgen.com' },
+    author: { '@type': 'Organization', name: 'BoothGen', url: 'https://boothgen.com' },
+    publisher: { '@type': 'Organization', name: 'BoothGen', url: 'https://boothgen.com' },
   };
 
   return (
@@ -60,7 +60,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
             <Link href="/blog" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 mb-6">
               <ArrowLeft className="w-4 h-4"/>Back to Blog
             </Link>
-            <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide mb-3">Booth Genius</p>
+            <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide mb-3">BoothGen</p>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-4">{post.title}</h1>
             {post.description && <p className="text-lg text-gray-500 leading-relaxed mb-6">{post.description}</p>}
             <div className="flex items-center gap-4 text-sm text-gray-400 pb-8 border-b border-gray-100">
@@ -80,7 +80,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           {/* CTA */}
           <div className="mt-16 p-8 bg-gradient-to-br from-[#1e1247] to-[#2d1b6e] rounded-2xl text-center">
             <p className="text-orange-400 text-sm font-bold uppercase tracking-widest mb-3">Ready to simplify your business?</p>
-            <h2 className="text-2xl font-extrabold text-white mb-3">Try Booth Genius Free</h2>
+            <h2 className="text-2xl font-extrabold text-white mb-3">Try BoothGen Free</h2>
             <p className="text-purple-200 text-sm mb-6">6 tools in one platform. No monthly fees to start. Built for photo booth operators.</p>
             <Link href="/sign-up"
               className="inline-block px-8 py-3 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-xl text-sm transition-all">
@@ -91,14 +91,14 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
       </main>
 
       <footer className="border-t border-gray-100 py-10 px-4 text-center">
-        <div className="flex justify-center mb-4"><BoothGeniusLogo size="sm" showTagline={false}/></div>
+        <div className="flex justify-center mb-4"><BoothGenLogo size="sm" showTagline={false}/></div>
         <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-400 mb-4">
           <Link href="/" className="hover:text-gray-600">Home</Link>
           <Link href="/pricing" className="hover:text-gray-600">Pricing</Link>
           <Link href="/blog" className="hover:text-gray-600">Blog</Link>
           <Link href="/support" className="hover:text-gray-600">Support</Link>
         </div>
-        <p className="text-xs text-gray-300">© {new Date().getFullYear()} Booth Genius. All rights reserved.</p>
+        <p className="text-xs text-gray-300">© {new Date().getFullYear()} BoothGen. All rights reserved.</p>
       </footer>
     </>
   );

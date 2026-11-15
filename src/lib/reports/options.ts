@@ -29,7 +29,7 @@ export const REPORT_STATUSES = [
   { value: 'need_info', label: 'Need more info', badge: 'warning' },
   { value: 'confirmed', label: 'Confirmed', badge: 'info' },
   { value: 'in_progress', label: 'In progress', badge: 'brand' },
-  // The fix is deployed; Booth Genius checks it, then marks it Fixed (only staff can; the Dev API stops here)
+  // The fix is deployed; BoothGen checks it, then marks it Fixed (only staff can; the Dev API stops here)
   { value: 'fix_ready', label: 'Fix ready', reporterLabel: 'Fix is live, being checked', badge: 'info' },
   { value: 'fixed', label: 'Fixed', badge: 'success' },
   { value: 'wont_fix', label: "Won't fix", badge: 'default' },

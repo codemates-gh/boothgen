@@ -442,7 +442,7 @@ export const sendOverduePaymentReminders = inngest.createFunction(
         failed++;
         console.error('[OVERDUE_REMINDER] email error:', e);
         // Notify super admin of silent failures so they don't go undetected
-        sendEmail(adminEmail, `[Booth Genius] Payment reminder failed — ${ms.invoice.invoiceNumber}`,
+        sendEmail(adminEmail, `[BoothGen] Payment reminder failed — ${ms.invoice.invoiceNumber}`,
           `<p>Failed to send payment reminder for invoice <strong>${ms.invoice.invoiceNumber}</strong> (milestone: ${ms.label}, due: ${new Date(ms.dueDate).toLocaleDateString()}).</p><p>Error: ${String(e)}</p>`
         ).catch(() => {});
       }

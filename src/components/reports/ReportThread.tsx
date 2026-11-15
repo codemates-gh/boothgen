@@ -13,7 +13,7 @@ export function ReportThread({ notes, reporterName }: { notes: ThreadNote[]; rep
         <li key={n.id} className={`rounded-lg px-4 py-3 text-sm ${n.internal ? 'bg-yellow-50 border border-yellow-100' : n.fromAdmin ? 'bg-blue-50' : 'bg-gray-50'}`}>
           <p className="text-xs text-gray-500 mb-1 flex items-center gap-1.5">
             {n.internal && <Lock className="w-3 h-3" />}
-            <span className="font-medium text-gray-700">{n.author || (n.fromAdmin ? 'Booth Genius' : reporterName ?? 'Reporter')}</span>
+            <span className="font-medium text-gray-700">{n.author || (n.fromAdmin ? 'BoothGen' : reporterName ?? 'Reporter')}</span>
             {n.internal && <span>· internal</span>}
             <span>· {format(new Date(n.createdAt), 'MMM d, h:mm a')}</span>
           </p>

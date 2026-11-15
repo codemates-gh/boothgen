@@ -89,7 +89,7 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
       body: `Quote <strong>${quote.quoteNumber}</strong> for <strong>${quote.event.title}</strong> has been manually marked as accepted by the operator. ${existingContract ? 'A contract already exists for this event.' : 'A contract draft has been created.'}`,
       ctaLabel: 'View Event',
       ctaUrl: `${appUrl}/events/${quote.eventId}`,
-      from: companyName ? `${companyName} via Booth Genius <${process.env.EMAIL_FROM ?? 'noreply@boothgen.com'}>` : undefined,
+      from: companyName ? `${companyName} via BoothGen <${process.env.EMAIL_FROM ?? 'noreply@boothgen.com'}>` : undefined,
     }).catch(e => console.error('[quote/mark-accepted] host notification error:', e));
   }
 

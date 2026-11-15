@@ -163,7 +163,7 @@ export function ReportDialog({ open, onClose }: { open: boolean; onClose: () => 
           </Field>
           <AttachmentPicker state={files} />
           <p className="text-xs text-gray-500">Everyone using BoothGen can see reports. Don&apos;t include guest phone numbers, emails or private photos.</p>
-          <p className="text-xs text-gray-400">Others see your name. Your email, account and the page you&apos;re on go only to the Booth Genius team so we can follow up.</p>
+          <p className="text-xs text-gray-400">Others see your name. Your email, account and the page you&apos;re on go only to the BoothGen team so we can follow up.</p>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={close}>Cancel</Button>

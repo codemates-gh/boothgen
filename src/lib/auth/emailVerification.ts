@@ -21,9 +21,9 @@ export async function verificationLink(user: { id: string; email: string }, prod
 export async function sendVerificationEmail(user: { id: string; email: string; name: string | null }, product?: Product | null) {
   const link = await verificationLink(user, product);
   const name = user.name?.trim() || 'there';
-  await sendEmail(user.email, 'Confirm your Booth Genius email', `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
+  await sendEmail(user.email, 'Confirm your BoothGen email', `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
   <h2 style="font-size:20px;color:#111827">Hi ${name.replace(/[<>&"]/g, '')},</h2>
-  <p style="color:#374151">Confirm your email to finish setting up your Booth Genius account.</p>
+  <p style="color:#374151">Confirm your email to finish setting up your BoothGen account.</p>
   <p style="margin:28px 0"><a href="${link}" style="background:#F97316;color:#fff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">Confirm Email</a></p>
   <p style="color:#6b7280;font-size:13px;">This link works for 24 hours. If you didn't sign up, you can ignore this email.</p>
 </div>`);

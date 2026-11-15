@@ -80,7 +80,7 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                   {typeLabel(report.type)} · {areaLabel(report.area)}{report.severity ? ` · ${severityLabel(report.severity)}` : ''} · by {report.isMine ? 'you' : report.reporterName} · {format(new Date(report.createdAt), 'MMM d, yyyy h:mm a')}
                 </p>
                 {report.status === 'fixed' && report.fixedInVersion && <p className="text-sm text-green-700 mt-1">Fixed in version {report.fixedInVersion}</p>}
-                {report.status === 'fix_ready' && <p className="text-sm text-[#0073E6] mt-1">The fix is live{report.fixedInVersion ? ` in version ${report.fixedInVersion}` : ''}. Booth Genius is checking it; you can try it now.</p>}
+                {report.status === 'fix_ready' && <p className="text-sm text-[#0073E6] mt-1">The fix is live{report.fixedInVersion ? ` in version ${report.fixedInVersion}` : ''}. BoothGen is checking it; you can try it now.</p>}
               </CardHeader>
               <CardContent className="space-y-4">
                 {report.deviceInfo && <p className="text-xs text-gray-500">Device: {report.deviceInfo}</p>}

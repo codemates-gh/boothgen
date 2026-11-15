@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   const file = form?.get('file');
   const scope = form?.get('scope') === 'standard' ? 'standard' : 'mine';
   if (scope === 'standard') {
-    if (session?.globalRole !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Only Booth Genius can change Standard props' }, { status: 403 });
+    if (session?.globalRole !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Only BoothGen can change Standard props' }, { status: 403 });
   } else {
     if (!session?.tenantId || session.tenantRole !== 'HOST_ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId }, select: { genieEnabled: true } });

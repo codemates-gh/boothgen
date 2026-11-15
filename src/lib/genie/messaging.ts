@@ -199,7 +199,7 @@ export async function sendEmail(m: Messaging, to: string, subject: string, html:
   try {
     const resend = new Resend(p.apiKey);
     const { data, error } = await resend.emails.send({
-      from: `${who.name.replace(/[<>"]/g, '')} via Booth Genius <${p.from}>`, to, subject, html, text,
+      from: `${who.name.replace(/[<>"]/g, '')} via BoothGen <${p.from}>`, to, subject, html, text,
       ...(who.replyTo ? { reply_to: who.replyTo } : {}),
     });
     if (error) return { ok: false, error: error.message, retryable: error.name === 'rate_limit_exceeded' || error.name === 'internal_server_error', provider: 'boothgen' };

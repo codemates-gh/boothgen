@@ -74,7 +74,7 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
       {/* Header */}
       <div className="bg-canvas text-white px-8 py-4 flex items-center gap-3 shrink-0">
         <Camera className="w-5 h-5 text-brand" />
-        <span className="font-bold">Booth Genius</span>
+        <span className="font-bold">BoothGen</span>
         <span className="text-white/30 mx-2">|</span>
         <span className="text-sm text-white/70">Super Admin Console</span>
         <SuperAdminSignOut />

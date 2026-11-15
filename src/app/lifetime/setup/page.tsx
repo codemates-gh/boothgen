@@ -1,11 +1,11 @@
 import { prisma } from '@/lib/prisma/client';
 import Link from 'next/link';
-import { BoothGeniusLogo } from '@/components/brand/BoothGeniusLogo';
+import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 import { AlertCircle, Star } from 'lucide-react';
 import { SetupForm } from '../SetupForm';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Set Up Your Account — Booth Genius', robots: 'noindex' };
+export const metadata = { title: 'Set Up Your Account — BoothGen', robots: 'noindex' };
 
 export default async function SetupPage({ searchParams }: { searchParams: { token?: string } }) {
   const token = searchParams.token ?? '';
@@ -50,7 +50,7 @@ export default async function SetupPage({ searchParams }: { searchParams: { toke
         <h1 className="text-2xl font-extrabold text-gray-900 mb-1">
           {member.name ? `Welcome, ${member.name.split(' ')[0]}!` : 'Set up your account'}
         </h1>
-        <p className="text-sm text-gray-500">Create your Booth Genius account below. You can use any email — it doesn&apos;t need to match your payment email.</p>
+        <p className="text-sm text-gray-500">Create your BoothGen account below. You can use any email — it doesn&apos;t need to match your payment email.</p>
       </div>
 
       <SetupForm
@@ -68,7 +68,7 @@ function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white border-b border-gray-100 px-4 py-4">
         <div className="max-w-5xl mx-auto">
-          <Link href="/"><BoothGeniusLogo size="sm" showTagline={false} /></Link>
+          <Link href="/"><BoothGenLogo size="sm" showTagline={false} /></Link>
         </div>
       </header>
       <div className="flex-1 flex items-center justify-center px-4 py-12">

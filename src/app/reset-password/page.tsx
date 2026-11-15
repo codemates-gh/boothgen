@@ -3,7 +3,7 @@ import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, CheckCircle } from 'lucide-react';
-import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
+import { BoothGenIcon } from '@/components/brand/BoothGenLogo';
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -102,7 +102,7 @@ export default function ResetPasswordPage() {
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
           <div className="mb-4">
-            <BoothGeniusIcon size={68} />
+            <BoothGenIcon size={68} />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Set new password</h1>
           <p className="text-gray-500 text-sm mt-1">Choose a strong password for your account</p>

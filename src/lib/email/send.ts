@@ -106,7 +106,7 @@ export async function sendHostNotificationEmail(params: {
     `<h2 style="font-size:20px;color:#111827;margin:0 0 12px">${heading}</h2>` +
     `<p style="color:#374151;margin:0 0 20px">${body}</p>` +
     `<p style="margin:24px 0"><a href="${ctaUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">${ctaLabel}</a></p>` +
-    `<p style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px">This notification was sent by Booth Genius.</p>` +
+    `<p style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px">This notification was sent by BoothGen.</p>` +
     `</div>`;
   const recipients = Array.isArray(to) ? to : [to];
   await Promise.all(recipients.map(addr => sendEmail(addr, subject, html, undefined, from)));
@@ -226,7 +226,7 @@ export async function sendGalleryDeletionReminderEmail(params: {
     `</div>` +
     `<p style="color:#374151;margin:0 0 24px">If you want to keep a copy, download all photos from the gallery admin page before this date. After deletion, photos cannot be recovered.</p>` +
     `<p style="margin:0 0 24px"><a href="${galleryUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Download Photos Now</a></p>` +
-    `<p style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">This automated reminder was sent by Booth Genius. You can adjust gallery retention settings in the super admin console.</p>` +
+    `<p style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">This automated reminder was sent by BoothGen. You can adjust gallery retention settings in the super admin console.</p>` +
     `</div>`;
   await Promise.all(recipients.map(addr => sendEmail(addr, `Gallery deletion in 2 days — ${galleryTitle}`, html)));
 }
@@ -273,7 +273,7 @@ export async function sendDesignApprovalReminderEmail(params: {
     `</div>` +
     `<p style="color:#374151;margin:0 0 8px">Please upload the design and submit it for client approval as soon as possible, or confirm that an approved design is already on file.</p>` +
     `<p style="margin:0 0 24px"><a href="${designUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View Designs in Dashboard</a></p>` +
-    `<p style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">Automated reminder from Booth Genius · ${companyName}</p>` +
+    `<p style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:8px">Automated reminder from BoothGen · ${companyName}</p>` +
     `</div>`;
   await Promise.all(recipients.map(addr => sendEmail(addr, subject, html)));
 }

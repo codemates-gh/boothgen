@@ -33,9 +33,9 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid change' }, { status: 400 });
   const r = await findReport(params.id);
   if (!r) return NextResponse.json({ error: 'Report not found' }, { status: 404 });
-  // Only Booth Genius staff close a report: the Dev API stops at Fix ready (fix deployed, waiting to be checked)
+  // Only BoothGen staff close a report: the Dev API stops at Fix ready (fix deployed, waiting to be checked)
   if (parsed.data.status === 'fixed') {
-    return NextResponse.json({ error: 'Only Booth Genius staff can mark a report Fixed. Use status fix_ready once the fix is deployed.' }, { status: 403 });
+    return NextResponse.json({ error: 'Only BoothGen staff can mark a report Fixed. Use status fix_ready once the fix is deployed.' }, { status: 403 });
   }
   const { note, internal, attachments, ...triage } = parsed.data;
   if (attachments.length && !note) return NextResponse.json({ error: 'Attachments go with a note' }, { status: 400 });

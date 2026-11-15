@@ -38,16 +38,16 @@ export async function POST(req: NextRequest) {
   });
 
   const tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId }, select: { name: true, branding: { select: { companyName: true } } } });
-  const companyName = tenant?.branding?.companyName || tenant?.name || 'Booth Genius';
+  const companyName = tenant?.branding?.companyName || tenant?.name || 'BoothGen';
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://boothgen.com';
   const inviteUrl = `${appUrl}/invite/${inviteToken}`;
 
   await sendEmail(
     normalizedEmail,
-    `You've been invited to join ${companyName} on Booth Genius`,
+    `You've been invited to join ${companyName} on BoothGen`,
     `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
       <h2 style="font-size:20px;color:#111827">You've been invited!</h2>
-      <p>You've been invited to join <strong>${companyName}</strong> as a team member on Booth Genius.</p>
+      <p>You've been invited to join <strong>${companyName}</strong> as a team member on BoothGen.</p>
       <p style="margin:24px 0">
         <a href="${inviteUrl}" style="background:#F97316;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Accept Invitation</a>
       </p>

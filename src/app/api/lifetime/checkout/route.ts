@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
         currency: 'usd',
         unit_amount: amountCents,
         product_data: {
-          name: `Booth Genius Founding Member — Round ${round}`,
+          name: `BoothGen Founding Member — Round ${round}`,
           description: 'Lifetime Pro access. Zero monthly fees. Zero commission cuts. Forever.',
           images: [],
         },

@@ -53,7 +53,7 @@ export function reportView(r: FullReport, viewerId: string, asAdmin: boolean) {
     .map(n => ({
       id: n.id, body: n.body, fromAdmin: n.fromAdmin, internal: n.internal, createdAt: n.createdAt,
       attachments: attachmentsOf(n.attachments).map((a, i) => ({ index: i, name: a.name, contentType: a.contentType, bytes: a.bytes, url: `/api/reports/${r.id}/notes/${n.id}/files/${i}` })),
-      author: n.fromAdmin && !asAdmin ? 'Booth Genius' : n.fromAdmin && !n.authorId ? 'Dev' : displayName(n.author?.name),
+      author: n.fromAdmin && !asAdmin ? 'BoothGen' : n.fromAdmin && !n.authorId ? 'Dev' : displayName(n.author?.name),
     }));
   const base = {
     id: r.id, number: r.number, type: r.type, title: r.title, area: r.area, severity: r.severity, deviceInfo: r.deviceInfo,

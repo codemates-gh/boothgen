@@ -3,12 +3,12 @@ export function PoweredByBadge() {
     <div className="flex items-center justify-center gap-1.5 py-4 text-xs text-gray-400">
       <span>Powered by</span>
       <a
-        href="https://boothgenius.com"
+        href="https://boothgen.com"
         target="_blank"
         rel="noopener noreferrer"
         className="font-semibold text-gray-500 hover:text-orange-500 transition-colors"
       >
-        Booth Genius
+        BoothGen
       </a>
     </div>
   );

@@ -179,7 +179,7 @@ describe('Bug reports and suggestions', () => {
     expect(await (await VOTE(req('/x', { method: 'POST' }), p(id))).json()).toMatchObject({ voteCount: 2 }); // once
     expect((await (await BOARD(req('/x?mine=1'))).json()).reports[0]).toMatchObject({ id, hasVoted: true, isFollowing: true, voteCount: 2 });
 
-    // Follower replies: Booth Genius and the reporter hear about it; the follower shows as "a tester"
+    // Follower replies: BoothGen and the reporter hear about it; the follower shows as "a tester"
     sendEmail.mockClear();
     expect((await NOTE(post({ body: 'Same on my iPad' }), p(id))).status).toBe(201);
     expect(sendEmail.mock.calls.map(c => c[0]).sort()).toEqual([reporter.email, 'g@boothgen.test'].sort());
@@ -330,7 +330,7 @@ describe('Bug reports and suggestions', () => {
     // Only staff mark a report Fixed; the Dev API stops at Fix ready
     const refused = await DEV_UPDATE(dev('/x', { status: 'fixed', fixedInVersion: '2.74.0' }), p(String(number)));
     expect(refused.status).toBe(403);
-    expect((await refused.json()).error).toMatch(/Only Booth Genius staff can mark a report Fixed/);
+    expect((await refused.json()).error).toMatch(/Only BoothGen staff can mark a report Fixed/);
     expect(sendEmail).not.toHaveBeenCalled();
     const up = await (await DEV_UPDATE(dev('/x', { status: 'fix_ready', fixedInVersion: '2.74.0', note: 'Print now retries when the printer wakes up.' }), p(String(number)))).json();
     expect(up.report).toMatchObject({ status: 'fix_ready', fixedInVersion: '2.74.0' });
@@ -349,7 +349,7 @@ describe('Bug reports and suggestions', () => {
     expect(closed.report.notes.at(-1).body).toBe('Status changed to Fixed (version 2.74.0)');
     expect(sendEmail.mock.calls.map(c => c[0])).toEqual([reporter.email]);
     as(reporter, tenant.id);
-    expect((await (await DETAIL(req('/x'), p(id))).json()).report.notes.at(-1)).toMatchObject({ author: 'Booth Genius', fromAdmin: true });
+    expect((await (await DETAIL(req('/x'), p(id))).json()).report.notes.at(-1)).toMatchObject({ author: 'BoothGen', fromAdmin: true });
     expect((await (await DEV_LIST(dev('/x'))).json()).reports).toEqual([]); // closed drops off the queue
     expect((await (await DEV_LIST(dev('/x?all=1'))).json()).reports).toHaveLength(1);
     expect((await DEV_UPDATE(dev('/x', { status: 'exists' }), p(id))).status).toBe(400);

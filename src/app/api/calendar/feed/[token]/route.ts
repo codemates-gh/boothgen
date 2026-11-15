@@ -61,7 +61,7 @@ export async function GET(_: NextRequest, { params }: { params: { token: string 
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    `PRODID:-//Booth Genius//${esc(companyName)}//EN`,
+    `PRODID:-//BoothGen//${esc(companyName)}//EN`,
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${esc(companyName)} Events`,

@@ -50,7 +50,7 @@ export function StripeConnectCard({ status, chargesEnabled }: Props) {
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-gray-600">
-            Booth Genius uses <strong>Stripe Connect</strong> to process client payments. When your clients pay an invoice online, the money goes directly to your Stripe account — Booth Genius never holds your funds.
+            BoothGen uses <strong>Stripe Connect</strong> to process client payments. When your clients pay an invoice online, the money goes directly to your Stripe account — BoothGen never holds your funds.
           </p>
           <div className="grid sm:grid-cols-3 gap-3">
             <div className="flex items-start gap-2 bg-gray-50 rounded-lg p-3">
@@ -76,7 +76,7 @@ export function StripeConnectCard({ status, chargesEnabled }: Props) {
             </div>
           </div>
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-800 leading-relaxed">
-            <strong>Already have a Stripe account?</strong> No need to create a new one — just log in during the setup flow and Stripe will link your existing account to Booth Genius. This is separate from any Booth Genius subscription payment; it's what routes your <em>clients'</em> payments directly to your bank.
+            <strong>Already have a Stripe account?</strong> No need to create a new one — just log in during the setup flow and Stripe will link your existing account to BoothGen. This is separate from any BoothGen subscription payment; it's what routes your <em>clients'</em> payments directly to your bank.
           </div>
           <p className="text-xs text-gray-400">
             Clicking the button below will redirect you to Stripe's secure onboarding flow. You'll be returned here once setup is complete. Required to send quotes and accept payments.

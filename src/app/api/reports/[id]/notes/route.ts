@@ -16,7 +16,7 @@ const Body = z.object({
 }).strict();
 
 // A note: from a Super Admin (visible to everyone unless internal; reporter and followers are emailed),
-// or a reply from the reporter or a follower (Booth Genius is emailed; the other watchers get it too)
+// or a reply from the reporter or a follower (BoothGen is emailed; the other watchers get it too)
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const viewer = await reportViewer();
   if (viewer instanceof NextResponse) return viewer;
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ report: reportView(updated!, viewer.userId, true) }, { status: 201 });
   }
 
-  // Reporter or follower reply: Booth Genius and the other watchers hear about it
+  // Reporter or follower reply: BoothGen and the other watchers hear about it
   await prisma.$transaction([
     prisma.feedbackNote.create({ data: { reportId: r.id, authorId: viewer.userId, fromAdmin: false, internal: false, body: parsed.data.body, attachments: files } }),
     prisma.feedbackReport.update({ where: { id: r.id }, data: { adminUnread: true, ...(r.userId !== viewer.userId ? { reporterUnread: true } : {}) } }),

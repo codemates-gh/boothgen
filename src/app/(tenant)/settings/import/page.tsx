@@ -68,7 +68,7 @@ function downloadSample() {
   const blob = new Blob([SAMPLE_CSV], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'boothgenius-import-template.csv';
+  a.href = url; a.download = 'boothgen-import-template.csv';
   a.click(); URL.revokeObjectURL(url);
 }
 
@@ -186,7 +186,7 @@ export default function ImportPage() {
           <div>
             <h2 className="text-xl font-bold text-gray-900">Import Clients & Events</h2>
             <p className="text-sm text-gray-500 mt-1">
-              Upload a CSV or Excel file to migrate your existing clients and bookings into Booth Genius.
+              Upload a CSV or Excel file to migrate your existing clients and bookings into BoothGen.
               Clients who already exist in your account will have new events added without creating duplicates.
             </p>
           </div>
@@ -236,7 +236,7 @@ export default function ImportPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm text-gray-600 space-y-3">
-                  <p>Your file can have <strong>any column names</strong> — Booth Genius will automatically detect common variations like "Email Address", "e-mail", "Mobile", "Phone Number", etc.</p>
+                  <p>Your file can have <strong>any column names</strong> — BoothGen will automatically detect common variations like "Email Address", "e-mail", "Mobile", "Phone Number", etc.</p>
                   <p>Each row should represent <strong>one booking</strong>. If a client has multiple bookings, use one row per booking with the same email address — only one client record will be created.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                     <div>
@@ -298,7 +298,7 @@ export default function ImportPage() {
               {/* stats */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <StatCard icon={<Users className="w-4 h-4 text-brand" />} label="New clients" value={preview.stats.newClients} />
-                <StatCard icon={<Users className="w-4 h-4 text-green-500" />} label="Already in Booth Genius" value={preview.stats.returningClients} sub="Events will be added" />
+                <StatCard icon={<Users className="w-4 h-4 text-green-500" />} label="Already in BoothGen" value={preview.stats.returningClients} sub="Events will be added" />
                 <StatCard icon={<Calendar className="w-4 h-4 text-blue-500" />} label="Events to create" value={preview.stats.withEvents} sub={`${preview.stats.futureEvents} upcoming · ${preview.stats.pastEvents} past`} />
               </div>
 

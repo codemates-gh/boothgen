@@ -4,7 +4,7 @@ import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
+import { BoothGenIcon } from '@/components/brand/BoothGenLogo';
 
 export default function SignInForm() {
   const searchParamsInit = useSearchParams();
@@ -41,9 +41,9 @@ export default function SignInForm() {
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
           <div className="mb-4">
-            <BoothGeniusIcon size={68} />
+            <BoothGenIcon size={68} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Booth Genius</h1>
+          <h1 className="text-2xl font-bold text-gray-900">BoothGen</h1>
           <p className="text-gray-500 text-sm mt-1">Sign in to your account</p>
         </div>
         {verified && !error && !unverified && <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm mb-6"><CheckCircle2 className="w-4 h-4 flex-shrink-0"/>Email confirmed. Sign in to continue.</div>}

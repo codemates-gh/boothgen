@@ -9,7 +9,7 @@ type ContactState = 'idle' | 'sending' | 'sent' | 'error';
 const WELCOME: Message = {
   id: 'welcome',
   role: 'assistant',
-  content: "Hi! I'm the Booth Genius assistant. Ask me anything about setting up your account, managing bookings, quotes, contracts, galleries, or any other feature.",
+  content: "Hi! I'm the BoothGen assistant. Ask me anything about setting up your account, managing bookings, quotes, contracts, galleries, or any other feature.",
 };
 
 export function SupportChat() {
@@ -127,7 +127,7 @@ export function SupportChat() {
             </div>
             <div>
               <p className="text-white text-sm font-bold">
-                {panel === 'contact' ? 'Contact Support' : 'Booth Genius Support'}
+                {panel === 'contact' ? 'Contact Support' : 'BoothGen Support'}
               </p>
               <p className="text-purple-300 text-xs">
                 {panel === 'contact' ? "We'll get back to you by email" : 'AI-powered assistant'}

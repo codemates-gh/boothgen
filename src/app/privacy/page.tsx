@@ -1,12 +1,12 @@
 import { prisma } from '@/lib/prisma/client';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { BoothGeniusLogo } from '@/components/brand/BoothGeniusLogo';
+import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'Booth Genius privacy policy — how we collect, use, and protect your data.',
+  description: 'BoothGen privacy policy — how we collect, use, and protect your data.',
   alternates: { canonical: 'https://boothgen.com/privacy' },
   robots: { index: true, follow: true },
 };
@@ -19,7 +19,7 @@ export default async function PrivacyPage() {
     <div className="min-h-screen bg-white">
       <header className="border-b border-gray-100 px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/"><BoothGeniusLogo size="sm" showTagline={false} /></Link>
+          <Link href="/"><BoothGenLogo size="sm" showTagline={false} /></Link>
           <Link href="/sign-up" className="text-sm text-brand font-medium hover:underline">Get Started Free</Link>
         </div>
       </header>
@@ -30,7 +30,7 @@ export default async function PrivacyPage() {
         </div>
       </main>
       <footer className="border-t border-gray-100 py-6 px-6 text-center text-xs text-gray-400">
-        © {new Date().getFullYear()} Booth Genius. All rights reserved.
+        © {new Date().getFullYear()} BoothGen. All rights reserved.
       </footer>
     </div>
   );

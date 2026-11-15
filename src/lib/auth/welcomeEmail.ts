@@ -2,15 +2,15 @@ import { prisma } from '@/lib/prisma/client';
 import { sendEmail } from '@/lib/email/send';
 
 // Welcome email after the address is confirmed. Super Admin can customize it (system setting email_template_welcome).
-const DEFAULT_WELCOME_SUBJECT = 'Welcome to Booth Genius!';
+const DEFAULT_WELCOME_SUBJECT = 'Welcome to BoothGen!';
 const DEFAULT_WELCOME_BODY = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
-  <h2 style="font-size:22px;color:#111827">Welcome to Booth Genius, {{user_name}}!</h2>
+  <h2 style="font-size:22px;color:#111827">Welcome to BoothGen, {{user_name}}!</h2>
   <p style="color:#374151">We're thrilled to have you on board. Your account is ready — set up your company profile and start managing your photo booth business in minutes.</p>
   <p style="margin:28px 0">
     <a href="{{app_url}}/onboarding" style="background:#F97316;color:#fff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">Get Started</a>
   </p>
   <p style="color:#6b7280;font-size:13px;">If you have any questions, just reply to this email — we're here to help.</p>
-  <p style="color:#6b7280;font-size:13px;">— The Booth Genius Team</p>
+  <p style="color:#6b7280;font-size:13px;">— The BoothGen Team</p>
 </div>`;
 
 function renderTemplate(tpl: string, vars: Record<string, string>) {

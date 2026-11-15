@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Script from 'next/script';
 import { Eye, EyeOff, AlertCircle, CheckCircle2, MailCheck } from 'lucide-react';
-import { BoothGeniusIcon } from '@/components/brand/BoothGeniusLogo';
+import { BoothGenIcon } from '@/components/brand/BoothGenLogo';
 
 declare global {
   interface Window {
@@ -88,7 +88,7 @@ export default function SignUpForm({ hasTerms, hasPrivacy, product }: Props) {
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
           <div className="mb-4">
-            <BoothGeniusIcon size={68} />
+            <BoothGenIcon size={68} />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{product === 'genie' ? 'Get Genie' : 'Get Genius'}</h1>
           <p className="text-gray-500 text-sm mt-1 text-center">{product === 'genie'
