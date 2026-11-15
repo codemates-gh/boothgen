@@ -25,10 +25,17 @@ function readFilePosts(): BlogPost[] {
     return fs
       .readdirSync(CONTENT_DIR)
       .filter(f => f.endsWith('.mdx') || f.endsWith('.md'))
-      .map(file => {
-        const raw = fs.readFileSync(path.join(CONTENT_DIR, file), 'utf-8');
-        const { data, content } = matter(raw);
-        return {
+      .flatMap(file => {
+        // One file with bad frontmatter must not hide every other file post
+        let parsed: matter.GrayMatterFile<string>;
+        try {
+          parsed = matter(fs.readFileSync(path.join(CONTENT_DIR, file), 'utf-8'));
+        } catch (err) {
+          console.error(`[blog] skipping ${file}:`, err);
+          return [];
+        }
+        const { data, content } = parsed;
+        return [{
           slug: data.slug ?? file.replace(/\.mdx?$/, ''),
           title: data.title ?? '',
           description: data.description ?? '',
@@ -37,7 +44,7 @@ function readFilePosts(): BlogPost[] {
           isHtml: false,
           source: 'file' as const,
           content,
-        };
+        }];
       });
   } catch {
     return [];

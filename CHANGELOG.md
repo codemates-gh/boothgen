@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.94.4] — 2026-11-15
+
+### Fixed
+- **Blog posts written as files weren't showing on the live site.** Two older posts had a colon in an unquoted title, and one unreadable file made the blog skip every file post, so only posts stored in Super Admin → Blog appeared. The titles are fixed, and a bad file is now skipped on its own. The two new posts (BoothGen rename, Introducing Genie) now appear
+
+---
+
 ## [2.94.3] — 2026-11-15
 
 ### Added
