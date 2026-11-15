@@ -157,6 +157,10 @@ it also sets up Genie for the event from the account's defaults (the same as tod
 ### 4. Sign-up and billing
 - `/sign-up?product=genie` (or a "Genie" page linked from pricing): account, then a short Genie onboarding (business name,
   logo, time zone, pair an iPad), skipping CRM steps such as packages and Stripe Connect.
+- **Confirm the email (G, 2026-11-14)**: email and password sign-ups get a confirmation link and can't sign in until
+  they click it (resend link on the sign-in page; Google sign-ins are already confirmed by Google). Today sign-up only
+  has Turnstile, a honeypot and an IP rate limit, then goes straight to onboarding. Needed before open sign-up, since
+  Genie accounts send texts and email from BoothGen's own Twilio and Resend. Existing accounts are treated as confirmed.
 - Stripe: a Genie price (monthly, maybe annual), set up like the current plan prices (`stripe_price_*` SystemSettings), so
   Super Admin can change it. The trial works as it does today (`trialEndsAt`).
 - Super Admin → Operators shows the product and can switch it.
