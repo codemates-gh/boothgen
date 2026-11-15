@@ -36,7 +36,7 @@ export async function ensureGallery(event: Pick<Event, 'id' | 'tenantId' | 'titl
 }
 
 // Offset (ms) of a time zone from UTC at a given instant
-function tzOffsetMs(timeZone: string, at: Date): number {
+export function tzOffsetMs(timeZone: string, at: Date): number {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
   }).formatToParts(at);

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { effectiveLockedAt, eventLocksAt } from '@/lib/genie/bundle';
+import { BoothEventInput, boothEventFields, boothEventsClient, isBoothClient, setUpGenie } from '@/lib/genie/boothEvents';
 
 // Events for the Genie → Events overview: upcoming (and the last 7 days) or all past ones with ?past=1
 export async function GET(req: NextRequest) {
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
     take: 100,
     select: {
       id: true, title: true, eventDate: true, startTime: true, status: true, venueName: true,
-      client: { select: { firstName: true, lastName: true } },
+      client: { select: { firstName: true, lastName: true, email: true } },
       genieSettings: true,
       _count: { select: { genieTemplates: true, genieSessions: true } },
     },
@@ -37,7 +38,8 @@ export async function GET(req: NextRequest) {
       const sh = shares.filter(x => x.eventId === e.id);
       return {
         id: e.id, title: e.title, eventDate: e.eventDate, status: e.status, venueName: e.venueName,
-        clientName: `${e.client.firstName} ${e.client.lastName}`.trim(),
+        clientName: isBoothClient(e.client) ? null : `${e.client.firstName} ${e.client.lastName}`.trim(),
+        boothEvent: isBoothClient(e.client),
         genie: s ? {
           enabled: s.enabled,
           templates: e._count.genieTemplates,
@@ -53,4 +55,21 @@ export async function GET(req: NextRequest) {
       };
     }),
   });
+}
+
+// New booth event (Genie → Events): no CRM client, Genie set up from the account's defaults
+export async function POST(req: NextRequest) {
+  const auth = await requireGenieAdmin();
+  if (auth instanceof NextResponse) return auth;
+  const parsed = BoothEventInput.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    const i = parsed.error.issues[0];
+    return NextResponse.json({ error: i?.message ?? 'Invalid request', path: i?.path.join('.') }, { status: 400 });
+  }
+  const client = await boothEventsClient(auth.tenantId);
+  const event = await prisma.event.create({
+    data: { tenantId: auth.tenantId, clientId: client.id, status: 'BOOKED', ...boothEventFields(parsed.data) },
+  });
+  await setUpGenie(auth.tenantId, event.id, parsed.data.timeZone);
+  return NextResponse.json({ id: event.id }, { status: 201 });
 }

@@ -1,15 +1,17 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon } from 'lucide-react';
+import { Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon } from 'lucide-react';
 import { Field, Toggle, fmtDate, fmtDateTime } from '@/components/genie/parts';
 import { Attract, AttractFields, Capture, CaptureFields, DefaultState, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
+import { Modal } from '@/components/ui/modal';
+import { BoothEventModal, localTime } from '@/components/genie/BoothEventModal';
 import GenieTemplates, { ApprovedDesign, EventTemplate, templateMismatch } from './GenieTemplates';
 import GenieEventDevices from './GenieEventDevices';
 import GenieShares from './GenieShares';
@@ -33,7 +35,7 @@ type Settings = {
   custom: { timeZone: boolean; capture: boolean; sharing: boolean; printing: boolean; attract: boolean };
 };
 type Dashboard = {
-  event: { id: string; title: string; eventDate: string; startTime: string | null; endTime: string | null };
+  event: { id: string; title: string; eventDate: string; startTime: string | null; endTime: string | null; venueName: string | null; boothEvent: boolean };
   settings: Settings | null; lockedAt: string | null; locksAt: string; templates: EventTemplate[];
   providerWarnings: { channel: 'sms' | 'email'; message: string }[]; photosHiddenAt: string; photosDeletedAt: string; designApprovalPending: boolean;
   approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
@@ -107,6 +109,19 @@ export default function EventGeniePage() {
 
   const dirty = !!(form && data?.settings && JSON.stringify(form) !== JSON.stringify(toForm(data.settings)));
   const locked = !!data?.lockedAt;
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteBusy, setDeleteBusy] = useState(false);
+
+  async function deleteEvent() {
+    setDeleteBusy(true); setDeleteError('');
+    const r = await fetch(`/api/genie-events/${eventId}`, { method: 'DELETE' });
+    setDeleteBusy(false);
+    if (r.ok) { router.push('/genie/events'); return; }
+    setDeleteError((await r.json().catch(() => ({}))).error || 'Could not delete the event');
+  }
   const tz = data?.settings?.timeZone;
 
   async function setUp() {
@@ -152,6 +167,7 @@ export default function EventGeniePage() {
   const cap = (patch: Partial<Capture>) => set('capture', patch);
   // Genie-only accounts have no CRM event page or client design approval
   const genieOnly = session?.tenant?.product === 'genie';
+  const backToBooth = genieOnly || !!data?.event.boothEvent;
 
   const mismatched = form && data ? data.templates.filter(t => templateMismatch(t)) : [];
 
@@ -159,7 +175,7 @@ export default function EventGeniePage() {
     <>
       <TopBar title="Genie"/>
       <div className="p-4 sm:p-8 space-y-6 max-w-5xl pb-28">
-        {genieOnly
+        {backToBooth
           ? <Link href="/genie/events" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Back to Events</Link>
           : <Link href={`/events/${eventId}`} className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Back to Event</Link>}
 
@@ -184,8 +200,14 @@ export default function EventGeniePage() {
                   {data.settings && <Badge variant={data.settings.enabled ? 'success' : 'default'}>{data.settings.enabled ? 'Genie on' : 'Genie off'}</Badge>}
                   {locked && <Badge variant="info"><Lock className="w-3 h-3 mr-1 inline"/>Locked</Badge>}
                 </div>
-                <p className="text-sm text-gray-500">{fmtDate(data.event.eventDate, 'UTC')}{data.settings ? ` · Bundle version ${data.settings.bundleVersion}` : ''}</p>
+                <p className="text-sm text-gray-500">{fmtDate(data.event.eventDate, 'UTC')}{data.event.boothEvent && data.event.venueName ? ` · ${data.event.venueName}` : ''}{data.settings ? ` · Bundle version ${data.settings.bundleVersion}` : ''}</p>
               </div>
+              {data.event.boothEvent && (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setEditing(true)}><Pencil className="w-3.5 h-3.5 mr-1"/>Edit Details</Button>
+                  <Button variant="ghost" size="sm" onClick={() => { setDeleteError(''); setDeleting(true); }}><Trash2 className="w-3.5 h-3.5 mr-1"/>Delete</Button>
+                </div>
+              )}
             </div>
 
             {data.designApprovalPending && !genieOnly && (
@@ -358,6 +380,25 @@ export default function EventGeniePage() {
           {dirty && <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save Changes'}</Button>}
         </div>
       )}
+
+      {data?.event.boothEvent && (
+        <BoothEventModal open={editing} onClose={() => setEditing(false)} eventId={eventId} lockedTimes={locked}
+          initial={{
+            title: data.event.title, date: data.event.eventDate.slice(0, 10),
+            startTime: localTime(data.event.startTime, tz ?? 'UTC'), endTime: localTime(data.event.endTime, tz ?? 'UTC'),
+            venueName: data.event.venueName ?? '', timeZone: tz ?? 'UTC',
+          }}
+          onSaved={() => { setEditing(false); load(); }}/>
+      )}
+
+      <Modal open={deleting} onClose={() => setDeleting(false)} title="Delete Event">
+        <p className="text-sm text-gray-600 mb-5">Delete <span className="font-medium text-gray-800">{data?.event.title}</span> and its booth setup? This can&apos;t be undone. Events with guest photos can&apos;t be deleted.</p>
+        {deleteError && <p className="text-sm text-red-600 mb-3">{deleteError}</p>}
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setDeleting(false)}>Cancel</Button>
+          <Button variant="destructive" disabled={deleteBusy} onClick={deleteEvent}>{deleteBusy ? 'Deleting…' : 'Delete Event'}</Button>
+        </div>
+      </Modal>
     </>
   );
 }

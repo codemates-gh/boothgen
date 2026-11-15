@@ -1,14 +1,17 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Calendar, Lock, AlertTriangle } from 'lucide-react';
+import { Sparkles, Calendar, Lock, AlertTriangle, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BoothEventModal } from '@/components/genie/BoothEventModal';
 import { fmtDate, fmtDateTime } from '@/components/genie/parts';
 
 type Row = {
-  id: string; title: string; eventDate: string; status: string; venueName: string | null; clientName: string;
+  id: string; title: string; eventDate: string; status: string; venueName: string | null; clientName: string | null; boothEvent: boolean;
   genie: {
     enabled: boolean; templates: number; ipads: number; maxDevices: number; sessions: number;
     lockedAt: string | null; locksAt: string; timeZone: string; followsDefaults: boolean; shares: { total: number; failed: number };
@@ -27,6 +30,11 @@ export default function GenieEventsPage() {
   const [past, setPast] = useState(false);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [notEnabled, setNotEnabled] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [defaultTz, setDefaultTz] = useState('');
+  const router = useRouter();
+  // New events use the account's time zone (Genie → Event Defaults), not this browser's
+  useEffect(() => { fetch('/api/genie-defaults').then(r => r.ok ? r.json() : null).then(d => d && setDefaultTz(d.timeZone)); }, []);
 
   const load = useCallback(async () => {
     setRows(null);
@@ -53,6 +61,7 @@ export default function GenieEventsPage() {
                 <h2 className="text-xl sm:text-2xl font-bold">Genie Events</h2>
                 <p className="text-sm text-gray-500 mt-1">Each event&apos;s booth setup at a glance. New events start from your <Link href="/genie/defaults" className="text-brand hover:underline">event defaults</Link>.</p>
               </div>
+              <Button onClick={() => setCreating(true)} disabled={!defaultTz}><Plus className="w-4 h-4 mr-1"/>New Booth Event</Button>
             </div>
 
             <div className="flex border-b border-gray-200">
@@ -69,6 +78,7 @@ export default function GenieEventsPage() {
                   <div className="text-center py-12 text-gray-500">
                     <Calendar className="w-10 h-10 mx-auto mb-3 text-gray-300"/>
                     <p className="text-sm">{past ? 'No past events.' : 'No upcoming events.'}</p>
+                    {!past && <Button variant="outline" size="sm" className="mt-4" onClick={() => setCreating(true)} disabled={!defaultTz}><Plus className="w-4 h-4 mr-1"/>New Booth Event</Button>}
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -87,7 +97,7 @@ export default function GenieEventsPage() {
                             <td className="px-6 py-3">
                               <Link href={`/events/${e.id}/genie`} className="text-sm font-medium text-[#1F1F3D] hover:text-brand">{e.title}</Link>
                               <p className="text-xs text-gray-500">{fmtDate(e.eventDate, 'UTC')}{e.venueName ? ' · ' + e.venueName : ''}</p>
-                              <p className="text-xs text-gray-400">{e.clientName}</p>
+                              {e.clientName && <p className="text-xs text-gray-400">{e.clientName}</p>}
                             </td>
                             <td className="px-6 py-3">
                               <GenieStatus g={e.genie}/>
@@ -114,6 +124,10 @@ export default function GenieEventsPage() {
           </>
         )}
       </div>
+
+      <BoothEventModal open={creating} onClose={() => setCreating(false)}
+        initial={{ title: '', date: '', startTime: '', endTime: '', venueName: '', timeZone: defaultTz }}
+        onSaved={id => router.push(`/events/${id}/genie`)}/>
     </>
   );
 }

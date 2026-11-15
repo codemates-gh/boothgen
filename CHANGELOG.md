@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.87.0] — 2026-11-14
+
+### Added
+- **Genie-only accounts, stage 2a (booth events)**: Genie → Events has a **New Booth Event** button: name, date, optional start and end time (an end before the start runs past midnight), venue and time zone. The event is created with Genie already set up from the account's event defaults and default templates, then opens its Genie page. Works for Genie-only and Genius accounts
+- Booth events don't need a CRM client: they all go on one hidden "Booth events" client per account (no client name shown in Genie → Events). If the account upgrades to Genius, it shows as a normal client
+- A booth event's Genie page has **Edit Details** (name, date, times, venue; date and times can't change once the event has started) and **Delete** (only while it has no guest photos), and links back to Genie → Events
+
+---
+
 ## [2.86.2] — 2026-11-14
 
 ### Changed

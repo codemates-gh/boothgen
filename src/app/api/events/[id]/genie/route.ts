@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
-import { briefLibraryTemplate, copyToEvent, findLibraryTemplate, libraryWhere } from '@/lib/genie/library';
-import { applyApprovedDesignToGenie } from '@/lib/genie/autoApplyDesign';
-import { CUSTOM_FLAG, SECTION_NAMES, customFlags, getDefaults, newEventSettingsData, sectionValues } from '@/lib/genie/defaults';
+import { briefLibraryTemplate, libraryWhere } from '@/lib/genie/library';
+import { isBoothClient, setUpGenie } from '@/lib/genie/boothEvents';
+import { CUSTOM_FLAG, SECTION_NAMES, customFlags, getDefaults, sectionValues } from '@/lib/genie/defaults';
 import { latestApprovedDesign } from '@/lib/genie/approvedDesign';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { designApprovalPending, effectiveLockedAt, eventLocksAt, isValidTimeZone } from '@/lib/genie/bundle';
@@ -40,7 +40,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const s = event.genieSettings;
   const photos = galleryRetentionDates(event.eventDate, retention);
   return NextResponse.json({
-    event: { id: event.id, title: event.title, eventDate: event.eventDate, startTime: event.startTime, endTime: event.endTime },
+    event: { id: event.id, title: event.title, eventDate: event.eventDate, startTime: event.startTime, endTime: event.endTime, venueName: event.venueName, boothEvent: isBoothClient(event.client) },
     settings: s ? settingsView(s) : null,
     lockedAt: s ? effectiveLockedAt(event, s) : null,
     locksAt: eventLocksAt(event, s?.timeZone ?? 'America/New_York'),
@@ -71,20 +71,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (event.genieSettings) return NextResponse.json(settingsView(event.genieSettings));
   try {
     // Starts from the account's Genie defaults (or the built-in ones) and follows them until customized
-    const defaults = await getDefaults(auth.tenantId);
-    const s = await prisma.eventGenieSettings.create({ data: { tenantId: auth.tenantId, eventId: event.id, ...newEventSettingsData(defaults.values, parsed.data.timeZone) } });
-    // Templates: the layout the client picked in their design brief first, then the account's default templates
-    if ((await prisma.eventGenieTemplate.count({ where: { eventId: event.id } })) === 0) {
-      const picked = await briefLibraryTemplate(auth.tenantId, event.id);
-      const added = new Set<string>();
-      for (const lib of [picked, ...await Promise.all(defaults.templateIds.map(id => findLibraryTemplate(auth.tenantId, id)))]) {
-        if (!lib || added.has(lib.id)) continue;
-        const r = await copyToEvent(auth.tenantId, event.id, lib, !!lib.alternateLayout);
-        if (!('error' in r)) added.add(lib.id);
-      }
-    }
-    // A design the client already approved goes on their chosen layout
-    await applyApprovedDesignToGenie(auth.tenantId, event.id).catch(e => console.error('[genie-setup] auto-apply failed:', e));
+    const s = await setUpGenie(auth.tenantId, event.id, parsed.data.timeZone);
     return NextResponse.json(settingsView(s), { status: 201 });
   } catch (err) {
     if ((err as any)?.code !== 'P2002') throw err;

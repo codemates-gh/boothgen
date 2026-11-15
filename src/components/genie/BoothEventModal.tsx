@@ -1,0 +1,84 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { Modal } from '@/components/ui/modal';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { TimeZoneSelect } from '@/components/genie/SettingsForms';
+
+// New booth event (Genie → Events) and editing a booth event's details (its Genie page)
+
+export type BoothEventValues = { title: string; date: string; startTime: string; endTime: string; venueName: string; timeZone: string };
+
+// "HH:MM" of an instant in a time zone, for the edit form
+export function localTime(iso: string | null, timeZone: string): string {
+  if (!iso) return '';
+  const p = new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date(iso));
+  return `${p.find(x => x.type === 'hour')?.value}:${p.find(x => x.type === 'minute')?.value}`;
+}
+
+export function BoothEventModal({ open, onClose, initial, eventId, lockedTimes, onSaved }: {
+  open: boolean; onClose: () => void; initial: BoothEventValues;
+  eventId?: string; // editing when set
+  lockedTimes?: boolean; // the event has started: date and times can't change
+  onSaved: (id: string) => void;
+}) {
+  const [v, setV] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  useEffect(() => { if (open) { setV(initial); setError(''); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  const set = (k: keyof BoothEventValues, val: string) => setV(p => ({ ...p, [k]: val }));
+
+  async function submit() {
+    setBusy(true); setError('');
+    const body: Record<string, unknown> = { title: v.title, date: v.date, startTime: v.startTime || null, endTime: v.endTime || null, venueName: v.venueName || null };
+    if (!eventId) body.timeZone = v.timeZone;
+    const r = await fetch(eventId ? `/api/genie-events/${eventId}` : '/api/genie-events', { method: eventId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (!r.ok) { setError(d.error || 'Could not save the event'); return; }
+    onSaved(eventId ?? d.id);
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={eventId ? 'Event Details' : 'New Booth Event'}>
+      <form onSubmit={e => { e.preventDefault(); submit(); }} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Event name</label>
+          <Input value={v.title} onChange={e => set('title', e.target.value)} maxLength={200} autoFocus placeholder="Rivera Wedding"/>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <Input type="date" value={v.date} onChange={e => set('date', e.target.value)} disabled={lockedTimes}/>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
+            <Input type="time" value={v.startTime} onChange={e => set('startTime', e.target.value)} disabled={lockedTimes}/>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">End</label>
+            <Input type="time" value={v.endTime} onChange={e => set('endTime', e.target.value)} disabled={lockedTimes}/>
+          </div>
+        </div>
+        <p className="text-xs text-gray-400 -mt-2">
+          {lockedTimes ? 'The event has started, so its date and times can no longer change.' : 'Times are optional. The booth setup locks when the event starts (or at the start of the day).'}
+        </p>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Venue <span className="text-gray-400 font-normal">(optional)</span></label>
+          <Input value={v.venueName} onChange={e => set('venueName', e.target.value)} maxLength={200} placeholder="The Glasshouse"/>
+        </div>
+        {!eventId && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Time zone</label>
+            <TimeZoneSelect value={v.timeZone} onChange={tz => set('timeZone', tz)}/>
+          </div>
+        )}
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" disabled={busy || !v.title.trim() || !v.date || !v.timeZone}>{busy ? 'Saving…' : eventId ? 'Save' : 'Create Event'}</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}

@@ -20,7 +20,7 @@ export function lockedError() {
 
 // Event plus its Genie settings, scoped to the tenant
 export async function findAdminEvent(tenantId: string, eventId: string) {
-  return prisma.event.findFirst({ where: { id: eventId, tenantId }, include: { genieSettings: true } });
+  return prisma.event.findFirst({ where: { id: eventId, tenantId }, include: { genieSettings: true, client: { select: { email: true } } } });
 }
 
 export function isLocked(event: Pick<Event, 'eventDate' | 'startTime'> & { genieSettings: EventGenieSettings | null }): boolean {
