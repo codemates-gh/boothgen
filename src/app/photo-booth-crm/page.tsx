@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 import { MarketingContactForm } from '../MarketingContactForm';
 import { MarketingNav } from '../MarketingNav';
-import { MarketingFooter } from '../GenieMarketing';
+import { MarketingFooter, PlansSection, getMarketingPricing } from '../GenieMarketing';
 
 export const metadata: Metadata = {
   title: 'Genius, the Photo Booth CRM',
@@ -31,16 +31,6 @@ export const metadata: Metadata = {
   },
 };
 
-async function getPricing() {
-  const settings = await prisma.systemSetting.findMany({ where: { key: { in: ['price_display_monthly', 'commission_percentage', 'terms_content', 'privacy_content'] } } });
-  const map = Object.fromEntries(settings.map(s => [s.key, s.value]));
-  return {
-    monthly: map.price_display_monthly || '',
-    commissionPct: map.commission_percentage || '1.5',
-    hasTerms: !!(map.terms_content?.trim()),
-    hasPrivacy: !!(map.privacy_content?.trim()),
-  };
-}
 
 // ── UI Mockup Components ──────────────────────────────────────────────────────
 
@@ -334,17 +324,10 @@ const softwareSchema = {
   offers: [
     {
       '@type': 'Offer',
-      name: 'Commission Plan',
-      price: '0',
-      priceCurrency: 'USD',
-      description: 'Free to start — a small commission per booking collected. No monthly fee.',
-    },
-    {
-      '@type': 'Offer',
-      name: 'Pro Plan',
+      name: 'Genius Pro',
       price: '25',
       priceCurrency: 'USD',
-      description: 'Flat monthly rate with zero per-booking commission and access to Gallery Genius photo delivery.',
+      description: 'Flat monthly rate with a 14-day free trial. Includes Genie, the photo booth app.',
     },
   ],
   featureList: [
@@ -377,7 +360,7 @@ const faqSchema = {
       name: 'How much does BoothGen cost?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'BoothGen offers two plans. The Commission Plan is free to start — you pay a small percentage per booking collected and nothing monthly. The Pro Plan is a flat monthly fee (currently $25/month at introductory pricing) with zero per-booking commission and includes Gallery Genius photo delivery.',
+        text: 'Genie, the photo booth app, is $15 per event with no monthly fee. Genius, the photo booth CRM, is Genius Pro: a flat monthly rate with a 14-day free trial, with Genie included.',
       },
     },
     {
@@ -448,7 +431,7 @@ const faqSchema = {
 };
 
 export default async function GeniusPage() {
-  const pricing = await getPricing();
+  const pricing = await getMarketingPricing();
   const totalSavings = 141;
 
   return (
@@ -482,13 +465,13 @@ export default async function GeniusPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Link href="/sign-up?product=genius" className="px-7 py-3.5 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-2xl text-base transition-all shadow-lg shadow-orange-500/30 hover:-translate-y-0.5">
-                  Start free — no credit card
+                  Start your 14-day free trial
                 </Link>
                 <a href="#savings" className="px-7 py-3.5 bg-white/10 border border-white/20 hover:bg-white/15 text-white font-semibold rounded-2xl text-base transition-all">
                   See how much you save →
                 </a>
               </div>
-              <p className="mt-4 text-xs text-purple-300">Commission-based — we only earn when you do.</p>
+              <p className="mt-4 text-xs text-purple-300">Genius Pro: one flat monthly rate, Genie included.</p>
             </div>
             {/* Dashboard mockup */}
             <div className="flex-1 w-full max-w-lg lg:max-w-none">
@@ -575,23 +558,23 @@ export default async function GeniusPage() {
               </div>
               <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
                 <div>
-                  <p className="font-bold text-white">Commission Plan</p>
-                  <p className="text-xs text-purple-300">Pay only when you collect</p>
+                  <p className="font-bold text-white">Genius Pro</p>
+                  <p className="text-xs text-purple-300">Everything above, Genie included</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-extrabold text-orange-400">$0<span className="text-sm font-medium text-orange-300">/mo</span></p>
-                  <p className="text-[10px] text-purple-300">to start</p>
+                  <p className="text-2xl font-extrabold text-orange-400">${pricing.monthly}<span className="text-sm font-medium text-orange-300">/mo</span></p>
+                  <p className="text-[10px] text-purple-300">14 days free</p>
                 </div>
               </div>
               <div className="px-6 pb-6">
                 <Link href="/sign-up?product=genius" className="block w-full py-3 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-xl text-sm text-center transition-colors">
-                  Start saving today — free →
+                  Start your free trial →
                 </Link>
               </div>
             </div>
           </div>
 
-          <p className="text-center text-xs text-gray-400 mt-8">Estimates based on typical individual tool pricing. Actual savings vary. Commission plan collects a small % per booking — no monthly fee.</p>
+          <p className="text-center text-xs text-gray-400 mt-8">Estimates based on typical individual tool pricing. Actual savings vary.</p>
         </div>
       </section>
 
@@ -753,7 +736,7 @@ export default async function GeniusPage() {
               </article>
             ))}
           </div>
-          <p className="text-center text-xs text-gray-400 mt-6">Features marked <span className="font-semibold text-yellow-600">Pro</span> require a paid subscription. All other features are included in the free commission plan.</p>
+          <p className="text-center text-xs text-gray-400 mt-6">Everything here is included in Genius Pro.</p>
         </div>
       </section>
 
@@ -780,84 +763,18 @@ export default async function GeniusPage() {
         </div>
       </section>
 
-      {/* ── PRICING ──────────────────────────────────────────────────────────── */}
-      <section id="pricing" className="py-24 px-4 sm:px-6 bg-gray-50">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3">Genius Pricing</p>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">You don&apos;t make money,<br/>we don&apos;t make money.</h2>
-            <p className="text-lg text-gray-500 max-w-2xl mx-auto">New operators start free with our commission plan. When your business grows and you&apos;re booking more events, switch to flat-rate and keep every dollar.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            {/* Commission Plan */}
-            <div className="bg-white rounded-3xl border border-gray-200 p-8 flex flex-col">
-              <div className="mb-6">
-                <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold mb-4">Perfect for new operators</div>
-                <h3 className="text-xl font-extrabold text-gray-900 mb-1">Commission Plan</h3>
-                <p className="text-gray-500 text-sm">Get started without spending a dollar upfront.</p>
-              </div>
-              <div className="mb-6">
-                <p className="text-5xl font-extrabold text-gray-900">{pricing.commissionPct}<span className="text-2xl text-gray-400">%</span></p>
-                <p className="text-sm text-gray-500 mt-1">per booking collected — nothing else</p>
-              </div>
-              <ul className="space-y-3 text-sm text-gray-600 mb-8 flex-1">
-                {[
-                  'Full CRM — leads, events & clients',
-                  'Quotes & digital e-signatures included',
-                  'Invoicing & milestone payments',
-                  'Branded client portal',
-                  'Email automation & follow-ups',
-                  `Only ${pricing.commissionPct}% per booking — no monthly fee`,
-                  'Upgrade to Pro anytime for gallery access',
-                ].map(item => (
-                  <li key={item} className="flex items-center gap-2"><span className="text-orange-500 flex-shrink-0">✓</span>{item}</li>
-                ))}
-              </ul>
-              <Link href="/sign-up?product=genius" className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm text-center transition-colors">Start free — no card required</Link>
-            </div>
-            {/* Pro Plan */}
-            <div className="bg-gray-900 rounded-3xl border border-gray-800 p-8 flex flex-col relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-48 h-48 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"/>
-              <div className="mb-6 relative">
-                <div className="inline-flex items-center px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold mb-4">For busier operators</div>
-                <h3 className="text-xl font-extrabold text-white mb-1">Pro Plan</h3>
-                <p className="text-gray-400 text-sm">Flat rate, unlimited bookings, zero commission.</p>
-              </div>
-              <div className="mb-6 relative">
-                {pricing.monthly
-                  ? <p className="text-5xl font-extrabold text-white">{pricing.monthly}</p>
-                  : <p className="text-2xl font-bold text-gray-300">Contact us for pricing</p>}
-              </div>
-              <ul className="space-y-3 text-sm text-gray-300 mb-8 flex-1 relative">
-                {[
-                  'Everything in Commission Plan',
-                  'Zero commission on every booking',
-                  'Private photo gallery & delivery (Gallery Genius)',
-                  'Priority support',
-                  'Unlimited events & clients',
-                  'White-label client portal',
-                ].map(item => (
-                  <li key={item} className="flex items-center gap-2"><span className="text-orange-400 flex-shrink-0">✓</span>{item}</li>
-                ))}
-              </ul>
-              <Link href="/sign-up?product=genius" className="w-full py-3 bg-white hover:bg-gray-100 text-gray-900 font-bold rounded-xl text-sm text-center transition-colors relative">Get started with Pro</Link>
-              <Link href="/pricing" className="block text-center text-xs text-gray-500 hover:text-orange-400 mt-3 transition-colors relative">See full pricing breakdown & savings calculator →</Link>
-            </div>
-          </div>
-          <p className="text-center text-sm text-gray-400 mt-8">All plans include Stripe-powered payments. Your clients pay you directly — BoothGen never touches your funds.</p>
-        </div>
-      </section>
+      <PlansSection geniePrice={pricing.geniePrice} monthly={pricing.monthly} commissionPct={pricing.commissionPct} />
 
       {/* ── FINAL CTA ────────────────────────────────────────────────────────── */}
       <section className="py-24 px-4 sm:px-6 bg-gradient-to-br from-[#1e1247] via-[#2D1B69] to-[#1e1247]">
         <div className="max-w-2xl mx-auto text-center">
           <p className="text-orange-400 text-sm font-bold uppercase tracking-widest mb-4">Ready to run your business like a Genius?</p>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Replace your toolbox.<br/>Keep what matters.</h2>
-          <p className="text-lg text-purple-200 mb-10">Stop juggling subscriptions built for someone else. BoothGen was built by an operator who knows what you actually need — and packed it into one platform you can start using today for free.</p>
+          <p className="text-lg text-purple-200 mb-10">Stop juggling subscriptions built for someone else. BoothGen was built by an operator who knows what you actually need — and packed it into one platform you can try free for 14 days.</p>
           <Link href="/sign-up?product=genius" className="inline-block px-10 py-4 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-2xl text-base transition-all shadow-lg shadow-orange-500/30 hover:-translate-y-0.5">
-            Create your free Genius account →
+            Start your free trial →
           </Link>
-          <p className="mt-4 text-sm text-purple-300">No credit card required. Commission plan is free to start.</p>
+          <p className="mt-4 text-sm text-purple-300">14 days free. Genie, the photo booth app, included.</p>
         </div>
       </section>
 

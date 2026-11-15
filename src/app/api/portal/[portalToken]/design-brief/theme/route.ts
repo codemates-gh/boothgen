@@ -5,6 +5,7 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { generateObject } from 'ai';
 import { z } from 'zod';
+import { closedForClients } from '@/lib/genius';
 
 const schema = z.object({
   options: z.array(z.object({
@@ -16,6 +17,7 @@ const schema = z.object({
 export async function POST(req: NextRequest, { params }: { params: { portalToken: string } }) {
   const event = await prisma.event.findFirst({ where: { portalToken: params.portalToken } });
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  { const closed = await closedForClients(event.tenantId); if (closed) return closed; } // Genie-only account: CRM is closed
 
   const { theme, templateName, colorVariantName, fontPairingName } = await req.json();
   if (!theme?.trim()) return NextResponse.json({ error: 'Theme is required.' }, { status: 400 });

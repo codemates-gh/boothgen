@@ -62,8 +62,9 @@ export async function POST() {
       customer: customerId,
       client_reference_id: session.tenantId,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: APP_URL + '/settings/billing?upgraded=1',
-      cancel_url: APP_URL + '/settings/billing',
+      // Genie-only accounts can't open Settings → Billing; they come back to the upgrade page
+      success_url: APP_URL + (tenant.product === 'genie' ? '/upgrade?subscribed=1' : '/settings/billing?upgraded=1'),
+      cancel_url: APP_URL + (tenant.product === 'genie' ? '/upgrade' : '/settings/billing'),
       subscription_data: { metadata: { tenantId: session.tenantId } },
       allow_promotion_codes: true,
     });

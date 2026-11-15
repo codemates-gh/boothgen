@@ -6,6 +6,7 @@ import { NOT_PRINT_SHEET } from '@/lib/genie/urls';
 import { stripe } from '@/lib/stripe';
 import { sendPaymentConfirmationEmail } from '@/lib/email/send';
 import { settleZeroInvoice } from '@/lib/invoices/payments';
+import { closedForClients } from '@/lib/genius';
 
 export async function GET(req: NextRequest, { params }: { params: { portalToken: string } }) {
   const event = await prisma.event.findFirst({
@@ -21,6 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: { portalToken:
     },
   });
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  { const closed = await closedForClients(event.tenantId); if (closed) return closed; } // Genie-only account: CRM is closed
 
   // Mark quote as viewed
   if (event.Quote[0]?.status === 'SENT') {

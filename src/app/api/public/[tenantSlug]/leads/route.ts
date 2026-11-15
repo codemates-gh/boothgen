@@ -25,7 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: { tenantSlug:
       memberships: { where: { role: 'HOST_ADMIN', status: 'ACTIVE' }, include: { user: { select: { email: true } } } },
     },
   });
-  if (!tenant || tenant.status === 'SUSPENDED') {
+  if (!tenant || tenant.status === 'SUSPENDED' || tenant.product === 'genie') { // Genie-only accounts have no lead capture
     return NextResponse.json({ error: 'Not found' }, { status: 404, headers: cors() });
   }
   const body = await req.json();

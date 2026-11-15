@@ -5,6 +5,7 @@ import { bookEvent, milestoneStatusFor, sentInvoiceFields } from '@/lib/invoices
 import { z } from 'zod';
 import { sendHostNotificationEmail } from '@/lib/email/send';
 import { triggerAutomation, scheduleEventDateAutomations } from '@/lib/inngest/trigger';
+import { closedForClients } from '@/lib/genius';
 
 const Schema = z.object({
   clientToken: z.string().min(1).max(256),
@@ -32,6 +33,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     },
   });
   if (!contract) return NextResponse.json({ error: 'Invalid token' }, { status: 404 });
+  { const closed = await closedForClients(contract.tenantId); if (closed) return closed; } // Genie-only account: CRM is closed
   if (contract.status === 'FULLY_EXECUTED') return NextResponse.json({ error: 'Already signed' }, { status: 400 });
 
   const now = new Date();

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { parseMergeTags, buildCtx } from '@/lib/contracts/merge-tags';
 import { sendHostNotificationEmail } from '@/lib/email/send';
+import { closedForClients } from '@/lib/genius';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     },
   });
   if (!quote) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  { const closed = await closedForClients(quote.tenantId); if (closed) return closed; } // Genie-only account: CRM is closed
   if (quote.event.portalToken !== portalToken) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (quote.status !== 'SENT' && quote.status !== 'VIEWED') return NextResponse.json({ error: 'Quote cannot be accepted' }, { status: 400 });
 

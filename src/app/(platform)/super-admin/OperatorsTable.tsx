@@ -18,6 +18,7 @@ interface Operator {
   status: TenantStatus;
   genieEnabled: boolean;
   product: string;
+  geniusFree: boolean;
   createdAt: Date;
   branding: { companyName: string | null } | null;
   memberships: { user: { name: string; email: string } }[];
@@ -91,6 +92,11 @@ function GenieCell({ op }: { op: Operator }) {
         <option value="crm">Genius</option>
         <option value="genie">Genie only</option>
       </select>
+      {/* Keeps the CRM without Genius Pro (own company, partners, beta testers); see Genius needs Pro above */}
+      <label className="flex items-center gap-1 text-[11px] text-gray-500 cursor-pointer" title="Keeps Genius without a Pro subscription">
+        <input type="checkbox" className="w-3 h-3" checked={op.geniusFree} disabled={busy} onChange={e => patch({ geniusFree: e.target.checked })}/>
+        Keep Genius free
+      </label>
     </div>
   );
 }

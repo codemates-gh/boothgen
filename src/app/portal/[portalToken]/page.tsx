@@ -31,6 +31,7 @@ import { fmtCents } from '@/lib/utils';
 
 export default function ClientPortalPage() {
   const { portalToken } = useParams<{ portalToken: string }>();
+  const [closedBy, setClosedBy] = useState<string | null>(null);
   const searchParams    = useSearchParams();
 
   const [data,        setData]        = useState<PortalData | null>(null);
@@ -104,6 +105,8 @@ export default function ClientPortalPage() {
   async function load() {
     const r = await fetch('/api/portal/' + portalToken);
     if (r.ok) { setData(await r.json()); }
+    // The business moved to Genie only (no Genius Pro): the portal is closed
+    else if (r.status === 410) setClosedBy((await r.json().catch(() => ({}))).companyName || 'the business');
     setLoading(false);
   }
 
@@ -307,6 +310,15 @@ export default function ClientPortalPage() {
       <div className="text-center">
         <div className="w-12 h-12 border-4 border-orange-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"/>
         <p className="text-gray-500">Loading your portal...</p>
+      </div>
+    </div>
+  );
+
+  if (!data && closedBy) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="text-center max-w-sm">
+        <p className="text-xl font-bold text-gray-700 mb-2">This is no longer available</p>
+        <p className="text-gray-500">Please contact {closedBy} about your booking.</p>
       </div>
     </div>
   );

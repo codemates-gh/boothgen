@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma/client';
 import { sendDesignDecisionEmail } from '@/lib/email/send';
 import { z } from 'zod';
 import { applyApprovedDesignToGenie } from '@/lib/genie/autoApplyDesign';
+import { closedForClients } from '@/lib/genius';
 
 const Schema = z.object({ portalToken: z.string().min(1) });
 
@@ -28,6 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     },
   });
   if (!design) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  { const closed = await closedForClients(design.tenantId); if (closed) return closed; } // Genie-only account: CRM is closed
   if (design.event.portalToken !== parsed.data.portalToken) return NextResponse.json({ error: 'Invalid token' }, { status: 403 });
   if (design.status === 'APPROVED') return NextResponse.json({ error: 'Already approved' }, { status: 400 });
   if (design.status !== 'PENDING_APPROVAL') return NextResponse.json({ error: 'Design is not pending approval' }, { status: 400 });

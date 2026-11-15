@@ -34,7 +34,8 @@ const CRM_APIS = [
   '/api/events', '/api/import', '/api/invoices', '/api/leads', '/api/messages', '/api/quotes', '/api/search',
   '/api/settings/packages', '/api/settings/coupons', '/api/settings/team', '/api/settings/checklist-templates',
   '/api/settings/consumable-profiles', '/api/settings/lead-fields', '/api/settings/design-brief-settings',
-  '/api/stripe/connect', '/api/stripe/billing',
+  // /api/stripe/billing stays open: subscribing to Genius Pro brings the CRM back
+  '/api/stripe/connect',
 ];
 
 const EVENT_GENIE_PAGE = /^\/events\/[^/]+\/genie(\/|$)/;

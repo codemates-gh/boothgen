@@ -38,12 +38,12 @@ describe('Genie-only access rules', () => {
 
   it('blocks CRM APIs and keeps Genie APIs open', () => {
     for (const p of ['/api/clients', '/api/leads/x', '/api/quotes', '/api/invoices/x/send', '/api/events', '/api/events/abc',
-      '/api/events/abc/notes', '/api/search', '/api/settings/packages', '/api/stripe/billing', '/api/stripe/connect/onboard']) {
+      '/api/events/abc/notes', '/api/search', '/api/settings/packages', '/api/stripe/connect/onboard']) {
       expect(genieOnlyBlock(p), p).toEqual({ kind: 'api' });
     }
     for (const p of ['/api/events/abc/genie', '/api/events/abc/genie/bundle', '/api/genie-events', '/api/genie-props',
       '/api/genie-templates', '/api/gallery', '/api/settings/branding', '/api/settings/profile', '/api/settings/genie-messaging',
-      '/api/reports', '/api/notifications', '/api/template-library/hidden']) {
+      '/api/reports', '/api/notifications', '/api/template-library/hidden', '/api/stripe/billing/checkout']) {
       expect(genieOnlyBlock(p), p).toBeNull();
     }
   });

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { stripe } from '@/lib/stripe';
+import { closedForClients } from '@/lib/genius';
 
 export async function POST(req: NextRequest) {
   const { invoiceId, milestoneId } = await req.json();
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
   if (!invoice) {
     return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
   }
+  { const closed = await closedForClients(invoice.tenantId); if (closed) return closed; } // Genie-only account: CRM is closed
   if (invoice.status === 'PAID') {
     return NextResponse.json({ error: 'Invoice already paid' }, { status: 400 });
   }

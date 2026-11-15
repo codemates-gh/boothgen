@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma/client';
 import { PAYMENT_KIND as GENIE_PAYMENT_KIND, recordCheckout } from '@/lib/genie/payments';
+import { enforceGeniusFor, restoreGeniusIfPaid } from '@/lib/genius';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: NextRequest) {
@@ -85,6 +86,17 @@ export async function POST(req: NextRequest) {
     const invoice = obj as Stripe.Invoice;
     const stripeRecord = await prisma.stripeSubscription.findFirst({ where: { stripeCustomerId: invoice.customer as string } });
     if (stripeRecord) await prisma.tenant.update({ where: { id: stripeRecord.tenantId }, data: { status: 'SUSPENDED' } });
+  }
+
+  // Genius needs Genius Pro (src/lib/genius.ts): a new or renewed subscription brings the CRM back to a Genie-only
+  // account; one that ended or stopped paying moves the account to Genie when the rule is on
+  if (['checkout.session.completed', 'customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted'].includes(event.type)) {
+    const customer = event.type === 'checkout.session.completed' ? (obj as Stripe.Checkout.Session).customer : obj.customer;
+    const sub = typeof customer === 'string' ? await prisma.stripeSubscription.findFirst({ where: { stripeCustomerId: customer }, select: { tenantId: true } }) : null;
+    if (sub) {
+      await restoreGeniusIfPaid(sub.tenantId);
+      await enforceGeniusFor(sub.tenantId);
+    }
   }
 
   return NextResponse.json({ received: true });

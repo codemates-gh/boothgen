@@ -252,6 +252,8 @@ model Tenant {
   // What the account bought: "crm" (Genius, the full CRM) or "genie" (Genie only). See src/lib/product.ts
   product               String    @default("crm")
   // Genie paid add-on entitlement (super admin toggle until billing exists)
+  // Super Admin "Keep Genius free": keeps the CRM without Genius Pro (own company, partners, beta testers). See src/lib/genius.ts
+  geniusFree            Boolean   @default(false)
   genieEnabled          Boolean   @default(false)
   genieEnabledAt        DateTime?
   // Genie attendant PIN, PBKDF2-SHA256 (see src/lib/genie/pin.ts)

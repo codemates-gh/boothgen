@@ -4,6 +4,21 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.94.0] — 2026-11-15
+
+### Added
+- **Genius needs Genius Pro (stage 4).** The free commission plan is gone. A Genius account keeps the CRM with Genius Pro, a lifetime or founding plan, a running 14-day trial, or Super Admin's new **Keep Genius free** (per operator, in Operators → Genie column). Otherwise it moves to **Genie only right away** (no notice period, G's decision): the CRM pauses (automations and payment and design reminders stop, client portal links, quote and contract actions and invoice payments say "This is no longer available. Please contact <business>", lead capture closes), nothing is deleted, and the owner gets an email listing what stopped. **Subscribing to Genius Pro brings the CRM back** (new "Subscribe to Genius Pro" on the upgrade page; Stripe updates switch it back automatically)
+- **Super Admin → Operators → Genius needs Pro**: off until you turn it on. Shows which accounts would move; turning it on moves them at once (after a confirmation), and a daily check keeps it applied, including after Stripe subscription changes
+- Genie-only accounts can open the Genius Pro checkout (the rest of billing stays closed to them)
+
+### Changed
+- **Website and pricing**: two plans, **Genie** ($15 per event) and **Genius Pro** (monthly, 14-day free trial, Genie included). The free commission plan, the "Commission plan" cards and the breakeven calculator are gone from the home, pricing and Genius pages
+
+### Database
+- `tenants.geniusFree` (`docs/genie/apply-production-genius-free.sql`)
+
+---
+
 ## [2.93.0] — 2026-11-15
 
 ### Added

@@ -33,6 +33,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   // Genie add-on on/off (until billing exists). A Genie-only account can't turn it off.
+  // Keep Genius free: keeps the CRM without Genius Pro (src/lib/genius.ts)
+  if (typeof body.geniusFree === 'boolean') {
+    const tenant = await prisma.tenant.update({ where: { id: params.id }, data: { geniusFree: body.geniusFree }, select: { id: true, geniusFree: true } });
+    return NextResponse.json(tenant);
+  }
+
   if (typeof body.genieEnabled === 'boolean') {
     if (!body.genieEnabled) {
       const t = await prisma.tenant.findUnique({ where: { id: params.id }, select: { product: true } });

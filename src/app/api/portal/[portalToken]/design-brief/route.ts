@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma/client';
 import { sendEmail } from '@/lib/email/send';
 import { clientTemplateView, clientTemplates, clientTemplatesWhere } from '@/lib/templates/clientLibrary';
 import { cleanTextValues } from '@/lib/templates/customRequest';
+import { closedForClients } from '@/lib/genius';
 
 export async function GET(_: NextRequest, { params }: { params: { portalToken: string } }) {
   const event = await prisma.event.findFirst({
@@ -18,6 +19,7 @@ export async function GET(_: NextRequest, { params }: { params: { portalToken: s
     },
   });
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  { const closed = await closedForClients(event.tenantId); if (closed) return closed; } // Genie-only account: CRM is closed
 
   const designBriefEnabled = event.tenant.branding?.designBriefEnabled ?? false;
   if (!designBriefEnabled) return NextResponse.json(null);
@@ -50,6 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: { portalToken
     },
   });
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  { const closed = await closedForClients(event.tenantId); if (closed) return closed; } // Genie-only account: CRM is closed
   if (!event.tenant.branding?.designBriefEnabled) return NextResponse.json({ error: 'Design brief not enabled.' }, { status: 400 });
 
   const { templateId, selectedColorVariantId, selectedFontPairingId, textValues, themeInput, themeDirections, selectedDirectionIndex, isCustomDesign, notes } = await req.json();

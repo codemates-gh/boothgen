@@ -20,6 +20,7 @@ import DesignTemplatesManager from './DesignTemplatesManager';
 import PropsManager from './PropsManager';
 import BackdropsManager from './BackdropsManager';
 import GenieUsage from './GenieUsage';
+import GeniusRuleCard from './GeniusRuleCard';
 import ReportsTriage from './ReportsTriage';
 
 const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'props', 'backdrops', 'genie-usage', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
@@ -218,6 +219,7 @@ export default async function SuperAdminPage({ searchParams }: { searchParams: {
               <h1 className="text-2xl font-bold text-gray-900">Operators</h1>
               <p className="text-sm text-gray-500 mt-1">All registered operators — manage status, view events, and monitor email failures.</p>
             </div>
+            <GeniusRuleCard />
             <OperatorsTable operators={tenants} failedMap={failedMap} />
           </>
         )}

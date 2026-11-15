@@ -21,6 +21,7 @@ import {
   notifyHostDesignDeadline,
   sendDesignApprovalReminders,
   autoCompleteEvents,
+  enforceGeniusPlans,
   sendGenieShare,
   sweepAbandonedAttract,
   sweepAbandonedProps,
@@ -51,6 +52,7 @@ const handler = serve({
     sendGenieShare,
     sweepAbandonedAttract,
   sweepAbandonedProps,
+    enforceGeniusPlans,
   ],
   signingKey: process.env.INNGEST_SIGNING_KEY,
 });

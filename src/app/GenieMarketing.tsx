@@ -222,8 +222,7 @@ export function ConnectedFlow() {
 export function PlansSection({ geniePrice, monthly, commissionPct }: { geniePrice: string; monthly: string; commissionPct: string }) {
   const plans = [
     { name: 'Genie', tag: 'The photo booth app', price: geniePrice, unit: '/event', points: ['Up to 2 tablets per event', 'Texts and email included', 'Galleries and printing', 'No monthly fee'], cta: 'Get Genie', href: '/sign-up', strong: true },
-    { name: 'Genius Free', tag: 'The photo booth CRM', price: '$0', unit: '/month', points: [`${commissionPct}% per booking`, 'Leads, quotes, contracts, invoices', 'Client portal and automations', 'Genie included'], cta: 'Start Genius free', href: '/sign-up?product=genius', strong: false },
-    { name: 'Genius Pro', tag: 'The photo booth CRM', price: monthly ? `$${monthly.replace(/^\$/, '')}` : 'Flat rate', unit: monthly ? '/month' : '', points: ['0% per booking', 'Everything in Genius Free', 'Private photo galleries', 'Genie included'], cta: 'See Pro', href: '/pricing', strong: false },
+    { name: 'Genius Pro', tag: 'The photo booth CRM', price: '$' + monthly.replace(/^[$]/, ''), unit: '/month', points: ['14-day free trial', 'Leads, quotes, contracts, invoices', 'Client portal, automations and galleries', 'Genie included'], cta: 'Start my free trial', href: '/sign-up?product=genius', strong: false },
   ];
   return (
     <section id="pricing" className="py-24 px-4 sm:px-6">
@@ -233,7 +232,7 @@ export function PlansSection({ geniePrice, monthly, commissionPct }: { geniePric
           <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">Start with the booth. Add the business when you&apos;re ready.</h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto">Switch from Genie to Genius anytime. Your events, designs and galleries come with you.</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
           {plans.map(p => (
             <div key={p.name} className={'rounded-2xl p-7 flex flex-col ' + (p.strong ? 'bg-white border-2 border-orange-500 shadow-lg shadow-orange-100' : 'bg-white border border-gray-200')}>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{p.tag}</p>
@@ -305,7 +304,7 @@ export function FinalCta({ geniePrice }: { geniePrice: string }) {
         <p className="text-lg text-purple-200 mb-10">Start with Genie for your next event. Free to set up, {geniePrice} when you run it.</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/sign-up" className="px-10 py-4 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-2xl text-base transition-all shadow-lg shadow-orange-500/30 hover:-translate-y-0.5">Get Genie</Link>
-          <Link href="/sign-up?product=genius" className="px-10 py-4 bg-white/10 border border-white/20 hover:bg-white/15 text-white font-semibold rounded-2xl text-base transition-all">Start Genius free</Link>
+          <Link href="/sign-up?product=genius" className="px-10 py-4 bg-white/10 border border-white/20 hover:bg-white/15 text-white font-semibold rounded-2xl text-base transition-all">Try Genius free for 14 days</Link>
         </div>
       </div>
     </section>

@@ -1,29 +1,28 @@
 import { prisma } from '@/lib/prisma/client';
 import Link from 'next/link';
 import { MarketingNav } from '@/app/MarketingNav';
-import { Check, Lock, Zap, Tablet } from 'lucide-react';
+import { Check, Lock, Tablet } from 'lucide-react';
 import { eventPriceCents } from '@/lib/genie/payments';
-import BreakevenCalculator from './BreakevenCalculator';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Pricing — Free to Start, Pro When You\'re Ready',
-  description: 'BoothGen is free to start with a small commission per booking, or go Pro for a flat monthly rate with zero commission. No hidden fees. No credit card required.',
-  keywords: ['photo booth software pricing', 'photo booth CRM cost', 'booth rental software plans', 'free photo booth management'],
+  title: 'Pricing: Genie and Genius Pro',
+  description: 'Genie, the photo booth app: $15 per event, no monthly fee, texts and email included. Genius, the photo booth CRM: Genius Pro, a flat monthly rate with a 14-day free trial and Genie included.',
+  keywords: ['photo booth app pricing', 'photo booth software pricing', 'photo booth CRM cost', 'pay per event photo booth'],
   alternates: { canonical: 'https://boothgen.com/pricing' },
   openGraph: {
-    title: 'BoothGen Pricing — Free to Start, Pro When You\'re Ready',
-    description: 'Start free with a commission plan or lock in flat-rate Pro pricing. No monthly fee to start. Built for photo booth operators.',
+    title: 'BoothGen Pricing: Genie and Genius Pro',
+    description: 'Genie: $15 per event, no monthly fee. Genius Pro: flat monthly rate, 14-day free trial, Genie included.',
     url: 'https://boothgen.com/pricing',
-    images: [{ url: '/api/og?title=Simple%2C+Honest+Pricing&subtitle=Free+commission+plan+or+flat+Pro+rate+%E2%80%94+no+surprises', width: 1200, height: 630, alt: 'BoothGen Pricing' }],
+    images: [{ url: '/api/og?title=Simple%2C+Honest+Pricing&subtitle=Genie+per+event.+Genius+Pro+monthly.', width: 1200, height: 630, alt: 'BoothGen Pricing' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'BoothGen Pricing — Free to Start, Pro When You\'re Ready',
-    description: 'Start free with a commission plan or lock in flat-rate Pro pricing.',
-    images: ['/api/og?title=Simple%2C+Honest+Pricing&subtitle=Free+commission+plan+or+flat+Pro+rate+%E2%80%94+no+surprises'],
+    title: 'BoothGen Pricing',
+    description: 'Genie: $15 per event. Genius Pro: flat monthly rate, Genie included.',
+    images: ['/api/og?title=Simple%2C+Honest+Pricing&subtitle=Genie+per+event.+Genius+Pro+monthly.'],
   },
 };
 
@@ -69,6 +68,7 @@ const FREE_FEATURES = [
 
 const PRO_ONLY_FEATURES = [
   'Post-event photo gallery with access codes',
+  'Genie, the photo booth app, included',
 ];
 
 const GENIE_FEATURES = [
@@ -81,11 +81,10 @@ const GENIE_FEATURES = [
 ];
 
 export default async function PricingPage() {
-  const { commissionPct, proMonthlyPrice, earlyAdopterCap, spotsRemaining, subscriptionsOpen, cadEquivalent } = await getPricing();
+  const { proMonthlyPrice, earlyAdopterCap, spotsRemaining, subscriptionsOpen, cadEquivalent } = await getPricing();
 
   const genieCents = await eventPriceCents();
   const geniePrice = genieCents % 100 === 0 ? `$${genieCents / 100}` : `$${(genieCents / 100).toFixed(2)}`;
-  const pctDisplay = commissionPct % 1 === 0 ? `${commissionPct}` : `${commissionPct}`;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -99,52 +98,35 @@ export default async function PricingPage() {
             Simple, honest pricing.<br />No surprises.
           </h1>
           <p className="text-lg text-gray-500 max-w-xl mx-auto">
-            Start free and pay only when you earn — or lock in a flat monthly rate and keep every dollar from every booking.
+            Run your booth with Genie and pay per event. Run your business with Genius Pro, Genie included.
           </p>
         </div>
       </section>
 
-      {/* Tier cards */}
+      {/* Tier cards: Genie (per event) and Genius Pro (monthly, Genie included) */}
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto grid sm:grid-cols-2 gap-6 items-start">
 
-          {/* Free */}
+          {/* Genie */}
           <div className="bg-white rounded-2xl border border-gray-200 p-8">
             <div className="mb-6">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Free Plan</p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Tablet className="w-3.5 h-3.5"/>Genie, the photo booth app</p>
               <div className="flex items-end gap-1 mb-1">
-                <span className="text-4xl font-extrabold text-gray-900">$0</span>
-                <span className="text-gray-400 mb-1">/month</span>
+                <span className="text-4xl font-extrabold text-gray-900">{geniePrice}</span>
+                <span className="text-gray-400 mb-1">/event</span>
               </div>
-              <p className="text-orange-600 font-bold text-lg">{pctDisplay}% per booking</p>
-              <p className="text-gray-500 text-sm mt-2">We only earn when you earn. No monthly commitment, no credit card required.</p>
+              <p className="text-gray-500 text-sm mt-2">No monthly fee. Pay only for the events you run; each payment covers up to 2 tablets.</p>
             </div>
-
-            <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 mb-6 text-sm">
-              <p className="font-semibold text-orange-800">"We only win when you win."</p>
-              <p className="text-orange-700 mt-1">Perfect if you're just getting started or book fewer than 3 events a month.</p>
-            </div>
-
             <ul className="space-y-3 mb-8">
-              {FREE_FEATURES.map(f => (
+              {GENIE_FEATURES.map(f => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-gray-700">
                   <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
                   {f}
                 </li>
               ))}
-              {PRO_ONLY_FEATURES.map(f => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-gray-400 line-through">
-                  <span className="w-4 h-4 mt-0.5 shrink-0 text-center leading-none text-gray-300 font-bold">✕</span>
-                  {f}
-                </li>
-              ))}
             </ul>
-
-            <Link
-              href="/sign-up?product=genius"
-              className="block w-full text-center py-3.5 rounded-xl border-2 border-orange-500 text-orange-600 font-bold hover:bg-orange-50 transition-colors"
-            >
-              Start Free — No Credit Card
+            <Link href="/sign-up?product=genie" className="block w-full text-center py-3.5 rounded-xl border-2 border-orange-500 text-orange-600 font-bold hover:bg-orange-50 transition-colors">
+              Get Genie
             </Link>
           </div>
 
@@ -158,12 +140,12 @@ export default async function PricingPage() {
             </div>
 
             <div className="mb-6 mt-2">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Pro Plan</p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Genius Pro, the photo booth CRM</p>
               <div className="flex items-end gap-1 mb-1">
                 <span className="text-4xl font-extrabold text-gray-900">${proMonthlyPrice}</span>
                 <span className="text-gray-400 mb-1">/month</span>
               </div>
-              <p className="text-green-600 font-bold text-lg">0% per booking — keep it all</p>
+              <p className="text-green-600 font-bold text-lg">14-day free trial · Genie included</p>
               {cadEquivalent && (
                 <p className="text-xs text-gray-400 mt-1">≈ CA${cadEquivalent}/month for Canadian operators</p>
               )}
@@ -198,9 +180,9 @@ export default async function PricingPage() {
                 </li>
               ))}
               {PRO_ONLY_FEATURES.map(f => (
-                <li key={f} className="flex items-start gap-2.5 text-sm font-semibold text-orange-700">
-                  <Check className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
-                  <span>{f} <span className="ml-1 text-[10px] font-bold uppercase tracking-wide bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">Pro</span></span>
+                <li key={f} className="flex items-start gap-2.5 text-sm text-gray-700">
+                  <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                  <span>{f}</span>
                 </li>
               ))}
               <li className="flex items-start gap-2.5 text-sm font-semibold text-orange-700">
@@ -217,7 +199,7 @@ export default async function PricingPage() {
                 href="/sign-up?product=genius"
                 className="block w-full text-center py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold transition-colors"
               >
-                Lock In My Rate →
+                Start my free trial →
               </Link>
             ) : (
               <Link
@@ -235,46 +217,6 @@ export default async function PricingPage() {
         </div>
       </section>
 
-      {/* Genie only: the booth app without the CRM, pay per event */}
-      <section className="pb-16 px-4">
-        <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-gray-200 p-8 grid sm:grid-cols-[1fr_auto] gap-6 items-center">
-          <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Tablet className="w-3.5 h-3.5"/>Just need the booth? Genie</p>
-            <div className="flex items-end gap-1 mb-2">
-              <span className="text-4xl font-extrabold text-gray-900">{geniePrice}</span>
-              <span className="text-gray-400 mb-1">/event</span>
-            </div>
-            <p className="text-gray-500 text-sm mb-4">The Genie iPad photo booth app on its own: no monthly fee, pay only for the events you run. Each event covers up to 2 iPads.</p>
-            <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
-              {GENIE_FEATURES.map(f => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-gray-700"><Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />{f}</li>
-              ))}
-            </ul>
-          </div>
-          <Link href="/sign-up?product=genie" className="block text-center px-8 py-3.5 rounded-xl border-2 border-orange-500 text-orange-600 font-bold hover:bg-orange-50 transition-colors whitespace-nowrap">
-            Get Genie
-          </Link>
-        </div>
-      </section>
-
-      {/* Breakeven calculator */}
-      <section className="pb-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <BreakevenCalculator commissionPct={commissionPct} proMonthlyPrice={proMonthlyPrice} />
-        </div>
-      </section>
-
-      {/* Feature parity note */}
-      <section className="pb-12 px-4">
-        <div className="max-w-2xl mx-auto text-center bg-white rounded-2xl border border-gray-200 p-8">
-          <Zap className="w-8 h-8 text-orange-500 mx-auto mb-3" />
-          <h2 className="text-lg font-bold text-gray-900 mb-2">Almost everything. Both plans.</h2>
-          <p className="text-gray-500 text-sm">
-            Leads, quotes, contracts, invoices, payments, automation, and your client portal are all included on both plans. The only Pro-exclusive feature is the <strong className="text-gray-700">post-event photo gallery</strong> — uploading event photos for clients to view, download, and share after the event. Choose your plan based on volume and whether you deliver galleries.
-          </p>
-        </div>
-      </section>
-
       {/* Stripe disclosure */}
       <section className="pb-16 px-4">
         <div className="max-w-3xl mx-auto">
@@ -282,7 +224,7 @@ export default async function PricingPage() {
             <p className="font-semibold text-gray-600 mb-2">Payment Processing Disclosure</p>
             <p className="mb-3">
               BoothGen subscription fees are charged in <strong>USD</strong>. Canadian operators are billed the USD amount and their card issuer applies the conversion; the CA$ equivalent shown above is approximate based on the current exchange rate and updates daily.{' '}
-              All booking payments processed through BoothGen are subject to Stripe's standard payment processing fee of <strong>2.9% + $0.30 per transaction</strong>. This fee is charged by Stripe directly and applies to <strong>both the Free and Pro plans</strong>. It is separate from and in addition to BoothGen platform pricing. On the Free plan, Stripe's fee and the BoothGen {pctDisplay}% platform fee are both deducted from each booking. On the Pro plan, only Stripe's fee applies per transaction — BoothGen does not take a per-booking cut. BoothGen is not a bank and does not hold funds; all payments are processed and held by Stripe.
+              All booking payments processed through BoothGen are subject to Stripe's standard payment processing fee of <strong>2.9% + $0.30 per transaction</strong>. This fee is charged by Stripe directly and is separate from BoothGen pricing. BoothGen does not take a per-booking cut. BoothGen is not a bank and does not hold funds; all payments are processed and held by Stripe.
             </p>
             <p>
               <strong className="text-gray-600">Note for Canadian operators:</strong> When you connect your Stripe account, it is domiciled in Canada. Payments from Canadian-issued cards carry no international card fee. However, if one of your clients pays with a card issued outside Canada (for example, a US or international card), Stripe may apply an additional <strong>1.5% international card fee</strong> on top of the standard 2.9% + $0.30. This is a Stripe fee charged directly to your account — it is not a BoothGen fee and does not apply to the vast majority of Canadian-client bookings.

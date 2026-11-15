@@ -59,7 +59,7 @@ export async function GET(
   });
   const customFields = tenant?.customLeadFields ?? [];
 
-  if (!tenant || tenant.status === 'SUSPENDED') {
+  if (!tenant || tenant.status === 'SUSPENDED' || tenant.product === 'genie') { // Genie-only accounts have no lead capture
     return new NextResponse('Not found', { status: 404 });
   }
 

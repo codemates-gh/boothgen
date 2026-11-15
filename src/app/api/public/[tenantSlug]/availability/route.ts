@@ -18,8 +18,8 @@ export async function GET(req: NextRequest, { params }: { params: { tenantSlug: 
   const date = new URL(req.url).searchParams.get('date');
   if (!date) return NextResponse.json({ available: true }, { headers: cors() });
 
-  const tenant = await prisma.tenant.findUnique({ where: { slug: params.tenantSlug }, select: { id: true, status: true } });
-  if (!tenant || tenant.status === 'SUSPENDED') {
+  const tenant = await prisma.tenant.findUnique({ where: { slug: params.tenantSlug }, select: { id: true, status: true, product: true } });
+  if (!tenant || tenant.status === 'SUSPENDED' || tenant.product === 'genie') { // Genie-only accounts have no lead capture
     return NextResponse.json({ available: false }, { headers: cors() });
   }
 

@@ -67,6 +67,11 @@ export async function executeAutomation(executionId: string) {
     },
   });
   if (!execution || execution.status !== 'SCHEDULED') return;
+  // Genie-only account (no Genius Pro): the CRM is paused, so automations don't send
+  if (execution.event.tenant.product === 'genie') {
+    await prisma.automationExecution.update({ where: { id: executionId }, data: { status: 'SKIPPED', errorMessage: 'Account is on Genie (Genius needs Pro)' } });
+    return;
+  }
   if (execution.rule.actionType !== 'EMAIL' || !execution.rule.emailTemplate) {
     await prisma.automationExecution.update({ where: { id: executionId }, data: { status: 'SKIPPED' } });
     return;

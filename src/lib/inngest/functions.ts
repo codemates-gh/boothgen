@@ -1,4 +1,5 @@
 
+import { enforceGenius } from '@/lib/genius';
 import { inngest } from './client';
 import { getGalleryRetention } from '@/lib/gallery/retention';
 import { fmtCents } from '@/lib/utils';
@@ -388,7 +389,8 @@ export const sendOverduePaymentReminders = inngest.createFunction(
       where: {
         dueDate: { lt: tomorrow },
         status: { notIn: ['PAID', 'REFUNDED'] },
-        invoice: { status: { notIn: ['PAID', 'CANCELLED'] } },
+        // Genie-only accounts (no Genius Pro) have the CRM paused: no client reminders
+        invoice: { status: { notIn: ['PAID', 'CANCELLED'] }, tenant: { product: 'crm' } },
         OR: [
           { lastReminderSentAt: null },
           { lastReminderSentAt: { lt: reminderCutoff } },
@@ -481,6 +483,7 @@ export const notifyPaymentMilestoneDue = inngest.createFunction(
     if (ms.invoice.status === 'PAID' || ms.invoice.status === 'CANCELLED') return;
 
     const event = ms.invoice.event;
+    if (event.tenant.product === 'genie') return; // CRM paused (no Genius Pro)
     const branding = event.tenant.branding;
     const companyName = branding?.companyName ?? event.tenant.name;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
@@ -588,6 +591,7 @@ export const sendDesignApprovalReminders = inngest.createFunction(
         eventDate: { gte: now, lte: fiveDaysOut },
         designReminderSentAt: null,
         templateDesigns: { none: { status: 'APPROVED' } },
+        tenant: { product: 'crm' },
       },
       include: {
         client: true,
@@ -740,4 +744,12 @@ export const sendGenieShare = inngest.createFunction(
     await step.run('record', () => recordShareResult(shareId, result));
     return result;
   }
+);
+
+// Genius needs Genius Pro (stage 4): daily, switch accounts without Pro, a lifetime plan, a running trial or
+// Super Admin's "Keep Genius free" to Genie only. Does nothing until Super Admin turns the rule on.
+export const enforceGeniusPlans = inngest.createFunction(
+  { id: 'enforce-genius-plans' },
+  { cron: '0 6 * * *' },
+  async () => ({ switched: await enforceGenius() }),
 );
