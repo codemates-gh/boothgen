@@ -1,12 +1,11 @@
 'use client';
 import { useState } from 'react';
-import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { AlertTriangle, GripVertical, ChevronUp, ChevronDown, Trash2, Plus, LayoutTemplate, CheckCircle2, Image as ImageIcon } from 'lucide-react';
 import { Layout, LayoutPreview } from '@/components/genie/parts';
+import { TemplatePicker, type PickerTemplate } from '@/components/genie/TemplatePicker';
 
 export type EventTemplate = {
   id: string; name: string; sortOrder: number; libraryTemplateId: string | null; designId: string | null;
@@ -15,7 +14,6 @@ export type EventTemplate = {
 type LibraryTemplate = { id: string; name: string; description: string | null; scope: 'standard' | 'mine'; layout: Layout; alternateLayout: Layout | null };
 
 const FORMAT_LABEL: Record<string, string> = { '4x6': '4×6', '2x6': '2×6 strip' };
-const photos = (l: Layout) => new Set(l.slots.map(s => s.shotIndex)).size;
 
 // The iPad takes as many photos as the chosen template's highest photo number. Frames that skip a number mean
 // guests take a photo that never prints.
@@ -34,8 +32,6 @@ export default function GenieTemplates({ eventId, templates, shotCount, locked, 
   const onEvent = (libraryId: string) => templates.some(e => e.libraryTemplateId === libraryId);
   const [picking, setPicking] = useState(false);
   const [library, setLibrary] = useState<{ standard: LibraryTemplate[]; mine: LibraryTemplate[] } | null>(null);
-  const [tab, setTab] = useState<'standard' | 'mine'>('standard');
-  const [withAlternate, setWithAlternate] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [dragId, setDragId] = useState<string | null>(null);
@@ -59,7 +55,7 @@ export default function GenieTemplates({ eventId, templates, shotCount, locked, 
     setPicking(true); setError('');
     if (!library) {
       const r = await fetch('/api/genie-templates');
-      if (r.ok) { const d = await r.json(); d.standard = d.standard.filter((t: { hidden?: boolean }) => !t.hidden); setLibrary(d); if (d.standard.length === 0 && d.mine.length > 0) setTab('mine'); }
+      if (r.ok) { const d = await r.json(); d.standard = d.standard.filter((t: { hidden?: boolean }) => !t.hidden); setLibrary(d); }
     }
   }
 
@@ -73,8 +69,8 @@ export default function GenieTemplates({ eventId, templates, shotCount, locked, 
     return true;
   }
 
-  async function add(t: LibraryTemplate) {
-    const ok = await call('add-' + t.id, `/api/events/${eventId}/genie/templates`, { method: 'POST', body: JSON.stringify({ libraryTemplateId: t.id, alternate: !!withAlternate[t.id] }) });
+  async function add(t: PickerTemplate, alternate: boolean) {
+    const ok = await call('add-' + t.id, `/api/events/${eventId}/genie/templates`, { method: 'POST', body: JSON.stringify({ libraryTemplateId: t.id, alternate }) });
     if (ok) setPicking(false);
   }
 
@@ -105,8 +101,6 @@ export default function GenieTemplates({ eventId, templates, shotCount, locked, 
     setDragId(null);
     if (ids && ids.join() !== templates.map(t => t.id).join()) saveOrder(ids); else setOrder(null);
   }
-
-  const libraryList = library ? library[tab] : [];
 
   return (
     <Card>
@@ -171,41 +165,9 @@ export default function GenieTemplates({ eventId, templates, shotCount, locked, 
         )}
       </CardContent>
 
-      <Modal open={picking} onClose={() => setPicking(false)} title="Add a Template" className="max-w-2xl">
-        <div className="flex border-b border-gray-200 mb-4">
-          {(['standard', 'mine'] as const).map(k => (
-            <button key={k} onClick={() => setTab(k)} className={'px-4 py-2 text-[13px] font-medium border-b-2 -mb-px ' + (tab === k ? 'border-[#0085FF] text-[#1F1F3D]' : 'border-transparent text-[#676879] hover:text-[#1F1F3D]')}>
-              {k === 'standard' ? 'Standard' : 'My Templates'}{library ? ` (${library[k].length})` : ''}
-            </button>
-          ))}
-        </div>
-        {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
-        {!library ? <p className="text-sm text-gray-400">Loading…</p> : libraryList.length === 0 ? (
-          <p className="text-sm text-gray-500 py-6 text-center">
-            {tab === 'mine' ? <>You haven&apos;t made any templates yet. <Link href="/templates" className="text-brand hover:underline">Open the template designer</Link>.</> : 'No standard templates yet.'}
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {libraryList.map(t => (
-              <div key={t.id} className="border border-gray-200 rounded-lg p-3 flex gap-3">
-                <LayoutPreview layout={t.layout} width={t.layout.widthPx >= t.layout.heightPx ? 96 : 40}/>
-                <div className="min-w-0 flex-1 flex flex-col">
-                  <p className="text-sm font-medium">{t.name}{briefTemplate?.id === t.id && <Badge variant="info" className="ml-2">Client&apos;s pick</Badge>}</p>
-                  <p className="text-xs text-gray-500">{FORMAT_LABEL[t.layout.format]} {t.layout.orientation} · {photos(t.layout)} photo{photos(t.layout) === 1 ? '' : 's'}</p>
-                  {onEvent(t.id) && <Badge variant="success" className="self-start mt-1">On this event</Badge>}
-                  {t.alternateLayout && (
-                    <label className="flex items-center gap-1.5 text-xs text-gray-600 mt-2 cursor-pointer">
-                      <input type="checkbox" className="w-4 h-4 rounded" checked={!!withAlternate[t.id]} onChange={e => setWithAlternate(w => ({ ...w, [t.id]: e.target.checked }))}/>
-                      Include {t.alternateLayout.orientation} version
-                    </label>
-                  )}
-                  <Button size="sm" variant={onEvent(t.id) ? 'outline' : 'default'} className="mt-auto self-start" disabled={!!busy} onClick={() => add(t)}>{busy === 'add-' + t.id ? 'Adding…' : onEvent(t.id) ? 'Add again' : 'Add'}</Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Modal>
+      <TemplatePicker open={picking} onClose={() => setPicking(false)} library={library} isAdded={onEvent} allowAddAgain alternateOption
+        onAdd={add} busyId={busy?.startsWith('add-') ? busy.slice(4) : null} error={error}
+        highlightId={briefTemplate?.id} highlightLabel="Client's pick"/>
 
       <Modal open={!!removing} onClose={() => setRemoving(null)} title="Remove Template">
         <p className="text-sm text-gray-600 mb-5">Remove <span className="font-medium text-gray-800">{removing?.name}</span> from this event? Guests won&apos;t see it on the iPad after the next sync. The template stays in your library.</p>

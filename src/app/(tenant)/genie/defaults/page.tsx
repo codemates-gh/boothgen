@@ -4,12 +4,11 @@ import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
-import { Sparkles, Camera, Share2, Printer, Settings2, LayoutTemplate, ChevronUp, ChevronDown, X, MonitorPlay } from 'lucide-react';
-import { Field, Layout, LayoutPreview } from '@/components/genie/parts';
+import { Sparkles, Camera, Share2, Printer, Settings2, LayoutTemplate, ChevronUp, ChevronDown, X, MonitorPlay, Plus } from 'lucide-react';
+import { TemplatePicker, thumbWidth, type PickerLibrary } from '@/components/genie/TemplatePicker';
+import { Field, LayoutPreview } from '@/components/genie/parts';
 import { Attract, AttractFields, Capture, CaptureFields, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
 
-type LibraryTemplate = { id: string; name: string; scope: 'standard' | 'mine'; layout: Layout | null };
 type Defaults = { saved: boolean; timeZone: string; capture: Capture; sharing: Sharing; printing: Printing; attract: Attract; templateIds: string[] };
 type Form = Omit<Defaults, 'saved'>;
 
@@ -19,18 +18,23 @@ const toForm = (d: Defaults): Form => JSON.parse(JSON.stringify({ timeZone: d.ti
 export default function GenieDefaultsPage() {
   const [data, setData] = useState<Defaults & { eventsFollowing: number } | null>(null);
   const [form, setForm] = useState<Form | null>(null);
-  const [library, setLibrary] = useState<LibraryTemplate[]>([]);
+  const [library, setLibrary] = useState<PickerLibrary | null>(null);
+  const [picking, setPicking] = useState(false);
   const [notEnabled, setNotEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [adding, setAdding] = useState('');
 
   const load = useCallback(async () => {
     const [r, l] = await Promise.all([fetch('/api/genie-defaults'), fetch('/api/genie-templates')]);
     if (r.status === 403) { setNotEnabled(true); return; }
     if (r.ok) { const d = await r.json(); setData(d); setForm(toForm(d)); }
-    if (l.ok) { const d = await l.json(); setLibrary([...d.mine, ...d.standard].filter((t: LibraryTemplate) => t.layout)); }
+    if (l.ok) {
+      const d = await l.json();
+      // Layouts that can go on an event: drawn ones, without the Standard ones this account hid
+      const usable = (t: { layout: unknown; hidden?: boolean }) => !!t.layout && !t.hidden;
+      setLibrary({ standard: d.standard.filter(usable), mine: d.mine.filter(usable) });
+    }
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -49,7 +53,7 @@ export default function GenieDefaultsPage() {
     load();
   }
 
-  const byId = new Map(library.map(t => [t.id, t]));
+  const byId = new Map([...(library?.mine ?? []), ...(library?.standard ?? [])].map(t => [t.id, t]));
   const move = (i: number, d: number) => setForm(f => {
     if (!f) return f;
     const ids = [...f.templateIds]; const j = i + d;
@@ -98,7 +102,7 @@ export default function GenieDefaultsPage() {
                     return (
                       <li key={id} className="flex items-center gap-3 p-3">
                         <span className="text-xs font-semibold text-gray-400 w-4">{i + 1}</span>
-                        {t?.layout && <LayoutPreview layout={t.layout} width={t.layout.widthPx >= t.layout.heightPx ? 72 : 36}/>}
+                        {t?.layout && <div className="w-[72px] h-12 flex items-center justify-center"><LayoutPreview layout={t.layout} width={thumbWidth(t.layout, 48, 72)}/></div>}
                         <span className="text-sm flex-1">{t?.name ?? 'Template no longer in your library'}</span>
                         <Button variant="ghost" size="icon" className="h-7 w-7" disabled={i === 0} onClick={() => move(i, -1)} aria-label="Move up"><ChevronUp className="w-4 h-4"/></Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" disabled={i === form.templateIds.length - 1} onClick={() => move(i, 1)} aria-label="Move down"><ChevronDown className="w-4 h-4"/></Button>
@@ -108,13 +112,12 @@ export default function GenieDefaultsPage() {
                   })}
                 </ul>
               )}
-              <div className="flex gap-2 max-w-md">
-                <Select value={adding} onChange={e => setAdding(e.target.value)}>
-                  <option value="">Add a template…</option>
-                  {library.filter(t => !form.templateIds.includes(t.id)).map(t => <option key={t.id} value={t.id}>{t.name}{t.scope === 'standard' ? ' (Standard)' : ''}</option>)}
-                </Select>
-                <Button variant="outline" disabled={!adding} onClick={() => { setForm({ ...form, templateIds: [...form.templateIds, adding] }); setAdding(''); }}>Add</Button>
+              <div>
+                <Button variant="outline" size="sm" onClick={() => setPicking(true)}><Plus className="w-3.5 h-3.5 mr-1"/>Add Template</Button>
               </div>
+              <TemplatePicker open={picking} onClose={() => setPicking(false)} library={library}
+                isAdded={id => form.templateIds.includes(id)}
+                onAdd={t => setForm({ ...form, templateIds: [...form.templateIds, t.id] })}/>
               <p className="text-xs text-gray-400">Make or edit templates in <Link href="/templates" className="text-brand hover:underline">Templates</Link>.</p>
             </Section>
 

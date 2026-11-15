@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.89.0] — 2026-11-14
+
+### Changed
+- **Visual layout picker**: Genie → Event Defaults → Templates and an event's Genie page → Add Template now show a grid of layout thumbnails at their real shape (4×6 landscape, 4×6 portrait, 2×6 strip) with the name and photo count, instead of a dropdown. Click a layout to add it. Standard and My Layouts tabs, a format filter, and layouts already added are marked ("Added"). On Event Defaults the picker stays open so you can add several in a row; the order rule and "doesn't change existing events" are unchanged. Works with the keyboard and screen readers
+- Event Defaults hides Standard layouts the account hid, like the event picker already did
+
+---
+
 ## [2.88.0] — 2026-11-14
 
 ### Added
