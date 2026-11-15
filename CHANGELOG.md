@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.92.2] — 2026-11-15
+
+### Changed
+- **Website: Genie positioned for operators and standard events.** The home page and /photo-booth-app now say what Genie is honestly: the simple, dependable booth app for everyday events (birthdays, school events, corporate parties, a second or backup booth), not the one with the most effects. New sections: "The booth app for the events you run every week" (who it's for), "Less setup. Lower cost. Fewer accounts." (event defaults, set up from a laptop, no texting accounts to register, pay per event, bad Wi-Fi, 2 tablets) and "What's included". Hero: "The simple booth app for everyday events." New FAQ: "Who is Genie for?"
+
+---
+
 ## [2.92.1] — 2026-11-15
 
 ### Changed

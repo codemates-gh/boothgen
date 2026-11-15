@@ -3,18 +3,18 @@ import { authOptions } from '@/lib/auth/config';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { Smile, Image as ImageIcon, Repeat, Send, Images, Printer } from 'lucide-react';
+import { SlidersHorizontal, Send, Check, WifiOff, Printer, Tablet } from 'lucide-react';
 import { MarketingContactForm } from './MarketingContactForm';
 import { MarketingNav } from './MarketingNav';
 import {
-  ConnectedFlow, Faq, FinalCta, GeniePriceBand, GuestFeatures, MarketingFooter, OperatorFeatures, PlansSection, TabletMockup,
+  BuiltForSection, ConnectedFlow, Faq, FinalCta, GeniePriceBand, GuestFeatures, MarketingFooter, OperatorFeatures, PlansSection, TabletMockup,
   faqSchema, genieFaq, getMarketingPricing,
 } from './GenieMarketing';
 
 // Home: Genie (the photo booth app) first, Genius (the photo booth CRM) as the next step. Brand: BoothGen.
 
 const TITLE = 'BoothGen: Photo Booth App and CRM';
-const DESCRIPTION = 'The next generation of photo booths. Genie, the photo booth app, gives guests virtual props, backdrops, boomerangs and instant photos by text, email and QR, for $15 per event. Genius, the photo booth CRM, runs your business.';
+const DESCRIPTION = 'Genie by BoothGen is the simple photo booth app for standard events: set up in minutes from your laptop, guest texts and email included, $15 per event with no monthly fee. Genius, the photo booth CRM, runs your business.';
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },
@@ -45,12 +45,12 @@ const organizationSchema = {
 };
 
 const PILLARS = [
-  { icon: Smile, label: 'Virtual props' },
-  { icon: ImageIcon, label: 'Backdrops' },
-  { icon: Repeat, label: 'Boomerangs' },
-  { icon: Send, label: 'Text, email, QR' },
-  { icon: Images, label: 'Live gallery' },
+  { icon: SlidersHorizontal, label: 'Set up in minutes' },
+  { icon: Send, label: 'Texts and email included' },
+  { icon: Check, label: 'Pay per event' },
+  { icon: Tablet, label: '2 tablets per event' },
   { icon: Printer, label: 'Printing' },
+  { icon: WifiOff, label: 'Works on bad Wi-Fi' },
 ];
 
 export default async function HomePage() {
@@ -83,17 +83,17 @@ export default async function HomePage() {
                 Genie, the photo booth app
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-5">
-                The next generation<br/>of <span className="text-orange-400">photo booths.</span>
+                The simple booth app<br/>for <span className="text-orange-400">everyday events.</span>
               </h1>
               <p className="text-lg text-purple-200 mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
-                Genie turns a tablet into a booth guests line up for: virtual props and backdrops, boomerangs, and photos on their phones before they leave the booth.
+                Set up an event in minutes from your laptop, open it on the tablet and go. Guest texts and email are included, and you pay only for the events you run.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Link href="/sign-up" className="px-7 py-3.5 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-2xl text-base transition-all shadow-lg shadow-orange-500/30 hover:-translate-y-0.5">
                   Get Genie
                 </Link>
                 <a href="#genie" className="px-7 py-3.5 bg-white/10 border border-white/20 hover:bg-white/15 text-white font-semibold rounded-2xl text-base transition-all">
-                  See what it does →
+                  Is it right for my events? →
                 </a>
               </div>
               <p className="mt-4 text-xs text-purple-300">{pricing.geniePrice} per event · No monthly fee · Texts and email included</p>
@@ -117,8 +117,9 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <GuestFeatures />
+      <BuiltForSection />
       <OperatorFeatures />
+      <GuestFeatures />
       <GeniePriceBand geniePrice={pricing.geniePrice} />
       <ConnectedFlow />
       <PlansSection geniePrice={pricing.geniePrice} monthly={pricing.monthly} commissionPct={pricing.commissionPct} />

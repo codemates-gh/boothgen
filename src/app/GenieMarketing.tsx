@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {
-  Smile, Image as ImageIcon, Repeat, Sparkles, Send, Images, LayoutTemplate, SlidersHorizontal, Printer, Tablet, WifiOff,
+  Smile, Repeat, Send, Images, LayoutTemplate, SlidersHorizontal, Printer, Tablet, WifiOff,
   MonitorPlay, Check, ArrowRight, Inbox, FileText, PenLine, Palette, Camera, Heart,
 } from 'lucide-react';
 import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
@@ -66,26 +66,28 @@ export function TabletMockup() {
   );
 }
 
-// ── What guests see ───────────────────────────────────────────────────────
-const GUEST_FEATURES = [
-  { icon: Smile, title: 'Virtual props', desc: 'Glasses, hats, mustaches and more that follow guests\' faces, live while they pose.' },
-  { icon: ImageIcon, title: 'Virtual backdrops', desc: 'Guests step onto a beach, a skyline or your client\'s own backdrop. No green screen needed.' },
-  { icon: Repeat, title: 'Boomerangs', desc: 'Short looping clips with an edge light while they record, ready to share in seconds.' },
-  { icon: Sparkles, title: 'Beautify and filters', desc: 'A flattering glow guests can turn on, plus black and white and other looks on the review screen.' },
-  { icon: Send, title: 'Instant text, email and QR', desc: 'Photos arrive on guests\' phones before they leave the booth, with your branding on the page.' },
-  { icon: Images, title: 'Live event gallery', desc: 'Every session lands in an online gallery your client can share with all their guests.' },
-];
-
-const OPERATOR_FEATURES = [
-  { icon: LayoutTemplate, title: 'Design layouts in the browser', desc: 'Build 4×6 and 2×6 layouts with photo frames, backgrounds and overlays, or start from 15 ready-made ones.' },
-  { icon: SlidersHorizontal, title: 'Set it up from your laptop', desc: 'Countdown, photos per session, sharing and props per event. The tablet picks it up on its next sync.' },
-  { icon: MonitorPlay, title: 'Attract screen', desc: 'Your own image or video plays between guests to pull people over to the booth.' },
+// ── What Genie covers, and why setup is easier ───────────────────────────
+// Positioning (G): a simple, dependable booth app for standard events, not the most feature-packed one.
+// Written for operators, who already know how a booth works: talk about setup, value and cost.
+const INCLUDED = [
+  { icon: LayoutTemplate, title: 'Layouts ready to go', desc: '15 ready-made 4×6 and 2×6 layouts, or design your own in the browser with your client\'s colors and logo.' },
+  { icon: Send, title: 'Text, email and QR sharing', desc: 'Guests get their photos on their phones right away, on a page with your branding.' },
+  { icon: Images, title: 'Event gallery', desc: 'Every session lands in an online gallery you can send to your client after the event.' },
   { icon: Printer, title: 'Printing', desc: 'Prints and copies through the BoothGen print box, a small PC connected to your photo printer.' },
-  { icon: WifiOff, title: 'Keeps going on bad Wi-Fi', desc: 'The booth keeps running offline. Photos and messages go out as soon as it\'s back online.' },
-  { icon: Tablet, title: 'Two tablets per event', desc: 'Run two booths at the same event on one payment. Need more? Pay again for two more.' },
+  { icon: Repeat, title: 'Boomerangs', desc: 'Short looping clips when the client wants something beyond photos.' },
+  { icon: Smile, title: 'Props and backdrops', desc: 'Virtual props and background removal for the events that want a little extra.' },
 ];
 
-function FeatureGrid({ items }: { items: typeof GUEST_FEATURES }) {
+const EASIER = [
+  { icon: SlidersHorizontal, title: 'Set your defaults once', desc: 'Countdown, photos per session, sharing and printing. Every new event starts ready, so most events take minutes to set up.' },
+  { icon: MonitorPlay, title: 'Set up from your laptop', desc: 'Prepare events the night before at boothgen.com. At the venue, open the event on the tablet and start.' },
+  { icon: Send, title: 'No texting accounts to register', desc: 'Guest texts and email go out through BoothGen and are included. No Twilio sign-up or carrier registration to wait on.' },
+  { icon: Check, title: 'Pay only for events you run', desc: 'No monthly subscription eating into slow months. Set up and test free; pay when the event is booked.' },
+  { icon: WifiOff, title: 'Keeps going on bad Wi-Fi', desc: 'The booth keeps running offline. Photos and messages go out when the venue\'s Wi-Fi comes back.' },
+  { icon: Tablet, title: 'Two tablets per event', desc: 'One payment covers two booths at the same event, or a main booth and a backup.' },
+];
+
+function FeatureGrid({ items }: { items: typeof INCLUDED }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {items.map(f => (
@@ -99,16 +101,41 @@ function FeatureGrid({ items }: { items: typeof GUEST_FEATURES }) {
   );
 }
 
+// Who Genie is for: honest about scope
+export function BuiltForSection() {
+  const fits = ['Birthdays and graduations', 'School dances and proms', 'Corporate mixers and holiday parties', 'Community and church events', 'A second booth at a big event', 'A backup when your main setup acts up'];
+  return (
+    <section id="genie" className="py-24 px-4 sm:px-6">
+      <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3">Built for everyday events</p>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-5">The booth app for the events you run every week.</h2>
+          <div className="space-y-4 text-gray-600 leading-relaxed">
+            <p>Genie isn&apos;t trying to be the app with the most effects. It&apos;s for the standard events that make up most of your calendar, where you need a booth that sets up fast, works every time and doesn&apos;t cost a monthly subscription.</p>
+            <p>If an event needs every bell and whistle, keep using the tools you have for it. For everything else, Genie keeps it simple.</p>
+          </div>
+        </div>
+        <div className="bg-gray-50 rounded-2xl border border-gray-100 p-7">
+          <p className="text-sm font-bold text-gray-900 mb-4">A good fit for</p>
+          <ul className="space-y-3">
+            {fits.map(f => <li key={f} className="flex items-start gap-2.5 text-sm text-gray-700"><Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0"/>{f}</li>)}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function GuestFeatures() {
   return (
-    <section id="genie" className="py-24 px-4 sm:px-6 bg-gray-50">
+    <section className="py-24 px-4 sm:px-6 bg-gray-50">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
-          <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3">Genie, the photo booth app</p>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">The booth guests line up for.</h2>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">Genie turns a tablet into a photo booth with the effects guests expect and photos they get on their phones right away.</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3">What&apos;s included</p>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">What a standard event needs. Nothing extra to learn.</h2>
+          <p className="text-lg text-gray-500 max-w-2xl mx-auto">The essentials your clients expect, ready out of the box, with a few extras for when they ask.</p>
         </div>
-        <FeatureGrid items={GUEST_FEATURES}/>
+        <FeatureGrid items={INCLUDED}/>
       </div>
     </section>
   );
@@ -119,11 +146,11 @@ export function OperatorFeatures() {
     <section className="py-24 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
-          <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3">For operators</p>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">Set up on your laptop. Run it on a tablet.</h2>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">Design and configure every event at boothgen.com. At the venue, open the event on the tablet and you&apos;re ready.</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3">Why operators switch</p>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">Less setup. Lower cost. Fewer accounts.</h2>
+          <p className="text-lg text-gray-500 max-w-2xl mx-auto">Genie takes the busywork out of running standard events, so your time goes to booking more of them.</p>
         </div>
-        <FeatureGrid items={OPERATOR_FEATURES}/>
+        <FeatureGrid items={EASIER}/>
         <p className="text-center text-sm text-gray-400 mt-8">Genie runs on iPad today. Android is coming.</p>
       </div>
     </section>
@@ -138,7 +165,7 @@ export function GeniePriceBand({ geniePrice }: { geniePrice: string }) {
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-orange-400 mb-4">Simple pricing</p>
           <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">{geniePrice} per event. That&apos;s it.</h2>
-          <p className="text-purple-200 mb-6 max-w-lg">No monthly fee. Pay only for the events you run.</p>
+          <p className="text-purple-200 mb-6 max-w-lg">No monthly fee, so slow months cost you nothing. Pay only for the events you run.</p>
           <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
             {['Up to 2 tablets per event', 'Guest texts and email included', 'Live gallery and QR photo pages', 'Set up and test free; pay when you\'re ready'].map(t => (
               <li key={t} className="flex items-start gap-2.5 text-sm text-purple-100"><Check className="w-4 h-4 text-orange-400 mt-0.5 shrink-0"/>{t}</li>
@@ -228,6 +255,7 @@ export function PlansSection({ geniePrice, monthly, commissionPct }: { geniePric
 // ── FAQ ───────────────────────────────────────────────────────────────────
 export const genieFaq = (price: string): [string, string][] => [
   ['What is BoothGen?', 'BoothGen makes two products for photo booth operators: Genie, the photo booth app that runs your booth at the event, and Genius, the photo booth CRM that runs your business. BoothGen stands for booth generation: the next generation of photo booth tools.'],
+  ['Who is Genie for?', 'Photo booth operators running standard events: birthdays, school events, corporate parties and the like. It covers the essentials well and keeps setup fast. If an event needs every effect available, Genie may not be the right tool for that one.'],
   ['What do I need to run Genie?', 'An iPad and the Genie app. Android is coming. For prints, add the BoothGen print box: a small Windows PC connected to your photo printer.'],
   ['How does paying per event work?', `Set up and test any event for free. Pay ${price} for an event whenever you\'re ready, before or after. Until it\'s paid, the booth screen and photos carry a BoothGen watermark. One payment covers up to 2 tablets at that event.`],
   ['Are texts and email really included?', 'Yes. Guests get their photos by text, email or QR code, sent by BoothGen and included in the event price. You can also connect your own Twilio and email account instead.'],

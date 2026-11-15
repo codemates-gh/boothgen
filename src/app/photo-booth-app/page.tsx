@@ -2,14 +2,14 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { MarketingNav } from '../MarketingNav';
 import {
-  ConnectedFlow, Faq, FinalCta, GeniePriceBand, GuestFeatures, MarketingFooter, OperatorFeatures, TabletMockup,
+  BuiltForSection, ConnectedFlow, Faq, FinalCta, GeniePriceBand, GuestFeatures, MarketingFooter, OperatorFeatures, TabletMockup,
   faqSchema, genieFaq, getMarketingPricing,
 } from '../GenieMarketing';
 
 // Genie, the photo booth app: the page for search ("photo booth app") and ads
 
 const TITLE = 'Genie, the Photo Booth App';
-const DESCRIPTION = 'Genie by BoothGen turns a tablet into a photo booth: virtual props and backdrops, boomerangs, Beautify, instant text, email and QR sharing, live galleries and printing. $15 per event, no monthly fee.';
+const DESCRIPTION = 'Genie by BoothGen is the simple photo booth app for standard events: event defaults, layouts ready to go, guest texts and email included, galleries and printing. Set up in minutes, $15 per event, no monthly fee.';
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -58,7 +58,7 @@ export default async function PhotoBoothAppPage() {
               Genie, the<br/><span className="text-orange-400">photo booth app.</span>
             </h1>
             <p className="text-lg text-purple-200 mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
-              Everything guests love about a modern booth, set up from your laptop and running on a tablet. {pricing.geniePrice} per event, texts and email included.
+              A dependable booth for standard events. Set up from your laptop in minutes, no texting accounts to register, and {pricing.geniePrice} per event with no monthly fee.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Link href="/sign-up" className="px-7 py-3.5 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-2xl text-base transition-all shadow-lg shadow-orange-500/30 hover:-translate-y-0.5">Get Genie</Link>
@@ -70,13 +70,14 @@ export default async function PhotoBoothAppPage() {
         </div>
       </section>
 
-      <GuestFeatures />
+      <BuiltForSection />
       <OperatorFeatures />
+      <GuestFeatures />
 
       <section id="how-it-works" className="py-24 px-4 sm:px-6 bg-gray-50">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">Ready for your next event tonight</h2>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">Ready for your next event</h2>
             <p className="text-lg text-gray-500 max-w-xl mx-auto">No contracts and no monthly fee. Set up free, test as much as you like.</p>
           </div>
           <ol className="grid grid-cols-1 md:grid-cols-3 gap-8">
