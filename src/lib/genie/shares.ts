@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma/client';
 import { galleryRetentionDates, getGalleryRetention } from '@/lib/gallery/retention';
 import { galleryUrl, sessionUrl } from './urls';
-import { getMessagingConfig, sendTenantEmail, sendTenantSms, type SendResult } from './messaging';
+import { BOOTHGEN_SMS_LIMIT_PER_EVENT, getMessaging, sendEmail, sendSms, type SendResult, type Source } from './messaging';
 
 export function renderMergeFields(template: string, fields: { firstName?: string | null; eventName: string; link: string; expiresOn?: string }): string {
   return template
@@ -28,7 +28,7 @@ export function shareEmailHtml(text: string, link: string, buttonColor = '#F9731
 
 export type PreparedShare =
   | { ready: false; reason: string }
-  | { ready: true; shareId: string; channel: 'sms' | 'email'; tenantId: string; to: string; subject: string; text: string; link: string; buttonColor?: string };
+  | { ready: true; shareId: string; channel: 'sms' | 'email'; tenantId: string; eventId: string; to: string; subject: string; text: string; link: string; buttonColor?: string };
 
 // Everything needed to send one queued share, or why it can't be sent yet
 export async function prepareShare(shareId: string): Promise<PreparedShare> {
@@ -58,6 +58,7 @@ export async function prepareShare(shareId: string): Promise<PreparedShare> {
     shareId: share.id,
     channel,
     tenantId: share.tenantId,
+    eventId: share.eventId,
     to: share.destination,
     subject: renderMergeFields(settings.emailSubject, fields),
     text: renderMergeFields(channel === 'sms' ? settings.smsBody : settings.emailBody, fields),
@@ -66,25 +67,30 @@ export async function prepareShare(shareId: string): Promise<PreparedShare> {
   };
 }
 
-export async function deliverShare(p: Extract<PreparedShare, { ready: true }>): Promise<SendResult> {
-  const config = await getMessagingConfig(p.tenantId);
+export async function deliverShare(p: Extract<PreparedShare, { ready: true }>): Promise<SendResult & { provider?: Source }> {
+  const m = await getMessaging(p.tenantId);
   if (p.channel === 'sms') {
     // Consent is enforced when the share is accepted; re-check so a bad row can never text someone
     const share = await prisma.genieShare.findUnique({ where: { id: p.shareId }, select: { smsConsentAt: true } });
     if (!share?.smsConsentAt) return { ok: false, error: 'No SMS consent recorded', retryable: false };
-    return sendTenantSms(config, p.to, p.text);
+    if (m.routes.sms === 'boothgen') {
+      const sent = await prisma.genieShare.count({ where: { eventId: p.eventId, channel: 'sms', provider: 'boothgen', status: { in: ['sent', 'delivered'] } } });
+      if (sent >= BOOTHGEN_SMS_LIMIT_PER_EVENT) return { ok: false, error: `This event reached the limit of ${BOOTHGEN_SMS_LIMIT_PER_EVENT} texts. Contact Booth Genius support.`, retryable: false, provider: 'boothgen' };
+    }
+    return sendSms(m, p.to, p.text);
   }
-  return sendTenantEmail(config, p.to, p.subject, shareEmailHtml(p.text, p.link, p.buttonColor), p.text);
+  return sendEmail(m, p.to, p.subject, shareEmailHtml(p.text, p.link, p.buttonColor), p.text);
 }
 
-export async function recordShareResult(shareId: string, result: SendResult) {
+export async function recordShareResult(shareId: string, result: SendResult & { provider?: Source }) {
   if (result.ok) {
     await prisma.genieShare.updateMany({
       where: { id: shareId, status: 'queued' },
-      data: { status: 'sent', sentAt: new Date(), providerMessageId: result.providerMessageId ?? null, error: null },
+      data: { status: 'sent', sentAt: new Date(), providerMessageId: result.providerMessageId ?? null, error: null, provider: result.provider ?? null },
     });
   } else {
     await markShareFailed(shareId, result.error);
+    if (result.provider) await prisma.genieShare.update({ where: { id: shareId }, data: { provider: result.provider } });
   }
 }
 
@@ -92,10 +98,12 @@ export async function markShareFailed(shareId: string, error: string) {
   await prisma.genieShare.updateMany({ where: { id: shareId, status: 'queued' }, data: { status: 'failed', error: error.slice(0, 1000) } });
 }
 
-// Twilio MessageStatus → GenieShare.status; never moves backwards from delivered/failed
-export async function applyTwilioStatus(tenantId: string, messageSid: string, messageStatus: string, errorCode?: string | null) {
+// Twilio MessageStatus → GenieShare.status; never moves backwards from delivered/failed.
+// `tenantId` is the account whose Twilio sent it, or null for BoothGen's own Twilio.
+export async function applyTwilioStatus(tenantId: string | null, messageSid: string, messageStatus: string, errorCode?: string | null) {
   const share = await prisma.genieShare.findUnique({ where: { providerMessageId: messageSid } });
-  if (!share || share.tenantId !== tenantId || share.channel !== 'sms') return false;
+  if (!share || share.channel !== 'sms') return false;
+  if (tenantId === null ? share.provider !== 'boothgen' : share.tenantId !== tenantId || share.provider === 'boothgen') return false;
   if (messageStatus === 'delivered') {
     await prisma.genieShare.update({ where: { id: share.id }, data: { status: 'delivered', deliveredAt: new Date() } });
   } else if ((messageStatus === 'failed' || messageStatus === 'undelivered') && share.status !== 'delivered') {

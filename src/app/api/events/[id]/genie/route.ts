@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { briefLibraryTemplate, libraryWhere } from '@/lib/genie/library';
 import { isBoothClient, setUpGenie } from '@/lib/genie/boothEvents';
+import { messagingRoutes } from '@/lib/genie/messaging';
 import { IPADS_PER_PAYMENT, eventBilling, eventPriceCents } from '@/lib/genie/payments';
 import { CUSTOM_FLAG, SECTION_NAMES, customFlags, getDefaults, sectionValues } from '@/lib/genie/defaults';
 import { latestApprovedDesign } from '@/lib/genie/approvedDesign';
@@ -52,7 +53,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     lockedAt: s ? effectiveLockedAt(event, s) : null,
     locksAt: eventLocksAt(event, s?.timeZone ?? 'America/New_York'),
     templates: templates.map(t => ({ ...templateView(t), alternateAvailable: !!t.libraryTemplateId && withAlternate.has(t.libraryTemplateId) })),
-    providerWarnings: s ? providerWarnings(messaging, s) : [],
+    providerWarnings: s ? providerWarnings(messaging, s, messagingRoutes(messaging, tenant)) : [],
     photosHiddenAt: photos.hiddenAt,
     photosDeletedAt: photos.deletedAt,
     designApprovalPending: pending.has(event.id),

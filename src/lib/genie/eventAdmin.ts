@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import type { Event, EventGenieSettings, EventGenieTemplate, GenieMessagingConfig } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
-import { emailConfigured, platformDomainError, smsConfigured } from './messaging';
+import { emailConfigured, platformDomainError, smsConfigured, type MessagingRoutes } from './messaging';
 import { effectiveLockedAt, isValidTimeZone } from './bundle';
 import { BOOMERANG_ASPECT, BOOMERANG_DEFAULT, BoomerangSettings, LOOK_AT_CAMERA_DEFAULT, LookAtCamera, StoredLayout } from './schemas';
 import { verifyAsset } from './templateAssets';
@@ -265,20 +265,20 @@ export function templateView(t: EventGenieTemplate) {
   };
 }
 
-// What the tenant's providers mean for this event's sharing toggles
-export function providerWarnings(c: GenieMessagingConfig | null, sharing: { smsEnabled: boolean; emailEnabled: boolean }) {
+// What the tenant's providers mean for this event's sharing toggles. Nothing to warn about when BoothGen sends.
+export function providerWarnings(c: GenieMessagingConfig | null, sharing: { smsEnabled: boolean; emailEnabled: boolean }, routes?: MessagingRoutes) {
   const out: { channel: 'sms' | 'email'; message: string }[] = [];
-  if (sharing.smsEnabled) {
-    if (!smsConfigured(c)) out.push({ channel: 'sms', message: "Texts are hidden on the iPad until you set up Twilio in Settings → Genie." });
-    else if (c!.smsTestError) out.push({ channel: 'sms', message: 'The last test text failed. Send a new test in Settings → Genie.' });
-    else if (!c!.smsTestedAt) out.push({ channel: 'sms', message: "Twilio hasn't been tested yet. Send a test in Settings → Genie." });
+  if (sharing.smsEnabled && routes?.sms !== 'boothgen') {
+    if (!smsConfigured(c)) out.push({ channel: 'sms', message: "Texts are hidden on the iPad until you set up texting in Genie → Sharing." });
+    else if (c!.smsTestError) out.push({ channel: 'sms', message: 'The last test text failed. Send a new test in Genie → Sharing.' });
+    else if (!c!.smsTestedAt) out.push({ channel: 'sms', message: "Twilio hasn't been tested yet. Send a test in Genie → Sharing." });
   }
-  if (sharing.emailEnabled) {
+  if (sharing.emailEnabled && routes?.email !== 'boothgen') {
     const domainError = c?.emailFromAddress ? platformDomainError(c.emailFromAddress) : null;
-    if (domainError) out.push({ channel: 'email', message: domainError + ' Emails are hidden on the iPad until you change it in Settings → Genie.' });
-    else if (!emailConfigured(c)) out.push({ channel: 'email', message: 'Emails are hidden on the iPad until you set up email in Settings → Genie.' });
-    else if (c!.emailTestError) out.push({ channel: 'email', message: 'The last test email failed. Send a new test in Settings → Genie.' });
-    else if (!c!.emailTestedAt) out.push({ channel: 'email', message: "Email hasn't been tested yet. Send a test in Settings → Genie." });
+    if (domainError) out.push({ channel: 'email', message: domainError + ' Emails are hidden on the iPad until you change it in Genie → Sharing.' });
+    else if (!emailConfigured(c)) out.push({ channel: 'email', message: 'Emails are hidden on the iPad until you set up email in Genie → Sharing.' });
+    else if (c!.emailTestError) out.push({ channel: 'email', message: 'The last test email failed. Send a new test in Genie → Sharing.' });
+    else if (!c!.emailTestedAt) out.push({ channel: 'email', message: "Email hasn't been tested yet. Send a test in Genie → Sharing." });
   }
   return out;
 }

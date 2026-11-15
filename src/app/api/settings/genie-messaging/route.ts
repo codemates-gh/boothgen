@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma/client';
 import { decryptSecret, encryptSecret, maskSecret } from '@/lib/crypto/secrets';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { normalizePhone } from '@/lib/sms/phone';
-import { FULL_ACCESS_KEY_HINT, checkResendFromDomain, emailConfigured, platformDomainError, smsConfigured } from '@/lib/genie/messaging';
+import { FULL_ACCESS_KEY_HINT, canUseBoothGen, checkResendFromDomain, emailConfigured, messagingRoutes, platformDomainError, platformEmail, platformSms, smsConfigured } from '@/lib/genie/messaging';
 
 const opt = (s: z.ZodString) => s.optional().or(z.literal('')).transform(v => v || null);
 
@@ -29,7 +29,8 @@ const EmailInput = z.object({
   smtpPassword: z.string().optional(), // blank keeps the saved password
 });
 
-const Body = z.object({ sms: SmsInput.nullable().optional(), email: EmailInput.nullable().optional() });
+const SourceInput = z.enum(['own', 'boothgen']).nullable().optional();
+const Body = z.object({ sms: SmsInput.nullable().optional(), email: EmailInput.nullable().optional(), smsSource: SourceInput, emailSource: SourceInput });
 
 function masked(enc: string | null) {
   if (!enc) return null;
@@ -37,8 +38,13 @@ function masked(enc: string | null) {
 }
 
 // Never returns secrets, only masked values
-function view(c: GenieMessagingConfig | null) {
+function view(c: GenieMessagingConfig | null, tenant: { product: string }) {
   return {
+    // BoothGen's own texting and email: who can use it, whether it's set up, and what each channel uses now
+    boothgen: { allowed: canUseBoothGen(tenant), sms: !!platformSms(), email: !!platformEmail() },
+    smsSource: c?.smsSource ?? null,
+    emailSource: c?.emailSource ?? null,
+    routes: messagingRoutes(c, tenant),
     sms: {
       configured: smsConfigured(c),
       accountSid: c?.twilioAccountSid ?? '',
@@ -70,7 +76,11 @@ function view(c: GenieMessagingConfig | null) {
 export async function GET() {
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
-  return NextResponse.json(view(await prisma.genieMessagingConfig.findUnique({ where: { tenantId: auth.tenantId } })));
+  const [c, tenant] = await Promise.all([
+    prisma.genieMessagingConfig.findUnique({ where: { tenantId: auth.tenantId } }),
+    prisma.tenant.findUniqueOrThrow({ where: { id: auth.tenantId }, select: { product: true } }),
+  ]);
+  return NextResponse.json(view(c, tenant));
 }
 
 export async function PUT(req: NextRequest) {
@@ -78,10 +88,18 @@ export async function PUT(req: NextRequest) {
   if (auth instanceof NextResponse) return auth;
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request' }, { status: 400 });
-  const { sms, email } = parsed.data;
-  const existing = await prisma.genieMessagingConfig.findUnique({ where: { tenantId: auth.tenantId } });
+  const { sms, email, smsSource, emailSource } = parsed.data;
+  const [existing, tenant] = await Promise.all([
+    prisma.genieMessagingConfig.findUnique({ where: { tenantId: auth.tenantId } }),
+    prisma.tenant.findUniqueOrThrow({ where: { id: auth.tenantId }, select: { product: true } }),
+  ]);
+  if ((smsSource === 'boothgen' || emailSource === 'boothgen') && !canUseBoothGen(tenant)) {
+    return NextResponse.json({ error: 'BoothGen texting and email come with Genie-only accounts' }, { status: 403 });
+  }
 
   const data: Prisma.GenieMessagingConfigUncheckedUpdateInput = {};
+  if (smsSource !== undefined) data.smsSource = smsSource;
+  if (emailSource !== undefined) data.emailSource = emailSource;
   let notice: string | null = null;
   if (sms === null) {
     Object.assign(data, { twilioAccountSid: null, twilioAuthTokenEnc: null, twilioMessagingServiceSid: null, twilioFromNumber: null, smsTestedAt: null, smsTestError: null });
@@ -128,5 +146,5 @@ export async function PUT(req: NextRequest) {
     create: { ...(data as Prisma.GenieMessagingConfigUncheckedCreateInput), tenantId: auth.tenantId },
     update: data,
   });
-  return NextResponse.json({ ...view(saved), notice });
+  return NextResponse.json({ ...view(saved, tenant), notice });
 }

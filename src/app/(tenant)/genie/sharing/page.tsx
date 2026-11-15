@@ -9,7 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Mail, Send, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 
 
+type Source = 'own' | 'boothgen';
 type Config = {
+  boothgen: { allowed: boolean; sms: boolean; email: boolean };
+  smsSource: Source | null; emailSource: Source | null;
+  routes: { sms: Source | null; email: Source | null };
   sms: { configured: boolean; accountSid: string; authTokenMasked: string | null; messagingServiceSid: string; fromNumber: string; testedAt: string | null; testError: string | null };
   email: {
     configured: boolean; provider: 'resend' | 'smtp' | null; fromName: string; fromAddress: string; resendApiKeyMasked: string | null;
@@ -42,6 +46,53 @@ function TestResult({ result }: { result: { ok: boolean; error?: string } | null
     <div className="flex items-start gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2"><CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0"/>Sent. Check that it arrived.</div>
   ) : (
     <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2"><AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0"/><span className="break-words">{result.error}</span></div>
+  );
+}
+
+// Genie-only accounts: send through BoothGen's accounts (included) or the operator's own
+function SourceChoice({ channel, config, onChange, busy }: { channel: 'sms' | 'email'; config: Config; onChange: (s: Source) => void; busy: boolean }) {
+  const own = channel === 'sms' ? config.sms.configured : config.email.configured;
+  const saved = channel === 'sms' ? config.smsSource : config.emailSource;
+  // What the account uses now; with nothing chosen it's their own when set up, else BoothGen's
+  const current: Source = saved ?? (own ? 'own' : 'boothgen');
+  const options: [Source, string, string][] = [
+    ['boothgen', 'Booth Genius (included)', channel === 'sms' ? 'Texts go out from Booth Genius\'s number. Included in the event price.' : 'Emails come from your business name via Booth Genius, and replies go to your email.'],
+    ['own', channel === 'sms' ? 'My own Twilio' : 'My own email account', channel === 'sms' ? 'Texts go out from your own Twilio number.' : 'Emails come from your own domain (Resend or SMTP).'],
+  ];
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label={channel === 'sms' ? 'Who sends texts' : 'Who sends emails'}>
+      {options.map(([value, label, hint]) => (
+        <label key={value} className={'flex items-start gap-2 border rounded-lg px-3 py-2.5 cursor-pointer ' + (current === value ? 'border-[#0085FF] bg-blue-50/40' : 'border-gray-200 hover:border-gray-300')}>
+          <input type="radio" className="mt-1" name={channel + '-source'} checked={current === value} disabled={busy} onChange={() => onChange(value)}/>
+          <span><span className="block text-sm font-medium text-gray-800">{label}</span><span className="block text-xs text-gray-500">{hint}</span></span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+// Booth Genius sends this channel: nothing to set up, just a test
+function BoothGenChannel({ channel, ready, error, testTo, setTestTo, testing, onTest, result }: {
+  channel: 'sms' | 'email'; ready: boolean; error?: string;
+  testTo: string; setTestTo: (v: string) => void; testing: boolean; onTest: () => void; result: { ok: boolean; error?: string } | null;
+}) {
+  if (!ready) return (
+    <div className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+      <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
+      <span>Booth Genius {channel === 'sms' ? 'texting' : 'email'} is being set up and isn&apos;t on yet. {channel === 'sms' ? 'Texts' : 'Emails'} stay hidden on the iPad until it is, or until you use your own account.</span>
+    </div>
+  );
+  return (
+    <div className="space-y-3">
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      <Field label={channel === 'sms' ? 'Send a test text to' : 'Send a test email to'}>
+        <div className="flex gap-2">
+          <Input type={channel === 'email' ? 'email' : 'text'} value={testTo} onChange={e => setTestTo(e.target.value)} placeholder={channel === 'sms' ? '202-555-0123' : 'you@example.com'}/>
+          <Button variant="outline" onClick={onTest} disabled={testing || !testTo} className="shrink-0"><Send className="w-3.5 h-3.5 mr-1.5"/>{testing ? 'Sending…' : 'Send Test'}</Button>
+        </div>
+      </Field>
+      <TestResult result={result}/>
+    </div>
   );
 }
 
@@ -87,6 +138,15 @@ export default function GenieSharingPage() {
     setSaving(null);
   }
 
+  async function setSource(channel: 'sms' | 'email', value: Source) {
+    setSaving(channel); setSaveError(e => ({ ...e, [channel]: undefined }));
+    const r = await fetch('/api/settings/genie-messaging', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [channel + 'Source']: value }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok) { apply(d); setTestResult(t => ({ ...t, [channel]: null })); }
+    else setSaveError(e => ({ ...e, [channel]: d.error || 'Could not save' }));
+    setSaving(null);
+  }
+
   async function sendTest(channel: 'sms' | 'email') {
     setTesting(channel); setTestResult(t => ({ ...t, [channel]: null }));
     const r = await fetch('/api/settings/genie-messaging/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, to: testTo[channel] }) });
@@ -114,17 +174,24 @@ export default function GenieSharingPage() {
           <>
             <div>
               <h2 className="text-base font-semibold text-gray-800 mb-1">Guest Messaging</h2>
-              <p className="text-sm text-gray-500">Genie sends guests their photos from your own Twilio and email accounts. A channel you haven&apos;t set up is hidden on the iPad.</p>
+              <p className="text-sm text-gray-500">{config.boothgen.allowed
+                ? 'Genie texts and emails guests their photos through Booth Genius (included in the event price), or through your own Twilio and email accounts. A channel that isn\'t set up is hidden on the iPad.'
+                : 'Genie sends guests their photos from your own Twilio and email accounts. A channel you haven\'t set up is hidden on the iPad.'}</p>
             </div>
 
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2"><MessageSquare className="w-4 h-4"/>Text Messages (Twilio)</CardTitle>
-                  <Status {...config.sms}/>
+                  <CardTitle className="flex items-center gap-2"><MessageSquare className="w-4 h-4"/>Text Messages</CardTitle>
+                  {config.routes.sms === 'boothgen' ? <Badge variant="success">Booth Genius</Badge> : <Status {...config.sms}/>}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {config.boothgen.allowed && <SourceChoice channel="sms" config={config} busy={saving === 'sms'} onChange={v => setSource('sms', v)}/>}
+                {config.boothgen.allowed && (config.smsSource ?? (config.sms.configured ? 'own' : 'boothgen')) === 'boothgen' ? (
+                  <BoothGenChannel channel="sms" ready={config.boothgen.sms} error={saveError.sms}
+                    testTo={testTo.sms} setTestTo={v => setTestTo(t => ({ ...t, sms: v }))} testing={testing === 'sms'} onTest={() => sendTest('sms')} result={testResult.sms}/>
+                ) : <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Field label="Account SID"><Input value={sms.accountSid} onChange={e => setSms(s => ({ ...s, accountSid: e.target.value.trim() }))} placeholder="AC…"/></Field>
                   <Field label="Auth Token" hint={config.sms.authTokenMasked ? 'Saved ' + config.sms.authTokenMasked + ' — leave blank to keep it' : undefined}>
@@ -151,6 +218,7 @@ export default function GenieSharingPage() {
                     <TestResult result={testResult.sms ?? (config.sms.testError ? { ok: false, error: 'Last test failed: ' + config.sms.testError } : null)}/>
                   </div>
                 )}
+                </>}
               </CardContent>
             </Card>
 
@@ -158,10 +226,15 @@ export default function GenieSharingPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2"><Mail className="w-4 h-4"/>Email</CardTitle>
-                  <Status {...config.email}/>
+                  {config.routes.email === 'boothgen' ? <Badge variant="success">Booth Genius</Badge> : <Status {...config.email}/>}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {config.boothgen.allowed && <SourceChoice channel="email" config={config} busy={saving === 'email'} onChange={v => setSource('email', v)}/>}
+                {config.boothgen.allowed && (config.emailSource ?? (config.email.configured ? 'own' : 'boothgen')) === 'boothgen' ? (
+                  <BoothGenChannel channel="email" ready={config.boothgen.email} error={saveError.email}
+                    testTo={testTo.email} setTestTo={v => setTestTo(t => ({ ...t, email: v.trim() }))} testing={testing === 'email'} onTest={() => sendTest('email')} result={testResult.email}/>
+                ) : <>
                 {config.email.domainError && (
                   <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
                     <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
@@ -220,6 +293,7 @@ export default function GenieSharingPage() {
                     <TestResult result={testResult.email ?? (config.email.testError ? { ok: false, error: 'Last test failed: ' + config.email.testError } : null)}/>
                   </div>
                 )}
+                </>}
               </CardContent>
             </Card>
           </>

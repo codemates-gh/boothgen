@@ -3,7 +3,7 @@ import type { Event, EventGenieSettings, EventGenieTemplate, Gallery, GenieBackd
 import { prisma } from '@/lib/prisma/client';
 import { THANK_YOU_DEFAULT, type StoredLayout } from './schemas';
 import { galleryUrl, sessionUrl } from './urls';
-import { emailUsable, smsConfigured } from './messaging';
+import { messagingRoutes } from './messaging';
 import { bundleBoomerang } from './boomerang';
 import { bundleAttract } from './attract';
 import { bundleProps, eventProps } from './props';
@@ -96,6 +96,7 @@ function eventTemplateJson(t: EventGenieTemplate) {
 }
 
 type BundleEvent = Event & {
+  tenant: { id: string; product: string };
   client: { firstName: string; lastName: string; email: string };
   genieSettings: EventGenieSettings | null;
   genieTemplates: EventGenieTemplate[];
@@ -155,8 +156,8 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
     },
     sharing: {
       // A channel is only offered when the tenant's own provider for it is set up
-      smsEnabled: settings.smsEnabled && smsConfigured(messaging),
-      emailEnabled: settings.emailEnabled && emailUsable(messaging),
+      smsEnabled: settings.smsEnabled && messagingRoutes(messaging, event.tenant).sms !== null,
+      emailEnabled: settings.emailEnabled && messagingRoutes(messaging, event.tenant).email !== null,
       qrEnabled: settings.qrEnabled,
       guestLinkScope: settings.guestLinkScope,
       smsBody: settings.smsBody,

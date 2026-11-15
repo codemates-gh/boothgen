@@ -4,6 +4,25 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.90.0] — 2026-11-14
+
+### Added
+- **Genie-only accounts, stage 2c (BoothGen texting and email)**: Genie-only accounts can send guest texts and emails through Booth Genius's own Twilio and Resend, included in the event price, with no Twilio or email setup. Genie → Sharing has a choice per channel: **Booth Genius (included)** or **My own Twilio / My own email account**. With nothing chosen, an account uses its own when it's set up, else Booth Genius
+- Emails come from "<business name> via Booth Genius" on BoothGen's sending domain, with replies going to the operator (Branding → Reply-to Email, else the account owner's email)
+- Texts go out from BoothGen's Twilio Messaging Service; delivery status comes back on `/api/webhooks/twilio/genie/boothgen`. A guest who replied STOP gets a clear "opted out" failure
+- A safety limit of 2,000 BoothGen texts per event, only to stop a bug or abuse
+- Each guest message records whose account sent it ("own" or "boothgen") for usage and costs
+- Send Test works for the Booth Genius option too
+- Off until BoothGen's keys are added in Vercel (`BOOTHGEN_TWILIO_ACCOUNT_SID`, `BOOTHGEN_TWILIO_AUTH_TOKEN`, `BOOTHGEN_TWILIO_MESSAGING_SERVICE_SID`, `BOOTHGEN_RESEND_API_KEY`, `BOOTHGEN_EMAIL_FROM`); until then the page says it's being set up and those channels stay hidden on the iPad, as today. Genius accounts are unchanged
+
+### Changed
+- Event Genie page sharing warnings point to Genie → Sharing, and don't show for a channel Booth Genius sends
+
+### Database
+- `genie_messaging_configs.smsSource`, `emailSource`; `genie_shares.provider` (`docs/genie/apply-production-boothgen-messaging.sql`)
+
+---
+
 ## [2.89.0] — 2026-11-14
 
 ### Changed

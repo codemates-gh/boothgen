@@ -1,6 +1,13 @@
-# Genie only accounts: plan (for discussion, nothing built)
+# Genie only accounts: plan
 
-Status: **planning only** (G, 2026-11-14). Decisions recorded below. No code, schema or production changes until G says go.
+Status (2026-11-14): building in stages.
+- Stage 1, access and menus: live (2.86.x).
+- Stage 2a, booth events: live (2.87.0). Stage 2b, pay per event, watermark flag, Genie Usage: live (2.88.0); the iPad
+  watermark is in Genie build 19. Stage 2c, BoothGen texting and email: 2.90.0, off until BoothGen's Twilio (toll-free,
+  verified) and Resend keys are in Vercel.
+- Next: stage 3 (sign-up, email confirmation, Genie onboarding, pricing page); stage 4 (Genius subscription ends).
+- Later (G): text cap after 20 paid events, Genius + Genie $10 per event, event packs, monthly Genie plan, attendant
+  logins, AI credits.
 
 ## The idea
 

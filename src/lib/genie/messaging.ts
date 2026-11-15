@@ -116,3 +116,95 @@ export async function sendTenantEmail(c: GenieMessagingConfig | null, to: string
     return { ok: false, error: err?.message ?? 'Email send failed', retryable: !permanent };
   }
 }
+
+// ── BoothGen texting and email (Genie-only stage 2c) ────────────────────────
+// Genie-only accounts can send guest texts and emails through BoothGen's own Twilio (a toll-free number on a
+// "BoothGen platform" subaccount) and Resend (a sending domain just for this), included in the event price.
+// Operators who connected their own accounts keep using them. Credentials come from these environment variables:
+//   BOOTHGEN_TWILIO_ACCOUNT_SID, BOOTHGEN_TWILIO_AUTH_TOKEN,
+//   BOOTHGEN_TWILIO_MESSAGING_SERVICE_SID (or BOOTHGEN_TWILIO_FROM_NUMBER),
+//   BOOTHGEN_RESEND_API_KEY, BOOTHGEN_EMAIL_FROM (e.g. photos@mail.boothgen.com)
+// STOP/HELP: Twilio's opt-out handling on the Messaging Service replies and blocks texts to that guest.
+
+export type Source = 'own' | 'boothgen';
+export type MessagingRoutes = { sms: Source | null; email: Source | null };
+
+// Safety limit on BoothGen texts per event, only to stop a bug or abuse (G: the real cap comes after usage data)
+export const BOOTHGEN_SMS_LIMIT_PER_EVENT = 2000;
+
+export function platformSms() {
+  const accountSid = process.env.BOOTHGEN_TWILIO_ACCOUNT_SID, authToken = process.env.BOOTHGEN_TWILIO_AUTH_TOKEN;
+  const messagingServiceSid = process.env.BOOTHGEN_TWILIO_MESSAGING_SERVICE_SID || null, fromNumber = process.env.BOOTHGEN_TWILIO_FROM_NUMBER || null;
+  return accountSid && authToken && (messagingServiceSid || fromNumber) ? { accountSid, authToken, messagingServiceSid, fromNumber } : null;
+}
+
+export function platformEmail() {
+  const apiKey = process.env.BOOTHGEN_RESEND_API_KEY, from = process.env.BOOTHGEN_EMAIL_FROM;
+  return apiKey && from ? { apiKey, from } : null;
+}
+
+// Who can use BoothGen's accounts: Genie-only accounts (texts and email are in the per-event price)
+export const canUseBoothGen = (tenant: { product: string }) => tenant.product === 'genie';
+
+export function messagingRoutes(c: GenieMessagingConfig | null, tenant: { product: string }): MessagingRoutes {
+  const allowed = canUseBoothGen(tenant);
+  const pick = (source: string | null | undefined, ownReady: boolean, platformReady: boolean): Source | null => {
+    const boothgen = allowed && platformReady;
+    if (source === 'own') return ownReady ? 'own' : null;
+    if (source === 'boothgen') return boothgen ? 'boothgen' : null;
+    return ownReady ? 'own' : boothgen ? 'boothgen' : null;
+  };
+  return {
+    sms: pick(c?.smsSource, smsConfigured(c), !!platformSms()),
+    email: pick(c?.emailSource, emailUsable(c), !!platformEmail()),
+  };
+}
+
+export type Messaging = { config: GenieMessagingConfig | null; tenant: { id: string; name: string; product: string }; routes: MessagingRoutes };
+
+export async function getMessaging(tenantId: string): Promise<Messaging> {
+  const [config, tenant] = await Promise.all([
+    getMessagingConfig(tenantId),
+    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { id: true, name: true, product: true } }),
+  ]);
+  return { config, tenant, routes: messagingRoutes(config, tenant) };
+}
+
+export const PLATFORM_STATUS_CALLBACK_ID = 'boothgen';
+
+export async function sendSms(m: Messaging, to: string, body: string): Promise<SendResult & { provider?: Source }> {
+  if (m.routes.sms === 'own') return { ...await sendTenantSms(m.config, to, body), provider: 'own' };
+  const p = m.routes.sms === 'boothgen' ? platformSms() : null;
+  if (!p) return { ok: false, error: 'SMS is not set up', retryable: false };
+  const r = await sendTwilioSms(p, to, body, twilioStatusCallbackUrl(PLATFORM_STATUS_CALLBACK_ID));
+  // 21610: the guest replied STOP to BoothGen's number
+  if (!r.ok) return { ok: false, error: r.code === 21610 ? 'This number opted out of texts (replied STOP)' : r.error, retryable: r.retryable, provider: 'boothgen' };
+  return { ok: true, providerMessageId: r.sid, provider: 'boothgen' };
+}
+
+// The operator's business name and reply-to address, for email sent from BoothGen's domain
+async function senderIdentity(tenantId: string, fallbackName: string) {
+  const [branding, admin] = await Promise.all([
+    prisma.tenantBranding.findUnique({ where: { tenantId }, select: { companyName: true, replyToEmail: true } }),
+    prisma.tenantMembership.findFirst({ where: { tenantId, role: 'HOST_ADMIN', status: 'ACTIVE' }, orderBy: { createdAt: 'asc' }, select: { user: { select: { email: true } } } }),
+  ]);
+  return { name: branding?.companyName || fallbackName, replyTo: branding?.replyToEmail || admin?.user.email || null };
+}
+
+export async function sendEmail(m: Messaging, to: string, subject: string, html: string, text: string): Promise<SendResult & { provider?: Source }> {
+  if (m.routes.email === 'own') return { ...await sendTenantEmail(m.config, to, subject, html, text), provider: 'own' };
+  const p = m.routes.email === 'boothgen' ? platformEmail() : null;
+  if (!p) return { ok: false, error: 'Email is not set up', retryable: false };
+  const who = await senderIdentity(m.tenant.id, m.tenant.name);
+  try {
+    const resend = new Resend(p.apiKey);
+    const { data, error } = await resend.emails.send({
+      from: `${who.name.replace(/[<>"]/g, '')} via Booth Genius <${p.from}>`, to, subject, html, text,
+      ...(who.replyTo ? { reply_to: who.replyTo } : {}),
+    });
+    if (error) return { ok: false, error: error.message, retryable: error.name === 'rate_limit_exceeded' || error.name === 'internal_server_error', provider: 'boothgen' };
+    return { ok: true, providerMessageId: data?.id, provider: 'boothgen' };
+  } catch (err: any) {
+    return { ok: false, error: err?.message ?? 'Email send failed', retryable: true, provider: 'boothgen' };
+  }
+}

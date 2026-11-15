@@ -1468,6 +1468,7 @@ model GenieShare {
   smsConsentAt      DateTime?
   smsConsentText    String? // consent copy in effect when the share was accepted
   status            String    @default("queued") // queued | sent | delivered | failed
+  provider          String? // "own" | "boothgen": whose account sent it
   providerMessageId String?   @unique
   error             String?
   attempts          Int       @default(1) // send attempts; "Resend" in BoothGen adds one
@@ -1535,6 +1536,11 @@ model EventGenieTemplate {
 model GenieMessagingConfig {
   id       String @id @default(cuid())
   tenantId String @unique
+
+  // Which accounts send guest texts and emails: "own" (the fields below) or "boothgen" (BoothGen's Twilio and Resend,
+  // Genie-only accounts). null = own when set up, else BoothGen when the account can use it. See src/lib/genie/messaging.ts
+  smsSource   String?
+  emailSource String?
 
   // SMS: tenant's Twilio account; Messaging Service SID preferred, else From number
   twilioAccountSid          String?
