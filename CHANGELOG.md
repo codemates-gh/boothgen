@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.94.3] — 2026-11-15
+
+### Added
+- **Two new blog posts**: "Booth Genius Is Now BoothGen" (why the new name, what BoothGen means, and that logins, links, data and rates don't change) and "Introducing Genie: The Simple Photo Booth App for Standard Events" (setup, guest features, $15 per event pricing, Genie included with Genius Pro)
+
+### Changed
+- Older blog posts now say Genius (and Genius Pro) instead of Booth Genius; their links are unchanged
+
+---
+
 ## [2.94.2] — 2026-11-15
 
 ### Changed
