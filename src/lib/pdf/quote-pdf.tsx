@@ -86,7 +86,7 @@ export function QuotePDF({ quote, branding }: { quote: any; branding: any }) {
               {li.notes && <Text style={{ fontSize: 8, color: '#6b7280', marginTop: 2 }}>{li.notes}</Text>}
             </View>
             <Text style={S.col2}>{li.quantity}</Text>
-            <Text style={S.col2}>{fmt(li.unitPriceCents)}</Text>
+            <Text style={S.col2}>{fmt(li.unitCents)}</Text>
             <Text style={S.col2}>{fmt(li.totalCents)}</Text>
           </View>
         ))}

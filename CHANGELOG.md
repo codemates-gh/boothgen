@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.95.9] — 2026-11-16
+
+### Fixed
+- **Quote PDFs showed "$NaN" as the unit price.** The PDF read the price from the wrong field. Amounts and totals were always right; downloading a quote PDF again now shows the unit price too
+
+---
+
 ## [2.95.8] — 2026-11-16
 
 ### Changed
