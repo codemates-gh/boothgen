@@ -5,8 +5,11 @@
 //   node --env-file=.env scripts/dev-reports.mjs list [--all]
 //   node --env-file=.env scripts/dev-reports.mjs show 12 [--download <folder>]
 //   node --env-file=.env scripts/dev-reports.mjs update 12 --status fix_ready --fixed-in 2.74.0 --note "What changed + how to check"
-//        (after the fix is deployed; never --status fixed: only Booth Genius staff close a report, and the API refuses it)
-//        other flags: --priority P1|P2|P3  --internal (note only Super Admins see)  --unassign
+//        (after the fix is deployed; never --status fixed: only BoothGen staff close a report, and the API refuses it)
+//        notes are internal (Super Admins only) unless --public; public notes must be plain words (no technical/AI terms)
+//        --status dev_review asks G to approve a prepared fix or answer a question ("Waiting on you" in Super Admin);
+//        G approving sets dev_approved (Dev can't); reporters see both as "In progress" and aren't emailed
+//        other flags: --priority P1|P2|P3  --public (note testers see, emailed)  --unassign
 //                     --attach shot1.png,shot2.png (screenshots with the note, e.g. the fixed screen)
 //                     --how-to-find "Steps" --how-to-find-url /genie/sharing  --duplicate-of 7
 // See docs/REPORTS-DEV.md.
@@ -39,7 +42,7 @@ async function api(p, body) {
 }
 
 function print(r) {
-  console.log(`#${r.number} [${r.type}] ${r.title}`);
+  console.log(`#${r.number} [${r.type}] ${r.title}${r.approvedToShip ? '  >>> APPROVED TO SHIP' : r.waitingOnG ? '  (waiting on G)' : ''}`);
   console.log(`  status: ${r.status}${r.priority ? ' · ' + r.priority : ''}${r.severity ? ' · severity ' + r.severity : ''} · part: ${r.area} · ${r.voteCount} ${r.type === 'suggestion' ? 'votes' : 'affected'}`);
   console.log(`  by ${r.reporter.name}${r.tenant ? ' (' + r.tenant.name + ')' : ''} · BoothGen ${r.appVersion ?? '?'} · page ${r.pageUrl ?? '-'}`);
   if (r.deviceInfo) console.log(`  device: ${r.deviceInfo}`);
@@ -50,6 +53,7 @@ function print(r) {
     console.log(`  — ${n.author}${n.internal ? ' (internal)' : ''}: ${n.body}`);
     for (const a of n.attachments ?? []) console.log(`      attachment: ${a.name} ${a.url}`);
   }
+  for (const g of r.repliesFromG ?? []) console.log(`  >>> G replied${g.internal ? ' (internal)' : ''}: ${g.body}`);
   console.log(`  open: ${r.link}\n`);
 }
 
@@ -72,7 +76,7 @@ if (cmd === 'list') {
   }
 } else if (cmd === 'update' && ref) {
   if (flags.status === 'fixed') {
-    console.error('Only Booth Genius staff mark a report Fixed. After deploying, use --status fix_ready --fixed-in <version> --note "<what changed + how to check>".');
+    console.error('Only BoothGen staff mark a report Fixed. After deploying, use --status fix_ready --fixed-in <version> --note "<what changed + how to check>".');
     process.exit(1);
   }
   const body = {
@@ -83,7 +87,7 @@ if (cmd === 'list') {
     ...(flags['how-to-find-url'] ? { howToFindUrl: flags['how-to-find-url'] } : {}),
     ...(flags['duplicate-of'] ? { duplicateOf: Number(flags['duplicate-of']) } : {}),
     ...(flags.unassign ? { assignedToDev: false } : {}),
-    ...(typeof flags.note === 'string' ? { note: flags.note, internal: !!flags.internal } : {}),
+    ...(typeof flags.note === 'string' ? { note: flags.note, public: !!flags.public } : {}),
   };
   if (flags.attach) {
     if (typeof flags.note !== 'string') { console.error('--attach goes with --note'); process.exit(1); }

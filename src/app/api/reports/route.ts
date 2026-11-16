@@ -8,7 +8,7 @@ import { APP_VERSION } from '@/lib/version';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { displayName, forEmail, loadReport, reportViewer, voteCount, votingOpen } from '@/lib/reports/server';
 import { notifyAdminsNewReport } from '@/lib/reports/notify';
-import { AREA_VALUES, OPEN_STATUSES, SEVERITY_VALUES, TYPE_VALUES } from '@/lib/reports/options';
+import { AREA_VALUES, DEV_ONLY_STATUSES, OPEN_STATUSES, SEVERITY_VALUES, TYPE_VALUES, publicStatus } from '@/lib/reports/options';
 
 const Body = z.object({
   type: z.enum(TYPE_VALUES),
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
   const status = p.get('status') || 'open';
   const q = p.get('q')?.trim();
   const where: Prisma.FeedbackReportWhereInput = {
-    ...(status === 'open' ? { status: { in: OPEN_STATUSES } } : status === 'all' ? {} : { status }),
+    ...(status === 'open' ? { status: { in: OPEN_STATUSES } } : status === 'all' ? {} : status === 'in_progress' ? { status: { in: ['in_progress', ...DEV_ONLY_STATUSES] } } : { status }),
     ...(p.get('type') ? { type: p.get('type')! } : {}),
     ...(p.get('area') ? { area: p.get('area')! } : {}),
     ...(p.get('mine') === '1' ? { OR: [{ userId: viewer.userId }, { followers: { some: { userId: viewer.userId } } }] } : {}),
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     const mine = userId === viewer.userId;
     const follow = followers.find(f => f.userId === viewer.userId);
     return {
-      ...r, reporterName: displayName(user.name), voteCount: voteCount(followers), isMine: mine,
+      ...r, status: publicStatus(r.status), reporterName: displayName(user.name), voteCount: voteCount(followers), isMine: mine,
       hasVoted: mine || !!follow?.voted, isFollowing: mine || !!follow?.following, canVote: !mine && votingOpen(r.status),
       unread: mine ? reporterUnread : !!(follow?.following && follow.unread),
     };

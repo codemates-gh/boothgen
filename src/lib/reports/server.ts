@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
-import { OPEN_STATUSES, type ReportAttachment } from './options';
+import { OPEN_STATUSES, publicStatus, type ReportAttachment } from './options';
 
 export type ReportViewer = { userId: string; tenantId: string | null; isAdmin: boolean };
 
@@ -57,7 +57,7 @@ export function reportView(r: FullReport, viewerId: string, asAdmin: boolean) {
     }));
   const base = {
     id: r.id, number: r.number, type: r.type, title: r.title, area: r.area, severity: r.severity, deviceInfo: r.deviceInfo,
-    details: r.details, status: r.status, priority: r.priority, fixedInVersion: r.fixedInVersion,
+    details: r.details, status: asAdmin ? r.status : publicStatus(r.status), priority: r.priority, fixedInVersion: r.fixedInVersion,
     howToFind: r.howToFind, howToFindUrl: r.howToFindUrl, duplicateOf: r.duplicateOf,
     createdAt: r.createdAt, updatedAt: r.updatedAt,
     reporterName: displayName(r.user.name), voteCount: voteCount(r.followers),

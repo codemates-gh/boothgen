@@ -29,6 +29,9 @@ export const REPORT_STATUSES = [
   { value: 'need_info', label: 'Need more info', badge: 'warning' },
   { value: 'confirmed', label: 'Confirmed', badge: 'info' },
   { value: 'in_progress', label: 'In progress', badge: 'brand' },
+  // Dev ↔ G only (reporters see "In progress"): Dev prepared a fix or asked G something; G approved shipping it
+  { value: 'dev_review', label: 'Waiting on you', reporterLabel: 'In progress', badge: 'warning' },
+  { value: 'dev_approved', label: 'Approved, shipping', reporterLabel: 'In progress', badge: 'brand' },
   // The fix is deployed; BoothGen checks it, then marks it Fixed (only staff can; the Dev API stops here)
   { value: 'fix_ready', label: 'Fix ready', reporterLabel: 'Fix is live, being checked', badge: 'info' },
   { value: 'fixed', label: 'Fixed', badge: 'success' },
@@ -38,7 +41,12 @@ export const REPORT_STATUSES = [
 ] as const;
 
 // Still being worked on; the Reports board shows these by default
-export const OPEN_STATUSES = ['new', 'need_info', 'confirmed', 'in_progress', 'fix_ready'];
+export const OPEN_STATUSES = ['new', 'need_info', 'confirmed', 'in_progress', 'dev_review', 'dev_approved', 'fix_ready'];
+
+// Statuses only Super Admins see; everyone else sees "In progress" and isn't emailed when they change
+export const DEV_ONLY_STATUSES = ['dev_review', 'dev_approved'];
+export const publicStatus = (s: string) => DEV_ONLY_STATUSES.includes(s) ? 'in_progress' : s;
+export const PUBLIC_STATUSES = REPORT_STATUSES.filter(s => !DEV_ONLY_STATUSES.includes(s.value));
 
 export const REPORT_PRIORITIES = ['P1', 'P2', 'P3'] as const;
 

@@ -35,6 +35,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (asAdmin) {
     await addTeamNote(r, viewer.userId, parsed.data.body, internal, files);
+    // A reply while Dev waits on G goes back to Dev (reporters still see "In progress")
+    if (r.assignedToDev && r.status === 'dev_review') await prisma.feedbackReport.update({ where: { id: r.id }, data: { status: 'in_progress' }, select: { id: true } });
     const updated = await loadReport(r.id);
     return NextResponse.json({ report: reportView(updated!, viewer.userId, true) }, { status: 201 });
   }

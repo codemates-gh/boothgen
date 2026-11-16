@@ -24,6 +24,21 @@ export async function findReport(ref: string): Promise<FullReport | null> {
   return row ? loadReport(row.id) : null;
 }
 
+// Notes testers can see are short, plain updates from BoothGen: no technical or AI wording. Returns the first
+// offending word, or null when the note reads fine.
+const JARGON = /\b(claude|anthropic|chatgpt|openai|llm|ai|worktree|branch(es)?|commit(s|ted)?|git|github|repo(sitory)?|pull request|pr|merge[sd]?|deploy(s|ed|ing|ment)?|typescript|tsc|endpoint|api|prisma|sql|neon|vercel|stack trace|null|undefined|localhost)\b|src\/|\.(tsx?|mjs|jsx?)\b/i;
+export function jargonIn(note: string): string | null {
+  return note.match(JARGON)?.[0] ?? null;
+}
+
+// G's replies since Dev last wrote (Super Admin notes, newest last): what Dev should act on next
+function repliesFromG(r: FullReport) {
+  const lastDev = [...r.notes].reverse().find(n => n.fromAdmin && !n.authorId);
+  return r.notes
+    .filter(n => n.fromAdmin && n.authorId && !/^Status changed to /.test(n.body) && (!lastDev || n.createdAt > lastDev.createdAt))
+    .map(n => ({ body: n.body, internal: n.internal, createdAt: n.createdAt }));
+}
+
 // Everything needed to work on a report, without people's email addresses; attachments as 1-hour download links
 export async function devView(r: FullReport) {
   const v = reportView(r, '', true) as ReturnType<typeof reportView> & Record<string, any>;
@@ -31,6 +46,9 @@ export async function devView(r: FullReport) {
   return {
     ...v,
     assignedToDev: r.assignedToDev, assignedAt: r.assignedAt,
+    // dev_review: waiting on G (approve or reply). dev_approved: G approved shipping the prepared fix.
+    waitingOnG: r.status === 'dev_review', approvedToShip: r.status === 'dev_approved',
+    repliesFromG: repliesFromG(r),
     reporter: { name: v.reporterName },
     followers: r.followers.map(f => ({ name: f.user.name || 'a tester', voted: f.voted })),
     tenant: r.tenant ? { name: r.tenant.name } : null,

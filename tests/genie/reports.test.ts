@@ -332,7 +332,7 @@ describe('Bug reports and suggestions', () => {
     expect(refused.status).toBe(403);
     expect((await refused.json()).error).toMatch(/Only BoothGen staff can mark a report Fixed/);
     expect(sendEmail).not.toHaveBeenCalled();
-    const up = await (await DEV_UPDATE(dev('/x', { status: 'fix_ready', fixedInVersion: '2.74.0', note: 'Print now retries when the printer wakes up.' }), p(String(number)))).json();
+    const up = await (await DEV_UPDATE(dev('/x', { status: 'fix_ready', fixedInVersion: '2.74.0', note: 'Print now retries when the printer wakes up.', public: true }), p(String(number)))).json();
     expect(up.report).toMatchObject({ status: 'fix_ready', fixedInVersion: '2.74.0' });
     expect(up.report.notes.slice(-2).map((n: any) => [n.author, n.body])).toEqual([['Dev', 'Fix is live in version 2.74.0, being checked'], ['Dev', 'Print now retries when the printer wakes up.']]);
     expect(sendEmail.mock.calls.map(c => c[0])).toEqual([reporter.email, reporter.email]);
@@ -384,8 +384,57 @@ describe('Bug reports and suggestions', () => {
     expect(await (await DEV_UPLOAD(dev({ contentType: 'image/png', bytes: 10 }))).json()).toMatchObject({ key: expect.stringMatching(/^reports\/dev\/.+\.png$/) });
     expect((await DEV_UPDATE(dev({ attachments: [shot('dev')] }), p(id))).status).toBe(400); // needs a note
     expect((await DEV_UPDATE(dev({ note: 'x', attachments: [shot(reporter.id)] }), p(id))).status).toBe(400); // not a Dev upload
-    const fixed = await (await DEV_UPDATE(dev({ status: 'fix_ready', fixedInVersion: '2.74.0', note: 'Fixed screen attached', attachments: [shot('dev', 'after.png')] }), p(id))).json();
+    const fixed = await (await DEV_UPDATE(dev({ status: 'fix_ready', fixedInVersion: '2.74.0', note: 'Fixed screen attached', public: true, attachments: [shot('dev', 'after.png')] }), p(id))).json();
     expect(fixed.report.notes.at(-1)).toMatchObject({ body: 'Fixed screen attached', attachments: [expect.objectContaining({ name: 'after.png', url: expect.stringContaining('reports/dev/after.png') })] });
+    delete process.env.REPORTS_DEV_TOKEN;
+  });
+  it('Dev asks before shipping: Waiting on you, Approve & ship, replies go back to Dev, testers only see In progress', async () => {
+    const { tenant, reporter, admin } = await users();
+    as(reporter, tenant.id);
+    const { id, number } = await (await CREATE(post(BUG))).json();
+    process.env.REPORTS_DEV_TOKEN = 'k'.repeat(40);
+    const dev = (body?: unknown) => req('/x', { body, headers: { authorization: 'Bearer ' + 'k'.repeat(40) } });
+    as(admin, undefined, true);
+    await TRIAGE(req('/x', { method: 'PATCH', body: { assignedToDev: true, status: 'in_progress' } }), p(id));
+
+    // Notes are internal by default; public ones must be plain words
+    sendEmail.mockClear();
+    let r = (await (await DEV_UPDATE(dev({ status: 'dev_review', note: 'Fix prepared on branch reports/1-print: retries the printer.' }), p(id))).json()).report;
+    expect(r).toMatchObject({ status: 'dev_review', waitingOnG: true });
+    expect(r.notes.at(-1)).toMatchObject({ internal: true, author: 'Dev' });
+    expect(sendEmail).not.toHaveBeenCalled();
+    const jargon = await DEV_UPDATE(dev({ note: 'Claude fixed it in a new branch', public: true }), p(id));
+    expect(jargon.status).toBe(400);
+    expect((await jargon.json()).error).toMatch(/plain/);
+    expect((await DEV_UPDATE(dev({ status: 'dev_approved' }), p(id))).status).toBe(403); // only G approves
+
+    // Testers see "In progress" and no Dev details
+    as(reporter, tenant.id);
+    const seen = (await (await DETAIL(req('/x'), p(id))).json()).report;
+    expect(seen.status).toBe('in_progress');
+    expect(JSON.stringify(seen)).not.toMatch(/branch|Waiting on you|dev_review/);
+    expect((await (await BOARD(req('/x?status=in_progress'))).json()).reports.map((x: any) => [x.number, x.status])).toEqual([[number, 'in_progress']]);
+
+    // G replies with an internal note: back to Dev, who sees the reply
+    as(admin, undefined, true);
+    await NOTE(post({ body: 'Also keep the old button label', admin: true, internal: true }), p(id));
+    r = (await (await DEV_SHOW(dev(), p(id))).json()).report;
+    expect(r).toMatchObject({ status: 'in_progress', waitingOnG: false });
+    expect(r.repliesFromG.map((n: any) => n.body)).toEqual(['Also keep the old button label']);
+
+    // Dev asks again, G approves: no email to the reporter, logged internally
+    await DEV_UPDATE(dev({ status: 'dev_review', note: 'Done, label kept.' }), p(id));
+    expect((await DEV_SHOW(dev(), p(id)).then(x => x.json())).report.repliesFromG).toEqual([]);
+    sendEmail.mockClear();
+    const approved = (await (await TRIAGE(req('/x', { method: 'PATCH', body: { status: 'dev_approved' } }), p(id))).json()).report;
+    expect(approved.status).toBe('dev_approved');
+    expect(approved.notes.at(-1)).toMatchObject({ internal: true, body: 'Status changed to Approved, shipping' });
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect((await (await DEV_SHOW(dev(), p(id))).json()).report.approvedToShip).toBe(true);
+
+    // Shipped: Fix ready is announced to the reporter as usual
+    await DEV_UPDATE(dev({ status: 'fix_ready', fixedInVersion: '2.99.0', note: 'Printing now tries again when the printer wakes up.', public: true }), p(id));
+    expect(sendEmail.mock.calls.map(c => c[0])).toEqual([reporter.email, reporter.email]);
     delete process.env.REPORTS_DEV_TOKEN;
   });
 });

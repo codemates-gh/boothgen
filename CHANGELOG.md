@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.96.0] — 2026-11-16
+
+### Added
+- **Approve Dev's fixes from the report.** Reports assigned to Dev now come back to you as **Waiting on you** when a fix is ready or Dev has a question. In Super Admin → Reports, click **Approve & ship**, or reply with an internal note to send it back to Dev. The next Dev run puts approved fixes live and sets them to Fix ready for you to check
+- New statuses **Waiting on you** and **Approved, shipping**, seen only in Super Admin; reporters see "In progress" and aren't emailed when these change
+
+### Changed
+- **Dev's notes are internal unless meant for testers.** Notes testers see must be plain words: anything with technical or AI wording is refused and stays internal. Testers only see short updates signed BoothGen
+
+---
+
 ## [2.95.10] — 2026-11-16
 
 ### Added

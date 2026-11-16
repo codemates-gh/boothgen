@@ -192,7 +192,7 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input type="checkbox" checked={detail.assignedToDev} disabled={busy} onChange={e => triage({ assignedToDev: e.target.checked })} />
                 <span className="font-medium">Assign to Dev</span>
-                <span className="text-xs text-gray-400">A Claude Code session picks it up when asked to work on assigned reports, then updates it here</span>
+                <span className="text-xs text-gray-400">Dev checks assigned reports at 7 AM and 7 PM, prepares a fix, and asks you here before shipping it</span>
               </label>
 
               <div className="grid sm:grid-cols-3 gap-3">
@@ -217,6 +217,22 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
                 </div>
               </div>
 
+              {!pending && detail.status === 'dev_review' && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 space-y-2">
+                  <p className="text-sm font-medium text-amber-900">Dev is waiting on you</p>
+                  <p className="text-sm text-amber-800">Read Dev&apos;s latest note below. If it&apos;s a prepared fix, approve it and the next Dev run puts it live and tells the reporter. To ask for changes or answer a question, reply with an internal note; it goes back to Dev. The reporter only sees &ldquo;In progress&rdquo;.</p>
+                  <div className="flex justify-end gap-2">
+                    <Button size="sm" variant="outline" disabled={busy} onClick={() => { setInternal(true); document.getElementById('report-note')?.focus(); }}>Reply to Dev</Button>
+                    <Button size="sm" disabled={busy} onClick={() => triage({ status: 'dev_approved' })}>Approve &amp; ship</Button>
+                  </div>
+                </div>
+              )}
+              {!pending && detail.status === 'dev_approved' && (
+                <div className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 flex flex-wrap items-center gap-3">
+                  <p className="text-sm text-violet-900 flex-1 min-w-[200px]">Approved. The next Dev run puts the fix live, then sets the report to Fix ready for you to check.</p>
+                  <Button size="sm" variant="ghost" disabled={busy} onClick={() => triage({ status: 'dev_review' })}>Undo approval</Button>
+                </div>
+              )}
               {!pending && detail.status === 'fix_ready' && (
                 <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 flex flex-wrap items-center gap-3">
                   <p className="text-sm text-[#0073E6] flex-1 min-w-[200px]">Fix is live{detail.fixedInVersion ? ` in ${detail.fixedInVersion}` : ''}. Check it, then close the report; the reporter is emailed.</p>
@@ -274,7 +290,7 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
               <div className="border-t pt-4 space-y-3">
                 <p className="text-sm font-semibold text-gray-900">Notes</p>
                 <ReportThread notes={detail.notes} reporterName={detail.reporter.name} />
-                <Textarea rows={3} value={note} maxLength={5000} onChange={e => setNote(e.target.value)} onPaste={noteFiles.onPaste} placeholder={internal ? 'Internal note (only Super Admins see it)' : 'Note everyone can see (reporter and followers get an email)'} />
+                <Textarea id="report-note" rows={3} value={note} maxLength={5000} onChange={e => setNote(e.target.value)} onPaste={noteFiles.onPaste} placeholder={internal ? 'Internal note (only Super Admins see it)' : 'Note everyone can see (reporter and followers get an email)'} />
                 <AttachmentPicker state={noteFiles} label="Attach screenshots" />
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-2 text-sm text-gray-600">

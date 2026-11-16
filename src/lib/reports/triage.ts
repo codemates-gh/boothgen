@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma/client';
 import { forEmail, watchersOf, type FullReport } from './server';
 import { notifyWatchers } from './notify';
-import { REPORT_PRIORITIES, STATUS_VALUES, statusLabel, type ReportAttachment } from './options';
+import { REPORT_PRIORITIES, STATUS_VALUES, publicStatus, statusLabel, type ReportAttachment } from './options';
 
 const Link = z.string().trim().max(500).refine(u => u.startsWith('/') || /^https?:\/\//i.test(u), 'The link must start with / or https://');
 
@@ -40,11 +40,14 @@ export async function applyTriage(r: FullReport, actorId: string | null, d: Tria
   const fixedIn = d.fixedInVersion === undefined ? r.fixedInVersion : (d.fixedInVersion || null);
   const versionChanged = fixedIn !== r.fixedInVersion;
   const howChanged = newStatus === 'exists' && (howToFind !== r.howToFind || howToFindUrl !== r.howToFindUrl);
-  const tellWatchers = statusChanged || versionChanged || howChanged || !!original;
+  // Moving between In progress, Waiting on you and Approved looks the same to reporters: no email, internal log only
+  const publicChanged = publicStatus(newStatus) !== publicStatus(r.status);
+  const tellWatchers = publicChanged || versionChanged || howChanged || !!original;
+  const logInternally = statusChanged && !tellWatchers;
 
   const noteBody = newStatus === 'duplicate' && original ? `Marked as a duplicate of #${original.number}`
     : statusChanged && newStatus === 'fix_ready' ? `Fix is live${fixedIn ? ` in version ${fixedIn}` : ''}, being checked`
-    : statusChanged ? `Status changed to ${statusLabel(newStatus)}${newStatus === 'fixed' && fixedIn ? ` (version ${fixedIn})` : ''}`
+    : publicChanged ? `Status changed to ${statusLabel(publicStatus(newStatus))}${newStatus === 'fixed' && fixedIn ? ` (version ${fixedIn})` : ''}`
     : howChanged ? 'Updated how to find it'
     : `Fixed in version ${fixedIn ?? '—'}`;
 
@@ -71,6 +74,9 @@ export async function applyTriage(r: FullReport, actorId: string | null, d: Tria
       prisma.feedbackFollower.updateMany({ where: { reportId: r.id, following: true }, data: { unread: true } }),
       prisma.feedbackNote.create({ data: { reportId: r.id, authorId: viewer.userId, fromAdmin: true, body: noteBody } }),
     ] : []),
+    ...(logInternally ? [
+      prisma.feedbackNote.create({ data: { reportId: r.id, authorId: viewer.userId, fromAdmin: true, internal: true, body: `Status changed to ${statusLabel(newStatus)}` } }),
+    ] : []),
     ...(original ? [
       ...movers.map(m => prisma.feedbackFollower.upsert({
         where: { reportId_userId: { reportId: original!.id, userId: m.userId } },
@@ -84,7 +90,7 @@ export async function applyTriage(r: FullReport, actorId: string | null, d: Tria
   ]);
   if (tellWatchers) {
     await notifyWatchers(forEmail(r), watchersOf(r), {
-      status: newStatus, fixedInVersion: fixedIn, howToFind, howToFindUrl, duplicateOf: original?.number ?? null,
+      status: publicStatus(newStatus), fixedInVersion: fixedIn, howToFind, howToFindUrl, duplicateOf: original?.number ?? null,
       ...(howChanged && !statusChanged ? { note: 'How to find it was updated.' } : {}),
     });
   }
