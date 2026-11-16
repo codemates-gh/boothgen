@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.95.1] — 2026-11-16
+
+### Fixed
+- **Footer on desktop.** The logo, links and copyright were squeezed into one row, so the links wrapped and the copyright broke over two lines. Now the logo and links share a row and the copyright sits on its own line below
+
+---
+
 ## [2.95.0] — 2026-11-16
 
 ### Added

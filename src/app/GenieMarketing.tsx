@@ -317,12 +317,12 @@ export function FinalCta({ geniePrice }: { geniePrice: string }) {
 export function MarketingFooter({ hasTerms, hasPrivacy }: { hasTerms: boolean; hasPrivacy: boolean }) {
   return (
     <footer className="border-t border-gray-100 py-10 px-4 sm:px-6">
-      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-400">
-        <div className="flex flex-col items-center sm:items-start gap-1">
+      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center lg:items-start justify-between gap-6 text-sm text-gray-400">
+        <div className="flex flex-col items-center lg:items-start gap-1 shrink-0">
           <BoothGenLogo size="sm" showTagline={false} />
           <p className="text-[11px] text-gray-400">The next generation of photo booths.</p>
         </div>
-        <nav className="flex flex-wrap justify-center gap-6">
+        <nav className="flex flex-wrap justify-center lg:justify-end gap-x-6 gap-y-3 lg:pt-1.5">
           <Link href="/photo-booth-app" className="hover:text-gray-600 transition-colors">Genie</Link>
           <Link href="/photo-booth-crm" className="hover:text-gray-600 transition-colors">Genius</Link>
           <Link href="/pricing" className="hover:text-gray-600 transition-colors">Pricing</Link>
@@ -333,8 +333,8 @@ export function MarketingFooter({ hasTerms, hasPrivacy }: { hasTerms: boolean; h
           {hasTerms && <Link href="/terms" className="hover:text-gray-600 transition-colors">Terms</Link>}
           {hasPrivacy && <Link href="/privacy" className="hover:text-gray-600 transition-colors">Privacy</Link>}
         </nav>
-        <p>© {new Date().getFullYear()} BoothGen (formerly Booth Genius). All rights reserved.</p>
       </div>
+      <p className="max-w-6xl mx-auto mt-8 pt-6 border-t border-gray-100 text-center lg:text-left text-xs text-gray-400">© {new Date().getFullYear()} BoothGen (formerly Booth Genius). All rights reserved.</p>
     </footer>
   );
 }
