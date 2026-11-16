@@ -30,6 +30,8 @@ export default function ContractDetailPage() {
   const [signingNote, setSigningNote] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showVoidConfirm, setShowVoidConfirm] = useState(false);
+  const [voiding, setVoiding] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editBody, setEditBody] = useState('');
@@ -89,6 +91,16 @@ export default function ContractDetailPage() {
     else { alert(d.error); setDeleting(false); setShowDeleteConfirm(false); }
   }
 
+  async function voidContract() {
+    setVoiding(true);
+    const res = await fetch('/api/contracts/' + id + '/void', { method: 'POST' });
+    const d = await res.json();
+    if (res.ok) setContract((c: any) => ({ ...c, status: 'VOIDED' }));
+    else alert(d.error);
+    setVoiding(false);
+    setShowVoidConfirm(false);
+  }
+
   function openEditor() {
     setEditTitle(contract.title);
     setEditBody(contract.renderedContent ?? '');
@@ -145,9 +157,14 @@ export default function ContractDetailPage() {
                 <Pencil className="w-4 h-4 mr-1"/>Edit
               </Button>
             )}
-            {contract.status === 'DRAFT' && (
+            {['DRAFT', 'SENT_TO_CLIENT'].includes(contract.status) && (
               <Button variant="outline" onClick={() => setShowDeleteConfirm(f => !f)} className="text-red-600 border-red-200 hover:bg-red-50">
                 <Trash2 className="w-4 h-4 mr-1"/>Delete
+              </Button>
+            )}
+            {!['DRAFT', 'SENT_TO_CLIENT', 'VOIDED'].includes(contract.status) && (
+              <Button variant="outline" onClick={() => setShowVoidConfirm(f => !f)} className="text-red-600 border-red-200 hover:bg-red-50">
+                <Trash2 className="w-4 h-4 mr-1"/>Void
               </Button>
             )}
           </div>
@@ -175,15 +192,27 @@ export default function ContractDetailPage() {
           </div>
         )}
 
-        {showDeleteConfirm && contract.status === 'DRAFT' && (
+        {showDeleteConfirm && (
           <div className="border border-red-200 bg-red-50 rounded-xl p-4 space-y-3">
             <p className="text-sm font-medium text-red-800">Delete this contract?</p>
-            <p className="text-xs text-red-700">This will permanently delete the draft. This cannot be undone.</p>
+            <p className="text-xs text-red-700">This will permanently delete the contract. This cannot be undone.</p>
             <div className="flex gap-2">
               <Button onClick={deleteContract} disabled={deleting} className="bg-red-600 hover:bg-red-700 text-white">
                 <Trash2 className="w-4 h-4 mr-1.5"/>{deleting ? 'Deleting…' : 'Yes, Delete'}
               </Button>
               <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
+            </div>
+          </div>
+        )}
+        {showVoidConfirm && (
+          <div className="border border-red-200 bg-red-50 rounded-xl p-4 space-y-3">
+            <p className="text-sm font-medium text-red-800">Void this contract?</p>
+            <p className="text-xs text-red-700">The contract will be marked Voided and kept on file. It can no longer be signed or edited. This cannot be undone.</p>
+            <div className="flex gap-2">
+              <Button onClick={voidContract} disabled={voiding} className="bg-red-600 hover:bg-red-700 text-white">
+                <Trash2 className="w-4 h-4 mr-1.5"/>{voiding ? 'Voiding…' : 'Yes, Void'}
+              </Button>
+              <Button variant="outline" onClick={() => setShowVoidConfirm(false)}>Cancel</Button>
             </div>
           </div>
         )}

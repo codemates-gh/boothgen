@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.96.3] — 2026-11-16
+
+### Fixed
+- **Delete contract**: Draft and Sent contracts can now be deleted (previously only Draft was allowed). The Delete button is shown for both
+- **Void contract**: signed contracts (Client Signed, Host Signed, Fully Executed) now show a Void button instead of Delete. Voiding marks the contract as cancelled and keeps it on file — it can no longer be signed or edited
+
+---
+
 ## [2.96.2] — 2026-11-16
 
 ### Changed

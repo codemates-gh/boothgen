@@ -42,7 +42,10 @@ export async function DELETE(_: NextRequest, { params }: { params: { id: string 
   if (session.tenantRole !== 'HOST_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const c = await prisma.contract.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
   if (!c) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (c.status !== 'DRAFT') return NextResponse.json({ error: 'Only DRAFT contracts can be deleted.' }, { status: 400 });
+  const unsignedStatuses = ['DRAFT', 'SENT_TO_CLIENT'];
+  if (!unsignedStatuses.includes(c.status)) {
+    return NextResponse.json({ error: 'Signed contracts cannot be deleted. Use Void instead.' }, { status: 400 });
+  }
   await prisma.contract.delete({ where: { id: params.id } });
   return NextResponse.json({ success: true });
 }
