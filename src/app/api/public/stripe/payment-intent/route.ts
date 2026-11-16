@@ -25,6 +25,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
   }
   { const closed = await closedForClients(invoice.tenantId); if (closed) return closed; } // Genie-only account: CRM is closed
+  // No commission for Pro subscribers (MONTHLY/ANNUAL, ACTIVE or PAST_DUE) or accounts marked "Keep Genius free"
+  const sub = (invoice.tenant as any).stripeSubscription;
+  const isPro = sub &&
+    ['MONTHLY', 'ANNUAL'].includes(sub.plan) &&
+    ['ACTIVE', 'PAST_DUE'].includes(sub.status);
+  const noCommission = isPro || invoice.tenant.geniusFree;
+  const commissionPct = parseFloat(commissionSetting?.value ?? '1.5');
+  const feeFor = (cents: number) => noCommission ? 0 : Math.round(cents * (commissionPct / 100));
+
   if (invoice.status === 'PAID') {
     return NextResponse.json({ error: 'Invoice already paid' }, { status: 400 });
   }
@@ -58,7 +67,7 @@ export async function POST(req: NextRequest) {
     if (ms.stripePaymentIntentId) {
       try {
         const ex = await stripe.paymentIntents.retrieve(ms.stripePaymentIntentId);
-        if (['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(ex.status)) {
+        if (['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(ex.status) && (ex.application_fee_amount ?? 0) === feeFor(amountCents)) {
           return NextResponse.json({ clientSecret: ex.client_secret });
         }
       } catch { /* stale PI — create a new one */ }
@@ -73,21 +82,14 @@ export async function POST(req: NextRequest) {
     if (invoice.stripePaymentIntentId) {
       try {
         const ex = await stripe.paymentIntents.retrieve(invoice.stripePaymentIntentId);
-        if (['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(ex.status)) {
+        if (['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(ex.status) && (ex.application_fee_amount ?? 0) === feeFor(amountCents)) {
           return NextResponse.json({ clientSecret: ex.client_secret });
         }
       } catch { /* stale PI — create a new one */ }
     }
   }
 
-  // Pro subscribers (MONTHLY/ANNUAL, ACTIVE or PAST_DUE) pay no commission
-  const sub = (invoice.tenant as any).stripeSubscription;
-  const isPro = sub &&
-    ['MONTHLY', 'ANNUAL'].includes(sub.plan) &&
-    ['ACTIVE', 'PAST_DUE'].includes(sub.status);
-
-  const commissionPct = parseFloat(commissionSetting?.value ?? '1.5');
-  const fee = isPro ? 0 : Math.round(amountCents * (commissionPct / 100));
+  const fee = feeFor(amountCents);
 
   const pi = await stripe.paymentIntents.create({
     amount:                  amountCents,

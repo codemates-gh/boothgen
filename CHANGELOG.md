@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.95.2] — 2026-11-16
+
+### Changed
+- **"Keep Genius free" accounts pay no commission.** Client invoice payments for accounts marked "Keep Genius free" in Super Admin no longer carry BoothGen's commission, the same as Genius Pro. A payment a client started before the account was marked free is replaced with one without the commission
+
+---
+
 ## [2.95.1] — 2026-11-16
 
 ### Fixed
