@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Modal } from '@/components/ui/modal';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit2, Trash2, Eye, EyeOff, ExternalLink, Calendar, FileText, Lock } from 'lucide-react';
@@ -41,6 +42,8 @@ export default function BlogManager() {
   const [preview, setPreview] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ slug: '', title: '', description: '', content: '', publishedAt: '' });
+  // Posts copied from a file are Markdown: edit them as text, since the rich-text editor would flatten them
+  const [markdown, setMarkdown] = useState(false);
   const [expandedSlugs, setExpandedSlugs] = useState<Record<string, string | null>>({});
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
@@ -66,6 +69,7 @@ export default function BlogManager() {
 
   function openCreate() {
     setEditing(null);
+    setMarkdown(false);
     setForm({ slug: '', title: '', description: '', content: '<p>Write your post here...</p>', publishedAt: '' });
     setPreview(false);
     setShowModal(true);
@@ -74,6 +78,7 @@ export default function BlogManager() {
   // Override: pre-fill metadata from the file post, leave body for user to write
   function openOverride(p: Post) {
     setEditing(null);
+    setMarkdown(false);
     setForm({
       slug: p.slug,
       title: p.title,
@@ -89,11 +94,13 @@ export default function BlogManager() {
     if (!p.id) return;
     setEditing(p);
     setPreview(false);
+    setMarkdown(false);
     setForm({ slug: p.slug, title: p.title, description: p.description, content: '', publishedAt: p.publishedAt ? new Date(p.publishedAt).toISOString().slice(0, 16) : '' });
     setShowModal(true);
     const r = await fetch(`/api/super-admin/blog/${p.id}`);
     if (r.ok) {
       const full = await r.json();
+      setMarkdown(!full.isHtml);
       setForm(f => ({ ...f, content: full.content ?? '' }));
     }
   }
@@ -293,12 +300,17 @@ export default function BlogManager() {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-sm font-medium text-gray-700">Content *</label>
-              <button type="button" onClick={() => setPreview(v => !v)}
+              {!markdown && <button type="button" onClick={() => setPreview(v => !v)}
                 className="flex items-center gap-1 px-2.5 py-1 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100">
                 <Eye className="w-3 h-3"/>{preview ? 'Edit' : 'Preview'}
-              </button>
+              </button>}
             </div>
-            {preview ? (
+            {markdown ? (
+              <div className="space-y-1">
+                <Textarea value={form.content} onChange={e => set('content', e.target.value)} rows={22} className="font-mono text-sm leading-6"/>
+                <p className="text-xs text-gray-400">This post is written in Markdown: ## for a heading, **bold**, - for a list item, [text](/link) for a link. After saving, check it with Live.</p>
+              </div>
+            ) : preview ? (
               <div className="border border-gray-200 rounded-xl p-6 min-h-48 blog-prose bg-white overflow-auto"
                 dangerouslySetInnerHTML={{ __html: form.content }}/>
             ) : (

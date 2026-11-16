@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.95.4] — 2026-11-16
+
+### Fixed
+- **Editing a blog post copied from a file showed it as one flat paragraph.** Those posts are written in Markdown, and the rich-text editor didn't understand it, so saving would have broken the post's headings and lists. Super Admin → Blog now opens them in a plain text box that keeps the Markdown, with a short guide below it
+
+### Changed
+- **Older blog posts start with a note about the rename:** "Booth Genius is now BoothGen", linking to the announcement. They show once the copies stored in Super Admin → Blog are deleted
+
+---
+
 ## [2.95.3] — 2026-11-16
 
 ### Changed
