@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.96.4] — 2026-11-16
+
+### Fixed
+- **Contract merge tags — invoice data now always current**: the admin contract view now re-renders merge tags live against the latest event and invoice data, so tags like `{{invoice.total}}` and `{{invoice.balance_due}}` populate even if the invoice was created after the contract was drafted
+- **`{{invoice.due_date}}` now falls back to the first unpaid milestone's due date** when the invoice itself has no due date (which is the case for deposit+balance invoices)
+- **`{{event.package_name}}`** requires the event's Package field to be filled in (Settings → edit event). If blank, the tag will be blank — fill in the Package field on the event and the contract will pick it up automatically
+
+---
+
 ## [2.96.3] — 2026-11-16
 
 ### Fixed

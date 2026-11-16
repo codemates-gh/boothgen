@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
   const templateContent = template?.bodyHtml ?? '<p>Agreement between {{host.company_name}} and {{client.full_name}}.</p>';
   let clientId: string | null = null; let renderedContent = templateContent;
   if (eventId) {
-    const event = await prisma.event.findFirst({ where: { id: eventId, tenantId: tenant.id }, include: { client: true, invoices: { take: 1, orderBy: { createdAt: 'desc' } } } });
-    if (event) { clientId = event.clientId; const ctx = buildCtx({ client: event.client, event, invoice: event.invoices[0] ?? null, contract: null, branding: tenant.branding ?? {}, appUrl: process.env.NEXT_PUBLIC_APP_URL ?? '' }); renderedContent = parseMergeTags(templateContent, ctx); }
+    const event = await prisma.event.findFirst({ where: { id: eventId, tenantId: tenant.id }, include: { client: true, invoices: { take: 1, orderBy: { createdAt: 'desc' }, include: { PaymentMilestone: { where: { status: { not: 'PAID' } }, orderBy: { dueDate: 'asc' }, take: 1 } } } } });
+    if (event) { clientId = event.clientId; const inv = event.invoices[0] ?? null; const ctx = buildCtx({ client: event.client, event, invoice: inv ? { ...inv, firstMilestoneDueDate: inv.PaymentMilestone?.[0]?.dueDate ?? null } : null, contract: null, branding: tenant.branding ?? {}, appUrl: process.env.NEXT_PUBLIC_APP_URL ?? '' }); renderedContent = parseMergeTags(templateContent, ctx); }
   }
   if (!clientId) { const latestEvent = await prisma.event.findFirst({ where: { tenantId: tenant.id }, orderBy: { createdAt: 'desc' } }); if (!latestEvent) return NextResponse.json({ error: 'No clients found. Create an event first.' }, { status: 400 }); clientId = latestEvent.clientId; }
   const contract = await prisma.contract.create({ data: { tenantId: tenant.id, clientId, eventId: eventId ?? null, templateId: template?.id ?? null, title: title ?? 'Service Agreement', status: 'DRAFT', templateContent, renderedContent } });

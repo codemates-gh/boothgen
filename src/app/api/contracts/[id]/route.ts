@@ -7,8 +7,39 @@ import { buildCtx, parseMergeTags } from '@/lib/contracts/merge-tags';
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const c = await prisma.contract.findFirst({ where: { id: params.id, tenantId: session.tenantId }, include: { client: true, event: true } });
+  const c = await prisma.contract.findFirst({
+    where: { id: params.id, tenantId: session.tenantId },
+    include: {
+      client: true,
+      event: {
+        include: {
+          invoices: {
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+            include: { PaymentMilestone: { where: { status: { not: 'PAID' } }, orderBy: { dueDate: 'asc' }, take: 1 } },
+          },
+        },
+      },
+    },
+  });
   if (!c) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  // Re-render merge tags live so the admin always sees up-to-date invoice/event data
+  if (c.templateContent && c.event) {
+    const tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId }, select: { branding: true } });
+    const invoice = c.event.invoices[0] ?? null;
+    const firstMilestoneDueDate = invoice?.PaymentMilestone?.[0]?.dueDate ?? null;
+    const ctx = buildCtx({
+      client: c.client,
+      event: c.event,
+      invoice: invoice ? { ...invoice, firstMilestoneDueDate } : null,
+      contract: { clientToken: c.clientToken, title: c.title, expiresAt: c.expiresAt },
+      branding: tenant?.branding ?? {},
+      appUrl: process.env.NEXT_PUBLIC_APP_URL ?? '',
+    });
+    return NextResponse.json({ ...c, renderedContent: parseMergeTags(c.templateContent, ctx) });
+  }
+
   return NextResponse.json(c);
 }
 
@@ -18,7 +49,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (session.tenantRole !== 'HOST_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const c = await prisma.contract.findFirst({
     where: { id: params.id, tenantId: session.tenantId },
-    include: { event: { include: { client: true, invoices: { take: 1, orderBy: { createdAt: 'desc' } } } } },
+    include: { event: { include: { client: true, invoices: { take: 1, orderBy: { createdAt: 'desc' }, include: { PaymentMilestone: { where: { status: { not: 'PAID' } }, orderBy: { dueDate: 'asc' }, take: 1 } } } } } },
   });
   if (!c) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (c.status !== 'DRAFT') return NextResponse.json({ error: 'Only DRAFT contracts can be edited.' }, { status: 400 });
@@ -26,7 +57,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId }, include: { branding: true } });
   let resolved = rawContent;
   if (rawContent && c.event) {
-    const ctx = buildCtx({ client: c.event.client, event: c.event, invoice: c.event.invoices[0] ?? null, contract: { clientToken: c.clientToken, title: title ?? c.title, expiresAt: c.expiresAt }, branding: tenant?.branding ?? {}, appUrl: process.env.NEXT_PUBLIC_APP_URL ?? '' });
+    const inv = c.event.invoices[0] ?? null;
+    const ctx = buildCtx({ client: c.event.client, event: c.event, invoice: inv ? { ...inv, firstMilestoneDueDate: inv.PaymentMilestone?.[0]?.dueDate ?? null } : null, contract: { clientToken: c.clientToken, title: title ?? c.title, expiresAt: c.expiresAt }, branding: tenant?.branding ?? {}, appUrl: process.env.NEXT_PUBLIC_APP_URL ?? '' });
     resolved = parseMergeTags(rawContent, ctx);
   }
   const updated = await prisma.contract.update({
