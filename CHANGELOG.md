@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.95.8] — 2026-11-16
+
+### Changed
+- **Genius accounts can send guest texts and emails through BoothGen**, included in the event price, like Genie-only accounts. Accounts that connected their own Twilio or email keep using them; Genie → Sharing lets them switch to BoothGen
+
+---
+
 ## [2.95.7] — 2026-11-16
 
 ### Changed

@@ -94,7 +94,7 @@ export async function PUT(req: NextRequest) {
     prisma.tenant.findUniqueOrThrow({ where: { id: auth.tenantId }, select: { product: true } }),
   ]);
   if ((smsSource === 'boothgen' || emailSource === 'boothgen') && !canUseBoothGen(tenant)) {
-    return NextResponse.json({ error: 'BoothGen texting and email come with Genie-only accounts' }, { status: 403 });
+    return NextResponse.json({ error: 'BoothGen texting and email aren\'t available for this account' }, { status: 403 });
   }
 
   const data: Prisma.GenieMessagingConfigUncheckedUpdateInput = {};

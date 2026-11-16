@@ -66,14 +66,15 @@ describe('which accounts send', () => {
   const own = { twilioAccountSid: 'AC' + 'a'.repeat(32), twilioAuthTokenEnc: 'x', twilioMessagingServiceSid: 'MG' + 'b'.repeat(32), emailProvider: 'resend', emailFromAddress: 'p@snap.test', resendApiKeyEnc: 'x' } as any;
   const genie = { product: 'genie' }, crm = { product: 'crm' };
 
-  it('Genie-only accounts use BoothGen unless they set up their own; Genius accounts never use BoothGen', () => {
+  it('Genie-only and Genius accounts use BoothGen unless they set up their own', () => {
     expect(messagingRoutes(null, genie)).toEqual({ sms: 'boothgen', email: 'boothgen' });
     expect(messagingRoutes(own, genie)).toEqual({ sms: 'own', email: 'own' });
     expect(messagingRoutes({ ...own, smsSource: 'boothgen' }, genie)).toEqual({ sms: 'boothgen', email: 'own' });
     expect(messagingRoutes({ smsSource: 'own', emailSource: 'own' } as any, genie)).toEqual({ sms: null, email: null });
-    expect(messagingRoutes(null, crm)).toEqual({ sms: null, email: null });
-    expect(messagingRoutes({ smsSource: 'boothgen' } as any, crm)).toEqual({ sms: null, email: null });
+    expect(messagingRoutes(null, crm)).toEqual({ sms: 'boothgen', email: 'boothgen' });
+    expect(messagingRoutes({ ...own, smsSource: 'boothgen' }, crm)).toEqual({ sms: 'boothgen', email: 'own' });
     expect(messagingRoutes(own, crm)).toEqual({ sms: 'own', email: 'own' });
+    expect(messagingRoutes(null, { product: 'other' })).toEqual({ sms: null, email: null });
   });
 
   it('stays off until BoothGen\'s keys are set', () => {
@@ -162,7 +163,7 @@ describe('BoothGen delivery status', () => {
 });
 
 describe('Genie → Sharing settings', () => {
-  it('shows and saves the choice for Genie-only accounts, and refuses it for Genius accounts', async () => {
+  it('shows and saves the choice for Genie-only and Genius accounts', async () => {
     await genieOnly();
     let d = await (await GET_SETTINGS()).json();
     expect(d).toMatchObject({ boothgen: { allowed: true, sms: true, email: true }, smsSource: null, routes: { sms: 'boothgen', email: 'boothgen' } });
@@ -172,7 +173,7 @@ describe('Genie → Sharing settings', () => {
 
     const { tenant } = await seedTenant();
     sessionTenantId = tenant.id; // a Genius account
-    expect((await put({ smsSource: 'boothgen' })).status).toBe(403);
-    expect((await (await GET_SETTINGS()).json()).boothgen.allowed).toBe(false);
+    expect((await put({ smsSource: 'boothgen' })).status).toBe(200);
+    expect(await (await GET_SETTINGS()).json()).toMatchObject({ boothgen: { allowed: true }, smsSource: 'boothgen', routes: { sms: 'boothgen' } });
   });
 });

@@ -49,7 +49,7 @@ function TestResult({ result }: { result: { ok: boolean; error?: string } | null
   );
 }
 
-// Genie-only accounts: send through BoothGen's accounts (included) or the operator's own
+// Send through BoothGen's accounts (included) or the operator's own
 function SourceChoice({ channel, config, onChange, busy }: { channel: 'sms' | 'email'; config: Config; onChange: (s: Source) => void; busy: boolean }) {
   const own = channel === 'sms' ? config.sms.configured : config.email.configured;
   const saved = channel === 'sms' ? config.smsSource : config.emailSource;

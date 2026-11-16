@@ -118,8 +118,9 @@ export async function sendTenantEmail(c: GenieMessagingConfig | null, to: string
 }
 
 // ── BoothGen texting and email (Genie-only stage 2c) ────────────────────────
-// Genie-only accounts can send guest texts and emails through BoothGen's own Twilio (a toll-free number on a
-// "BoothGen platform" subaccount) and Resend (a sending domain just for this), included in the event price.
+// Genie-only and Genius accounts can send guest texts and emails through BoothGen's own Twilio (a toll-free number on
+// a "BoothGen platform" subaccount) and Resend (a sending domain just for this), included in the event price
+// (G, 2026-11-16: Genius accounts too, now that they pay per event).
 // Operators who connected their own accounts keep using them. Credentials come from these environment variables:
 //   BOOTHGEN_TWILIO_ACCOUNT_SID, BOOTHGEN_TWILIO_AUTH_TOKEN,
 //   BOOTHGEN_TWILIO_MESSAGING_SERVICE_SID (or BOOTHGEN_TWILIO_FROM_NUMBER),
@@ -143,8 +144,8 @@ export function platformEmail() {
   return apiKey && from ? { apiKey, from } : null;
 }
 
-// Who can use BoothGen's accounts: Genie-only accounts (texts and email are in the per-event price)
-export const canUseBoothGen = (tenant: { product: string }) => tenant.product === 'genie';
+// Who can use BoothGen's accounts: Genie-only and Genius accounts (texts and email are in the per-event price)
+export const canUseBoothGen = (tenant: { product: string }) => tenant.product === 'genie' || tenant.product === 'crm';
 
 export function messagingRoutes(c: GenieMessagingConfig | null, tenant: { product: string }): MessagingRoutes {
   const allowed = canUseBoothGen(tenant);
