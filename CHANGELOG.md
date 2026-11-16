@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.96.2] — 2026-11-16
+
+### Changed
+- Dev now checks assigned reports every 3 hours from 7 AM to 10 PM (was 7 AM and 7 PM), so approved fixes go live sooner
+
+---
+
 ## [2.96.1] — 2026-11-16
 
 ### Added

@@ -12,7 +12,7 @@ reporter and everyone who voted or follows it get the usual emails.
 
 ## How it flows
 
-1. G ticks **Assign to Dev**. The scheduled Dev run (7 AM and 7 PM) picks it up.
+1. G ticks **Assign to Dev**. The scheduled Dev run (every 3 hours, 7 AM to 10 PM) picks it up.
 2. Dev prepares the fix in its own worktree and sets the report to **Waiting on you** (`dev_review`) with an
    internal note: what the fix does in plain words, how G can check it, and anything G should decide.
    Questions for G work the same way.

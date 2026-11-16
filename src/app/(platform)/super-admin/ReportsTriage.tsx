@@ -192,7 +192,7 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input type="checkbox" checked={detail.assignedToDev} disabled={busy} onChange={e => triage({ assignedToDev: e.target.checked })} />
                 <span className="font-medium">Assign to Dev</span>
-                <span className="text-xs text-gray-400">Dev checks assigned reports at 7 AM and 7 PM, prepares a fix, and asks you here before shipping it</span>
+                <span className="text-xs text-gray-400">Dev checks assigned reports every 3 hours from 7 AM to 10 PM, prepares a fix, and asks you here before shipping it</span>
               </label>
 
               <div className="grid sm:grid-cols-3 gap-3">
