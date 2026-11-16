@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.94.5] — 2026-11-16
+
+### Changed
+- **Genie isn't included with Genius Pro.** The site said "Genie included". It now says Genius Pro members pay $10 per Genie event instead of the Genie-only $15. Updated on the home page, the photo booth app page, pricing, the CRM page, sign-up, the support articles, the support assistant and the Introducing Genie blog post
+
+---
+
 ## [2.94.4] — 2026-11-15
 
 ### Fixed

@@ -93,7 +93,7 @@ export default async function PhotoBoothAppPage() {
       </section>
 
       <GeniePriceBand geniePrice={pricing.geniePrice} />
-      <ConnectedFlow />
+      <ConnectedFlow geniePrice={pricing.geniePrice} />
       <Faq items={faq} />
       <FinalCta geniePrice={pricing.geniePrice} />
       <MarketingFooter hasTerms={pricing.hasTerms} hasPrivacy={pricing.hasPrivacy} />

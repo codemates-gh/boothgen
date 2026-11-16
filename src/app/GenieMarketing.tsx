@@ -191,14 +191,14 @@ const FLOW = [
   { icon: Heart, label: 'Gallery delivered', who: 'Both' },
 ];
 
-export function ConnectedFlow() {
+export function ConnectedFlow({ geniePrice }: { geniePrice: string }) {
   return (
     <section className="py-24 px-4 sm:px-6 bg-gray-50">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-14">
           <p className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3">When you&apos;re ready to grow</p>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">Genius, the photo booth CRM. Genie included.</h2>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">Genius runs the business side: leads, quotes, e-signatures, invoices and a client portal. Because it&apos;s the same system as Genie, the design your client approves is already on the booth.</p>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">Genius, the photo booth CRM. Genie for less.</h2>
+          <p className="text-lg text-gray-500 max-w-2xl mx-auto">Genius runs the business side: leads, quotes, e-signatures, invoices and a client portal. Because it&apos;s the same system as Genie, the design your client approves is already on the booth. Genius Pro members pay $10 per Genie event instead of {geniePrice}.</p>
         </div>
         <ol className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {FLOW.map((s, i) => (
@@ -222,7 +222,7 @@ export function ConnectedFlow() {
 export function PlansSection({ geniePrice, monthly, commissionPct }: { geniePrice: string; monthly: string; commissionPct: string }) {
   const plans = [
     { name: 'Genie', tag: 'The photo booth app', price: geniePrice, unit: '/event', points: ['Up to 2 tablets per event', 'Texts and email included', 'Galleries and printing', 'No monthly fee'], cta: 'Get Genie', href: '/sign-up', strong: true },
-    { name: 'Genius Pro', tag: 'The photo booth CRM', price: '$' + monthly.replace(/^[$]/, ''), unit: '/month', points: ['14-day free trial', 'Leads, quotes, contracts, invoices', 'Client portal, automations and galleries', 'Genie included'], cta: 'Start my free trial', href: '/sign-up?product=genius', strong: false },
+    { name: 'Genius Pro', tag: 'The photo booth CRM', price: '$' + monthly.replace(/^[$]/, ''), unit: '/month', points: ['14-day free trial', 'Leads, quotes, contracts, invoices', 'Client portal, automations and galleries', 'Genie at $10 per event'], cta: 'Start my free trial', href: '/sign-up?product=genius', strong: false },
   ];
   return (
     <section id="pricing" className="py-24 px-4 sm:px-6">
@@ -260,7 +260,7 @@ export const genieFaq = (price: string): [string, string][] => [
   ['Can I get a refund?', 'Yes, until the event starts and before any photos are taken. After that, photos have already been made without the watermark, so the payment can\'t be refunded except when something on BoothGen\'s side went wrong.'],
   ['Are texts and email really included?', 'Yes. Guests get their photos by text, email or QR code, sent by BoothGen and included in the event price. You can also connect your own Twilio and email account instead.'],
   ['Does Genie need internet at the venue?', 'Genie keeps running if the Wi-Fi drops. Photos upload and messages go out as soon as it\'s back online.'],
-  ['What\'s the difference between Genie and Genius?', 'Genie is the photo booth app: capture, effects, sharing, galleries and printing. Genius is the CRM: leads, quotes, contracts, invoices, a client portal and automations. Genius includes Genie.'],
+  ['What\'s the difference between Genie and Genius?', 'Genie is the photo booth app: capture, effects, sharing, galleries and printing. Genius is the CRM: leads, quotes, contracts, invoices, a client portal and automations. Genius Pro members get Genie at $10 per event instead of ${price}.'],
   ['Can I switch from Genie to Genius later?', 'Yes, anytime. Your events, layouts, props, backdrops and galleries all stay.'],
 ];
 

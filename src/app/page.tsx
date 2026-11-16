@@ -121,7 +121,7 @@ export default async function HomePage() {
       <OperatorFeatures />
       <GuestFeatures />
       <GeniePriceBand geniePrice={pricing.geniePrice} />
-      <ConnectedFlow />
+      <ConnectedFlow geniePrice={pricing.geniePrice} />
       <PlansSection geniePrice={pricing.geniePrice} monthly={pricing.monthly} commissionPct={pricing.commissionPct} />
 
       {/* ── OUR STORY ───────────────────────────────────────────────────────── */}

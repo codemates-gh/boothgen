@@ -148,7 +148,7 @@ Everything works on an unpaid event: sessions, prints, uploads, texts and emails
 A payment is refundable until the event starts and before any photos are taken. Email support@boothgen.com to ask. After that, photos have already been made without the watermark, so we can't refund the payment unless something on BoothGen's side went wrong.
 
 **Genius Pro accounts**
-Genie is included with Genius Pro: no per-event payment and no watermark.`,
+Genius Pro members pay $10 per event instead of [[genie_price]]. Everything else works the same.`,
   },
   {
     id: 'genie-sharing',
@@ -185,13 +185,13 @@ Every session gets its own photo page. You can also turn on a live event gallery
 For operators who just need the booth. Events, layouts, props, backdrops, iPads, galleries and guest sharing. [[genie_price]] per event, no monthly fee.
 
 **Genius Pro (photo booth CRM)**
-Everything to run the business: leads, quotes, contracts, invoices, the client portal, email automation, the calendar and team access, plus photo gallery delivery. A flat monthly or annual rate with a 14-day free trial. Genie is included, with no per-event payments.
+Everything to run the business: leads, quotes, contracts, invoices, the client portal, email automation, the calendar and team access, plus photo gallery delivery. A flat monthly or annual rate with a 14-day free trial. Genie isn't included, but members pay less for it: $10 per event instead of [[genie_price]].
 
 **Moving from Genie to Genius**
 Click "Get Genius CRM" in the menu and subscribe to Genius Pro. Your Genie events, layouts and galleries stay as they are, and the CRM opens right away.
 
 **When Genius Pro ends**
-If your Genius Pro subscription ends (or your trial ends without subscribing), your account moves to Genie. Your data is kept, but client portal links, inquiry forms and automated emails stop until you subscribe again. Booth events then pay per event.`,
+If your Genius Pro subscription ends (or your trial ends without subscribing), your account moves to Genie. Your data is kept, but client portal links, inquiry forms and automated emails stop until you subscribe again. Booth events then pay the Genie price, [[genie_price]] per event.`,
   },
 
   {
@@ -849,7 +849,7 @@ Quotes built with corporate pricing show a purple "Corporate" badge next to the 
 - Flat monthly or annual subscription; annual billing saves compared to monthly
 - 14-day free trial
 - Everything in Genius, including photo gallery delivery
-- Genie, the photo booth app, included with no per-event payments
+- Genie, the photo booth app, at $10 per event instead of [[genie_price]]
 - No cut of your bookings — you keep everything Stripe sends you, minus Stripe's own fee
 
 **Genie only**

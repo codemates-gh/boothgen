@@ -9,19 +9,19 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Pricing: Genie and Genius Pro',
-  description: 'Genie, the photo booth app: $15 per event, no monthly fee, texts and email included. Genius, the photo booth CRM: Genius Pro, a flat monthly rate with a 14-day free trial and Genie included.',
+  description: 'Genie, the photo booth app: $15 per event, no monthly fee, texts and email included. Genius, the photo booth CRM: Genius Pro, a flat monthly rate with a 14-day free trial and Genie at $10 per event.',
   keywords: ['photo booth app pricing', 'photo booth software pricing', 'photo booth CRM cost', 'pay per event photo booth'],
   alternates: { canonical: 'https://boothgen.com/pricing' },
   openGraph: {
     title: 'BoothGen Pricing: Genie and Genius Pro',
-    description: 'Genie: $15 per event, no monthly fee. Genius Pro: flat monthly rate, 14-day free trial, Genie included.',
+    description: 'Genie: $15 per event, no monthly fee. Genius Pro: flat monthly rate, 14-day free trial, Genie at $10 per event.',
     url: 'https://boothgen.com/pricing',
     images: [{ url: '/api/og?title=Simple%2C+Honest+Pricing&subtitle=Genie+per+event.+Genius+Pro+monthly.', width: 1200, height: 630, alt: 'BoothGen Pricing' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'BoothGen Pricing',
-    description: 'Genie: $15 per event. Genius Pro: flat monthly rate, Genie included.',
+    description: 'Genie: $15 per event. Genius Pro: flat monthly rate, Genie at $10 per event.',
     images: ['/api/og?title=Simple%2C+Honest+Pricing&subtitle=Genie+per+event.+Genius+Pro+monthly.'],
   },
 };
@@ -68,7 +68,7 @@ const FREE_FEATURES = [
 
 const PRO_ONLY_FEATURES = [
   'Post-event photo gallery with access codes',
-  'Genie, the photo booth app, included',
+  'Genie, the photo booth app, at $10 per event',
 ];
 
 const GENIE_FEATURES = [
@@ -98,12 +98,12 @@ export default async function PricingPage() {
             Simple, honest pricing.<br />No surprises.
           </h1>
           <p className="text-lg text-gray-500 max-w-xl mx-auto">
-            Run your booth with Genie and pay per event. Run your business with Genius Pro, Genie included.
+            Run your booth with Genie and pay per event. Run your business with Genius Pro and pay less for Genie: $10 per event.
           </p>
         </div>
       </section>
 
-      {/* Tier cards: Genie (per event) and Genius Pro (monthly, Genie included) */}
+      {/* Tier cards: Genie (per event) and Genius Pro (monthly, Genie at $10 per event) */}
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto grid sm:grid-cols-2 gap-6 items-start">
 
@@ -145,7 +145,7 @@ export default async function PricingPage() {
                 <span className="text-4xl font-extrabold text-gray-900">${proMonthlyPrice}</span>
                 <span className="text-gray-400 mb-1">/month</span>
               </div>
-              <p className="text-green-600 font-bold text-lg">14-day free trial · Genie included</p>
+              <p className="text-green-600 font-bold text-lg">14-day free trial · Genie $10/event</p>
               {cadEquivalent && (
                 <p className="text-xs text-gray-400 mt-1">≈ CA${cadEquivalent}/month for Canadian operators</p>
               )}
