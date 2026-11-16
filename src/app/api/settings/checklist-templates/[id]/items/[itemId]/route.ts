@@ -7,7 +7,8 @@ import { prisma } from '@/lib/prisma/client';
 export async function PATCH(req: NextRequest, { params }: { params: { id: string; itemId: string } }) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { label } = await req.json();
+  const { label } = await req.json().catch(() => ({}));
+  if (typeof label !== 'string' || !label.trim()) return NextResponse.json({ error: 'Label required' }, { status: 400 });
   const item = await prisma.checklistTemplateItem.findFirst({
     where: { id: params.itemId, template: { id: params.id, tenantId: session.tenantId } },
   });

@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.95.10] — 2026-11-16
+
+### Added
+- **Settings → Checklists: rename, edit and reorder.** Rename a template, fix an item's wording, and move items up or down to set their order. The drag handle that didn't drag is replaced by up and down arrows. An empty item name is refused instead of causing an error (report #2)
+
+---
+
 ## [2.95.9] — 2026-11-16
 
 ### Fixed
