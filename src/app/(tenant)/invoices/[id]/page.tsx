@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, Bell, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import MilestonesCard from './MilestonesCard';
+import DeleteButton from './DeleteButton';
 import { manualPaymentMethod, settleZeroInvoice } from '@/lib/invoices/payments';
 import { fmtCents } from '@/lib/utils';
 
@@ -70,6 +71,7 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
                 <Button variant="outline" size="sm"><Bell className="w-4 h-4 mr-1.5"/>Send Reminder</Button>
               </form>
             )}
+            {isAdmin && <DeleteButton invoiceId={inv.id} invoiceNumber={inv.invoiceNumber} />}
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

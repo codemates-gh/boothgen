@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.96.1] — 2026-11-16
+
+### Added
+- **Delete invoice**: a Delete button (admin only) on the invoice detail page lets you permanently remove any invoice. Clicking it asks for confirmation before deleting the invoice and all its line items, payment milestones, and payment records
+
+---
+
 ## [2.96.0] — 2026-11-16
 
 ### Added
