@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.95.6] — 2026-11-16
+
+### Added
+- **Four scheduled blog posts, every two weeks.** Each goes live on its own on the morning of its date:
+  - Nov 29: How to Price Your Photo Booth Packages for 2027
+  - Dec 13: The 20-Minute Photo Booth Setup: An Event-Day Checklist
+  - Dec 27: Wedding Season Starts in January: Answer Inquiries Before Your Competitors Do
+  - Jan 10: Text, Email or QR Code: How Guests Actually Want Their Photos
+
+---
+
 ## [2.95.5] — 2026-11-16
 
 ### Fixed
