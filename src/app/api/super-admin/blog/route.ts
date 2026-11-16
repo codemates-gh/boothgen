@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdminSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
 import { getAllPostsAdmin } from '@/lib/blog';
+import { refreshBlog } from '@/lib/blogCache';
 
 export async function GET() {
   await requireSuperAdminSession();
@@ -29,5 +30,6 @@ export async function POST(req: NextRequest) {
       publishedAt: publishedAt ? new Date(publishedAt) : null,
     },
   });
+  refreshBlog(post.slug);
   return NextResponse.json(post, { status: 201 });
 }

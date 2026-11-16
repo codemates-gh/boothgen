@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdminSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
 import { getPost } from '@/lib/blog';
+import { refreshBlog } from '@/lib/blogCache';
 
 export async function POST(req: NextRequest) {
   await requireSuperAdminSession();
@@ -31,5 +32,6 @@ export async function POST(req: NextRequest) {
       publishedAt: filePost.publishedAt,
     },
   });
+  refreshBlog(post.slug);
   return NextResponse.json(post, { status: 201 });
 }

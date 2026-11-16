@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.95.5] — 2026-11-16
+
+### Fixed
+- **Blog changes in Super Admin show right away.** Creating, editing, publishing, overriding or deleting a post used to take up to an hour to appear on the blog. Now the blog list, the post and the sitemap update immediately
+
+---
+
 ## [2.95.4] — 2026-11-16
 
 ### Fixed
