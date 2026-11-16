@@ -5,7 +5,7 @@ import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 import { SupportSearch } from './SupportSearch';
 import { SupportChat } from './SupportChat';
 import { prisma } from '@/lib/prisma/client';
-import { eventPriceCents } from '@/lib/genie/payments';
+import { eventPrices, fmtPrice } from '@/lib/genie/payments';
 
 export const metadata: Metadata = {
   title: 'Support Center',
@@ -148,7 +148,7 @@ Everything works on an unpaid event: sessions, prints, uploads, texts and emails
 A payment is refundable until the event starts and before any photos are taken. Email support@boothgen.com to ask. After that, photos have already been made without the watermark, so we can't refund the payment unless something on BoothGen's side went wrong.
 
 **Genius Pro accounts**
-Genius Pro members pay $10 per event instead of [[genie_price]]. Everything else works the same.`,
+Genius Pro members pay [[genius_genie_price]] per event instead of [[genie_price]]. Everything else works the same.`,
   },
   {
     id: 'genie-sharing',
@@ -185,7 +185,7 @@ Every session gets its own photo page. You can also turn on a live event gallery
 For operators who just need the booth. Events, layouts, props, backdrops, iPads, galleries and guest sharing. [[genie_price]] per event, no monthly fee.
 
 **Genius Pro (photo booth CRM)**
-Everything to run the business: leads, quotes, contracts, invoices, the client portal, email automation, the calendar and team access, plus photo gallery delivery. A flat monthly or annual rate with a 14-day free trial. Genie isn't included, but members pay less for it: $10 per event instead of [[genie_price]].
+Everything to run the business: leads, quotes, contracts, invoices, the client portal, email automation, the calendar and team access, plus photo gallery delivery. A flat monthly or annual rate with a 14-day free trial. Genie isn't included, but members pay less for it: [[genius_genie_price]] per event instead of [[genie_price]].
 
 **Moving from Genie to Genius**
 Click "Get Genius CRM" in the menu and subscribe to Genius Pro. Your Genie events, layouts and galleries stay as they are, and the CRM opens right away.
@@ -849,7 +849,7 @@ Quotes built with corporate pricing show a purple "Corporate" badge next to the 
 - Flat monthly or annual subscription; annual billing saves compared to monthly
 - 14-day free trial
 - Everything in Genius, including photo gallery delivery
-- Genie, the photo booth app, at $10 per event instead of [[genie_price]]
+- Genie, the photo booth app, at [[genius_genie_price]] per event instead of [[genie_price]]
 - No cut of your bookings — you keep everything Stripe sends you, minus Stripe's own fee
 
 **Genie only**
@@ -1363,7 +1363,8 @@ function resolveArticles(settings: Record<string, string>) {
       .replace(/\[\[gallery_expire_days\]\]/g, settings.gallery_expire_days ?? '2')
       .replace(/\[\[gallery_delete_days\]\]/g, settings.gallery_delete_days ?? '5')
       .replace(/\[\[message_retention_months\]\]/g, settings.message_retention_months ?? '12')
-      .replace(/\[\[genie_price\]\]/g, settings.genie_price ?? '$15');
+      .replace(/\[\[genie_price\]\]/g, settings.genie_price ?? '$15')
+      .replace(/\[\[genius_genie_price\]\]/g, settings.genius_genie_price ?? '$10');
   return ARTICLES.map(a => ({ ...a, content: replace(a.content) }));
 }
 
@@ -1372,8 +1373,9 @@ export default async function SupportPage() {
     where: { key: { in: ['chatbot_enabled', 'gallery_expire_days', 'gallery_delete_days', 'message_retention_months'] } },
   });
   const map: Record<string, string> = Object.fromEntries(settings.map(s => [s.key, s.value]));
-  const cents = await eventPriceCents();
-  map.genie_price = cents % 100 === 0 ? `$${cents / 100}` : `$${(cents / 100).toFixed(2)}`;
+  const prices = await eventPrices();
+  map.genie_price = fmtPrice(prices.genieCents);
+  map.genius_genie_price = fmtPrice(prices.geniusCents);
   const chatbotEnabled = map.chatbot_enabled !== 'false';
   const articles = resolveArticles(map);
 

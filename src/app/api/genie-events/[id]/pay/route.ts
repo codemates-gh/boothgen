@@ -4,13 +4,13 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma/client';
 import { stripe } from '@/lib/stripe';
 import { requireGenieAdmin } from '@/lib/genie/admin';
-import { PAYMENT_KIND, paysPerEvent, recordCheckout, startCheckout } from '@/lib/genie/payments';
+import { PAYMENT_KIND, eventPriceFor, recordCheckout, startCheckout } from '@/lib/genie/payments';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
 
 async function load(tenantId: string, eventId: string) {
   const [tenant, event] = await Promise.all([
-    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { id: true, name: true, product: true } }),
+    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { id: true, name: true, product: true, geniusFree: true } }),
     prisma.event.findFirst({ where: { id: eventId, tenantId }, select: { id: true, title: true, genieSettings: { select: { id: true } } } }),
   ]);
   return { tenant, event };
@@ -22,7 +22,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   if (auth instanceof NextResponse) return auth;
   const { tenant, event } = await load(auth.tenantId, params.id);
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (!paysPerEvent(tenant)) return NextResponse.json({ error: 'Your plan doesn\'t pay per event', code: 'not_needed' }, { status: 409 });
+  if (await eventPriceFor(tenant) === null) return NextResponse.json({ error: 'Your plan doesn\'t pay per event', code: 'not_needed' }, { status: 409 });
   if (!event.genieSettings) return NextResponse.json({ error: 'Set up Genie for this event first', code: 'not_configured' }, { status: 409 });
   const user = await prisma.user.findUnique({ where: { id: auth.userId }, select: { email: true } });
   const url = await startCheckout(tenant, event, APP_URL, user?.email);

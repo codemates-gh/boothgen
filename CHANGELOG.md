@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.95.0] — 2026-11-16
+
+### Added
+- **Genius accounts can pay per Genie event, at their own price.** Super Admin → Genie Usage now has both prices (Genie only, $15 by default; Genius accounts, $10 by default) and a "Genius accounts pay per event" switch, off until you turn it on. When it's on, Genius accounts (Pro, trial, lifetime and old commission accounts) get the Pay button and the watermark until paid, like Genie-only accounts. "Keep Genius free" accounts don't pay. Events already paid or comped stay paid
+
+### Changed
+- **Prices on the site follow Super Admin.** The home page, photo booth app page, pricing, the CRM page, support articles, the support assistant and the "moved to Genie" email now read both prices from Super Admin instead of having them typed in. Search-engine descriptions and sign-up say "pay per event" without an amount so they never go out of date
+
+---
+
 ## [2.94.5] — 2026-11-16
 
 ### Changed

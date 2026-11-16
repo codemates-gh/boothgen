@@ -10,18 +10,20 @@ import { fmtCents } from '@/lib/utils';
 type Row = {
   eventId: string; title: string; eventDate: string; tenantId: string; operator: string; product: string;
   ipads: number; sessions: number; photos: number; texts: number; emails: number; failed: number;
-  paidCents: number; payments: number; ipadsCovered: number | null;
+  paidCents: number; payments: number; paysPerEvent: boolean; ipadsCovered: number | null;
   paymentList: { id: string; amountCents: number; status: string; paidAt: string | null; comp: boolean }[];
   started: boolean;
 };
 
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
 
-// Super Admin → Genie Usage: texts, emails, sessions and photos per event, and the Genie-only event price
+// Super Admin → Genie Usage: texts, emails, sessions and photos per event, and the per-event prices
 export default function GenieUsage() {
   const [days, setDays] = useState(90);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [price, setPrice] = useState('');
+  const [geniusPrice, setGeniusPrice] = useState('');
+  const [geniusPays, setGeniusPays] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -44,15 +46,27 @@ export default function GenieUsage() {
     if (!r.ok) { setError(d.error || 'Could not load usage'); return; }
     setRows(d.events);
     setPrice((d.priceCents / 100).toFixed(2));
+    setGeniusPrice((d.geniusPriceCents / 100).toFixed(2));
+    setGeniusPays(d.geniusPays);
   }, [days]);
   useEffect(() => { load(); }, [load]);
 
-  async function savePrice() {
+  async function savePrices(pays = geniusPays) {
     setError(''); setSaved(false);
-    const r = await fetch('/api/super-admin/genie-usage', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priceCents: Math.round(Number(price) * 100) }) });
+    const r = await fetch('/api/super-admin/genie-usage', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ priceCents: Math.round(Number(price) * 100), geniusPriceCents: Math.round(Number(geniusPrice) * 100), geniusPays: pays }),
+    });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok) { setError(d.error || 'Could not save the price'); return; }
+    if (!r.ok) { setError(d.error || 'Could not save the prices'); return false; }
     setSaved(true);
+    return true;
+  }
+
+  async function toggleGeniusPays() {
+    const next = !geniusPays;
+    if (next && !confirm('Genius accounts (except "Keep Genius free") will see a watermark on unpaid Genie events and a Pay button. Turn it on?')) return;
+    if (await savePrices(next)) { setGeniusPays(next); load(); }
   }
 
   const sum = (k: 'texts' | 'emails' | 'sessions' | 'photos' | 'paidCents') => (rows ?? []).reduce((n, r) => n + r[k], 0);
@@ -63,13 +77,28 @@ export default function GenieUsage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader><CardTitle>Genie-only event price</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-sm text-gray-500">What a Genie-only account pays per event (covers 2 iPads, texts and email). Applies to new payments. Genius accounts with Genie don&apos;t pay per event yet.</p>
-          <div className="flex items-center gap-2 max-w-xs">
-            <span className="text-sm text-gray-500">$</span>
-            <Input type="number" min="0.5" step="0.01" value={price} onChange={e => { setPrice(e.target.value); setSaved(false); }}/>
-            <Button onClick={savePrice} disabled={!price}>{saved ? '✓ Saved' : 'Save'}</Button>
+        <CardHeader><CardTitle>Genie event prices</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-gray-500">What an account pays per event (covers 2 iPads, texts and email). Changes apply to new payments and show across the site, pricing and support right away.</p>
+          <div className="grid sm:grid-cols-2 gap-4 max-w-xl">
+            <label className="space-y-1">
+              <span className="text-sm font-medium text-gray-700">Genie only</span>
+              <div className="flex items-center gap-2"><span className="text-sm text-gray-500">$</span><Input type="number" min="0.5" step="0.01" value={price} onChange={e => { setPrice(e.target.value); setSaved(false); }}/></div>
+            </label>
+            <label className="space-y-1">
+              <span className="text-sm font-medium text-gray-700">Genius accounts</span>
+              <div className="flex items-center gap-2"><span className="text-sm text-gray-500">$</span><Input type="number" min="0.5" step="0.01" value={geniusPrice} onChange={e => { setGeniusPrice(e.target.value); setSaved(false); }}/></div>
+            </label>
+          </div>
+          <Button onClick={() => savePrices()} disabled={!price || !geniusPrice}>{saved ? '✓ Saved' : 'Save prices'}</Button>
+          <div className="flex items-start justify-between gap-4 border-t pt-4">
+            <div>
+              <p className="text-sm font-medium text-gray-700">Genius accounts pay per event</p>
+              <p className="text-sm text-gray-500">{geniusPays
+                ? 'On: Genius accounts pay the Genius price per event, with the watermark until paid. "Keep Genius free" accounts don\'t pay.'
+                : 'Off: Genius accounts run Genie events free, with no watermark. The site still shows the Genius price.'}</p>
+            </div>
+            <Button variant={geniusPays ? 'outline' : 'default'} onClick={toggleGeniusPays} disabled={!price || !geniusPrice}>{geniusPays ? 'Turn off' : 'Turn on'}</Button>
           </div>
         </CardContent>
       </Card>
@@ -112,9 +141,9 @@ export default function GenieUsage() {
                       <td className="px-6 py-2.5"><p className="font-medium text-gray-800">{r.title}</p><p className="text-xs text-gray-400">{fmtDate(r.eventDate)}</p></td>
                       <td className="px-3 py-2.5"><p className="text-gray-700">{r.operator}</p><p className="text-xs text-gray-400">{r.product === 'genie' ? 'Genie only' : 'Genius'}</p></td>
                       <td className="px-3 py-2.5">
-                        {r.product !== 'genie' ? <span className="text-gray-400">—</span> : (
+                        {!r.paysPerEvent && r.paymentList.length === 0 ? <span className="text-gray-400">—</span> : (
                           <div className="space-y-1">
-                            {r.payments === 0 && <Badge variant="warning">Unpaid</Badge>}
+                            {r.paysPerEvent && r.payments === 0 && <Badge variant="warning">Unpaid</Badge>}
                             {r.paymentList.map(p => (
                               <div key={p.id} className="flex items-center gap-2 whitespace-nowrap">
                                 <span className={p.status !== 'paid' ? 'text-gray-400 line-through' : 'text-gray-700'}>{p.comp ? 'Comp' : fmtCents(p.amountCents)}</span>

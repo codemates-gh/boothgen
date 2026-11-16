@@ -9,7 +9,7 @@ import {
 // Genie, the photo booth app: the page for search ("photo booth app") and ads
 
 const TITLE = 'Genie, the Photo Booth App';
-const DESCRIPTION = 'Genie by BoothGen is the simple photo booth app for standard events: event defaults, layouts ready to go, guest texts and email included, galleries and printing. Set up in minutes, $15 per event, no monthly fee.';
+const DESCRIPTION = 'Genie by BoothGen is the simple photo booth app for standard events: event defaults, layouts ready to go, guest texts and email included, galleries and printing. Set up in minutes, pay per event, no monthly fee.';
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -31,7 +31,7 @@ const STEPS = [
 
 export default async function PhotoBoothAppPage() {
   const pricing = await getMarketingPricing();
-  const faq = genieFaq(pricing.geniePrice);
+  const faq = genieFaq(pricing.geniePrice, pricing.geniusGeniePrice);
   const softwareSchema = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
@@ -93,7 +93,7 @@ export default async function PhotoBoothAppPage() {
       </section>
 
       <GeniePriceBand geniePrice={pricing.geniePrice} />
-      <ConnectedFlow geniePrice={pricing.geniePrice} />
+      <ConnectedFlow geniePrice={pricing.geniePrice} geniusGeniePrice={pricing.geniusGeniePrice} />
       <Faq items={faq} />
       <FinalCta geniePrice={pricing.geniePrice} />
       <MarketingFooter hasTerms={pricing.hasTerms} hasPrivacy={pricing.hasPrivacy} />

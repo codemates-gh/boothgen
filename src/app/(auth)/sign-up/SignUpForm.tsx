@@ -92,7 +92,7 @@ export default function SignUpForm({ hasTerms, hasPrivacy, product }: Props) {
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{product === 'genie' ? 'Get Genie' : 'Get Genius'}</h1>
           <p className="text-gray-500 text-sm mt-1 text-center">{product === 'genie'
-            ? 'The iPad photo booth app. Free to set up; $15 per event.'
+            ? 'The iPad photo booth app. Free to set up; pay per event.'
             : 'The photo booth CRM: leads, quotes, contracts, invoices and Genie.'}</p>
           <Link href={'/sign-up?product=' + (product === 'genie' ? 'genius' : 'genie')} className="text-xs text-brand hover:underline mt-2">
             {product === 'genie' ? 'Want the full CRM? Sign up for Genius' : 'Just the booth app? Sign up for Genie'}

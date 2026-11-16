@@ -9,7 +9,7 @@ import { MarketingFooter, PlansSection, getMarketingPricing } from '../GenieMark
 export const metadata: Metadata = {
   title: 'Genius, the Photo Booth CRM',
   description:
-    'Genius, the photo booth CRM by BoothGen: leads, quotes, e-signatures, invoices, galleries, client portal and automations in one place, with Genie, the photo booth app, at $10 per event. Built by a working photo booth operator.',
+    'Genius, the photo booth CRM by BoothGen: leads, quotes, e-signatures, invoices, galleries, client portal and automations in one place, with Genie, the photo booth app, for less per event. Built by a working photo booth operator.',
   keywords: [
     'photo booth CRM', 'photo booth software', 'photo booth business', 'booth rental management',
     'photo booth invoicing', 'photo booth contracts', 'photo booth client portal', 'event photo booth platform',
@@ -17,17 +17,17 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://boothgen.com/photo-booth-crm' },
   openGraph: {
     title: 'Genius, the Photo Booth CRM | BoothGen',
-    description: 'Leads, quotes, contracts, invoices, galleries and a client portal in one place, with Genie, the photo booth app, at $10 per event.',
+    description: 'Leads, quotes, contracts, invoices, galleries and a client portal in one place, with Genie, the photo booth app, for less per event.',
     type: 'website',
     url: 'https://boothgen.com/photo-booth-crm',
     siteName: 'BoothGen',
-    images: [{ url: '/api/og?title=Genius%2C+the+Photo+Booth+CRM&subtitle=Runs+your+business.+Genie+for+%2410+an+event.', width: 1200, height: 630, alt: 'Genius, the photo booth CRM' }],
+    images: [{ url: '/api/og?title=Genius%2C+the+Photo+Booth+CRM&subtitle=Runs+your+business.+Genie+for+less.', width: 1200, height: 630, alt: 'Genius, the photo booth CRM' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Genius, the Photo Booth CRM | BoothGen',
-    description: 'Leads, quotes, contracts, invoices, galleries and a client portal in one place, with Genie at $10 per event.',
-    images: ['/api/og?title=Genius%2C+the+Photo+Booth+CRM&subtitle=Runs+your+business.+Genie+for+%2410+an+event.'],
+    description: 'Leads, quotes, contracts, invoices, galleries and a client portal in one place, with Genie for less per event.',
+    images: ['/api/og?title=Genius%2C+the+Photo+Booth+CRM&subtitle=Runs+your+business.+Genie+for+less.'],
   },
 };
 
@@ -269,7 +269,7 @@ const FEATURES = [
   { icon: '📸', title: 'Private Photo Gallery', desc: 'Deliver event photos to clients privately. Guests get a separate share link that never exposes billing details.', pro: true },
   { icon: '🎨', title: 'Design Approval, Straight to the Booth', desc: 'Clients pick a layout and approve the design in their portal. The approved design goes straight onto Genie for the event — no exporting or re-uploading.', pro: false },
   { icon: '🖌️', title: 'Template Designer', desc: 'Design photo layouts in the browser: 4×6 and 2×6 strips, photo frames, backgrounds and overlays, or start from 15 ready-made layouts.', pro: false },
-  { icon: '✨', title: 'Genie, the Photo Booth App, for $10 an Event', desc: 'Genius Pro members pay $10 per event instead of $15. Run your events with Genie: virtual props and backdrops, boomerangs, instant texts and email, live galleries and printing.', pro: false },
+  { icon: '✨', title: 'Genie, the Photo Booth App, for Less', desc: 'Genius Pro members pay less per Genie event than Genie-only accounts. Run your events with Genie: virtual props and backdrops, boomerangs, instant texts and email, live galleries and printing.', pro: false },
   { icon: '⚡', title: 'Automated Email Follow-Ups', desc: 'Email sequences triggered by inquiry, signing, and payment — your business runs follow-ups on autopilot.', pro: false },
   { icon: '👥', title: 'Team Management', desc: 'Invite staff with role-based access. Operators see only their assigned events — your financials, costs, and client data stay completely private.', pro: false },
   { icon: '📊', title: 'Business Analytics', desc: 'Revenue, conversion rates, and monthly booking trends at a glance — no spreadsheet required.', pro: false },
@@ -327,7 +327,7 @@ const softwareSchema = {
       name: 'Genius Pro',
       price: '25',
       priceCurrency: 'USD',
-      description: 'Flat monthly rate with a 14-day free trial. Genie, the photo booth app, is $10 per event for members.',
+      description: 'Flat monthly rate with a 14-day free trial. Genius Pro members pay less per Genie event, the photo booth app.',
     },
   ],
   featureList: [
@@ -360,7 +360,7 @@ const faqSchema = {
       name: 'How much does BoothGen cost?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Genie, the photo booth app, is $15 per event with no monthly fee. Genius, the photo booth CRM, is Genius Pro: a flat monthly rate with a 14-day free trial, and Genius Pro members pay $10 per Genie event instead of $15.',
+        text: 'Genie, the photo booth app, is paid per event with no monthly fee. Genius, the photo booth CRM, is Genius Pro: a flat monthly rate with a 14-day free trial, and Genius Pro members pay less per Genie event. Current prices are on boothgen.com/pricing.',
       },
     },
     {
@@ -461,7 +461,7 @@ export default async function GeniusPage() {
                 <span className="text-orange-400">Genius runs the business.</span>
               </h1>
               <p className="text-lg text-purple-200 mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
-                Leads, quotes, e-signatures, invoices, galleries, automations and a client portal in one place, so you stop paying for tools that don&apos;t talk to each other. Genie, the photo booth app, is $10 per event for members.
+                Leads, quotes, e-signatures, invoices, galleries, automations and a client portal in one place, so you stop paying for tools that don&apos;t talk to each other. Genie, the photo booth app, is {pricing.geniusGeniePrice} per event for members.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Link href="/sign-up?product=genius" className="px-7 py-3.5 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-2xl text-base transition-all shadow-lg shadow-orange-500/30 hover:-translate-y-0.5">
@@ -471,7 +471,7 @@ export default async function GeniusPage() {
                   See how much you save →
                 </a>
               </div>
-              <p className="mt-4 text-xs text-purple-300">Genius Pro: one flat monthly rate, Genie at $10 per event.</p>
+              <p className="mt-4 text-xs text-purple-300">Genius Pro: one flat monthly rate, Genie at {pricing.geniusGeniePrice} per event.</p>
             </div>
             {/* Dashboard mockup */}
             <div className="flex-1 w-full max-w-lg lg:max-w-none">
@@ -559,7 +559,7 @@ export default async function GeniusPage() {
               <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
                 <div>
                   <p className="font-bold text-white">Genius Pro</p>
-                  <p className="text-xs text-purple-300">Everything above, plus Genie at $10 per event</p>
+                  <p className="text-xs text-purple-300">Everything above, plus Genie at {pricing.geniusGeniePrice} per event</p>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-extrabold text-orange-400">${pricing.monthly}<span className="text-sm font-medium text-orange-300">/mo</span></p>
@@ -763,7 +763,7 @@ export default async function GeniusPage() {
         </div>
       </section>
 
-      <PlansSection geniePrice={pricing.geniePrice} monthly={pricing.monthly} commissionPct={pricing.commissionPct} />
+      <PlansSection geniePrice={pricing.geniePrice} geniusGeniePrice={pricing.geniusGeniePrice} monthly={pricing.monthly} commissionPct={pricing.commissionPct} />
 
       {/* ── FINAL CTA ────────────────────────────────────────────────────────── */}
       <section className="py-24 px-4 sm:px-6 bg-gradient-to-br from-[#1e1247] via-[#2D1B69] to-[#1e1247]">
@@ -774,7 +774,7 @@ export default async function GeniusPage() {
           <Link href="/sign-up?product=genius" className="inline-block px-10 py-4 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-2xl text-base transition-all shadow-lg shadow-orange-500/30 hover:-translate-y-0.5">
             Start your free trial →
           </Link>
-          <p className="mt-4 text-sm text-purple-300">14 days free. Genie, the photo booth app, at $10 per event.</p>
+          <p className="mt-4 text-sm text-purple-300">14 days free. Genie, the photo booth app, at {pricing.geniusGeniePrice} per event.</p>
         </div>
       </section>
 

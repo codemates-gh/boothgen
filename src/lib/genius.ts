@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { StripeSubscription } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { sendEmail } from '@/lib/email/send';
+import { eventPriceCents, fmtPrice } from '@/lib/genie/payments';
 
 // Stage 4 (G, 2026-11-15): Genius, the CRM, needs Genius Pro. The free commission plan is gone. An account without
 // Pro (or a lifetime/founding plan, an unexpired trial, or Super Admin's "Keep Genius free") becomes Genie only right
@@ -73,7 +74,7 @@ async function notifyOwner(tenantId: string, name: string) {
   ].filter(Boolean);
   await sendEmail(owner.user.email, `${name} is now on Genie`, `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#374151">
   <h2 style="font-size:20px;color:#111827">Your account is now on Genie</h2>
-  <p>Genius, the photo booth CRM, now needs Genius Pro, so <strong>${name.replace(/[<>&"]/g, '')}</strong> has moved to Genie, the photo booth app. Your booth events, layouts, galleries and Genie setup work as before, at $15 per event.</p>
+  <p>Genius, the photo booth CRM, now needs Genius Pro, so <strong>${name.replace(/[<>&"]/g, '')}</strong> has moved to Genie, the photo booth app. Your booth events, layouts, galleries and Genie setup work as before, at ${fmtPrice(await eventPriceCents())} per event.</p>
   <p>The CRM is paused. Nothing was deleted: leads, clients, quotes, contracts and invoices are kept.${lines.length ? ' What stopped:' : ''}</p>
   ${lines.length ? '<ul>' + lines.map(l => `<li>${l}</li>`).join('') + '</ul>' : ''}
   <p>Clients who open an old portal link see that it's no longer available and are asked to contact you.</p>

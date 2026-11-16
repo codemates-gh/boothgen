@@ -57,8 +57,8 @@ const checkout = (tenantId: string, eventId: string, over: Record<string, unknow
   metadata: { kind: PAYMENT_KIND, tenantId, eventId }, ...over,
 } as any);
 
-beforeEach(async () => { await resetDb(); created.length = 0; refunds.length = 0; refundError = null; retrieved = null; listed = []; emails.length = 0; globalRole = 'USER'; await prisma.systemSetting.deleteMany({ where: { key: 'genie_event_price_cents' } }); });
-afterAll(async () => { await resetDb(); await prisma.systemSetting.deleteMany({ where: { key: 'genie_event_price_cents' } }); await prisma.$disconnect(); });
+beforeEach(async () => { await resetDb(); created.length = 0; refunds.length = 0; refundError = null; retrieved = null; listed = []; emails.length = 0; globalRole = 'USER'; await prisma.systemSetting.deleteMany({ where: { key: { in: ['genie_event_price_cents', 'genie_event_price_cents_genius', 'genius_pays_per_event'] } } }); });
+afterAll(async () => { await resetDb(); await prisma.systemSetting.deleteMany({ where: { key: { in: ['genie_event_price_cents', 'genie_event_price_cents_genius', 'genius_pays_per_event'] } } }); await prisma.$disconnect(); });
 
 describe('who pays and the watermark', () => {
   it('Genie-only events show the watermark until paid; Genius events never do', async () => {
@@ -299,5 +299,41 @@ describe('refunds and chargebacks made outside BoothGen', () => {
     await prisma.eventGenieSettings.update({ where: { eventId: event.id }, data: { lockedAt: new Date() } });
     [row] = (await genieUsage(new Date('2026-01-01'))).filter(r => r.eventId === event.id);
     expect(row.started).toBe(true);
+  });
+});
+
+describe('Genius accounts pay the Genius price', () => {
+  it('pay nothing until Super Admin turns it on, then the Genius price; Keep Genius free stays free', async () => {
+    globalRole = 'SUPER_ADMIN';
+    let r = await (await USAGE(req('/x'))).json();
+    expect(r).toMatchObject({ priceCents: 1500, geniusPriceCents: 1000, geniusPays: false });
+
+    const crm = await setup('crm');
+    expect(await eventBilling(crm.tenant, crm.event.id)).toMatchObject({ paysPerEvent: false, watermark: false });
+
+    // Turn it on and change the Genius price
+    r = await (await SET_PRICE(req('/x', { method: 'PATCH', body: { geniusPriceCents: 1200, geniusPays: true } }))).json();
+    expect(r).toEqual({ priceCents: 1500, geniusPriceCents: 1200, geniusPays: true });
+    expect(await eventBilling(crm.tenant, crm.event.id)).toMatchObject({ paysPerEvent: true, priceCents: 1200, paid: false, watermark: true });
+    expect((await buildEventBundle(crm.tenant.id, crm.event.id) as any).bundle.watermark).toBe(true);
+
+    globalRole = 'USER';
+    const res = await PAY(req('/x', { method: 'POST' }), p(crm.event.id));
+    expect(res.status).toBe(200);
+    expect(created[0].line_items[0].price_data.unit_amount).toBe(1200);
+    const dash = await (await DASH(req('/x'), p(crm.event.id))).json();
+    expect(dash.billing).toMatchObject({ paysPerEvent: true, paid: false, priceCents: 1200 });
+
+    const [row] = (await genieUsage(new Date('2026-01-01'))).filter(x => x.eventId === crm.event.id);
+    expect(row.paysPerEvent).toBe(true);
+
+    // Keep Genius free: no payment
+    await prisma.tenant.update({ where: { id: crm.tenant.id }, data: { geniusFree: true } });
+    expect(await eventBilling({ id: crm.tenant.id, product: 'crm' },crm.event.id)).toMatchObject({ paysPerEvent: false, watermark: false });
+    expect((await PAY(req('/x', { method: 'POST' }), p(crm.event.id))).status).toBe(409);
+
+    // Genie-only accounts keep the Genie price
+    const genie = await setup('genie');
+    expect(await eventBilling(genie.tenant, genie.event.id)).toMatchObject({ priceCents: 1500 });
   });
 });

@@ -14,7 +14,7 @@ import {
 // Home: Genie (the photo booth app) first, Genius (the photo booth CRM) as the next step. Brand: BoothGen.
 
 const TITLE = 'BoothGen: Photo Booth App and CRM';
-const DESCRIPTION = 'Genie by BoothGen is the simple photo booth app for standard events: set up in minutes from your laptop, guest texts and email included, $15 per event with no monthly fee. Genius, the photo booth CRM, runs your business.';
+const DESCRIPTION = 'Genie by BoothGen is the simple photo booth app for standard events: set up in minutes from your laptop, guest texts and email included, pay per event with no monthly fee. Genius, the photo booth CRM, runs your business.';
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },
@@ -62,7 +62,7 @@ export default async function HomePage() {
   }
 
   const pricing = await getMarketingPricing();
-  const faq = genieFaq(pricing.geniePrice);
+  const faq = genieFaq(pricing.geniePrice, pricing.geniusGeniePrice);
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -121,8 +121,8 @@ export default async function HomePage() {
       <OperatorFeatures />
       <GuestFeatures />
       <GeniePriceBand geniePrice={pricing.geniePrice} />
-      <ConnectedFlow geniePrice={pricing.geniePrice} />
-      <PlansSection geniePrice={pricing.geniePrice} monthly={pricing.monthly} commissionPct={pricing.commissionPct} />
+      <ConnectedFlow geniePrice={pricing.geniePrice} geniusGeniePrice={pricing.geniusGeniePrice} />
+      <PlansSection geniePrice={pricing.geniePrice} geniusGeniePrice={pricing.geniusGeniePrice} monthly={pricing.monthly} commissionPct={pricing.commissionPct} />
 
       {/* ── OUR STORY ───────────────────────────────────────────────────────── */}
       <section id="our-story" className="py-24 px-4 sm:px-6 bg-gray-50">

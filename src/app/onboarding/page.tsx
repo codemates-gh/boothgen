@@ -10,11 +10,11 @@ import { TimeZoneSelect } from '@/components/genie/SettingsForms';
 
 type Choice = 'genie' | 'genius';
 
-// Genie (the iPad booth app, pay per event) is the default; Genius is the full CRM, with Genie at $10 per event.
+// Genie (the iPad booth app, pay per event) is the default; Genius is the full CRM, with Genie for less per event.
 // Plan: docs/genie/genie-only-plan.md
 const CHOICES: [Choice, typeof Tablet, string, string, string[]][] = [
-  ['genie', Tablet, 'Genie', '$15 per event', ['iPad photo booth app', 'Layouts, props and backdrops', 'Guest texts, email and galleries included', 'No monthly fee']],
-  ['genius', Briefcase, 'Genius', 'Monthly plan, free trial', ['Genie at $10 per event', 'Leads, quotes, contracts and invoices', 'Client portal and automations', 'Calendar and analytics']],
+  ['genie', Tablet, 'Genie', 'Pay per event', ['iPad photo booth app', 'Layouts, props and backdrops', 'Guest texts, email and galleries included', 'No monthly fee']],
+  ['genius', Briefcase, 'Genius', 'Monthly plan, free trial', ['Genie for less per event', 'Leads, quotes, contracts and invoices', 'Client portal and automations', 'Calendar and analytics']],
 ];
 
 export default function OnboardingPage() {

@@ -4,33 +4,68 @@ import { stripe } from '@/lib/stripe';
 import { sendEmail } from '@/lib/email/send';
 
 // Pay per event (Genie-only stage 2b, docs/genie/genie-only-plan.md):
-// - Genie-only accounts pay per event ($15 by default, Super Admin can change it); one payment covers 2 iPads, and a
-//   3rd or 4th iPad means paying again.
+// - Genie-only accounts pay per event ($15 by default); one payment covers 2 iPads, and a 3rd or 4th iPad means
+//   paying again.
+// - Genius accounts pay less per event ($10 by default) once Super Admin turns on "Genius pays per event", except
+//   accounts marked "Keep Genius free". Both prices and the switch are Super Admin settings (Genie Usage).
 // - Until an event is paid, the iPad shows a watermark on the booth screen and the photos (bundle `watermark: true`).
 //   Everything else works: uploads, texts, emails, galleries.
-// - Genius accounts with Genie don't pay per event yet (G: Genie-only first; +$10 per event comes later).
 
 export const PRICE_SETTING = 'genie_event_price_cents';
 export const DEFAULT_PRICE_CENTS = 1500;
+export const GENIUS_PRICE_SETTING = 'genie_event_price_cents_genius';
+export const DEFAULT_GENIUS_PRICE_CENTS = 1000;
+export const GENIUS_PAYS_SETTING = 'genius_pays_per_event';
 export const IPADS_PER_PAYMENT = 2;
 export const PAYMENT_KIND = 'genie_event';
 
-export async function eventPriceCents(): Promise<number> {
-  const s = await prisma.systemSetting.findUnique({ where: { key: PRICE_SETTING } });
-  const n = Number(s?.value);
-  return Number.isInteger(n) && n >= 50 ? n : DEFAULT_PRICE_CENTS;
+const cents = (v: string | undefined, fallback: number) => { const n = Number(v); return Number.isInteger(n) && n >= 50 ? n : fallback; };
+
+export type EventPrices = { genieCents: number; geniusCents: number; geniusPays: boolean };
+
+// Both per-event prices and whether Genius accounts pay yet (Super Admin → Genie Usage)
+export async function eventPrices(): Promise<EventPrices> {
+  const rows = await prisma.systemSetting.findMany({ where: { key: { in: [PRICE_SETTING, GENIUS_PRICE_SETTING, GENIUS_PAYS_SETTING] } } });
+  const m = new Map(rows.map(r => [r.key, r.value]));
+  return {
+    genieCents: cents(m.get(PRICE_SETTING), DEFAULT_PRICE_CENTS),
+    geniusCents: cents(m.get(GENIUS_PRICE_SETTING), DEFAULT_GENIUS_PRICE_CENTS),
+    geniusPays: m.get(GENIUS_PAYS_SETTING) === 'on',
+  };
 }
 
-export const paysPerEvent = (tenant: { product: string }) => tenant.product === 'genie';
+// The Genie-only price
+export async function eventPriceCents(): Promise<number> {
+  return (await eventPrices()).genieCents;
+}
 
-export type EventBilling = { paysPerEvent: boolean; paid: boolean; payments: number; ipadsCovered: number; watermark: boolean };
+export const fmtPrice = (c: number) => c % 100 === 0 ? `$${c / 100}` : `$${(c / 100).toFixed(2)}`;
 
-export async function eventBilling(tenant: { id: string; product: string }, eventId: string): Promise<EventBilling> {
+type BillingTenant = { id: string; product: string; geniusFree?: boolean };
+
+// What this account pays per event, or null when it doesn't pay per event
+export function priceFor(tenant: { product: string; geniusFree: boolean }, p: EventPrices): number | null {
+  if (tenant.product === 'genie') return p.genieCents;
+  if (tenant.product !== 'crm' || !p.geniusPays || tenant.geniusFree) return null;
+  return p.geniusCents;
+}
+
+export async function eventPriceFor(tenant: BillingTenant): Promise<number | null> {
+  const geniusFree = tenant.geniusFree ?? (tenant.product === 'crm'
+    ? (await prisma.tenant.findUnique({ where: { id: tenant.id }, select: { geniusFree: true } }))?.geniusFree ?? false
+    : false);
+  return priceFor({ product: tenant.product, geniusFree }, await eventPrices());
+}
+
+export type EventBilling = { paysPerEvent: boolean; priceCents: number | null; paid: boolean; payments: number; ipadsCovered: number; watermark: boolean };
+
+export async function eventBilling(tenant: BillingTenant, eventId: string): Promise<EventBilling> {
   return (await eventsBilling(tenant, [eventId])).get(eventId)!;
 }
 
-export async function eventsBilling(tenant: { id: string; product: string }, eventIds: string[]): Promise<Map<string, EventBilling>> {
-  const pays = paysPerEvent(tenant);
+export async function eventsBilling(tenant: BillingTenant, eventIds: string[]): Promise<Map<string, EventBilling>> {
+  const priceCents = await eventPriceFor(tenant);
+  const pays = priceCents !== null;
   const rows = pays && eventIds.length
     ? await prisma.genieEventPayment.groupBy({ by: ['eventId'], where: { tenantId: tenant.id, eventId: { in: eventIds }, status: 'paid' }, _count: { _all: true } })
     : [];
@@ -39,6 +74,7 @@ export async function eventsBilling(tenant: { id: string; product: string }, eve
     const payments = by.get(id) ?? 0;
     return [id, {
       paysPerEvent: pays,
+      priceCents,
       paid: !pays || payments > 0,
       payments,
       // Unpaid events can still run 2 iPads, with the watermark
@@ -49,8 +85,9 @@ export async function eventsBilling(tenant: { id: string; product: string }, eve
 }
 
 // Stripe Checkout for one event payment. `appUrl` is where Stripe sends the operator back.
-export async function startCheckout(tenant: { id: string; name: string }, event: { id: string; title: string }, appUrl: string, customerEmail?: string | null) {
-  const amountCents = await eventPriceCents();
+export async function startCheckout(tenant: { id: string; name: string; product: string; geniusFree?: boolean }, event: { id: string; title: string }, appUrl: string, customerEmail?: string | null) {
+  const amountCents = await eventPriceFor(tenant);
+  if (amountCents === null) throw new Error('This account does not pay per event');
   const sub = await prisma.stripeSubscription.findUnique({ where: { tenantId: tenant.id }, select: { stripeCustomerId: true } });
   const back = `${appUrl}/events/${event.id}/genie`;
   const session = await stripe.checkout.sessions.create({

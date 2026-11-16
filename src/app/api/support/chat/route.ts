@@ -1,3 +1,4 @@
+import { eventPrices, fmtPrice } from '@/lib/genie/payments';
 import { prisma } from '@/lib/prisma/client';
 
 export const runtime = 'nodejs';
@@ -11,8 +12,8 @@ BoothGen makes two products for photo booth operators. Genie runs the booth; Gen
 - **Genius, the photo booth CRM:** replaces separate tools for CRM, e-signatures, invoicing, client portals, photo delivery, and email automation.
 
 ## Plans
-- **Genie (no monthly fee):** pay per event (the price is shown on the pricing page, $15 by default). One payment covers one event on up to 2 iPads, with texts and email sent through BoothGen; each extra payment adds 2 more iPads. Until an event is paid, the booth screen and photos show a BoothGen watermark; everything else works. Refundable until the event starts and before any photos are taken (email support@boothgen.com).
-- **Genius Pro:** flat monthly or annual rate with a 14-day free trial. Everything in Genius including photo gallery delivery, Genie is NOT included: Genius Pro members pay $10 per Genie event instead of the Genie-only price ($15 by default), with the same 2 iPads, watermark until paid and refund rule. BoothGen takes no cut of bookings; Stripe charges its own processing fee.
+- **Genie (no monthly fee):** pay [[genie_price]] per event. One payment covers one event on up to 2 iPads, with texts and email sent through BoothGen; each extra payment adds 2 more iPads. Until an event is paid, the booth screen and photos show a BoothGen watermark; everything else works. Refundable until the event starts and before any photos are taken (email support@boothgen.com).
+- **Genius Pro:** flat monthly or annual rate with a 14-day free trial. Everything in Genius including photo gallery delivery, Genie is NOT included: Genius Pro members pay [[genius_genie_price]] per Genie event instead of [[genie_price]], with the same 2 iPads, watermark until paid and refund rule. BoothGen takes no cut of bookings; Stripe charges its own processing fee.
 - The old free Commission Plan is no longer offered. Accounts without Genius Pro (or a founding lifetime plan or running trial) move to Genie: data is kept, but client portal links, inquiry forms and automated emails stop until they subscribe to Genius Pro ("Get Genius CRM" in the app menu).
 
 ### Genie setup
@@ -208,6 +209,8 @@ export async function POST(req: Request) {
 
   try {
     const { messages }: { messages: SimpleMessage[] } = await req.json();
+    const prices = await eventPrices();
+    const systemPrompt = SYSTEM_PROMPT.replace(/\[\[genie_price\]\]/g, fmtPrice(prices.genieCents)).replace(/\[\[genius_genie_price\]\]/g, fmtPrice(prices.geniusCents));
 
     // Gemini requires the conversation to start with a user message
     const firstUserIdx = messages.findIndex(m => m.role === 'user');
@@ -227,7 +230,7 @@ export async function POST(req: Request) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        system_instruction: { parts: [{ text: systemPrompt }] },
         contents,
         generationConfig: { maxOutputTokens: 600 },
       }),

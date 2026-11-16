@@ -2,26 +2,26 @@ import { prisma } from '@/lib/prisma/client';
 import Link from 'next/link';
 import { MarketingNav } from '@/app/MarketingNav';
 import { Check, Lock, Tablet } from 'lucide-react';
-import { eventPriceCents } from '@/lib/genie/payments';
+import { eventPrices, fmtPrice } from '@/lib/genie/payments';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Pricing: Genie and Genius Pro',
-  description: 'Genie, the photo booth app: $15 per event, no monthly fee, texts and email included. Genius, the photo booth CRM: Genius Pro, a flat monthly rate with a 14-day free trial and Genie at $10 per event.',
+  description: 'Genie, the photo booth app: pay per event, no monthly fee, texts and email included. Genius, the photo booth CRM: Genius Pro, a flat monthly rate with a 14-day free trial and Genie for less per event.',
   keywords: ['photo booth app pricing', 'photo booth software pricing', 'photo booth CRM cost', 'pay per event photo booth'],
   alternates: { canonical: 'https://boothgen.com/pricing' },
   openGraph: {
     title: 'BoothGen Pricing: Genie and Genius Pro',
-    description: 'Genie: $15 per event, no monthly fee. Genius Pro: flat monthly rate, 14-day free trial, Genie at $10 per event.',
+    description: 'Genie: pay per event, no monthly fee. Genius Pro: flat monthly rate, 14-day free trial, Genie for less per event.',
     url: 'https://boothgen.com/pricing',
     images: [{ url: '/api/og?title=Simple%2C+Honest+Pricing&subtitle=Genie+per+event.+Genius+Pro+monthly.', width: 1200, height: 630, alt: 'BoothGen Pricing' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'BoothGen Pricing',
-    description: 'Genie: $15 per event. Genius Pro: flat monthly rate, Genie at $10 per event.',
+    description: 'Genie: pay per event. Genius Pro: flat monthly rate, Genie for less per event.',
     images: ['/api/og?title=Simple%2C+Honest+Pricing&subtitle=Genie+per+event.+Genius+Pro+monthly.'],
   },
 };
@@ -66,9 +66,9 @@ const FREE_FEATURES = [
   'Stripe-powered secure payments',
 ];
 
-const PRO_ONLY_FEATURES = [
+const proOnlyFeatures = (geniusGeniePrice: string) => [
   'Post-event photo gallery with access codes',
-  'Genie, the photo booth app, at $10 per event',
+  `Genie, the photo booth app, at ${geniusGeniePrice} per event`,
 ];
 
 const GENIE_FEATURES = [
@@ -83,8 +83,9 @@ const GENIE_FEATURES = [
 export default async function PricingPage() {
   const { proMonthlyPrice, earlyAdopterCap, spotsRemaining, subscriptionsOpen, cadEquivalent } = await getPricing();
 
-  const genieCents = await eventPriceCents();
-  const geniePrice = genieCents % 100 === 0 ? `$${genieCents / 100}` : `$${(genieCents / 100).toFixed(2)}`;
+  const prices = await eventPrices();
+  const geniePrice = fmtPrice(prices.genieCents);
+  const geniusGeniePrice = fmtPrice(prices.geniusCents);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -98,12 +99,12 @@ export default async function PricingPage() {
             Simple, honest pricing.<br />No surprises.
           </h1>
           <p className="text-lg text-gray-500 max-w-xl mx-auto">
-            Run your booth with Genie and pay per event. Run your business with Genius Pro and pay less for Genie: $10 per event.
+            Run your booth with Genie and pay per event. Run your business with Genius Pro and pay less for Genie: {geniusGeniePrice} per event.
           </p>
         </div>
       </section>
 
-      {/* Tier cards: Genie (per event) and Genius Pro (monthly, Genie at $10 per event) */}
+      {/* Tier cards: Genie (per event) and Genius Pro (monthly, Genie for less per event) */}
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto grid sm:grid-cols-2 gap-6 items-start">
 
@@ -145,7 +146,7 @@ export default async function PricingPage() {
                 <span className="text-4xl font-extrabold text-gray-900">${proMonthlyPrice}</span>
                 <span className="text-gray-400 mb-1">/month</span>
               </div>
-              <p className="text-green-600 font-bold text-lg">14-day free trial · Genie $10/event</p>
+              <p className="text-green-600 font-bold text-lg">14-day free trial · Genie {geniusGeniePrice}/event</p>
               {cadEquivalent && (
                 <p className="text-xs text-gray-400 mt-1">≈ CA${cadEquivalent}/month for Canadian operators</p>
               )}
@@ -179,7 +180,7 @@ export default async function PricingPage() {
                   {f}
                 </li>
               ))}
-              {PRO_ONLY_FEATURES.map(f => (
+              {proOnlyFeatures(geniusGeniePrice).map(f => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-gray-700">
                   <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
                   <span>{f}</span>
