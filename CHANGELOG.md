@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.95.7] — 2026-11-16
+
+### Changed
+- **llms.txt rewritten for BoothGen.** The summary AI tools (ChatGPT, Perplexity and others) read about the site now covers Genie and Genius, the per-event prices, Genius Pro and no commission. It no longer describes Booth Genius or the Commission Plan
+
+---
+
 ## [2.95.6] — 2026-11-16
 
 ### Added
