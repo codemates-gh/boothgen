@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.95.3] — 2026-11-16
+
+### Changed
+- **Lifetime (founding) accounts pay no commission** on client invoice payments, the same as Genius Pro and "Keep Genius free"
+
+---
+
 ## [2.95.2] — 2026-11-16
 
 ### Changed

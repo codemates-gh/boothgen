@@ -17,8 +17,8 @@ import { POST } from '@/app/api/public/stripe/payment-intent/route';
 import { req, resetDb, seedTenant } from './helpers';
 
 // Commission on client invoice payments: none for Genius Pro or "Keep Genius free" accounts
-async function invoiceFor(opts: { geniusFree: boolean }) {
-  const { tenant, client } = await seedTenant({ pro: false, messaging: false });
+async function invoiceFor(opts: { geniusFree: boolean; lifetime?: boolean }) {
+  const { tenant, client } = await seedTenant({ pro: !!opts.lifetime, messaging: false });
   await prisma.tenant.update({ where: { id: tenant.id }, data: { geniusFree: opts.geniusFree } });
   await prisma.stripeConnectAccount.create({ data: { tenantId: tenant.id, stripeAccountId: 'acct_' + randomUUID(), onboardingStatus: 'ACTIVE', chargesEnabled: true } });
   return prisma.invoice.create({ data: { tenantId: tenant.id, clientId: client.id, invoiceNumber: 'INV-1', status: 'SENT', totalCents: 10_000, balanceDueCents: 10_000 } });
@@ -30,7 +30,7 @@ beforeEach(async () => { await resetDb(); created.length = 0; existing = null; }
 afterAll(async () => { await resetDb(); await prisma.$disconnect(); });
 
 describe('commission on invoice payments', () => {
-  it('charges commission without Pro, none for Keep Genius free', async () => {
+  it('charges commission without Pro, none for Keep Genius free or lifetime', async () => {
     const paying = await invoiceFor({ geniusFree: false });
     expect((await pay(paying.id)).status).toBe(200);
     expect(created[0].application_fee_amount).toBeGreaterThan(0);
@@ -38,6 +38,10 @@ describe('commission on invoice payments', () => {
     const free = await invoiceFor({ geniusFree: true });
     expect((await pay(free.id)).status).toBe(200);
     expect(created[1].application_fee_amount).toBeUndefined();
+
+    const lifetime = await invoiceFor({ geniusFree: false, lifetime: true });
+    expect((await pay(lifetime.id)).status).toBe(200);
+    expect(created[2].application_fee_amount).toBeUndefined();
   });
 
   it('replaces an unpaid payment made with a commission once the account is free', async () => {

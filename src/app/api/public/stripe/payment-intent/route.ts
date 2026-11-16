@@ -25,11 +25,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
   }
   { const closed = await closedForClients(invoice.tenantId); if (closed) return closed; } // Genie-only account: CRM is closed
-  // No commission for Pro subscribers (MONTHLY/ANNUAL, ACTIVE or PAST_DUE) or accounts marked "Keep Genius free"
+  // No commission for Pro subscribers (MONTHLY/ANNUAL, ACTIVE or PAST_DUE), lifetime (founding) accounts, or accounts
+  // marked "Keep Genius free"
   const sub = (invoice.tenant as any).stripeSubscription;
-  const isPro = sub &&
+  const isPro = sub && (sub.plan === 'LIFETIME' || (
     ['MONTHLY', 'ANNUAL'].includes(sub.plan) &&
-    ['ACTIVE', 'PAST_DUE'].includes(sub.status);
+    ['ACTIVE', 'PAST_DUE'].includes(sub.status)));
   const noCommission = isPro || invoice.tenant.geniusFree;
   const commissionPct = parseFloat(commissionSetting?.value ?? '1.5');
   const feeFor = (cents: number) => noCommission ? 0 : Math.round(cents * (commissionPct / 100));
