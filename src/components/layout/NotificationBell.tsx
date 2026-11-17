@@ -1,12 +1,12 @@
 'use client';
-import { Bell, X, Calendar, DollarSign, FileText, User, MessageSquare, CheckCheck } from 'lucide-react';
+import { Bell, X, Calendar, DollarSign, FileText, User, MessageSquare, CheckCheck, Eye, CheckCircle2, Palette, PenLine, ClipboardList } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 
 type Notification = {
   id: string;
-  type: 'lead' | 'reply' | 'booking' | 'payment' | 'contract';
+  type: 'lead' | 'reply' | 'booking' | 'payment' | 'contract' | 'quote' | 'accepted' | 'design' | 'revision' | 'brief';
   title: string;
   body: string;
   href?: string;
@@ -19,6 +19,11 @@ const icons: Record<string, React.ElementType> = {
   booking: Calendar,
   payment: DollarSign,
   contract: FileText,
+  quote: Eye,
+  accepted: CheckCircle2,
+  design: Palette,
+  revision: PenLine,
+  brief: ClipboardList,
 };
 
 const colors: Record<string, string> = {
@@ -27,6 +32,11 @@ const colors: Record<string, string> = {
   booking: 'bg-green-100 text-green-600',
   payment: 'bg-emerald-100 text-emerald-600',
   contract: 'bg-purple-100 text-purple-600',
+  quote: 'bg-sky-100 text-sky-600',
+  accepted: 'bg-green-100 text-green-600',
+  design: 'bg-pink-100 text-pink-600',
+  revision: 'bg-amber-100 text-amber-600',
+  brief: 'bg-indigo-100 text-indigo-600',
 };
 
 const STORAGE_KEY = 'boothgen_read_notifications';

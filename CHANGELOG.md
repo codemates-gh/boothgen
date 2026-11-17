@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.99.1] — 2026-11-17
+
+### Added
+- **Notification bell:** shows what clients do in their portal: quote viewed, quote accepted, design approved, design changes requested, and design brief submitted. Each one opens the quote or the event's designs. Event booked, payment received and contract signed alerts now open the event, invoice or contract too
+
+---
+
 ## [2.99.0] — 2026-11-17
 
 ### Changed

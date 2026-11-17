@@ -21,7 +21,9 @@ export async function GET() {
     assignedEventIds = assigned.map(e => e.id);
   }
 
-  const [leads, replies, bookings, payments, contracts] = await Promise.all([
+  const eventScope = assignedEventIds ? { eventId: { in: assignedEventIds } } : {};
+  const clientName = { select: { firstName: true, lastName: true } };
+  const [leads, replies, bookings, payments, contracts, quotesViewed, quotesAccepted, designsDecided, briefs] = await Promise.all([
     // Team members don't have access to leads
     isTeamMember ? Promise.resolve([]) : prisma.leadSubmission.findMany({
       where: { tenantId: session.tenantId, createdAt: { gte: since } },
@@ -68,6 +70,31 @@ export async function GET() {
       orderBy: { updatedAt: 'desc' },
       take: 5,
     }),
+    // Client activity in the portal (quotes are admin-only, like leads)
+    isTeamMember ? Promise.resolve([]) : prisma.quote.findMany({
+      where: { tenantId: session.tenantId, viewedAt: { gte: since } },
+      select: { id: true, quoteNumber: true, viewedAt: true, eventId: true, client: clientName },
+      orderBy: { viewedAt: 'desc' },
+      take: 5,
+    }),
+    isTeamMember ? Promise.resolve([]) : prisma.quote.findMany({
+      where: { tenantId: session.tenantId, status: 'ACCEPTED', acceptedAt: { gte: since } },
+      select: { id: true, quoteNumber: true, acceptedAt: true, eventId: true, client: clientName },
+      orderBy: { acceptedAt: 'desc' },
+      take: 5,
+    }),
+    prisma.templateDesign.findMany({
+      where: { tenantId: session.tenantId, status: { in: ['APPROVED', 'REVISION_REQUESTED'] }, updatedAt: { gte: since }, ...eventScope },
+      select: { id: true, version: true, status: true, approvedAt: true, updatedAt: true, eventId: true, event: { select: { title: true } } },
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+    }),
+    prisma.eventDesignBrief.findMany({
+      where: { tenantId: session.tenantId, submittedAt: { gte: since }, ...eventScope },
+      select: { id: true, submittedAt: true, eventId: true, event: { select: { title: true } } },
+      orderBy: { submittedAt: 'desc' },
+      take: 5,
+    }),
   ]);
 
   const items: any[] = [
@@ -92,6 +119,7 @@ export async function GET() {
       type: 'booking',
       title: 'Event booked: ' + e.title,
       body: e.client.firstName + ' ' + e.client.lastName,
+      href: `/events/${e.id}`,
       createdAt: e.updatedAt,
     })),
     ...payments.map(inv => ({
@@ -99,6 +127,7 @@ export async function GET() {
       type: 'payment',
       title: 'Payment received: ' + inv.invoiceNumber,
       body: inv.client.firstName + ' ' + inv.client.lastName,
+      href: `/invoices/${inv.id}`,
       createdAt: inv.updatedAt,
     })),
     ...contracts.map(c => ({
@@ -106,11 +135,44 @@ export async function GET() {
       type: 'contract',
       title: 'Contract signed: ' + c.title,
       body: c.client.firstName + ' ' + c.client.lastName,
+      href: `/contracts/${c.id}`,
       createdAt: c.updatedAt,
+    })),
+    ...quotesViewed.map(q => ({
+      id: 'quote-viewed-' + q.id,
+      type: 'quote',
+      title: 'Quote viewed: ' + q.quoteNumber,
+      body: q.client ? q.client.firstName + ' ' + q.client.lastName + ' opened it in the portal' : 'Opened in the portal',
+      href: `/quotes/${q.id}`,
+      createdAt: q.viewedAt,
+    })),
+    ...quotesAccepted.map(q => ({
+      id: 'quote-accepted-' + q.id,
+      type: 'accepted',
+      title: 'Quote accepted: ' + q.quoteNumber,
+      body: q.client ? q.client.firstName + ' ' + q.client.lastName : '',
+      href: `/quotes/${q.id}`,
+      createdAt: q.acceptedAt,
+    })),
+    ...designsDecided.map(d => ({
+      id: 'design-' + d.status.toLowerCase() + '-' + d.id,
+      type: d.status === 'APPROVED' ? 'design' : 'revision',
+      title: d.status === 'APPROVED' ? `Design approved (version ${d.version})` : `Design changes requested (version ${d.version})`,
+      body: d.event.title,
+      href: `/events/${d.eventId}/designs`,
+      createdAt: d.status === 'APPROVED' ? (d.approvedAt ?? d.updatedAt) : d.updatedAt,
+    })),
+    ...briefs.map(b => ({
+      id: 'brief-' + b.id + '-' + new Date(b.submittedAt!).getTime(),
+      type: 'brief',
+      title: 'Design brief submitted',
+      body: b.event.title,
+      href: `/events/${b.eventId}/designs`,
+      createdAt: b.submittedAt,
     })),
   ];
 
   items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  return NextResponse.json(items.slice(0, 10));
+  return NextResponse.json(items.slice(0, 15));
 }
