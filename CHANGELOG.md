@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.97.2] — 2026-11-17
+
+### Fixed
+- Outline buttons have their borders again, and all buttons look as they did before the HeroUI upgrade (the upgrade used option names HeroUI v3 doesn't recognize)
+- Lines in tables, cards and dialogs are light gray again instead of dark (Tailwind v4 changed the default border color)
+
+---
+
 ## [2.97.1] — 2026-11-17
 
 ### Changed
