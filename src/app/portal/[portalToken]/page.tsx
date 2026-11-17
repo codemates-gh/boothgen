@@ -7,6 +7,7 @@ import { Camera, CheckCircle2, Lock, FileText, Receipt, Image, ChevronRight, Pri
 import { PoweredByBadge } from '@/components/brand/PoweredByBadge';
 import { InvoicePaymentForm } from '@/components/stripe/PaymentForm';
 import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
+import { initialBoxesHtml, initialLabels, initialsFromName, savedInitials } from '@/lib/contracts/initials';
 import { AssetFull, AssetThumb, assetExt, isVideo } from '@/components/gallery/AssetMedia';
 
 const FORMAT_LABEL: Record<string, string> = { '2x6': '2"×6" Strip', '4x6': '4"×6" Full Size' };
@@ -39,6 +40,9 @@ export default function ClientPortalPage() {
   const [loading,     setLoading]     = useState(true);
   const [tab,         setTab]         = useState<Tab>((searchParams.get('tab') as Tab) || 'quote');
   const [sigName,     setSigName]     = useState('');
+  // Initial Here boxes: the client's initials (from their name unless they change it) and when each box was initialed
+  const [myInitials,  setMyInitials]  = useState<string | null>(null);
+  const [initialedAt, setInitialedAt] = useState<Record<number, string>>({});
   const [declining,   setDeclining]   = useState(false);
   const [declineReason, setDeclineReason] = useState('');
   const [processing,  setProcessing]  = useState(false);
@@ -216,6 +220,19 @@ export default function ClientPortalPage() {
   const quoteAccepted  = data?.quote?.status === 'ACCEPTED';
   const contractSigned = data?.contract?.status === 'FULLY_EXECUTED' ||
                          data?.contract?.status === 'CLIENT_SIGNED';
+  const contractHtml   = stripMergeTagSpans(data?.contract?.renderedContent || data?.contract?.templateContent || '');
+  const initialBoxes   = initialLabels(contractHtml);
+  const initialsValue  = (myInitials ?? initialsFromName(sigName)).trim();
+  const initialedCount = initialBoxes.filter((_, i) => initialedAt[i]).length;
+  const allInitialed   = initialedCount === initialBoxes.length;
+
+  function toggleInitial(e: React.MouseEvent) {
+    const box = (e.target as HTMLElement).closest('[data-initial-idx]');
+    if (!box || contractSigned) return;
+    const i = Number(box.getAttribute('data-initial-idx'));
+    if (!initialsValue) { setMessage('Type your initials first, then tap each Initial here box.'); document.getElementById('contract-initials')?.focus(); return; }
+    setInitialedAt(s => { const n = { ...s }; if (n[i]) delete n[i]; else n[i] = new Date().toISOString(); return n; });
+  }
   const invoicePaid    = data?.invoice?.status === 'PAID';
   const eventBooked    = data?.event?.status === 'BOOKED';
   const designUnlocked = invoicePaid || eventBooked;
@@ -262,11 +279,15 @@ export default function ClientPortalPage() {
 
   async function signContract() {
     if (!sigName.trim()) { setMessage('Please enter your name to sign'); return; }
+    if (!allInitialed) { setMessage('Please initial every highlighted section before signing.'); return; }
     setProcessing(true);
     try {
       const r = await fetch('/api/contracts/' + data?.contract?.id + '/sign/client', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientToken: data?.contract?.clientToken || '', signatureDataUrl: sigName, signerName: sigName }),
+        body: JSON.stringify({
+          clientToken: data?.contract?.clientToken || '', signatureDataUrl: sigName, signerName: sigName,
+          initials: initialBoxes.map((_, i) => ({ initials: initialsValue, initialedAt: initialedAt[i] })),
+        }),
       });
       if (r.ok) { setMessage('Contract signed! Your invoice is now available.'); await load(); setTab('invoice'); }
       else { const d = await r.json().catch(() => ({})); setMessage(d.error || 'Something went wrong. Please try again.'); }
@@ -609,7 +630,28 @@ export default function ClientPortalPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="p-6 prose max-w-none text-sm" dangerouslySetInnerHTML={{ __html: stripMergeTagSpans(data.contract.renderedContent || data.contract.templateContent || '') }}/>
+                  {initialBoxes.length > 0 && !contractSigned && (
+                    <div className="px-6 py-4 bg-orange-50 border-b border-orange-100 flex flex-col sm:flex-row sm:items-center gap-3">
+                      <p className="text-sm text-orange-800 flex-1">
+                        Please initial {initialBoxes.length === 1 ? 'the highlighted section' : `each of the ${initialBoxes.length} highlighted sections`} by tapping <span className="font-semibold">Initial here</span>.
+                        <span className="block text-xs text-orange-700 mt-0.5">{initialedCount} of {initialBoxes.length} initialed</span>
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <label htmlFor="contract-initials" className="text-sm font-medium text-orange-900">Your initials</label>
+                        <input
+                          id="contract-initials" type="text" value={myInitials ?? initialsFromName(sigName)} maxLength={4}
+                          onChange={e => setMyInitials(e.target.value.toUpperCase())}
+                          placeholder="JS"
+                          className="w-20 border border-orange-200 rounded-lg px-3 py-2 text-sm font-mono font-semibold text-center bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  <div className="p-6 prose max-w-none text-sm" onClick={toggleInitial} dangerouslySetInnerHTML={{
+                    __html: contractSigned
+                      ? initialBoxesHtml(contractHtml, savedInitials(data.contract.clientInitials).map(i => i.initials))
+                      : initialBoxesHtml(contractHtml, initialBoxes.map((_, i) => (initialedAt[i] ? initialsValue : null)), { interactive: true }),
+                  }}/>
                 </div>
 
                 {!contractSigned && (
@@ -626,8 +668,11 @@ export default function ClientPortalPage() {
                         style={{ fontFamily: 'cursive' }}
                       />
                     </div>
+                    {initialBoxes.length > 0 && !allInitialed && (
+                      <p className="text-sm text-orange-700">Initial all {initialBoxes.length} highlighted sections above to sign ({initialedCount} of {initialBoxes.length} done).</p>
+                    )}
                     <button
-                      onClick={signContract} disabled={processing || !sigName.trim()}
+                      onClick={signContract} disabled={processing || !sigName.trim() || !allInitialed}
                       className="w-full py-3 rounded-xl text-white font-bold text-sm disabled:opacity-50"
                       style={{ backgroundColor: brandColor }}
                     >

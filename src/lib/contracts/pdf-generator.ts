@@ -8,6 +8,7 @@ export interface ContractPdfInput {
   contractId: string; tenantId: string; title: string; renderedContent: string;
   clientFullName: string; clientEmail: string; clientSignatureDataUrl: string; clientSignedAt: Date; clientIpAddress: string;
   hostFullName: string; hostEmail: string; hostSignatureDataUrl: string; hostSignedAt: Date; hostIpAddress: string;
+  clientInitials?: { label: string; initials: string; initialedAt: string; ipAddress: string }[];
   branding: { companyName: string; primaryColor: string; logoUrl?: string; invoiceFooterText?: string };
 }
 
@@ -99,6 +100,7 @@ function ContractDoc({ input, hash }: { input: ContractPdfInput; hash: string })
           React.createElement(View, { style: s.auditRow }, React.createElement(Text, { style: s.auditLbl }, 'Contract ID:'), React.createElement(Text, { style: s.auditVal }, input.contractId)),
           React.createElement(View, { style: s.auditRow }, React.createElement(Text, { style: s.auditLbl }, 'Client signed:'), React.createElement(Text, { style: s.auditVal }, format(input.clientSignedAt, 'MMM d, yyyy h:mm:ss a') + ' from ' + input.clientIpAddress)),
           React.createElement(View, { style: s.auditRow }, React.createElement(Text, { style: s.auditLbl }, 'Host signed:'), React.createElement(Text, { style: s.auditVal }, format(input.hostSignedAt, 'MMM d, yyyy h:mm:ss a') + ' from ' + input.hostIpAddress)),
+          ...(input.clientInitials ?? []).map((i, n) => React.createElement(View, { key: 'i' + n, style: s.auditRow }, React.createElement(Text, { style: s.auditLbl }, 'Initialed (' + i.label + '):'), React.createElement(Text, { style: s.auditVal }, i.initials + ' at ' + format(new Date(i.initialedAt), 'MMM d, yyyy h:mm:ss a') + ' from ' + i.ipAddress))),
           React.createElement(Text, { style: s.hash }, 'SHA-256: ' + hash),
           input.branding.invoiceFooterText ? React.createElement(Text, { style: s.auditVal }, input.branding.invoiceFooterText) : null
         )
@@ -108,7 +110,7 @@ function ContractDoc({ input, hash }: { input: ContractPdfInput; hash: string })
 }
 
 export async function generateLockedContractPdf(input: ContractPdfInput) {
-  const raw = [input.contractId, input.renderedContent, input.clientSignatureDataUrl, input.clientSignedAt.toISOString(), input.clientIpAddress, input.hostSignatureDataUrl, input.hostSignedAt.toISOString(), input.hostIpAddress].join('|');
+  const raw = [input.contractId, input.renderedContent, input.clientSignatureDataUrl, input.clientSignedAt.toISOString(), input.clientIpAddress, input.hostSignatureDataUrl, input.hostSignedAt.toISOString(), input.hostIpAddress, ...(input.clientInitials?.length ? [JSON.stringify(input.clientInitials)] : [])].join('|');
   const contentHash = createHash('sha256').update(raw).digest('hex');
   const buf = Buffer.from(await (renderToBuffer as any)(React.createElement(ContractDoc, { input, hash: contentHash })));
   const blobPath = 'contracts/' + input.tenantId + '/' + input.contractId + '/' + contentHash.slice(0, 16) + '-signed.pdf';

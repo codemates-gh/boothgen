@@ -613,6 +613,8 @@ model Contract {
   clientSignedAt      DateTime?
   clientIpAddress     String?
   clientUserAgent     String?
+  /// Initial Here boxes the client initialed before signing: [{ label, initials, initialedAt, ipAddress }]
+  clientInitials      Json?
   hostSignatureData   String?
   hostSignedAt        DateTime?
   hostIpAddress       String?

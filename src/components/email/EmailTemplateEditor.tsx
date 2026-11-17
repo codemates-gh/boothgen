@@ -6,6 +6,7 @@ import {
   Bold, Italic, Underline, Link, Image, List,
   ChevronDown, Eye, Code, AlignLeft, AlignCenter, Wand2
 } from 'lucide-react';
+import { initialBoxesHtml, initialMarker } from '@/lib/contracts/initials';
 
 const MERGE_TAGS = [
   { group: 'Client', label: 'Client First Name', value: '{{client.first_name}}' },
@@ -53,9 +54,11 @@ interface Props {
   previewSamples?: Record<string, string>;
   onAiImprove?: (currentHtml: string) => Promise<void>;
   aiImproving?: boolean;
+  /** Contracts: show "+ Initial Here" to add a box the client must initial before signing */
+  initialBoxes?: boolean;
 }
 
-export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeTagsProp, previewSamples: previewSamplesProp, onAiImprove, aiImproving }: Props) {
+export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeTagsProp, previewSamples: previewSamplesProp, onAiImprove, aiImproving, initialBoxes }: Props) {
   const mergeTags = mergeTagsProp ?? MERGE_TAGS;
   const [mode, setMode] = useState<'visual' | 'html'>('visual');
   const [showPreview, setShowPreview] = useState(false);
@@ -126,6 +129,18 @@ export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeT
     syncFromEditor();
   }
 
+  function insertInitial() {
+    // Keep the cursor position while the prompt is open
+    const sel = window.getSelection();
+    const saved = sel && sel.rangeCount > 0 && editorRef.current?.contains(sel.anchorNode) ? sel.getRangeAt(0).cloneRange() : null;
+    const label = prompt('Which section should the client initial? For example: Payment terms');
+    if (!label?.trim()) return;
+    const tag = initialMarker(label);
+    if (mode === 'html' || !editorRef.current) { onChange(value + ' ' + tag); return; }
+    if (sel) { sel.removeAllRanges(); if (saved) sel.addRange(saved); }
+    insertVar(tag);
+  }
+
   function insertImage() {
     if (!imgUrl.trim()) return;
     const img = `<img src="${imgUrl}" alt="${imgAlt || ''}" style="max-width:100%;height:auto;display:block;margin:8px 0"/>`;
@@ -147,7 +162,8 @@ export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeT
   }
 
   function getPreviewHtml() {
-    let html = value;
+    // Initial Here boxes show as they will for the client (before initialing)
+    let html = initialBoxesHtml(value.replace(/<span[^>]+data-tag="({{\s*initial:[^"]*)"[^>]*>[^<]*<\/span>/g, '$1'), []);
     const defaultSamples: Record<string, string> = {
       '{{client.first_name}}': 'Jane',
       '{{client.full_name}}': 'Jane Smith',
@@ -238,6 +254,12 @@ export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeT
           className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 text-gray-600 border border-gray-200 rounded-lg text-xs font-semibold hover:bg-gray-200 transition-colors">
           + Card
         </button>
+        {initialBoxes && (
+          <button type="button" onClick={insertInitial} title="A box the client must initial before they can sign"
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-orange-50 text-orange-600 border border-dashed border-orange-300 rounded-lg text-xs font-semibold hover:bg-orange-100 transition-colors">
+            + Initial Here
+          </button>
+        )}
         <div className="w-px h-5 bg-gray-300 mx-1"/>
 
         {/* Variables dropdown */}

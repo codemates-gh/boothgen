@@ -180,8 +180,8 @@ export default function ContractTemplatesPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Contract Body *</label>
-            <EmailTemplateEditor value={body} onChange={setBody} mergeTags={CONTRACT_TAGS}/>
-            <p className="text-xs text-gray-400 mt-1">Use the "Insert Variable" dropdown to add merge tags. Switch to HTML mode for advanced formatting.</p>
+            <EmailTemplateEditor value={body} onChange={setBody} mergeTags={CONTRACT_TAGS} initialBoxes/>
+            <p className="text-xs text-gray-400 mt-1">Use the "Insert Variable" dropdown to add merge tags. Add "+ Initial Here" beside key sections (payment terms, cancellation, overtime): the client initials each one before they can sign. Switch to HTML mode for advanced formatting.</p>
           </div>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>

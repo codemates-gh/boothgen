@@ -10,6 +10,7 @@ import { SignatureCanvas } from '@/components/contracts/SignatureCanvas';
 import { ArrowLeft, Send, Lock, Download, PenLine, Pen, Type, CheckCircle2, Trash2, Pencil, Calendar, Ban } from 'lucide-react';
 import Link from 'next/link';
 import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
+import { initialBoxesHtml, savedInitials } from '@/lib/contracts/initials';
 import { useRef, useCallback } from 'react';
 import EmailTemplateEditor from '@/components/email/EmailTemplateEditor';
 import { clientDisplayName } from '@/lib/clientName';
@@ -259,7 +260,7 @@ export default function ContractDetailPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Contract Body</label>
-                <EmailTemplateEditor value={editBody} onChange={setEditBody}/>
+                <EmailTemplateEditor value={editBody} onChange={setEditBody} initialBoxes/>
               </div>
               <div className="flex gap-2">
                 <Button onClick={saveEdit} disabled={saving || !editTitle.trim()}>
@@ -274,7 +275,21 @@ export default function ContractDetailPage() {
         <Card>
           <CardHeader><CardTitle>Contract Content</CardTitle></CardHeader>
           <CardContent>
-            <div className="prose max-w-none text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: stripMergeTagSpans(contract.renderedContent ?? '') }} />
+            <div className="prose max-w-none text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: initialBoxesHtml(stripMergeTagSpans(contract.renderedContent ?? ''), savedInitials(contract.clientInitials).map(i => i.initials)) }} />
+            {savedInitials(contract.clientInitials).length > 0 && (
+              <div className="mt-6 border-t border-gray-100 pt-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Client initials</p>
+                <ul className="space-y-1 text-sm">
+                  {savedInitials(contract.clientInitials).map((i, n) => (
+                    <li key={n} className="flex flex-wrap gap-x-3 text-gray-600">
+                      <span className="font-mono font-semibold text-gray-900">{i.initials}</span>
+                      <span>{i.label}</span>
+                      <span className="text-gray-400">{new Date(i.initialedAt).toLocaleString()}{i.ipAddress ? ' · IP ' + i.ipAddress : ''}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </CardContent>
         </Card>
         {canHostSign && (

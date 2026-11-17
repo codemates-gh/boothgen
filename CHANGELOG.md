@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.104.0] — 2026-11-17
+
+### Added
+- **Contracts: Initial Here boxes.** In the contract template editor (and when editing a draft contract), **+ Initial Here** adds a labeled box beside a key section, such as payment terms, cancellation or overtime. On the client portal each box is highlighted; the client taps it to initial (initials fill in from their name and can be changed), and **Sign Contract** stays disabled until every box is initialed. Each initial is saved with its section, time and IP next to the signature, shown on the contract page, and printed in the contract PDF with a Client Initials record. Contracts without boxes sign exactly as before.
+
+---
+
 ## [2.103.4] — 2026-11-17
 
 ### Changed

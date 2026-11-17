@@ -24,6 +24,7 @@ export function parseMergeTags(tpl: string, ctx: MergeCtx, showMissing = false):
   // Strip visual-editor span wrappers so only the raw {{tag}} remains, then substitute
   const cleaned = stripMergeTagSpans(tpl);
   return cleaned.replace(/{{([^}]+)}}/g, (match, raw: string) => {
+    if (/^\s*initial:/.test(raw)) return match; // Initial Here box: kept for the signing page
     const keys = raw.trim().split('.');
     let v: any = ctx;
     for (const k of keys) { if (v == null) return showMissing ? match : ''; v = v[k as keyof typeof v]; }

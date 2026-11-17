@@ -6,11 +6,15 @@ import { z } from 'zod';
 import { sendHostNotificationEmail } from '@/lib/email/send';
 import { triggerAutomation, scheduleEventDateAutomations } from '@/lib/inngest/trigger';
 import { closedForClients } from '@/lib/genius';
+import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
+import { initialLabels, type ClientInitial } from '@/lib/contracts/initials';
 
 const Schema = z.object({
   clientToken: z.string().min(1).max(256),
   signatureDataUrl: z.string().min(1),
   signerName: z.string().min(1).max(200),
+  // One per Initial Here box, in document order
+  initials: z.array(z.object({ initials: z.string().max(10), initialedAt: z.string().max(40).optional() })).max(200).optional(),
 });
 
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -19,7 +23,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const body = await req.json();
   const parsed = Schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
-  const { clientToken, signatureDataUrl } = parsed.data;
+  const { clientToken, signatureDataUrl, initials = [] } = parsed.data;
 
   const contract = await prisma.contract.findFirst({
     where: { id: params.id, clientToken },
@@ -38,12 +42,27 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   if (contract.status === 'FULLY_EXECUTED') return NextResponse.json({ error: 'Already signed' }, { status: 400 });
 
   const now = new Date();
+  // Every Initial Here box in the contract the client saw must be initialed
+  const labels = initialLabels(stripMergeTagSpans(contract.renderedContent || contract.templateContent || ''));
+  if (initials.length !== labels.length || initials.some(i => !i.initials.trim())) {
+    return NextResponse.json({ error: 'Please initial every highlighted section before signing.' }, { status: 400 });
+  }
+  const clientInitials: ClientInitial[] = labels.map((label, n) => {
+    const at = initials[n].initialedAt ? new Date(initials[n].initialedAt!) : null;
+    // The tap time from the browser, if it's sensible (within the last day, not in the future); otherwise now
+    const ok = at && !isNaN(at.getTime()) && at <= now && now.getTime() - at.getTime() < 86400_000;
+    return { label, initials: initials[n].initials.trim().slice(0, 10), initialedAt: (ok ? at! : now).toISOString(), ipAddress: ip };
+  });
+  const userAgent = req.headers.get('user-agent')?.slice(0, 500) ?? null;
   const newStatus = contract.hostSignedAt ? 'FULLY_EXECUTED' : 'CLIENT_SIGNED';
 
   const updated = await prisma.$transaction(async (tx) => {
     const updatedContract = await tx.contract.update({
       where: { id: params.id },
-      data: { clientSignatureData: signatureDataUrl, clientSignedAt: now, clientIpAddress: ip, status: newStatus },
+      data: {
+        clientSignatureData: signatureDataUrl, clientSignedAt: now, clientIpAddress: ip, clientUserAgent: userAgent, status: newStatus,
+        ...(clientInitials.length ? { clientInitials } : {}),
+      },
     });
 
     // Auto-create invoice from accepted quote if none exists for this event

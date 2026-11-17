@@ -1,6 +1,8 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { clientDisplayName } from '@/lib/clientName';
+import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
+import { replaceInitialMarkers, savedInitials } from '@/lib/contracts/initials';
 
 const S = StyleSheet.create({
   page:       { fontFamily: 'Helvetica', fontSize: 10, color: '#111827', padding: 48 },
@@ -70,7 +72,13 @@ const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('en-US', { month:
 const fmtDateTime = (d: any) => d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
 
 export function ContractPDF({ contract, branding }: { contract: any; branding: any }) {
-  const blocks = contract.renderedContent ? parseToBlocks(contract.renderedContent) : [];
+  // Initial Here boxes print as the client's initials once given, otherwise as a blank to initial
+  const initials = savedInitials(contract.clientInitials);
+  const content = contract.renderedContent
+    ? replaceInitialMarkers(stripMergeTagSpans(contract.renderedContent), (i, label) =>
+        initials[i] ? ` [Initialed: ${initials[i].initials} — ${label}] ` : ` [Initial here: ______ — ${label}] `)
+    : '';
+  const blocks = content ? parseToBlocks(content) : [];
 
   const isFullySigned = contract.status === 'FULLY_EXECUTED';
 
@@ -134,6 +142,17 @@ export function ContractPDF({ contract, branding }: { contract: any; branding: a
             )}
           </View>
         </View>
+
+        {initials.length > 0 && (
+          <View style={{ marginTop: 24 }} wrap={false}>
+            <Text style={S.bodyLabel}>Client Initials</Text>
+            {initials.map((i, n) => (
+              <Text key={n} style={{ fontSize: 8.5, color: '#374151', marginBottom: 3 }}>
+                {i.initials} — {i.label} — {fmtDateTime(i.initialedAt)}{i.ipAddress ? ' — IP ' + i.ipAddress : ''}
+              </Text>
+            ))}
+          </View>
+        )}
 
         <Text style={S.footer}>{contract.title} — {branding?.companyName ?? ''} — Confidential</Text>
       </Page>
