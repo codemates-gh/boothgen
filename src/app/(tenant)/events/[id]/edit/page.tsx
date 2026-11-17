@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { addressLabels } from '@/lib/utils';
+import { addressLabels, eventTimeInput } from '@/lib/utils';
 import { useParams, useRouter } from 'next/navigation';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,11 +45,10 @@ export default function EditEventPage() {
     fetch('/api/events/' + id + '/full').then(r => r.json()).then(d => {
       if (d.error) return;
       const ev = d.event; const cl = d.client;
-      const toTime = (dt: string | null) => dt ? new Date(dt).toTimeString().slice(0,5) : '';
       const toDate = (dt: string) => new Date(dt).toISOString().slice(0,10);
       setForm({
         title: ev.title ?? '', status: ev.status ?? 'LEAD',
-        eventDate: toDate(ev.eventDate), startTime: toTime(ev.startTime), endTime: toTime(ev.endTime),
+        eventDate: toDate(ev.eventDate), startTime: eventTimeInput(ev.startTime), endTime: eventTimeInput(ev.endTime),
         venueName: ev.venueName ?? '', venueAddress: ev.venueAddress ?? '',
         venueCity: ev.venueCity ?? '', venueState: ev.venueState ?? '',
         venuePostalCode: ev.venuePostalCode ?? '',

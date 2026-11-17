@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.96.5] — 2026-11-16
+
+### Fixed
+- **Edit Event times now match the event page** (report #3): the Start and End Time on the Edit Event screen were shown in the viewer's own time zone, so they could differ from the event page by several hours, and saving the form without changes could shift the event. The edit screen now shows exactly the saved times
+
+---
+
 ## [2.96.4] — 2026-11-16
 
 ### Fixed
