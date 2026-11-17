@@ -36,6 +36,8 @@ const underPrefix = (pathname: string, p: string) => pathname === p || pathname.
 const PORTAL_CLIENT = [
   /^\/api\/quotes\/[^/]+\/(accept|decline)$/,
   /^\/api\/contracts\/[^/]+\/sign\/client$/,
+  // Approve a design or ask for changes (each route checks the portalToken against the design's event)
+  /^\/api\/template-designs\/[^/]+\/(approve|request-revision)$/,
 ];
 
 const TENANT = ['/dashboard', '/events', '/clients', '/leads', '/invoices', '/contracts', '/automation', '/messages', '/settings', '/gallery', '/genie', '/templates'];

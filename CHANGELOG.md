@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.98.11] — 2026-11-17
+
+### Fixed
+- **Client portal, approving a design:** clients can approve a design or ask for changes without being logged in. These requests were being sent to the sign-in page. Approving quotes, signing contracts and paying invoices already worked without logging in
+
+---
+
 ## [2.98.10] — 2026-11-17
 
 ### Changed
