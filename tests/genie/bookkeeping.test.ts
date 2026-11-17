@@ -68,6 +68,25 @@ describe('Bookkeeping sync', () => {
     expect(await syncLedger(tenantId)).toEqual({ added: 0, removed: 1 });
   });
 
+  it('finds older payments on the operator\'s own Stripe account, and stops asking when a payment is nowhere', async () => {
+    const { client, event } = await setup();
+    await prisma.stripeConnectAccount.create({ data: { tenantId, stripeAccountId: 'acct_op', onboardingStatus: 'ACTIVE' } });
+    await invoice(client.id, event.id, 50000, { status: 'PAID', paidAt: new Date(), amountPaidCents: 50000, balanceDueCents: 0, stripePaymentIntentId: 'pi_direct' });
+    await invoice(client.id, event.id, 20000, { status: 'PAID', paidAt: new Date(), amountPaidCents: 20000, balanceDueCents: 0, stripePaymentIntentId: 'pi_gone' });
+    const missing = Object.assign(new Error('No such payment_intent'), { code: 'resource_missing' });
+    vi.mocked(stripe.paymentIntents.retrieve).mockImplementation((async (id: string, _p?: unknown, opts?: { stripeAccount?: string }) => {
+      if (id === 'pi_direct' && opts?.stripeAccount === 'acct_op') return { application_fee_amount: 1500 };
+      throw missing;
+    }) as never);
+    await syncLedger(tenantId);
+    const fees = await prisma.ledgerTransaction.findMany({ where: { tenantId, source: 'fee' }, select: { sourceKey: true, amountCents: true }, orderBy: { amountCents: 'desc' } });
+    expect(fees).toEqual([{ sourceKey: 'fee:pi_direct', amountCents: 1500 }, { sourceKey: 'fee:pi_gone', amountCents: 0 }]);
+    vi.mocked(stripe.paymentIntents.retrieve).mockClear();
+    await syncLedger(tenantId);
+    expect(stripe.paymentIntents.retrieve).not.toHaveBeenCalled();
+    vi.mocked(stripe.paymentIntents.retrieve).mockImplementation((async () => ({ application_fee_amount: 4200 })) as never);
+  });
+
   it('keeps the operator\'s own changes to an automatic row', async () => {
     const { client, event } = await setup();
     const inv = await invoice(client.id, event.id, 50000, { status: 'PAID', paidAt: new Date(), amountPaidCents: 50000, balanceDueCents: 0 });

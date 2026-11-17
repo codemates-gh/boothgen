@@ -123,12 +123,27 @@ export async function syncLedger(tenantId: string): Promise<{ added: number; rem
   const have = new Map(existing.map(e => [e.sourceKey!, e]));
 
   // Processing fees: looked up in Stripe once, for payments not already in the ledger
+  let connectAccountId: string | null | undefined;
   for (const [pi, info] of paymentIntents) {
     const key = 'fee:' + pi;
     if (have.has(key)) { rows.push({ sourceKey: key, source: 'fee', type: 'EXPENSE', date: info.date, amountCents: have.get(key)!.amountCents, description: '', payee: null, invoiceId: info.invoiceId, eventId: info.eventId, clientId: info.clientId }); continue; }
     try {
-      const intent = await stripe.paymentIntents.retrieve(pi);
-      const fee = intent.application_fee_amount ?? 0;
+      // Invoice payments are on BoothGen's Stripe account; older ones were made directly on the operator's account
+      let intent: { application_fee_amount?: number | null } | null = null;
+      try {
+        intent = await stripe.paymentIntents.retrieve(pi);
+      } catch (e: any) {
+        if (e?.code !== 'resource_missing') throw e;
+        connectAccountId = connectAccountId === undefined
+          ? (await prisma.stripeConnectAccount.findUnique({ where: { tenantId }, select: { stripeAccountId: true } }))?.stripeAccountId ?? null
+          : connectAccountId;
+        if (connectAccountId) {
+          try { intent = await stripe.paymentIntents.retrieve(pi, {}, { stripeAccount: connectAccountId }); }
+          catch (e2: any) { if (e2?.code !== 'resource_missing') throw e2; }
+        }
+      }
+      // Not found anywhere: record no fee so it isn't looked up again on every visit
+      const fee = intent?.application_fee_amount ?? 0;
       // A $0 fee is still recorded (and hidden from lists and reports) so Stripe isn't asked again on every sync
       rows.push({ sourceKey: key, source: 'fee', type: 'EXPENSE', date: info.date, amountCents: fee, description: `Processing fee (invoice ${info.number})`, payee: 'BoothGen', invoiceId: info.invoiceId, eventId: info.eventId, clientId: info.clientId });
     } catch (e) {

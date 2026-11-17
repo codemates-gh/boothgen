@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.102.3] — 2026-11-17
+
+### Added
+- **Error screen for app pages.** When a page fails in the browser, you get BoothGen's own screen with **Try again** (re-renders just that page, usually without a full reload) and **Reload page**, instead of the bare "This page couldn't load".
+- **Error reporting.** The real error, its stack trace and the page address go to BoothGen's server log (Vercel → Runtime errors, "[client-error]"), so browser-only failures can be diagnosed.
+
+### Fixed
+- **Bookkeeping: processing fees on older Stripe payments.** Payments made directly on the operator's Stripe account (the older setup) are now found there. A payment that can't be found anywhere is recorded once instead of being looked up again on every visit.
+
+---
+
 ## [2.102.2] — 2026-11-17
 
 ### Changed
