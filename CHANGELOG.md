@@ -4,6 +4,19 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.100.4] — 2026-11-17
+
+### Changed
+- **Sidebar regrouped:**
+  - **Overview:** Dashboard, Calendar
+  - **Projects:** Leads, Clients, Events, Messages
+  - **Templates:** unchanged
+  - **Genie:** unchanged
+  - **Insights:** Analytics, now at the bottom (room to grow into bookkeeping)
+- **Gallery is a tab under Events,** next to Quotes, Contracts and Invoices. Events stays highlighted in the sidebar while you're in any of them. Genie-only accounts keep Gallery in their own menu
+
+---
+
 ## [2.100.3] — 2026-11-17
 
 ### Added

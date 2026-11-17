@@ -1,5 +1,5 @@
 'use client';
-// Events area: Events plus every Quote, Contract and Invoice across events (these left the sidebar; each event page
+// Events area: Events plus every Quote, Contract, Invoice and Gallery across events (these left the sidebar; each event page
 // also links here with "View all")
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -10,12 +10,14 @@ const TABS: [string, string][] = [
   ['/quotes', 'Quotes'],
   ['/contracts', 'Contracts'],
   ['/invoices', 'Invoices'],
+  ['/gallery', 'Gallery'],
 ];
 
 export default function EventsTabs({ className = 'mb-6' }: { className?: string }) {
   const path = usePathname();
   const { data: session } = useSession();
-  if (session?.tenantRole === 'TEAM_MEMBER') return null; // team members only have Events
+  // Team members only have Events; Genie-only accounts have no quotes, contracts or invoices
+  if (session?.tenantRole === 'TEAM_MEMBER' || session?.tenant?.product === 'genie') return null;
   return (
     <div className={'flex flex-wrap border-b border-gray-200 ' + className}>
       {TABS.map(([href, label]) => (

@@ -17,14 +17,15 @@ const adminSections: NavSection[] = [
     items: [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/calendar', label: 'Calendar', icon: CalendarDays },
-      { href: '/events', label: 'Events', icon: Calendar },
     ],
   },
   {
-    label: 'Clients',
+    // Everything about a booking, from first inquiry to delivery (Events has Quotes, Contracts, Invoices and Gallery tabs)
+    label: 'Projects',
     items: [
-      { href: '/clients', label: 'Clients', icon: Users },
       { href: '/leads', label: 'Leads', icon: Inbox },
+      { href: '/clients', label: 'Clients', icon: Users },
+      { href: '/events', label: 'Events', icon: Calendar },
       { href: '/messages', label: 'Messages', icon: MessageSquare },
     ],
   },
@@ -35,14 +36,15 @@ const adminSections: NavSection[] = [
       { href: '/templates/settings', label: 'Template Settings', icon: SlidersHorizontal },
     ],
   },
-  {
-    label: 'Delivery & Ops',
-    items: [
-      { href: '/gallery', label: 'Gallery', icon: Camera },
-      { href: '/analytics', label: 'Analytics', icon: BarChart2 },
-    ],
-  },
 ];
+
+// Last in the menu (after Genie); planned to grow into bookkeeping
+const insightsSection: NavSection = {
+  label: 'Insights',
+  items: [
+    { href: '/analytics', label: 'Analytics', icon: BarChart2 },
+  ],
+};
 
 // Shown only to tenants with the Genie add-on
 const genieSection: NavSection = {
@@ -87,7 +89,7 @@ const genieOnlySections: NavSection[] = [
 const genieOnlyNav: NavItem[] = genieOnlySections.flatMap(s => s.items);
 
 // Flat list for team member nav (no sections needed)
-const adminNav: NavItem[] = adminSections.flatMap(s => s.items);
+const adminNav: NavItem[] = [...adminSections, insightsSection].flatMap(s => s.items);
 
 // All possible team member nav items keyed by module ID
 const TEAM_NAV_MAP: Record<string, NavItem> = {
@@ -124,7 +126,9 @@ function NavLink({ href, label, Icon, pro, active, close, count }: { href: strin
 export function Sidebar({ isFoundingMember, genieEnabled, genieOnly }: { isFoundingMember?: boolean; genieEnabled?: boolean; genieOnly?: boolean }) {
   const rawPath = usePathname();
   // Quotes, Contracts and Invoices live under Events (tabs on the Events page), so Events stays highlighted there
-  const path = /^\/(quotes|contracts|invoices)(\/|$)/.test(rawPath) ? '/events' : rawPath;
+  // Quotes, Contracts, Invoices and Gallery are tabs under Events, so Events stays highlighted there
+  // (Genie-only accounts keep Gallery as its own menu item)
+  const path = (genieOnly ? /^\/(quotes|contracts|invoices)(\/|$)/ : /^\/(quotes|contracts|invoices|gallery)(\/|$)/).test(rawPath) ? '/events' : rawPath;
   const { data: session, update: updateSession } = useSession();
   // The menu comes from the database; the browser session can lag after Super Admin switches the account (Genius ↔
   // Genie only). Refresh it so Search, the settings tabs and the middleware agree with the menu.
@@ -198,7 +202,7 @@ export function Sidebar({ isFoundingMember, genieEnabled, genieOnly }: { isFound
               );
             })
           ) : (
-            (genieOnly ? genieOnlySections : genieEnabled ? [...adminSections, genieSection] : adminSections).map((section, si) => (
+            (genieOnly ? genieOnlySections : genieEnabled ? [...adminSections, genieSection, insightsSection] : [...adminSections, insightsSection]).map((section, si) => (
               <div key={section.label} className={si > 0 ? 'mt-4' : ''}>
                 <p className="pl-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/25">{section.label}</p>
                 {section.items.map(({ href, label, icon: Icon, pro }) => {

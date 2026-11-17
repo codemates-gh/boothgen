@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma/client';
 import { galleriesWithPhotos, FREE_GALLERY_LIMIT } from '@/lib/gallery/planLimit';
 import { galleryRules, getUploadLimits } from '@/lib/gallery/uploadRules';
 import { TopBar } from '@/components/layout/TopBar';
+import EventsTabs from '@/app/(tenant)/events/EventsTabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Camera } from 'lucide-react';
@@ -66,6 +67,7 @@ export default async function GalleryPage() {
     <>
       <TopBar title="Gallery" />
       <div className="p-4 sm:p-8 space-y-8">
+        <EventsTabs className="-mb-2" />
         {!isPro && (
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3">
             <p className="flex-1 text-sm text-orange-800">
