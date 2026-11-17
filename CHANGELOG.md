@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.98.9] — 2026-11-17
+
+### Changed
+- **Event page, Financials & Documents:** the Quotes, Contracts and Invoices boxes always show, even when empty ("No quotes for this event yet"), so their **View all** links are always there
+
+---
+
 ## [2.98.8] — 2026-11-17
 
 ### Changed
