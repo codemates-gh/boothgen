@@ -4,6 +4,23 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.98.0] — 2026-11-17
+
+### Changed
+- **Messages is now one place with three tabs:** **Inbox** (client conversations), **Automations** (emails that go out on their own) and **Templates** (what they say). Automation left the sidebar; old Automation and Email Templates links still work and open the new tabs
+- Each automation shows the template it sends; click it to edit. A new template can be created right from the automation form
+- Templates show how many automations use them, and deleting one used by an automation warns first
+- Genie → Sharing is now **Guest Sharing**
+
+### Added
+- **Automated emails on the event page:** what's scheduled for the event, what went out, and what starts once it's booked. **Skip** a scheduled email (and undo while it's still upcoming)
+- **Settings → Email & Texting:** the from-name and reply-to for client emails, plus guest texting and email accounts, in one place
+
+### Fixed
+- Email templates and automation rules can only be edited or deleted by the account's admins, and only their own
+
+---
+
 ## [2.97.3] — 2026-11-17
 
 ### Fixed

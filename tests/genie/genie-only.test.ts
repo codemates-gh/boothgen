@@ -10,7 +10,7 @@ vi.mock('@/lib/tenant/cleanup', () => ({ deleteTenant: vi.fn() }));
 
 import { prisma } from '@/lib/prisma/client';
 import { genieOnlyBlock, settingsTabs, isGenieOnly } from '@/lib/product';
-import { middleware } from '@/middleware';
+import { proxy as middleware } from '@/proxy';
 import { PATCH } from '@/app/api/super-admin/tenants/[id]/route';
 import { authOptions } from '@/lib/auth/config';
 import { req, resetDb, seedTenant } from './helpers';
@@ -49,8 +49,8 @@ describe('Genie-only access rules', () => {
   });
 
   it('shows Genie-only accounts only the settings tabs they can open', () => {
-    expect(settingsTabs('genie').map(([h]) => h)).toEqual(['branding', 'profile']);
-    expect(settingsTabs('crm')).toHaveLength(10);
+    expect(settingsTabs('genie').map(([h]) => h)).toEqual(['branding', 'messaging', 'profile']);
+    expect(settingsTabs('crm')).toHaveLength(11);
     expect(isGenieOnly({ product: 'genie' })).toBe(true);
     expect(isGenieOnly({ product: 'crm' })).toBe(false);
     expect(isGenieOnly(null)).toBe(false);

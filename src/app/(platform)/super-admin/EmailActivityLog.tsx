@@ -96,14 +96,14 @@ function parseErrorMessage(raw: string | null): ParsedError {
     return {
       summary: 'Email template missing', detail: raw,
       resolution: "The automation rule's email template may have been deleted. Re-assign a template in Automation settings.",
-      links: [{ label: 'Automation Settings', url: '/automation' }],
+      links: [{ label: 'Automations', url: '/messages/automations' }],
     };
   }
   if (/merge.?tag|parseMerge/i.test(raw)) {
     return {
       summary: 'Merge tag error in template', detail: raw,
       resolution: "A merge tag in the email template couldn't be resolved. Check that all {{tags}} are valid.",
-      links: [{ label: 'Email Templates', url: '/automation/email-templates' }],
+      links: [{ label: 'Email Templates', url: '/messages/templates' }],
     };
   }
 

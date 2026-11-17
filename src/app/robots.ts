@@ -19,6 +19,7 @@ export default function robots(): MetadataRoute.Robots {
           '/gallery',
           '/analytics',
           '/automation',
+          '/messages',
           '/settings',
           '/calendar',
           '/super-admin',

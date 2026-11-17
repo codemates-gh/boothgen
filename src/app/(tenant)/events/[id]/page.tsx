@@ -18,6 +18,7 @@ import EventChecklist from './EventChecklist';
 import EventMessagePanel from './EventMessagePanel';
 import EventProfitability from './EventProfitability';
 import EventInvoicePanel from './EventInvoicePanel';
+import EventAutomations, { type EventAutomationRow } from './EventAutomations';
 import { settleZeroInvoice } from '@/lib/invoices/payments';
 import { clientDisplayName } from '@/lib/clientName';
 
@@ -78,6 +79,28 @@ export default async function EventDetailPage(
   const branding = await prisma.tenantBranding.findUnique({ where: { tenantId: session.tenantId }, select: { currency: true } });
   const genieEnabled = isAdmin && !!(await prisma.tenant.findUnique({ where: { id: session.tenantId }, select: { genieEnabled: true } }))?.genieEnabled;
   const fmt = (c: number) => fmtCents(c, branding?.currency ?? 'usd');
+
+  // Automated emails for this event, and the ones that start once it's booked (admins)
+  const BOOKED_TRIGGERS: Record<string, string> = {
+    BOOKING_CONFIRMED: 'on booking', EVENT_DATE_MINUS_14_DAYS: '14 days before', EVENT_DATE_MINUS_7_DAYS: '7 days before',
+    EVENT_DATE_MINUS_1_DAY: 'the day before', EVENT_DATE_PLUS_1_DAY: 'the day after', EVENT_DATE_PLUS_3_DAYS: '3 days after',
+  };
+  const [executions, bookingRules] = isAdmin ? await Promise.all([
+    prisma.automationExecution.findMany({
+      where: { eventId: params.id, tenantId: session.tenantId },
+      include: { rule: { select: { name: true, emailTemplate: { select: { name: true } } } } },
+      orderBy: { scheduledFor: 'asc' },
+    }),
+    ['LEAD', 'QUOTED'].includes(event.status)
+      ? prisma.automationRule.findMany({ where: { tenantId: session.tenantId, isActive: true, trigger: { in: Object.keys(BOOKED_TRIGGERS) as any } }, select: { id: true, name: true, trigger: true } })
+      : Promise.resolve([]),
+  ]) : [[], []];
+  const automationRows: EventAutomationRow[] = executions.map(x => ({
+    id: x.id, name: x.rule.name, template: x.rule.emailTemplate?.name ?? null, status: x.status,
+    scheduledFor: x.scheduledFor.toISOString(), executedAt: x.executedAt?.toISOString() ?? null,
+    skippedHere: x.status === 'SKIPPED' && x.errorMessage === 'Skipped from the event page',
+  }));
+  const onceBooked = bookingRules.filter(r => !executions.some(x => x.ruleId === r.id)).map(r => `${r.name} (${BOOKED_TRIGGERS[r.trigger]})`);
   const portalUrl = process.env.NEXT_PUBLIC_APP_URL + '/portal/' + event.portalToken;
 
   // Payment totals for cancel refund options
@@ -330,6 +353,9 @@ export default async function EventDetailPage(
 
         {/* Notes — visible to all, editable by all */}
         <EventNotes eventId={event.id} />
+
+        {/* Automated emails for this event — admin only */}
+        {isAdmin && <EventAutomations eventId={event.id} rows={automationRows} onceBooked={onceBooked} />}
 
         {/* Messages — admin only */}
         {isAdmin && (

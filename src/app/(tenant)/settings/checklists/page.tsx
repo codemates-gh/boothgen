@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Trash2, ChevronDown, ChevronUp, ClipboardList, Pencil, ArrowUp, ArrowDown } from 'lucide-react';
 import { moveItem } from '@/lib/checklists/reorder';
 
-const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
+const tabs = [['branding','Branding'],['messaging','Email & Texting'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
 
 interface TemplateItem { id: string; label: string; position: number }
 interface Template { id: string; name: string; items: TemplateItem[] }

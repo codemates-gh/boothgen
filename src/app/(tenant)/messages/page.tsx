@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { MessageSquare, ArrowRight, Mail } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
+import MessagesTabs from './MessagesTabs';
 
 interface Msg {
   id: string;
@@ -91,8 +92,9 @@ export default function MessagesPage() {
   return (
     <>
       <TopBar title="Messages" />
-      <div className="p-4 sm:p-8">
-        <p className="text-sm text-gray-500 mb-4">{loading ? 'Loading…' : `${threads.length} conversation${threads.length !== 1 ? 's' : ''}`}</p>
+      <div className="p-4 sm:p-8 space-y-4">
+        <MessagesTabs />
+        <p className="text-sm text-gray-500">{loading ? 'Loading…' : `${threads.length} conversation${threads.length !== 1 ? 's' : ''}`}</p>
 
         <Card><CardContent className="p-0">
           {loading ? (

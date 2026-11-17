@@ -14,8 +14,12 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (session.tenantRole !== 'HOST_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { name, trigger, emailTemplateId, actionType, triggerOffsetHours } = await req.json();
   if (!name || !trigger) return NextResponse.json({ error: 'Name and trigger required' }, { status: 400 });
+  if (emailTemplateId && !(await prisma.emailTemplate.findFirst({ where: { id: emailTemplateId, tenantId: session.tenantId }, select: { id: true } }))) {
+    return NextResponse.json({ error: 'Template not found' }, { status: 400 });
+  }
   const rule = await prisma.automationRule.create({ data: { tenantId: session.tenantId, name, trigger, actionType: actionType || 'EMAIL', emailTemplateId: emailTemplateId || null, triggerOffsetHours: triggerOffsetHours || 0, isActive: true } });
   return NextResponse.json(rule, { status: 201 });
 }

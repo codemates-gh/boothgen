@@ -14,7 +14,7 @@ import { StripeConnectCard } from './StripeConnectCard';
 import { CancelAccountButton } from './CancelAccountButton';
 
 
-const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
+const tabs = [['branding','Branding'],['messaging','Email & Texting'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
 
 export default async function BillingSettingsPage(props: { searchParams?: Promise<{ upgraded?: string }> }) {
   const searchParams = await props.searchParams;

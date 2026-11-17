@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Users, FileText, Receipt, Zap, Settings, Camera, LogOut, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send, CalendarCheck, SlidersHorizontal, Bug, ClipboardList, Smile, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, Receipt, Settings, Camera, LogOut, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send, CalendarCheck, SlidersHorizontal, Bug, ClipboardList, Smile, Image as ImageIcon, Sparkles } from 'lucide-react';
 import { ReportDialog } from '@/components/reports/ReportDialog';
 import { BoothGenIcon } from '@/components/brand/BoothGenLogo';
 import { APP_VERSION } from '@/lib/version';
@@ -49,7 +49,6 @@ const adminSections: NavSection[] = [
     items: [
       { href: '/gallery', label: 'Gallery', icon: Camera, pro: true },
       { href: '/analytics', label: 'Analytics', icon: BarChart2 },
-      { href: '/automation', label: 'Automation', icon: Zap },
     ],
   },
 ];
@@ -63,7 +62,7 @@ const genieSection: NavSection = {
     { href: '/genie/props', label: 'Props', icon: Smile },
     { href: '/genie/backdrops', label: 'Backdrops', icon: ImageIcon },
     { href: '/genie/devices', label: 'Devices', icon: Tablet },
-    { href: '/genie/sharing', label: 'Sharing', icon: Send },
+    { href: '/genie/sharing', label: 'Guest Sharing', icon: Send },
   ],
 };
 
@@ -90,7 +89,7 @@ const genieOnlySections: NavSection[] = [
     label: 'Setup',
     items: [
       { href: '/genie/devices', label: 'Devices', icon: Tablet },
-      { href: '/genie/sharing', label: 'Sharing', icon: Send },
+      { href: '/genie/sharing', label: 'Guest Sharing', icon: Send },
     ],
   },
 ];

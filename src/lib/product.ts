@@ -54,7 +54,7 @@ export function genieOnlyBlock(pathname: string): { kind: 'home' } | { kind: 'pa
 
 // Settings tabs (path segment, label) by product
 const ALL_SETTINGS_TABS: [string, string][] = [
-  ['branding', 'Branding'], ['packages', 'Packages'], ['billing', 'Billing'], ['team', 'Team'], ['coupons', 'Coupons'],
+  ['branding', 'Branding'], ['messaging', 'Email & Texting'], ['packages', 'Packages'], ['billing', 'Billing'], ['team', 'Team'], ['coupons', 'Coupons'],
   ['embed', 'Lead Capture'], ['checklists', 'Checklists'], ['profile', 'Profile'], ['import', 'Import'],
   ['print-costs', 'Print Costs'],
 ];
