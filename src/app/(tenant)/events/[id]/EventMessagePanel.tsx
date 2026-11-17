@@ -40,13 +40,23 @@ interface Branding {
   emailHeaderHtml?: string;
 }
 
-const BLOCK_TAGS = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE', 'TR']);
+const BLOCK_TAGS = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'TR']);
 
+// Template HTML to plain text for the message box. List items become "• item" (or "1. item") one per line; the
+// editor wraps each item's text in a <p>, so the item's own text is trimmed instead of getting blank lines.
 function extractText(node: Node): string {
   if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? '';
   if (node.nodeType !== Node.ELEMENT_NODE) return '';
   const el = node as Element;
   if (el.tagName === 'BR') return '\n';
+  if (el.tagName === 'UL' || el.tagName === 'OL') {
+    const items = Array.from(el.children).filter(c => c.tagName === 'LI');
+    const lines = items.map((li, i) => {
+      const text = Array.from(li.childNodes).map(extractText).join('').replace(/\n{2,}/g, '\n').trim();
+      return (el.tagName === 'OL' ? `${i + 1}. ` : '• ') + text.replace(/\n/g, '\n   ');
+    });
+    return lines.join('\n') + '\n\n';
+  }
   const inner = Array.from(el.childNodes).map(extractText).join('');
   return BLOCK_TAGS.has(el.tagName) ? inner + '\n\n' : inner;
 }

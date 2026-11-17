@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.98.5] — 2026-11-17
+
+### Fixed
+- **Event page Messages, Load a template:** bulleted lists in a template come in as "• item" lines, one per line, instead of losing their bullets and getting a blank line between every item. Numbered lists keep their numbers
+
+---
+
 ## [2.98.4] — 2026-11-17
 
 ### Fixed
