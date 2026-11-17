@@ -7,10 +7,10 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, Bell, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Bell, CheckCircle, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import MilestonesCard from './MilestonesCard';
-import DeleteButton from './DeleteButton';
+import InvoiceActionsMenu from './InvoiceActionsMenu';
 import { manualPaymentMethod, settleZeroInvoice } from '@/lib/invoices/payments';
 import { fmtCents } from '@/lib/utils';
 import { clientDisplayName } from '@/lib/clientName';
@@ -61,24 +61,30 @@ export default async function InvoiceDetailPage(
     <>
       <TopBar title={'Invoice ' + inv.invoiceNumber} />
       <div className="p-4 sm:p-8 max-w-4xl space-y-6">
-        <Link href="/invoices" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Invoices</Link>
+        <Link href="/invoices" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Back to Invoices</Link>
         {searchParams?.reminded === '1' && (
           <div className="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
             <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
             Reminder sent to {inv.client.firstName} {inv.client.lastName} ({inv.client.email}).
           </div>
         )}
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3"><h2 className="text-xl sm:text-2xl font-bold">{inv.invoiceNumber}</h2><Badge variant={IC[inv.status]}>{inv.status}</Badge></div>
-          <div className="flex gap-2 flex-wrap">
-            <a href={'/api/invoices/' + inv.id + '/pdf'} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><Download className="w-4 h-4 mr-1.5"/>Download PDF</Button></a>
-            {inv.status === 'DRAFT' && <form action={'/api/invoices/' + inv.id + '/send'} method="POST"><Button>Send to Client</Button></form>}
+        {/* Header: number, status and client on the left; main actions and the ••• menu on the right (same as events) */}
+        <div className="flex flex-col lg:flex-row gap-4 lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3 mb-1">
+              <h2 className="text-xl sm:text-2xl font-bold">{inv.invoiceNumber}</h2>
+              <Badge variant={IC[inv.status]}>{inv.status.replace(/_/g, ' ')}</Badge>
+            </div>
+            <p className="text-gray-500 text-sm">{[clientDisplayName(inv.client), inv.event?.title].filter(Boolean).join(' · ')}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:flex-shrink-0">
+            {inv.status === 'DRAFT' && <form action={'/api/invoices/' + inv.id + '/send'} method="POST"><Button size="sm"><Send className="w-3.5 h-3.5 mr-1.5"/>Send to Client</Button></form>}
             {['SENT', 'PARTIALLY_PAID', 'OVERDUE'].includes(inv.status) && inv.balanceDueCents > 0 && (
               <form action={'/api/invoices/' + inv.id + '/remind'} method="POST">
-                <Button variant="outline" size="sm"><Bell className="w-4 h-4 mr-1.5"/>Send Reminder</Button>
+                <Button variant="outline" size="sm"><Bell className="w-3.5 h-3.5 mr-1.5"/>Send Reminder</Button>
               </form>
             )}
-            {isAdmin && <DeleteButton invoiceId={inv.id} invoiceNumber={inv.invoiceNumber} />}
+            <InvoiceActionsMenu invoiceId={inv.id} invoiceNumber={inv.invoiceNumber} eventId={inv.eventId ?? null} canDelete={isAdmin} />
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -88,7 +94,20 @@ export default async function InvoiceDetailPage(
         <Card>
           <CardHeader><CardTitle>Line Items</CardTitle></CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* Phones: one stacked block per line item, so the description gets the full width */}
+            <div className="sm:hidden divide-y">
+              {inv.lineItems.map(li => (
+                <div key={li.id} className="px-5 py-4 text-sm">
+                  <div className="text-gray-800 mb-2"><DescriptionCell text={li.description} /></div>
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <span>Qty: <strong className="text-gray-700">{li.quantity}</strong></span>
+                    <span>Unit: <strong className="text-gray-700">{fmt(li.unitCents)}</strong></span>
+                    <span className="ml-auto font-semibold text-sm text-gray-900">{fmt(li.totalCents)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm min-w-[400px]">
                 <thead><tr className="border-b bg-gray-50"><th className="text-left px-6 py-3 font-medium text-gray-500">Description</th><th className="text-right px-6 py-3 font-medium text-gray-500">Qty</th><th className="text-right px-6 py-3 font-medium text-gray-500">Unit</th><th className="text-right px-6 py-3 font-medium text-gray-500">Total</th></tr></thead>
                 <tbody>{inv.lineItems.map(li => (<tr key={li.id} className="border-b last:border-0"><td className="px-6 py-4"><DescriptionCell text={li.description} /></td><td className="px-6 py-4 text-right align-top">{li.quantity}</td><td className="px-6 py-4 text-right align-top">{fmt(li.unitCents)}</td><td className="px-6 py-4 text-right align-top font-medium">{fmt(li.totalCents)}</td></tr>))}</tbody>

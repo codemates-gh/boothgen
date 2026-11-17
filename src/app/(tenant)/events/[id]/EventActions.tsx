@@ -131,6 +131,13 @@ export function EventActionsMenu(p: EventActionProps) {
   const [open, setOpen] = useState(false);
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  // Open toward whichever side has room: on phones the button sits on the left, on wide screens at the right edge
+  const [alignRight, setAlignRight] = useState(true);
+  const toggle = () => {
+    const r = ref.current?.getBoundingClientRect();
+    if (r) setAlignRight(r.right - 224 >= 8);
+    setOpen(o => !o);
+  };
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
@@ -146,11 +153,11 @@ export function EventActionsMenu(p: EventActionProps) {
 
   return (
     <div className="relative" ref={ref}>
-      <Button variant="outline" size="sm" aria-label="More actions" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+      <Button variant="outline" size="sm" aria-label="More actions" aria-haspopup="menu" aria-expanded={open} onClick={toggle}>
         <MoreHorizontal className="w-4 h-4" />
       </Button>
       {open && (
-        <div role="menu" className="absolute right-0 z-30 mt-1 w-56 rounded-lg border border-gray-200 bg-white py-1 shadow-card-md">
+        <div role="menu" className={'absolute z-30 ' + (alignRight ? 'right-0' : 'left-0') + ' mt-1 w-56 rounded-lg border border-gray-200 bg-white py-1 shadow-card-md'}>
           <button role="menuitem" className={item} onClick={() => pick('duplicate')}><Copy className="w-4 h-4 text-gray-400" />Duplicate Event</button>
           <div className="my-1 border-t border-gray-100" />
           {['BOOKED', 'IN_PROGRESS'].includes(p.status) && p.isPast && (

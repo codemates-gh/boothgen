@@ -5,12 +5,13 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Send, Trash2, ArrowLeft, ExternalLink, Edit2, RotateCcw, FilePlus, Eye, X, Download, Building2, CheckCircle2 } from 'lucide-react';
+import { Send, Trash2, ArrowLeft, ExternalLink, Edit2, RotateCcw, FilePlus, Eye, X, Download, Building2, CheckCircle2, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { fmtCents } from '@/lib/utils';
 import { clientDisplayName } from '@/lib/clientName';
 import { splitLineItemDescription } from '@/lib/lineItems';
+import { MoreMenu } from '@/components/ui/MoreMenu';
 
 const QC: Record<string, any> = { DRAFT: 'default', SENT: 'info', VIEWED: 'warning', ACCEPTED: 'success', DECLINED: 'danger', EXPIRED: 'default' };
 const EDITABLE = ['DRAFT', 'SENT', 'VIEWED', 'DECLINED', 'EXPIRED'];
@@ -169,57 +170,49 @@ export default function QuoteDetailPage() {
     <>
       <TopBar title={`Quote ${quote.quoteNumber}`} />
       <div className="p-4 sm:p-8 max-w-3xl space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <Link href="/quotes" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
-            <ArrowLeft className="w-4 h-4" /> Back to Quotes
-          </Link>
-          <div className="flex gap-2 flex-wrap">
+        <Link href="/quotes" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Back to Quotes</Link>
+
+        {/* Header: number, status and event on the left; main actions and the ••• menu on the right (same as events) */}
+        <div className="flex flex-col lg:flex-row gap-4 lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3 mb-1">
+              <h2 className="text-xl sm:text-2xl font-bold">{quote.quoteNumber}</h2>
+              <Badge variant={QC[quote.status]}>{quote.status}</Badge>
+              {quote.isCorporate && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+                  <Building2 className="w-3 h-3" />Corporate
+                </span>
+              )}
+            </div>
+            <p className="text-gray-500 text-sm">{[clientDisplayName(quote.client), quote.event?.title].filter(Boolean).join(' · ')}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:flex-shrink-0">
             {isDraft && (
-              <Link href={`/quotes/${id}/edit`}>
-                <Button variant="outline">
-                  <Edit2 className="w-4 h-4 mr-1.5" /> Edit
-                </Button>
-              </Link>
+              <Link href={`/quotes/${id}/edit`}><Button variant="outline" size="sm"><Edit2 className="w-3.5 h-3.5 mr-1.5" />Edit</Button></Link>
             )}
             {isDraft && (
-              <Button onClick={sendQuote} disabled={sending}>
-                <Send className="w-4 h-4 mr-1.5" />
-                {sending ? 'Sending...' : 'Send to Client'}
+              <Button size="sm" onClick={sendQuote} disabled={sending}>
+                <Send className="w-3.5 h-3.5 mr-1.5" />{sending ? 'Sending...' : 'Send to Client'}
               </Button>
             )}
             {(quote.status === 'SENT' || quote.status === 'VIEWED') && (
-              <Button variant="outline" onClick={markAccepted} disabled={markingAccepted} className="text-green-700 border-green-200 hover:bg-green-50">
-                <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                {markingAccepted ? 'Processing...' : 'Mark as Accepted'}
-              </Button>
-            )}
-            {!isDraft && canEdit && (
-              <Button variant="outline" onClick={reviseQuote} disabled={saving}>
-                <RotateCcw className="w-4 h-4 mr-1.5" />
-                {saving ? 'Resetting...' : 'Revise Quote'}
+              <Button variant="outline" size="sm" onClick={markAccepted} disabled={markingAccepted} className="text-green-700 border-green-200 hover:bg-green-50">
+                <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />{markingAccepted ? 'Processing...' : 'Mark as Accepted'}
               </Button>
             )}
             {quote.status === 'ACCEPTED' && !hasContract && (
-              <Button variant="outline" onClick={generateContract} disabled={generating} className="text-blue-600 border-blue-200 hover:bg-blue-50">
-                <FilePlus className="w-4 h-4 mr-1.5" />
-                {generating ? 'Generating...' : 'Generate Contract'}
+              <Button variant="outline" size="sm" onClick={generateContract} disabled={generating} className="text-blue-600 border-blue-200 hover:bg-blue-50">
+                <FilePlus className="w-3.5 h-3.5 mr-1.5" />{generating ? 'Generating...' : 'Generate Contract'}
               </Button>
             )}
-            <a href={`/api/quotes/${id}/pdf`} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline"><Download className="w-4 h-4 mr-1.5"/>Download PDF</Button>
-            </a>
-            {quote.event?.portalToken && (
-              <a href={portalUrl} target="_blank" rel="noreferrer">
-                <Button variant="outline">
-                  <ExternalLink className="w-4 h-4 mr-1.5" /> View Portal
-                </Button>
-              </a>
-            )}
-            {canEdit && (
-              <Button variant="outline" onClick={deleteQuote} disabled={deleting} className="text-red-600 border-red-200 hover:bg-red-50">
-                <Trash2 className="w-4 h-4 mr-1.5" /> Delete
-              </Button>
-            )}
+            <MoreMenu items={[
+              !isDraft && canEdit && { label: saving ? 'Resetting…' : 'Revise Quote', icon: RotateCcw, onClick: reviseQuote, disabled: saving },
+              { label: 'Download PDF', icon: Download, href: `/api/quotes/${id}/pdf`, external: true },
+              quote.event?.portalToken && { label: 'View Client Portal', icon: ExternalLink, href: portalUrl, external: true },
+              quote.event && { label: 'View Event', icon: Calendar, href: `/events/${quote.event.id}` },
+              canEdit && 'divider',
+              canEdit && { label: deleting ? 'Deleting…' : 'Delete Quote', icon: Trash2, danger: true, onClick: deleteQuote, disabled: deleting },
+            ]} />
           </div>
         </div>
 
@@ -233,23 +226,7 @@ export default function QuoteDetailPage() {
         )}
 
         <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <CardTitle>{quote.quoteNumber}</CardTitle>
-                {quote.event && <p className="text-sm text-gray-500 mt-1">{quote.event.title}</p>}
-              </div>
-              <div className="flex items-center gap-2 flex-wrap justify-end">
-                {quote.isCorporate && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
-                    <Building2 className="w-3 h-3" />Corporate
-                  </span>
-                )}
-                <Badge variant={QC[quote.status]}>{quote.status}</Badge>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+          <CardContent className="pt-6 grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-xs text-gray-400 uppercase font-medium mb-1">Client</p>
               <p>{clientDisplayName(quote.client)}</p>

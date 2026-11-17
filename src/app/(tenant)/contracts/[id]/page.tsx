@@ -7,12 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SignatureCanvas } from '@/components/contracts/SignatureCanvas';
-import { ArrowLeft, Send, Lock, Download, PenLine, Pen, Type, CheckCircle2, Trash2, Pencil } from 'lucide-react';
+import { ArrowLeft, Send, Lock, Download, PenLine, Pen, Type, CheckCircle2, Trash2, Pencil, Calendar, Ban } from 'lucide-react';
 import Link from 'next/link';
 import { stripMergeTagSpans } from '@/lib/contracts/merge-tags';
 import { useRef, useCallback } from 'react';
 import EmailTemplateEditor from '@/components/email/EmailTemplateEditor';
 import { clientDisplayName } from '@/lib/clientName';
+import { MoreMenu } from '@/components/ui/MoreMenu';
 
 const CC: Record<string, any> = { DRAFT:'default', SENT_TO_CLIENT:'info', CLIENT_SIGNED:'warning', HOST_SIGNED:'warning', FULLY_EXECUTED:'success', VOIDED:'danger' };
 
@@ -142,32 +143,33 @@ export default function ContractDetailPage() {
     <>
       <TopBar title={contract.title} />
       <div className="p-4 sm:p-8 max-w-4xl space-y-6">
-        <Link href="/contracts" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Contracts</Link>
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-3"><h2 className="text-xl sm:text-2xl font-bold">{contract.title}</h2><Badge variant={CC[contract.status]}>{(contract.status ?? '').replace(/_/g,' ')}</Badge></div>
-          <div className="flex flex-wrap gap-2">
-            {canSend && <Button variant="outline" onClick={sendToClient} disabled={sending}><Send className="w-4 h-4 mr-1"/>{sending ? 'Sending...' : 'Send to Client'}</Button>}
-            {contract.status !== 'FULLY_EXECUTED' && contract.status !== 'VOIDED' && (
-              <Button variant="outline" onClick={() => setShowExecuteForm(f => !f)} className="text-green-700 border-green-200 hover:bg-green-50">
-                <CheckCircle2 className="w-4 h-4 mr-1"/>Mark as Executed
-              </Button>
-            )}
-            <a href={contract.pdfUrl ?? `/api/contracts/${contract.id}/pdf`} target="_blank" rel="noopener noreferrer"><Button variant="outline"><Download className="w-4 h-4 mr-1"/>Download PDF</Button></a>
+        <Link href="/contracts" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Back to Contracts</Link>
+        {/* Header: title, status and client on the left; main actions and the ••• menu on the right (same as events) */}
+        <div className="flex flex-col lg:flex-row gap-4 lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3 mb-1">
+              <h2 className="text-xl sm:text-2xl font-bold">{contract.title}</h2>
+              <Badge variant={CC[contract.status]}>{(contract.status ?? '').replace(/_/g,' ')}</Badge>
+            </div>
+            <p className="text-gray-500 text-sm">{[contract.client && clientDisplayName(contract.client), contract.event?.title].filter(Boolean).join(' · ')}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:flex-shrink-0">
             {contract.status === 'DRAFT' && (
-              <Button variant="outline" onClick={openEditor}>
-                <Pencil className="w-4 h-4 mr-1"/>Edit
+              <Button variant="outline" size="sm" onClick={openEditor}><Pencil className="w-3.5 h-3.5 mr-1.5"/>Edit</Button>
+            )}
+            {canSend && <Button size="sm" onClick={sendToClient} disabled={sending}><Send className="w-3.5 h-3.5 mr-1.5"/>{sending ? 'Sending...' : 'Send to Client'}</Button>}
+            {contract.status !== 'FULLY_EXECUTED' && contract.status !== 'VOIDED' && (
+              <Button variant="outline" size="sm" onClick={() => setShowExecuteForm(f => !f)} className="text-green-700 border-green-200 hover:bg-green-50">
+                <CheckCircle2 className="w-3.5 h-3.5 mr-1.5"/>Mark as Executed
               </Button>
             )}
-            {['DRAFT', 'SENT_TO_CLIENT'].includes(contract.status) && (
-              <Button variant="outline" onClick={() => setShowDeleteConfirm(f => !f)} className="text-red-600 border-red-200 hover:bg-red-50">
-                <Trash2 className="w-4 h-4 mr-1"/>Delete
-              </Button>
-            )}
-            {!['DRAFT', 'SENT_TO_CLIENT', 'VOIDED'].includes(contract.status) && (
-              <Button variant="outline" onClick={() => setShowVoidConfirm(f => !f)} className="text-red-600 border-red-200 hover:bg-red-50">
-                <Trash2 className="w-4 h-4 mr-1"/>Void
-              </Button>
-            )}
+            <MoreMenu items={[
+              { label: 'Download PDF', icon: Download, href: contract.pdfUrl ?? `/api/contracts/${contract.id}/pdf`, external: true },
+              contract.eventId && { label: 'View Event', icon: Calendar, href: `/events/${contract.eventId}` },
+              contract.status !== 'VOIDED' && 'divider',
+              ['DRAFT', 'SENT_TO_CLIENT'].includes(contract.status) && { label: 'Delete Contract', icon: Trash2, danger: true, onClick: () => { setShowVoidConfirm(false); setShowDeleteConfirm(true); } },
+              !['DRAFT', 'SENT_TO_CLIENT', 'VOIDED'].includes(contract.status) && { label: 'Void Contract', icon: Ban, danger: true, onClick: () => { setShowDeleteConfirm(false); setShowVoidConfirm(true); } },
+            ]} />
           </div>
         </div>
         {showExecuteForm && contract.status !== 'FULLY_EXECUTED' && contract.status !== 'VOIDED' && (

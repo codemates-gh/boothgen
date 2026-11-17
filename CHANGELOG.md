@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.98.3] — 2026-11-17
+
+### Changed
+- **Quote, invoice and contract pages:** same header as the event page. The number or title and status sit on the left with the client and event underneath. The main actions (Edit, Send, Mark as Accepted / Executed, Send Reminder) sit on the right, and everything else is in a ••• menu: Download PDF, View Client Portal, View Event, Revise, Delete and Void. Deleting an invoice now confirms in a dialog
+- **Invoice line items on phones:** each item is stacked like on quotes, so the description uses the full width instead of being squeezed into a narrow column
+- **••• menus:** open toward the side with room, so they no longer run off the left edge on phones
+
+---
+
 ## [2.98.2] — 2026-11-17
 
 ### Changed
