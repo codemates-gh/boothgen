@@ -86,11 +86,12 @@ export default async function SuperAdminPage(props: { searchParams: Promise<{ ta
         <SuperAdminSignOut />
       </div>
 
-      {/* Tab Bar */}
+      {/* Grouped menu beside the content (a dropdown above it on smaller screens) */}
+      <div className="flex-1 lg:flex">
       <SuperAdminTabs active={tab} failedTotal={failedTotal} reportsUnread={reportsUnread} />
 
       {/* Tab Content */}
-      <div className="flex-1 p-8 space-y-8">
+      <div className="flex-1 min-w-0 p-4 sm:p-8 space-y-8">
 
         {/* OVERVIEW */}
         {tab === 'overview' && (
@@ -365,6 +366,7 @@ export default async function SuperAdminPage(props: { searchParams: Promise<{ ta
           </>
         )}
 
+      </div>
       </div>
     </div>
   );

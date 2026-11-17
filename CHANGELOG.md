@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.103.4] — 2026-11-17
+
+### Changed
+- **Super Admin: grouped side menu.** The sideways-scrolling tab bar is replaced by a side menu in five groups: **Platform** (Overview, Analytics, Reports), **Operators** (Operators, Founding Members, Genie Usage, Storage), **Genie library** (Design Templates, Props, Backdrops), **Payments & email** (Payment Processing, Email Logs, Email Templates) and **Site** (Blog, Settings). On phones and tablets it's a grouped dropdown. The unread-reports and failed-email counts still show beside their items.
+
+---
+
 ## [2.103.3] — 2026-11-17
 
 ### Fixed
