@@ -105,14 +105,14 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     return updatedContract;
   });
 
-  // Fire BOOKING_CONFIRMED and CONTRACT_EXECUTED automations
+  // Fire BOOKING_CONFIRMED and CONTRACT_FULLY_EXECUTED automations
   if (contract.eventId) {
     const ev = (contract as any).event;
     triggerAutomation({ tenantId: contract.tenantId, eventId: contract.eventId, trigger: 'BOOKING_CONFIRMED' }).catch(e =>
       console.error('[contract/sign] BOOKING_CONFIRMED automation error:', e)
     );
-    triggerAutomation({ tenantId: contract.tenantId, eventId: contract.eventId, trigger: 'CONTRACT_EXECUTED' }).catch(e =>
-      console.error('[contract/sign] CONTRACT_EXECUTED automation error:', e)
+    triggerAutomation({ tenantId: contract.tenantId, eventId: contract.eventId, trigger: 'CONTRACT_FULLY_EXECUTED' }).catch(e =>
+      console.error('[contract/sign] CONTRACT_FULLY_EXECUTED automation error:', e)
     );
     if (ev?.eventDate) {
       scheduleEventDateAutomations({ tenantId: contract.tenantId, eventId: contract.eventId, eventDate: new Date(ev.eventDate) }).catch(() => {});

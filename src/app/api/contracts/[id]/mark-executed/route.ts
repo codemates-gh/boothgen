@@ -103,7 +103,7 @@ export async function POST(_: NextRequest, props: { params: Promise<{ id: string
 
   if (contract.eventId) {
     triggerAutomation({ tenantId: contract.tenantId, eventId: contract.eventId, trigger: 'BOOKING_CONFIRMED' }).catch(() => {});
-    triggerAutomation({ tenantId: contract.tenantId, eventId: contract.eventId, trigger: 'CONTRACT_EXECUTED' }).catch(() => {});
+    triggerAutomation({ tenantId: contract.tenantId, eventId: contract.eventId, trigger: 'CONTRACT_FULLY_EXECUTED' }).catch(() => {});
     if (contract.event?.eventDate) {
       scheduleEventDateAutomations({ tenantId: contract.tenantId, eventId: contract.eventId, eventDate: new Date(contract.event.eventDate) }).catch(() => {});
     }

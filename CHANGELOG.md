@@ -4,6 +4,20 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.100.5] — 2026-11-17
+
+### Fixed
+- **"Contract Executed" automations now send.** They were failing with an invalid trigger name when a client signed or a contract was marked executed. Countersigning a contract the client already signed now sends it too
+
+### Added
+- **docs/BACKLOG.md:** a written backlog of ideas agreed on but not yet scheduled:
+  - Bookkeeping (Stripe income and fees, manual income and expenses, receipts, categories, assign to event, P&L and per-event reports, CSV export)
+  - Gmail and Outlook email sync
+  - larger upload limits for the Genie iPad app
+  - Vercel Skew Protection
+
+---
+
 ## [2.100.4] — 2026-11-17
 
 ### Changed
