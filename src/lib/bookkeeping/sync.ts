@@ -5,6 +5,7 @@
 //   • refunded payments (cancelling an event with a refund) → a negative "Refunds" line; the payment itself stays
 //   • each event's Print Log (prints × cost per print) → expense ("Print Media"), dated on the event
 //   • expenses on an event's Profitability card → expense in the matching category, dated on the event
+//   • mileage to each booked event (mileage.ts) → expense ("Travel & Mileage"), miles × rate, dated on the event
 // Rows are keyed by sourceKey, so running it again only adds what's new. If a payment is undone (unmarked paid), its
 // row is removed. The operator's own edits (category, notes, receipt, event, verified) are kept.
 import { prisma } from '@/lib/prisma/client';
@@ -12,15 +13,16 @@ import { stripe } from '@/lib/stripe';
 import { clientDisplayName } from '@/lib/clientName';
 import { AUTO_CATEGORY, EVENT_EXPENSE_CATEGORY, categoryId, ensureCategories } from './categories';
 import { fmtCents } from '@/lib/utils';
+import { ensureMileage, mileageRows } from './mileage';
 
-type Source = 'payment' | 'fee' | 'genie' | 'refund' | 'print' | 'event';
+type Source = 'payment' | 'fee' | 'genie' | 'refund' | 'print' | 'event' | 'mileage';
 type AutoRow = {
   sourceKey: string; source: Source; type: 'INCOME' | 'EXPENSE'; categoryName?: string;
   date: Date; amountCents: number; description: string; payee: string | null;
   invoiceId: string | null; eventId: string | null; clientId: string | null;
 };
 
-export const AUTO_SOURCES: Source[] = ['payment', 'fee', 'genie', 'refund', 'print', 'event'];
+export const AUTO_SOURCES: Source[] = ['payment', 'fee', 'genie', 'refund', 'print', 'event', 'mileage'];
 
 export async function syncLedger(tenantId: string): Promise<{ added: number; removed: number }> {
   await ensureCategories(tenantId);
@@ -110,6 +112,13 @@ export async function syncLedger(tenantId: string): Promise<{ added: number; rem
       payee: null, invoiceId: null, eventId: e.eventId, clientId: e.event.clientId });
   }
 
+  // Mileage: look up distances that are new (a few per run), then one expense per event
+  await ensureMileage(tenantId).catch(e => console.error('[bookkeeping] mileage lookup failed:', (e as Error).message));
+  for (const m of await mileageRows(tenantId)) {
+    rows.push({ sourceKey: 'mileage:' + m.eventId, source: 'mileage', type: 'EXPENSE', date: m.date, amountCents: m.amountCents, description: m.description,
+      categoryName: 'Travel & Mileage', payee: null, invoiceId: null, eventId: m.eventId, clientId: m.clientId });
+  }
+
   const existing = await prisma.ledgerTransaction.findMany({ where: { tenantId, source: { in: AUTO_SOURCES }, sourceKey: { not: null } }, select: { id: true, sourceKey: true, amountCents: true, date: true, description: true } });
   const have = new Map(existing.map(e => [e.sourceKey!, e]));
 
@@ -145,8 +154,9 @@ export async function syncLedger(tenantId: string): Promise<{ added: number; rem
     } else if (r.source !== 'fee') {
       // Keep amounts in step with the source (a refund keeps the date it was first seen)
       const dateChanged = r.source !== 'refund' && prev.date.getTime() !== r.date.getTime();
-      if (prev.amountCents !== r.amountCents || dateChanged || ((r.source === 'print' || r.source === 'event') && prev.description !== r.description)) {
-        await prisma.ledgerTransaction.update({ where: { id: prev.id }, data: { amountCents: r.amountCents, ...(dateChanged ? { date: r.date } : {}), ...(r.source === 'print' || r.source === 'event' ? { description: r.description } : {}) } });
+      const followsText = r.source === 'print' || r.source === 'event' || r.source === 'mileage';
+      if (prev.amountCents !== r.amountCents || dateChanged || (followsText && prev.description !== r.description)) {
+        await prisma.ledgerTransaction.update({ where: { id: prev.id }, data: { amountCents: r.amountCents, ...(dateChanged ? { date: r.date } : {}), ...(followsText ? { description: r.description } : {}) } });
       }
     }
   }

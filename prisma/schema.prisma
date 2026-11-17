@@ -265,6 +265,8 @@ model Tenant {
   ledgerTransactions LedgerTransaction[]
   ledgerCategories   LedgerCategory[]
 
+  eventMileages EventMileage[]
+
   @@map("tenants")
 }
 
@@ -333,6 +335,9 @@ model TenantBranding {
   supportPhone              String?
   websiteUrl                String?
   businessAddress           String?
+  // Bookkeeping mileage log: rate per mile (null = default) and whether it's logged automatically
+  mileageRateCents          Int?
+  mileageEnabled            Boolean  @default(true)
   leadFormConfig            Json?
   // Currency, tax & regional
   currency                  String   @default("usd")
@@ -462,6 +467,8 @@ model Event {
   geniePayments        GenieEventPayment[]
 
   ledgerTransactions LedgerTransaction[]
+
+  mileage EventMileage?
 
   @@index([tenantId])
   @@index([tenantId, eventDate])
@@ -1855,4 +1862,33 @@ model LedgerTransaction {
   @@unique([tenantId, sourceKey])
   @@index([tenantId, date])
   @@map("ledger_transactions")
+}
+
+// Mileage for one event (Bookkeeping → Travel & Mileage): driving distance from the business address to the venue,
+// looked up with Google (src/lib/bookkeeping/mileage.ts), or the operator's own number
+model EventMileage {
+  id            String    @id @default(cuid())
+  tenantId      String
+  eventId       String    @unique
+  // Per-event trip: start → venue → return. Both default to the business address (home base).
+  startAddress  String? // the operator's own start for this event (null = home base)
+  returnAddress String? // the operator's own return for this event (null = same as the start)
+  roundTrip     Boolean   @default(true)
+  oneWayMiles   Float? // Google: start → venue
+  returnMiles   Float? // Google: venue → return (null when the return is the start: same as oneWayMiles)
+  overrideMiles Float? // the operator's own miles for the whole trip (wins over the lookup)
+  origin        String? // addresses used for the lookup; a change triggers a new one
+  destination   String?
+  returnTo      String?
+  status        String    @default("pending") // pending | ok | no_address | failed
+  error         String?
+  computedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("event_mileages")
 }

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { fmtCents } from '@/lib/utils';
 import { ArrowLeft, Download, Printer, CheckCircle2, AlertCircle } from 'lucide-react';
+import { MILEAGE_DISCLAIMER, TAX_DISCLAIMER, IRS_MILEAGE_URL } from '@/lib/bookkeeping/disclaimer';
 
 type Line = { name: string; byMonth: Record<string, number>; total: number };
 type PL = { months: string[]; income: Line[]; expense: Line[]; totalIncome: number; totalExpense: number; net: number };
@@ -214,6 +215,9 @@ export default function BookkeepingReportsPage() {
             </CardContent>
           </Card>
         )}
+        <p className="text-[11px] leading-snug text-gray-400 border-t border-gray-100 pt-3">
+          {TAX_DISCLAIMER} {MILEAGE_DISCLAIMER} <a href={IRS_MILEAGE_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600 print:no-underline">IRS standard mileage rates</a>.
+        </p>
       </div>
     </>
   );

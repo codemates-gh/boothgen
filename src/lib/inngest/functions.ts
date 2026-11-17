@@ -753,3 +753,18 @@ export const enforceGeniusPlans = inngest.createFunction(
   { cron: '0 6 * * *' },
   async () => ({ switched: await enforceGenius() }),
 );
+
+// Monthly (the 1st): read the IRS standard mileage rates page and add any new period. The IRS changes the rate on
+// January 1 and occasionally July 1, so the 1st catches it the day it applies; Bookkeeping recalculates affected
+// mileage then. Super Admin → Settings → IRS Mileage Rates shows them and has "Check IRS now".
+export const checkIrsMileageRates = inngest.createFunction(
+  { id: 'check-irs-mileage-rates' },
+  { cron: '0 13 1 * *' }, // 1st of each month, 13:00 UTC
+  async () => {
+    const { checkIrsRates } = await import('@/lib/bookkeeping/mileageRates');
+    const r = await checkIrsRates();
+    if (r.error) console.error('[irs-mileage-rates] check failed:', r.error);
+    else if (r.added.length) console.log('[irs-mileage-rates] added', JSON.stringify(r.added));
+    return r;
+  }
+);

@@ -25,12 +25,14 @@ import {
   sendGenieShare,
   sweepAbandonedAttract,
   sweepAbandonedProps,
+  checkIrsMileageRates,
 } from '@/lib/inngest/functions';
 
 const handler = serve({
   client: inngest,
   functions: [
     processAutomation,
+    checkIrsMileageRates,
     scheduleLeadCreatedAutomations,
     scheduleBookingConfirmedAutomations,
     scheduleContractSentAutomations,

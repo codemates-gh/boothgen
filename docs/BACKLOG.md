@@ -48,7 +48,7 @@ Ideas agreed on but not scheduled yet. Newest first. When one is picked up, move
 
 ### Later
 - Bank feeds (Plaid) for card and bank expenses.
-- Mileage log (per event, using venue address) with the standard rate.
+- ~~Mileage log~~ (shipped in 2.102.0).
 - Sales tax summary.
 - Year-end summary email.
 

@@ -11,10 +11,12 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { MoreMenu } from '@/components/ui/MoreMenu';
 import { fmtCents } from '@/lib/utils';
-import { RefreshCw, Plus, BarChart3, Settings2, Paperclip, CheckCircle2, Pencil, Trash2, Receipt, Calendar, RotateCcw, Download, Undo2 } from 'lucide-react';
+import { RefreshCw, Plus, BarChart3, Settings2, Paperclip, CheckCircle2, Pencil, Trash2, Receipt, Calendar, RotateCcw, Download, Undo2, Car } from 'lucide-react';
 import TransactionModal from './TransactionModal';
 import CategoriesModal from './CategoriesModal';
 import RefundModal from './RefundModal';
+import { MileageSettingsModal, MileageTripModal } from './MileageModals';
+import { TAX_DISCLAIMER, IRS_MILEAGE_URL } from '@/lib/bookkeeping/disclaimer';
 import { uploadReceipt, SOURCE_LABEL, type Category, type EventOption, type Txn } from './shared';
 
 type Tab = 'all' | 'uncategorized' | 'categorized';
@@ -34,6 +36,8 @@ export default function BookkeepingPage() {
   const [modal, setModal] = useState<{ type: 'INCOME' | 'EXPENSE'; txn: Txn | null } | null>(null);
   const [catsOpen, setCatsOpen] = useState(false);
   const [refunding, setRefunding] = useState<Txn | null>(null);
+  const [mileageSettings, setMileageSettings] = useState(false);
+  const [trip, setTrip] = useState<string | null>(null);
   const receiptFor = useRef<Txn | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const fmt = (c: number) => fmtCents(c, currency);
@@ -109,7 +113,7 @@ export default function BookkeepingPage() {
       <div className="p-4 sm:p-8 space-y-5">
         {/* Header actions */}
         <div className="flex flex-col xl:flex-row gap-3 xl:items-center xl:justify-between">
-          <p className="text-sm text-gray-500 max-w-2xl">Income and expenses. Payments, refunds, BoothGen fees, print costs and event expenses are added automatically; add anything else with New Income or New Expense.</p>
+          <p className="text-sm text-gray-500 max-w-2xl">Income and expenses. Payments, refunds, BoothGen fees, print costs, event expenses and mileage are added automatically; add anything else with New Income or New Expense.</p>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={refresh} disabled={busy === 'refresh'}><RefreshCw className={'w-3.5 h-3.5 mr-1.5 ' + (busy === 'refresh' ? 'animate-spin' : '')} />Refresh</Button>
             <Button variant="outline" size="sm" onClick={() => setModal({ type: 'INCOME', txn: null })}><Plus className="w-3.5 h-3.5 mr-1" />New Income</Button>
@@ -117,6 +121,7 @@ export default function BookkeepingPage() {
             <Link href="/bookkeeping/reports"><Button variant="outline" size="sm"><BarChart3 className="w-3.5 h-3.5 mr-1.5" />Reports</Button></Link>
             <MoreMenu items={[
               { label: 'Categories', icon: Settings2, onClick: () => setCatsOpen(true) },
+              { label: 'Mileage', icon: Car, onClick: () => setMileageSettings(true) },
               { label: 'Export CSV', icon: Download, href: exportHref, external: true },
               { label: 'Export for QuickBooks', icon: Download, href: exportHref + '&layout=quickbooks', external: true },
               { label: 'Export for Xero', icon: Download, href: exportHref + '&layout=xero', external: true },
@@ -215,6 +220,7 @@ export default function BookkeepingPage() {
                 { label: t.receiptUrl ? 'Replace Receipt' : 'Add Receipt', icon: Paperclip, onClick: () => { receiptFor.current = t; fileInput.current?.click(); } },
                 { label: t.verified ? 'Mark Unverified' : 'Verify', icon: CheckCircle2, onClick: async () => { await fetch('/api/bookkeeping/transactions/' + t.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ verified: !t.verified }) }); load(); } },
                 t.type === 'INCOME' && t.amountCents > 0 && { label: 'Record Refund', icon: Undo2, onClick: () => setRefunding(t) },
+                t.source === 'mileage' && t.eventId && { label: 'Edit Mileage', icon: Car, onClick: () => setTrip(t.eventId) },
                 { label: 'Edit', icon: Pencil, onClick: () => setModal({ type: t.type, txn: t }) },
                 t.source === 'manual' && 'divider',
                 t.source === 'manual' && { label: 'Delete', icon: Trash2, danger: true, onClick: () => removeOne(t) },
@@ -223,6 +229,7 @@ export default function BookkeepingPage() {
           ))}
         </CardContent></Card>
         {rows.length >= 1000 && <p className="text-xs text-gray-400">Showing the latest 1,000. Narrow the dates to see older ones.</p>}
+        <p className="text-[11px] leading-snug text-gray-400">{TAX_DISCLAIMER} Mileage uses the IRS rate BoothGen has on file; confirm the current rate at <a href={IRS_MILEAGE_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">irs.gov</a>.</p>
       </div>
 
       <input ref={fileInput} type="file" accept="image/*,application/pdf" className="sr-only" onChange={e => attachReceipt(e.target.files?.[0])} />
@@ -230,6 +237,8 @@ export default function BookkeepingPage() {
         <TransactionModal open type={modal.type} txn={modal.txn} categories={data.categories} events={data.events} payees={data.payees} onClose={() => setModal(null)} onSaved={msg => { setModal(null); setNote(msg ?? ''); load(); }} />
       )}
       {catsOpen && <CategoriesModal open onClose={() => { setCatsOpen(false); load(); }} />}
+      {mileageSettings && <MileageSettingsModal onClose={() => { setMileageSettings(false); load(); }} />}
+      {trip && <MileageTripModal eventId={trip} fmt={fmt} onClose={() => { setTrip(null); load(); }} onSaved={() => load()} />}
       {refunding && <RefundModal txn={refunding} fmt={fmt} onClose={() => setRefunding(null)} onSaved={() => { setRefunding(null); load(); }} />}
     </>
   );

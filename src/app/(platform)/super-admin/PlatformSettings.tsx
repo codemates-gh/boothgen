@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Settings, Image, Mail, MessageCircle, FileText, Upload } from 'lucide-react';
+import IrsMileageRates from './IrsMileageRates';
 
 interface InitialSettings {
   message_retention_months: string;
@@ -160,6 +161,8 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
           </div>
         </CardContent>
       </Card>
+
+      <IrsMileageRates />
 
       <Card>
         <CardHeader>

@@ -4,6 +4,23 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.102.0] — 2026-11-17
+
+### Added
+- **Bookkeeping: automatic mileage log.** Each booked event becomes a "Travel & Mileage" expense on the event date.
+  - **The trip:** start → venue → return. Both ends default to your home base (the business address in Settings → Branding). On any event (••• → Edit Mileage) you can change the start, the return, round trip or one way, or type your own miles.
+  - **Distances:** driving distance from Google Maps, looked up once per event and again only when an address changes. "Recalculate distance" looks it up again on demand.
+  - **Rate:** the IRS standard business rate in effect on the event's date, or your own rate (Bookkeeping → ⋯ → Mileage, where you can also turn the log off).
+  - **Every line shows its calculation,** e.g. "home base → venue 24.3 mi + venue → home base 24.3 mi = 48.6 mi × 76¢/mi (IRS business rate from 2026-07-01)".
+- **Disclaimer:** the Mileage settings, each event's mileage, Bookkeeping, Reports (screen, print and CSV) and the Year-End Summary note that rates and distances may not be current or exact. Operators are told to confirm the current IRS rate at irs.gov (linked) and to review with their tax professional before filing; Bookkeeping is a record-keeping aid, not tax or accounting advice.
+- **IRS rates stay current on their own:** BoothGen checks the IRS standard mileage rates page on the 1st of each month and adds new periods, including mid-year changes like July 2026. Super Admin → Settings → IRS Mileage Rates lists them, with "Check IRS now" and manual corrections.
+
+### Setup
+- Database: run the 2.102.0 SQL in Neon (new `event_mileages` table, two mileage settings on `tenant_branding`).
+- Add `GOOGLE_MAPS_API_KEY` (Google Cloud, Routes API) in Vercel. Until then, distances wait and you can type your own miles.
+
+---
+
 ## [2.101.5] — 2026-11-17
 
 ### Added

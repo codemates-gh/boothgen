@@ -11,6 +11,7 @@ import { prisma } from '@/lib/prisma/client';
 import { bookkeeper } from '@/lib/bookkeeping/auth';
 import { ledgerWhere, filtersFrom } from '@/lib/bookkeeping/query';
 import { clientDisplayName } from '@/lib/clientName';
+import { MILEAGE_DISCLAIMER, TAX_DISCLAIMER } from '@/lib/bookkeeping/disclaimer';
 
 const csvCell = (v: unknown) => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
 const csv = (rows: unknown[][]) => rows.map(r => r.map(csvCell).join(',')).join('\n') + '\n';
@@ -128,6 +129,8 @@ export async function GET(req: NextRequest) {
         ['Expenses by category', 'Total'], ...summary.expenseByCategory.map(c => [c.name, money(c.cents)]),
         [],
         ['Top clients', 'Total'], ...topClients.map(c => [c.name, money(c.cents)]),
+        [],
+        [TAX_DISCLAIMER], [MILEAGE_DISCLAIMER],
       ]));
     }
     return NextResponse.json(summary);
@@ -183,6 +186,8 @@ export async function GET(req: NextRequest) {
       ['Expenses'], ...expense.map(l => row(l.name, l.byMonth, l.total)), sumRow('Total expenses', expense),
       [],
       ['Net profit', ...months.map(m => money(monthTotal(income, m) - monthTotal(expense, m))), money(totalOf(income) - totalOf(expense))],
+      [],
+      [TAX_DISCLAIMER], [MILEAGE_DISCLAIMER],
     ]));
   }
   return NextResponse.json({ months, income, expense, totalIncome: totalOf(income), totalExpense: totalOf(expense), net: totalOf(income) - totalOf(expense) });

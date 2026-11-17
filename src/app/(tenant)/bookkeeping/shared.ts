@@ -10,7 +10,7 @@ export type Txn = {
 
 // Where an automatic row came from, and what to change instead of the row itself
 export const SOURCE_LABEL: Record<string, string> = {
-  manual: 'Added by hand', payment: 'BoothGen payment', fee: 'BoothGen fee', genie: 'Genie', refund: 'Refund', 'stripe-refund': 'Stripe refund', print: 'Print log', event: 'Event expense',
+  manual: 'Added by hand', payment: 'BoothGen payment', fee: 'BoothGen fee', genie: 'Genie', refund: 'Refund', 'stripe-refund': 'Stripe refund', print: 'Print log', event: 'Event expense', mileage: 'Mileage',
 };
 export const SOURCE_NOTE: Record<string, string> = {
   payment: 'From a BoothGen payment. The amount and date follow the invoice.',
@@ -20,6 +20,7 @@ export const SOURCE_NOTE: Record<string, string> = {
   'stripe-refund': 'A refund made in Stripe. It lowers your income; the original payment stays listed.',
   print: "From the event's Print Log (prints × cost per print). Change the count there.",
   event: "From the event's Profitability card. Change the amount there.",
+  mileage: 'Mileage for this event (start → venue → return × rate per mile). Use Edit Mileage to change the start, return or miles.',
 };
 
 const RECEIPT_TYPES = ['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp', 'application/pdf'];
