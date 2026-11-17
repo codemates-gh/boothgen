@@ -30,14 +30,6 @@ const adminSections: NavSection[] = [
     ],
   },
   {
-    label: 'Financial',
-    items: [
-      { href: '/quotes', label: 'Quotes', icon: FileText },
-      { href: '/invoices', label: 'Invoices', icon: Receipt },
-      { href: '/contracts', label: 'Contracts', icon: FileText },
-    ],
-  },
-  {
     label: 'Templates',
     items: [
       { href: '/templates', label: 'Layouts', icon: LayoutTemplate },
@@ -131,7 +123,9 @@ function NavLink({ href, label, Icon, pro, active, close, count }: { href: strin
 }
 
 export function Sidebar({ isFoundingMember, genieEnabled, genieOnly }: { isFoundingMember?: boolean; genieEnabled?: boolean; genieOnly?: boolean }) {
-  const path = usePathname();
+  const rawPath = usePathname();
+  // Quotes, Contracts and Invoices live under Events (tabs on the Events page), so Events stays highlighted there
+  const path = /^\/(quotes|contracts|invoices)(\/|$)/.test(rawPath) ? '/events' : rawPath;
   const { data: session, update: updateSession } = useSession();
   // The menu comes from the database; the browser session can lag after Super Admin switches the account (Genius ↔
   // Genie only). Refresh it so Search, the settings tabs and the middleware agree with the menu.

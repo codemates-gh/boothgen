@@ -3,6 +3,7 @@ import { requireTenantSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
 import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
+import EventsTabs from '@/app/(tenant)/events/EventsTabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ export default async function ContractsPage() {
     <>
       <TopBar title="Contracts" />
       <div className="p-4 sm:p-8 space-y-6">
+        <EventsTabs className="" />
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-3">
             <Link href="/contracts/new"><Button>New Contract</Button></Link>

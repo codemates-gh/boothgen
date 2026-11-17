@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { requireTenantSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
 import { TopBar } from '@/components/layout/TopBar';
+import EventsTabs from './EventsTabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ export default async function EventsPage() {
     <>
       <TopBar title="Events" />
       <div className="p-4 sm:p-8">
+        <EventsTabs />
         <div className="flex items-center justify-between mb-6">
           <div>
             {!isAdmin && (

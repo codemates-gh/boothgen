@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { fmtCents } from '@/lib/utils';
 import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
+import EventsTabs from '@/app/(tenant)/events/EventsTabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,7 @@ export default function QuotesPage() {
     <>
       <TopBar title="Quotes" />
       <div className="p-4 sm:p-8">
+        <EventsTabs />
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div className="flex flex-wrap gap-1">
             {STATUSES.map(s => (

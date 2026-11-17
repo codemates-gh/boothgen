@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.98.8] — 2026-11-17
+
+### Changed
+- **Quotes, Contracts and Invoices moved under Events:** they're no longer in the sidebar. The Events page has tabs for Events, Quotes, Contracts and Invoices, and the Events item stays highlighted while you're in any of them. On an event, the Quotes, Contracts and Invoices boxes each have a **View all** link to the full list
+
+---
+
 ## [2.98.7] — 2026-11-17
 
 ### Changed

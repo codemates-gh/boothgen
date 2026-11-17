@@ -250,7 +250,7 @@ export default async function EventDetailPage(
 
               {event.Quote.length > 0 && (
                 <div className={box}>
-                  <div className={boxHead}><ClipboardList className="w-4 h-4 text-gray-400"/>Quotes{count(event.Quote.length)}</div>
+                  <div className={boxHead}><ClipboardList className="w-4 h-4 text-gray-400"/>Quotes{count(event.Quote.length)}<Link href="/quotes" className="ml-auto text-xs font-medium text-gray-500 hover:text-[#1F1F3D]">View all</Link></div>
                   <div className={DOC_HEAD}><span>Quote</span><span className={DOC_WIDE}>Total</span><span className={DOC_WIDE}>Sent</span><span>Status</span><span/></div>
                   {event.Quote.map(q => (
                     <Link key={q.id} href={'/quotes/' + q.id + '?from=event'} className={DOC_ROW + ' border-b border-gray-100 last:border-0'}>
@@ -269,7 +269,7 @@ export default async function EventDetailPage(
 
               {event.contracts.length > 0 && (
                 <div className={box}>
-                  <div className={boxHead}><FileText className="w-4 h-4 text-gray-400"/>Contracts{count(event.contracts.length)}</div>
+                  <div className={boxHead}><FileText className="w-4 h-4 text-gray-400"/>Contracts{count(event.contracts.length)}<Link href="/contracts" className="ml-auto text-xs font-medium text-gray-500 hover:text-[#1F1F3D]">View all</Link></div>
                   <div className={DOC_HEAD}><span className="sm:col-span-3">Title</span><span>Status</span><span/></div>
                   {event.contracts.map(c => (
                     <Link key={c.id} href={'/contracts/' + c.id + '?from=event'} className={DOC_ROW + ' border-b border-gray-100 last:border-0' + (c.status === 'CLIENT_SIGNED' ? ' bg-amber-50/60' : '')}>
@@ -286,7 +286,7 @@ export default async function EventDetailPage(
 
               {event.invoices.length > 0 && (
                 <div className={box}>
-                  <div className={boxHead}><Receipt className="w-4 h-4 text-gray-400"/>Invoices{count(event.invoices.length)}</div>
+                  <div className={boxHead}><Receipt className="w-4 h-4 text-gray-400"/>Invoices{count(event.invoices.length)}<Link href="/invoices" className="ml-auto text-xs font-medium text-gray-500 hover:text-[#1F1F3D]">View all</Link></div>
                   <div className={DOC_HEAD}><span>Invoice</span><span className={DOC_WIDE}>Total</span><span className={DOC_WIDE}>Balance</span><span>Status</span><span/></div>
                   <EventInvoicePanel
                     invoices={event.invoices.map(inv => ({
