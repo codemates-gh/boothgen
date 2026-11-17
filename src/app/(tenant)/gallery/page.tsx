@@ -1,10 +1,11 @@
 export const dynamic = 'force-dynamic';
 import { requireTenantSession, hasProAccess } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
+import { galleriesWithPhotos, FREE_GALLERY_LIMIT } from '@/lib/gallery/planLimit';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Camera, Lock } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 
@@ -20,29 +21,8 @@ export default async function GalleryPage() {
   const session = await requireTenantSession();
   const isPro = await hasProAccess(session.tenantId);
 
-  if (!isPro) {
-    return (
-      <>
-        <TopBar title="Gallery" />
-        <div className="p-8 max-w-xl mx-auto text-center mt-12">
-          <div className="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center mx-auto mb-5">
-            <Lock className="w-8 h-8 text-orange-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">Gallery is a Pro feature</h2>
-          <p className="text-gray-500 mb-6 leading-relaxed">
-            Upload event photos, share a private gallery with your client, and let guests download photos — all included in the Pro plan.
-          </p>
-          <Link
-            href="/settings/billing"
-            className="inline-block px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm transition-colors"
-          >
-            Upgrade to Pro →
-          </Link>
-          <p className="mt-4 text-xs text-gray-400">Your current plan is commission-based. Upgrade anytime — no long-term contract.</p>
-        </div>
-      </>
-    );
-  }
+  // Without a paid plan, photos can go into one event gallery (src/lib/gallery/planLimit.ts)
+  const usedGalleries = isPro ? 0 : await galleriesWithPhotos(session.tenantId);
 
   // Auto-create galleries only for active (BOOKED/IN_PROGRESS) events
   const eventsWithoutGallery = await prisma.event.findMany({
@@ -84,6 +64,14 @@ export default async function GalleryPage() {
     <>
       <TopBar title="Gallery" />
       <div className="p-4 sm:p-8 space-y-8">
+        {!isPro && (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3">
+            <p className="flex-1 text-sm text-orange-800">
+              Your current plan includes photos for {FREE_GALLERY_LIMIT} event gallery ({Math.min(usedGalleries, FREE_GALLERY_LIMIT)} of {FREE_GALLERY_LIMIT} used). Subscribe to add photos to every event.
+            </p>
+            <Link href="/settings/billing" className="flex-shrink-0 inline-block px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg text-sm transition-colors">See plans</Link>
+          </div>
+        )}
         <Card><CardContent className="p-0">
           {activeGalleries.length === 0 ? (
             <div className="text-center py-16 text-gray-400"><Camera className="w-12 h-12 mx-auto mb-4 opacity-30"/><p>Gallery folders are created automatically when you book an event.</p></div>

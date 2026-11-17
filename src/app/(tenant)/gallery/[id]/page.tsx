@@ -55,7 +55,7 @@ export default function GalleryDetailPage(props: { params: Promise<{ id: string 
         });
         if (!presignRes.ok) {
           const body = await presignRes.json().catch(() => ({}));
-          throw new Error('Presign failed (' + presignRes.status + '): ' + (body.error ?? 'unknown'));
+          throw new Error(body.upgrade ? body.error : 'Presign failed (' + presignRes.status + '): ' + (body.error ?? 'unknown'));
         }
         const { uploadUrl, publicUrl } = await presignRes.json();
 

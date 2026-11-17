@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.99.2] — 2026-11-17
+
+### Changed
+- **Gallery is no longer locked behind Pro.** The PRO badge is gone from the sidebar. Accounts without a paid plan (trial) can use Gallery with photos for one event gallery. The Gallery page shows how much of that is used, with a link to the plans. Adding photos to a second event's gallery, from the website or a Genie iPad, explains the limit instead of failing. Paid plans and Genie accounts stay unlimited
+
+---
+
 ## [2.99.1] — 2026-11-17
 
 ### Added

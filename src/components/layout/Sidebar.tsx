@@ -38,7 +38,7 @@ const adminSections: NavSection[] = [
   {
     label: 'Delivery & Ops',
     items: [
-      { href: '/gallery', label: 'Gallery', icon: Camera, pro: true },
+      { href: '/gallery', label: 'Gallery', icon: Camera },
       { href: '/analytics', label: 'Analytics', icon: BarChart2 },
     ],
   },
@@ -97,7 +97,7 @@ const TEAM_NAV_MAP: Record<string, NavItem> = {
   quotes:   { href: '/quotes',  label: 'Quotes',          icon: FileText },
   invoices: { href: '/invoices',label: 'Invoices',        icon: Receipt },
   clients:  { href: '/clients', label: 'Clients',         icon: Users },
-  gallery:  { href: '/gallery', label: 'Gallery',         icon: Camera, pro: true },
+  gallery:  { href: '/gallery', label: 'Gallery',         icon: Camera },
 };
 
 function NavLink({ href, label, Icon, pro, active, close, count }: { href: string; label: string; Icon: any; pro?: boolean; active: boolean; close: () => void; count?: number }) {

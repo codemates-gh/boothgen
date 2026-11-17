@@ -223,10 +223,20 @@ describe('bundle', () => {
 });
 
 describe('uploads and asset registration', () => {
-  it('requires Pro for upload URLs', async () => {
-    const { event, token } = await setup({ pro: false });
-    const res = await uploadUrl(req(`/api/genie/events/${event.id}/upload-url`, { token, body: { clientId: randomUUID(), fileName: 'a.jpg', contentType: 'image/jpeg', bytes: 10 } }), ev(event.id));
+  it('without a paid plan, allows photos for one event gallery only', async () => {
+    const { tenant, client, event, token } = await setup({ pro: false });
+    const body = () => ({ clientId: randomUUID(), fileName: 'a.jpg', contentType: 'image/jpeg', bytes: 10 });
+    // First gallery: allowed
+    expect((await uploadUrl(req(`/api/genie/events/${event.id}/upload-url`, { token, body: body() }), ev(event.id))).status).toBe(200);
+    // Once that gallery has photos, another event's gallery is refused
+    const gallery = await prisma.gallery.findUniqueOrThrow({ where: { eventId: event.id } });
+    await prisma.galleryAsset.create({ data: { galleryId: gallery.id, assetType: 'PHOTO', url: 'https://media.boothgen.test/p.jpg', filename: 'p.jpg', fileSizeBytes: 1, mimeType: 'image/jpeg' } });
+    const other = await seedEvent(tenant.id, client.id);
+    const res = await uploadUrl(req(`/api/genie/events/${other.id}/upload-url`, { token, body: body() }), ev(other.id));
     expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ code: 'pro_required' });
+    // The first gallery can still get more photos
+    expect((await uploadUrl(req(`/api/genie/events/${event.id}/upload-url`, { token, body: body() }), ev(event.id))).status).toBe(200);
   });
 
   it('issues a stable key per clientId and registers the asset once', async () => {
