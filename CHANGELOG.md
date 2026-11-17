@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.98.4] — 2026-11-17
+
+### Fixed
+- **Client portal quote on phones:** the Qty and Price columns are hidden and shown as "1 × $800.00" under the item name, so the description uses the full width instead of being squeezed
+
+---
+
 ## [2.98.3] — 2026-11-17
 
 ### Changed
