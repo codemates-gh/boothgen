@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useParams } from 'next/navigation';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,8 @@ import { Upload, Image, Trash2, Globe, EyeOff, X, CheckCircle2, Lock, LockOpen, 
 import Link from 'next/link';
 import { AssetThumb } from '@/components/gallery/AssetMedia';
 
-export default function GalleryDetailPage({ params }: { params: { id: string } }) {
+export default function GalleryDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const [gallery, setGallery] = useState<any>(null);
   const [assets, setAssets] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);

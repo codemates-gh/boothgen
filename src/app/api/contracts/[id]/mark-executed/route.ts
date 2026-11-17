@@ -9,7 +9,8 @@ import { triggerAutomation, scheduleEventDateAutomations } from '@/lib/inngest/t
 // Admin bypass: mark a contract fully executed without requiring drawn signatures.
 // Used when the contract was signed in person, via DocuSign, or another external tool.
 // Mirrors the invoice-creation logic from the client sign route.
-export async function POST(_: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (session.tenantRole !== 'HOST_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

@@ -5,6 +5,7 @@ import { Check, Lock, Tablet } from 'lucide-react';
 import { eventPrices, fmtPrice } from '@/lib/genie/payments';
 import type { Metadata } from 'next';
 
+
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {

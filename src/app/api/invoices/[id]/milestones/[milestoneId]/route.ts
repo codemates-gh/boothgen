@@ -6,8 +6,9 @@ import { prisma } from '@/lib/prisma/client';
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string; milestoneId: string } }
+  props: { params: Promise<{ id: string; milestoneId: string }> }
 ) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 

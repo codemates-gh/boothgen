@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SubscribeProButton } from './SubscribeProButton';
 
+
 // Names for the CRM areas a Genie-only operator may land on (/upgrade?from=/clients)
 const AREAS: [string, string][] = [
   ['/calendar', 'The calendar is'], ['/events', 'Event management is'], ['/clients', 'Clients are'], ['/leads', 'Leads are'],
@@ -20,7 +21,8 @@ const AREAS: [string, string][] = [
   ['/settings/print-costs', 'Print costs are'], ['/settings/billing', 'Billing is'],
 ];
 
-export default async function UpgradePage({ searchParams }: { searchParams: { from?: string; subscribed?: string } }) {
+export default async function UpgradePage(props: { searchParams: Promise<{ from?: string; subscribed?: string }> }) {
+  const searchParams = await props.searchParams;
   const session = await requireTenantSession();
   const tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId }, select: { product: true } });
   if (!isGenieOnly(tenant)) redirect('/dashboard');

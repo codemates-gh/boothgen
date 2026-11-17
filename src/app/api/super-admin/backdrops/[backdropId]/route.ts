@@ -5,14 +5,15 @@ import { prisma } from '@/lib/prisma/client';
 import { requireSuperAdminApi } from '@/lib/genie/admin';
 import { backdropView, deleteUnusedBackdropFiles, eventsUsingBackdrop } from '@/lib/genie/backdrops';
 
-type Ctx = { params: { backdropId: string } };
+type Ctx = { params: Promise<{ backdropId: string }> };
 const Body = z.union([
   z.object({ isActive: z.boolean() }).strict(),
   z.object({ name: z.string().trim().min(1, 'Give the backdrop a name').max(80, 'Keep the name to 80 characters') }).strict(),
 ]);
 
 // Renames a Standard backdrop, or switches it on/off for every operator (events that chose it keep it)
-export async function PATCH(req: NextRequest, { params }: Ctx) {
+export async function PATCH(req: NextRequest, props: Ctx) {
+  const params = await props.params;
   const auth = await requireSuperAdminApi();
   if (auth instanceof NextResponse) return auth;
   const b = await prisma.genieBackdrop.findFirst({ where: { id: params.backdropId, tenantId: null } });
@@ -23,7 +24,8 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 }
 
 // Deletes a Standard backdrop no event uses (otherwise switch it off)
-export async function DELETE(_req: NextRequest, { params }: Ctx) {
+export async function DELETE(_req: NextRequest, props: Ctx) {
+  const params = await props.params;
   const auth = await requireSuperAdminApi();
   if (auth instanceof NextResponse) return auth;
   const b = await prisma.genieBackdrop.findFirst({ where: { id: params.backdropId, tenantId: null } });

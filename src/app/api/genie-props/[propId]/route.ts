@@ -5,10 +5,11 @@ import { requireGenieAdmin } from '@/lib/genie/admin';
 import { PropBody, deleteUnusedPropImages, eventsUsingProp, propData, propView } from '@/lib/genie/props';
 import type { RemoteAsset } from '@/lib/genie/templateAssets';
 
-type Ctx = { params: { propId: string } };
+type Ctx = { params: Promise<{ propId: string }> };
 
 // Edits one of My props (events that use it pick up the change on their next sync, until they lock)
-export async function PATCH(req: NextRequest, { params }: Ctx) {
+export async function PATCH(req: NextRequest, props: Ctx) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const prop = await prisma.genieProp.findFirst({ where: { id: params.propId, tenantId: auth.tenantId } });
@@ -23,7 +24,8 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 }
 
 // Deletes one of My props; refused while an event still offers it
-export async function DELETE(_req: NextRequest, { params }: Ctx) {
+export async function DELETE(_req: NextRequest, props: Ctx) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const prop = await prisma.genieProp.findFirst({ where: { id: params.propId, tenantId: auth.tenantId } });

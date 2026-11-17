@@ -6,7 +6,8 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { ContractPDF } from '@/lib/pdf/contract-pdf';
 import React from 'react';
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await requireTenantSession();
   const [contract, branding] = await Promise.all([
     prisma.contract.findFirst({

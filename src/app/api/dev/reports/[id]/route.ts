@@ -6,10 +6,11 @@ import { Triage, addTeamNote, applyTriage } from '@/lib/reports/triage';
 import { loadReport } from '@/lib/reports/server';
 import { AttachmentsInput, checkUploads, uploadPrefix } from '@/lib/reports/attachments';
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 // One report by number ("12") or id
-export async function GET(req: NextRequest, { params }: Ctx) {
+export async function GET(req: NextRequest, props: Ctx) {
+  const params = await props.params;
   const denied = devAuthorized(req);
   if (denied) return denied;
   const r = await findReport(params.id);
@@ -30,7 +31,8 @@ const Update = Triage.extend({
 // and followers are emailed, and it must be plain language (no technical or AI wording).
 // The note is added after the status change, so the thread reads "Fix is live…" then the details.
 // Never "fixed" or "dev_approved": only G closes a report or approves shipping a fix.
-export async function POST(req: NextRequest, { params }: Ctx) {
+export async function POST(req: NextRequest, props: Ctx) {
+  const params = await props.params;
   const denied = devAuthorized(req);
   if (denied) return denied;
   const parsed = Update.safeParse(await req.json().catch(() => null));

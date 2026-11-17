@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { ClickableRow } from '@/components/ui/ClickableRow';
 import { clientDisplayName } from '@/lib/clientName';
 
+
 const CC: Record<string,any> = { DRAFT:'default', SENT_TO_CLIENT:'info', CLIENT_SIGNED:'warning', HOST_SIGNED:'warning', FULLY_EXECUTED:'success', VOIDED:'danger' };
 
 export default async function ContractsPage() {

@@ -7,7 +7,11 @@ import { eventBoothLastSeen } from '@/lib/genie/boothStatus';
 // One guest's Genie session: only that session's photos, independent of the gallery's publish state
 const SESSION_TOKEN = /^[A-Za-z0-9_-]{22,}$/;
 
-export async function GET(_req: NextRequest, { params }: { params: { token: string; sessionToken: string } }) {
+export async function GET(
+  _req: NextRequest,
+  props: { params: Promise<{ token: string; sessionToken: string }> }
+) {
+  const params = await props.params;
   const session = await prisma.genieSession.findUnique({
     where: { publicToken: params.sessionToken },
     include: {

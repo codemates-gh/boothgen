@@ -6,7 +6,8 @@ import { clientTemplateView, clientTemplates, clientTemplatesWhere } from '@/lib
 import { cleanTextValues } from '@/lib/templates/customRequest';
 import { closedForClients } from '@/lib/genius';
 
-export async function GET(_: NextRequest, { params }: { params: { portalToken: string } }) {
+export async function GET(_: NextRequest, props: { params: Promise<{ portalToken: string }> }) {
+  const params = await props.params;
   const event = await prisma.event.findFirst({
     where: { portalToken: params.portalToken },
     include: {
@@ -42,7 +43,8 @@ export async function GET(_: NextRequest, { params }: { params: { portalToken: s
   });
 }
 
-export async function POST(req: NextRequest, { params }: { params: { portalToken: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ portalToken: string }> }) {
+  const params = await props.params;
   const event = await prisma.event.findFirst({
     where: { portalToken: params.portalToken },
     include: {

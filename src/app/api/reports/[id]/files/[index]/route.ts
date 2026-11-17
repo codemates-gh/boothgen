@@ -5,7 +5,8 @@ import { getPresignedDownloadUrl } from '@/lib/storage/r2';
 import { attachmentsOf, reportViewer } from '@/lib/reports/server';
 
 // Opens a report attachment through a short-lived link (signed-in BoothGen users only; never a public URL)
-export async function GET(_req: Request, { params }: { params: { id: string; index: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string; index: string }> }) {
+  const params = await props.params;
   const viewer = await reportViewer();
   if (viewer instanceof NextResponse) return viewer;
   const r = await prisma.feedbackReport.findUnique({ where: { id: params.id }, select: { attachments: true } });

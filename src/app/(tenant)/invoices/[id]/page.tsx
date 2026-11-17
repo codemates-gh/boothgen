@@ -16,6 +16,7 @@ import { fmtCents } from '@/lib/utils';
 import { clientDisplayName } from '@/lib/clientName';
 import { splitLineItemDescription } from '@/lib/lineItems';
 
+
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
 
 function DescriptionCell({ text }: { text: string }) {
@@ -36,7 +37,11 @@ function DescriptionCell({ text }: { text: string }) {
   );
 }
 
-export default async function InvoiceDetailPage({ params, searchParams }: { params: { id: string }; searchParams?: { reminded?: string } }) {
+export default async function InvoiceDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams?: Promise<{ reminded?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const session = await requireTenantSession();
   const isAdmin = session.tenantRole === 'HOST_ADMIN';
   const [tenant, subscription] = await Promise.all([

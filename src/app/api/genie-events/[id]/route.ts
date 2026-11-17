@@ -13,7 +13,8 @@ async function findBoothEvent(tenantId: string, id: string) {
 
 const Patch = BoothEventInput.omit({ timeZone: true });
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const parsed = Patch.safeParse(await req.json().catch(() => null));
@@ -37,7 +38,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 // Only an unpaid event with no photos yet: deleting removes everything that belongs to it
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const event = await findBoothEvent(auth.tenantId, params.id);

@@ -1,8 +1,10 @@
 import { prisma } from '@/lib/prisma/client';
 import SignUpForm from './SignUpForm';
 
+
 // ?product=genius signs up for the CRM; anything else (or nothing) is Genie, the default
-export default async function SignUpPage({ searchParams }: { searchParams: { product?: string } }) {
+export default async function SignUpPage(props: { searchParams: Promise<{ product?: string }> }) {
+  const searchParams = await props.searchParams;
   const settings = await prisma.systemSetting.findMany({
     where: { key: { in: ['terms_content', 'privacy_content'] } },
   });

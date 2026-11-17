@@ -4,7 +4,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 
-export async function POST(req: NextRequest, { params }: { params: { batchId: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ batchId: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   const tenantId = (session as any)?.tenantId;
   if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -4,14 +4,16 @@ import { requireSuperAdminSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
 import { refreshBlog } from '@/lib/blogCache';
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSuperAdminSession();
   const post = await prisma.blogPost.findUnique({ where: { id: params.id } });
   if (!post) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json(post);
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSuperAdminSession();
   const { slug, title, description, content, readingTime, publishedAt } = await req.json();
 
@@ -39,7 +41,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json(post);
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSuperAdminSession();
   const post = await prisma.blogPost.delete({ where: { id: params.id } });
   refreshBlog(post.slug);

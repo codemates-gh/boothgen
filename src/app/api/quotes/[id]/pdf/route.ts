@@ -6,7 +6,8 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { QuotePDF } from '@/lib/pdf/quote-pdf';
 import React from 'react';
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await requireTenantSession();
   const [quote, branding] = await Promise.all([
     prisma.quote.findFirst({

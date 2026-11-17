@@ -4,7 +4,11 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 
-export async function POST(_: NextRequest, { params }: { params: { id: string; milestoneId: string } }) {
+export async function POST(
+  _: NextRequest,
+  props: { params: Promise<{ id: string; milestoneId: string }> }
+) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (session.tenantRole !== 'HOST_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

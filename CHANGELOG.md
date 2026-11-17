@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.97.0] — 2026-11-17
+
+### Changed
+- **HeroUI v3 migration**: upgraded to Next.js 16, React 19, Tailwind CSS v4, and HeroUI v3 component library
+  - All UI components (Button, Card, Badge, Input, Textarea, Modal) now backed by HeroUI primitives
+  - `globals.css` converted to Tailwind v4 `@import` / `@theme {}` format — brand colors (`#F97316` orange, `#1F1F3D` navy) preserved as CSS variables
+  - PostCSS config updated from `tailwindcss` plugin to `@tailwindcss/postcss`
+  - `tailwind.config.ts` removed (config now lives in CSS `@theme` block)
+  - Next.js async request API migration applied to all 889 affected files (`params`, `cookies`, `headers` now awaited)
+
+---
+
 ## [2.96.7] — 2026-11-16
 
 ### Changed

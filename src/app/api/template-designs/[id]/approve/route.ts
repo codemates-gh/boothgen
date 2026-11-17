@@ -8,7 +8,8 @@ import { closedForClients } from '@/lib/genius';
 
 const Schema = z.object({ portalToken: z.string().min(1) });
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const body = await req.json();
   const parsed = Schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'Invalid request' }, { status: 400 });

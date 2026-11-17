@@ -7,7 +7,8 @@ import { applyTwilioStatus } from '@/lib/genie/shares';
 
 // Twilio message status callback for Genie SMS shares, signed with the tenant's own auth token, or BoothGen's own
 // Twilio at /api/webhooks/twilio/genie/boothgen
-export async function POST(req: NextRequest, { params }: { params: { tenantId: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ tenantId: string }> }) {
+  const params = await props.params;
   const platform = params.tenantId === PLATFORM_STATUS_CALLBACK_ID;
   const authToken = platform ? platformSms()?.authToken : await getMessagingConfig(params.tenantId).then(c => c?.twilioAuthTokenEnc ? decryptSecret(c.twilioAuthTokenEnc) : null);
   if (!authToken) return NextResponse.json({ error: 'Not found' }, { status: 404 });

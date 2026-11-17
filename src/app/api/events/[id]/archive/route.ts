@@ -4,7 +4,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 
-export async function POST(_: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const event = await prisma.event.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
@@ -13,7 +14,8 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
   return NextResponse.json(updated);
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const event = await prisma.event.findFirst({ where: { id: params.id, tenantId: session.tenantId, status: 'CANCELLED' } });

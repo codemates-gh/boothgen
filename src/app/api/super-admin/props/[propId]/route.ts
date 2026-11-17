@@ -6,12 +6,13 @@ import { requireSuperAdminApi } from '@/lib/genie/admin';
 import { PropBody, deleteUnusedPropImages, eventsUsingProp, propData, propView } from '@/lib/genie/props';
 import type { RemoteAsset } from '@/lib/genie/templateAssets';
 
-type Ctx = { params: { propId: string } };
+type Ctx = { params: Promise<{ propId: string }> };
 const Toggle = z.object({ isActive: z.boolean() }).strict();
 
 // Edits a Standard prop, or switches it on/off for every operator ({isActive}). Off: it leaves operators' libraries
 // and can't be newly chosen; events that already chose it keep it.
-export async function PATCH(req: NextRequest, { params }: Ctx) {
+export async function PATCH(req: NextRequest, props: Ctx) {
+  const params = await props.params;
   const auth = await requireSuperAdminApi();
   if (auth instanceof NextResponse) return auth;
   const prop = await prisma.genieProp.findFirst({ where: { id: params.propId, tenantId: null } });
@@ -29,7 +30,8 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 }
 
 // Deletes a Standard prop no event uses (otherwise switch it off)
-export async function DELETE(_req: NextRequest, { params }: Ctx) {
+export async function DELETE(_req: NextRequest, props: Ctx) {
+  const params = await props.params;
   const auth = await requireSuperAdminApi();
   if (auth instanceof NextResponse) return auth;
   const prop = await prisma.genieProp.findFirst({ where: { id: params.propId, tenantId: null } });

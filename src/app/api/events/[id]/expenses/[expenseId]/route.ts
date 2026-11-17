@@ -6,8 +6,9 @@ import { prisma } from '@/lib/prisma/client';
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string; expenseId: string } }
+  props: { params: Promise<{ id: string; expenseId: string }> }
 ) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId || session.tenantRole !== 'HOST_ADMIN') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

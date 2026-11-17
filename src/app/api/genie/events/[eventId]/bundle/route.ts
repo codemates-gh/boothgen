@@ -4,7 +4,8 @@ import { authenticateDevice, genieError } from '@/lib/genie/auth';
 import { buildEventBundle } from '@/lib/genie/bundle';
 import { claimEventSlot } from '@/lib/genie/slots';
 
-export async function GET(req: NextRequest, { params }: { params: { eventId: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ eventId: string }> }) {
+  const params = await props.params;
   const auth = await authenticateDevice(req);
   if (auth instanceof NextResponse) return auth;
 

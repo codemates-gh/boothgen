@@ -11,8 +11,9 @@ async function requireSuperAdmin() {
 }
 
 // DELETE — cancel the operator's Stripe subscription
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!await requireSuperAdmin()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  if (!(await requireSuperAdmin())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const body = await req.json().catch(() => ({}));
   const immediate = body.immediate === true;
@@ -40,8 +41,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 }
 
 // POST — refund the operator's most recent subscription charge
-export async function POST(_: NextRequest, { params }: { params: { id: string } }) {
-  if (!await requireSuperAdmin()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+export async function POST(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  if (!(await requireSuperAdmin())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const sub = await prisma.stripeSubscription.findUnique({ where: { tenantId: params.id } });
   if (!sub?.stripeCustomerId) {

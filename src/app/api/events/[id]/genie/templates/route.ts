@@ -9,7 +9,8 @@ import { copyToEvent, findLibraryTemplate } from '@/lib/genie/library';
 const Add = z.object({ libraryTemplateId: z.string().min(1), alternate: z.boolean().optional() }).strict();
 
 // Copies a library template into the event (added last in the guest picker)
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const parsed = Add.safeParse(await req.json().catch(() => null));
@@ -30,7 +31,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 const Reorder = z.object({ order: z.array(z.string().min(1)).min(1) }).strict();
 
 // Sets the guest picker order; `order` must list every template on the event exactly once
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const parsed = Reorder.safeParse(await req.json().catch(() => null));

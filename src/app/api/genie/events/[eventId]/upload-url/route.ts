@@ -8,10 +8,11 @@ import { UploadUrlRequest, firstIssue } from '@/lib/genie/schemas';
 
 const EXPIRES_IN_SECONDS = 3600;
 
-export async function POST(req: NextRequest, { params }: { params: { eventId: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ eventId: string }> }) {
+  const params = await props.params;
   const auth = await authenticateDevice(req);
   if (auth instanceof NextResponse) return auth;
-  if (!await hasProAccess(auth.tenant.id)) return genieError(403, 'pro_required', 'Pro subscription required for galleries');
+  if (!(await hasProAccess(auth.tenant.id))) return genieError(403, 'pro_required', 'Pro subscription required for galleries');
 
   const event = await findDeviceEvent(auth, params.eventId);
   if (!event) return genieError(404, 'not_found', 'Event not found');

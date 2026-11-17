@@ -6,7 +6,8 @@ import { NOT_BOOMERANG_POSTER } from '@/lib/genie/urls';
 import { prisma } from '@/lib/prisma/client';
 import { deleteFromR2, r2KeyFromUrl } from '@/lib/storage/r2';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const gallery = await prisma.gallery.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
@@ -22,14 +23,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json(asset, { status: 201 });
 }
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json([], { status: 200 });
   const assets = await prisma.galleryAsset.findMany({ where: { galleryId: params.id, ...NOT_BOOMERANG_POSTER }, orderBy: { createdAt: 'asc' } });
   return NextResponse.json(assets);
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const gallery = await prisma.gallery.findFirst({ where: { id: params.id, tenantId: session.tenantId } });

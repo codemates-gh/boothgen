@@ -11,6 +11,7 @@ import {
   faqSchema, genieFaq, getMarketingPricing,
 } from './GenieMarketing';
 
+
 // Home: Genie (the photo booth app) first, Genius (the photo booth CRM) as the next step. Brand: BoothGen.
 
 const TITLE = 'BoothGen: Photo Booth App and CRM';

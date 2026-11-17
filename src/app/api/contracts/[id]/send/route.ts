@@ -7,7 +7,8 @@ import { sendContractLink } from '@/lib/email/send';
 import { triggerAutomation } from '@/lib/inngest/trigger';
 const APP = process.env.NEXT_PUBLIC_APP_URL!;
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const contract = await prisma.contract.findFirst({ where: { id: params.id, tenantId: session.tenantId }, include: { client: true, event: true, tenant: { include: { branding: true } } } });
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const portalToken = (contract.event as any)?.portalToken ?? '';
   // Skip hardcoded email if an active automation rule covers CONTRACT_SENT
   const hasContractRule = contract.eventId
-    ? await prisma.automationRule.count({ where: { tenantId: contract.tenantId, trigger: 'CONTRACT_SENT', isActive: true, actionType: 'EMAIL' } }) > 0
+    ? (await prisma.automationRule.count({ where: { tenantId: contract.tenantId, trigger: 'CONTRACT_SENT', isActive: true, actionType: 'EMAIL' } })) > 0
     : false;
   if (!hasContractRule) {
     await sendContractLink({ to: contract.client.email, firstName: contract.client.firstName, companyName: contract.tenant.branding?.companyName ?? contract.tenant.name, contractTitle: contract.title, portalUrl: APP + '/portal/' + portalToken, expiresAt });

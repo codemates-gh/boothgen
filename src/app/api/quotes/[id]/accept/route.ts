@@ -5,7 +5,8 @@ import { parseMergeTags, buildCtx } from '@/lib/contracts/merge-tags';
 import { sendHostNotificationEmail } from '@/lib/email/send';
 import { closedForClients } from '@/lib/genius';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
   const { signatureData, clientName, portalToken } = await req.json();
   const quote = await prisma.quote.findFirst({

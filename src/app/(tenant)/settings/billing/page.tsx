@@ -13,9 +13,11 @@ import { UpgradeButton } from './UpgradeButton';
 import { StripeConnectCard } from './StripeConnectCard';
 import { CancelAccountButton } from './CancelAccountButton';
 
+
 const tabs = [['branding','Branding'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
 
-export default async function BillingSettingsPage({ searchParams }: { searchParams?: { upgraded?: string } }) {
+export default async function BillingSettingsPage(props: { searchParams?: Promise<{ upgraded?: string }> }) {
+  const searchParams = await props.searchParams;
   const session = await requireTenantSession();
   let tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId }, include: { stripeSubscription: true, stripeConnect: true } });
 

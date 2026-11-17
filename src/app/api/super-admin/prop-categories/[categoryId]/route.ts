@@ -4,11 +4,12 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma/client';
 import { requireSuperAdminApi } from '@/lib/genie/admin';
 
-type Ctx = { params: { categoryId: string } };
+type Ctx = { params: Promise<{ categoryId: string }> };
 const Body = z.object({ name: z.string().trim().min(1, 'Give it a name').max(60) }).strict();
 
 // Renames a category or sub-category (its id, which props and bundles use, stays the same)
-export async function PATCH(req: NextRequest, { params }: Ctx) {
+export async function PATCH(req: NextRequest, props: Ctx) {
+  const params = await props.params;
   const auth = await requireSuperAdminApi();
   if (auth instanceof NextResponse) return auth;
   const parsed = Body.safeParse(await req.json().catch(() => null));
@@ -19,12 +20,13 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 }
 
 // Deletes an empty category or sub-category
-export async function DELETE(_req: NextRequest, { params }: Ctx) {
+export async function DELETE(_req: NextRequest, props: Ctx) {
+  const params = await props.params;
   const auth = await requireSuperAdminApi();
   if (auth instanceof NextResponse) return auth;
   const c = await prisma.geniePropCategory.findUnique({ where: { id: params.categoryId } });
   if (!c) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (!c.parentId && await prisma.geniePropCategory.count({ where: { parentId: c.id } })) {
+  if (!c.parentId && (await prisma.geniePropCategory.count({ where: { parentId: c.id } }))) {
     return NextResponse.json({ error: 'Delete or move its sub-categories first.' }, { status: 409 });
   }
   const pattern = '%' + JSON.stringify(c.id).slice(1, -1).replace(/[\\%_]/g, m => '\\' + m) + '%';

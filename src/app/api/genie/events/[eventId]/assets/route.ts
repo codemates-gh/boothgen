@@ -12,7 +12,8 @@ function registered(asset: GalleryAsset, gallery: Gallery, session: Pick<GenieSe
   return NextResponse.json({ assetId: asset.id, url: asset.url, sessionUrl: sessionUrl(gallery, session.publicToken) }, { status });
 }
 
-export async function POST(req: NextRequest, { params }: { params: { eventId: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ eventId: string }> }) {
+  const params = await props.params;
   const auth = await authenticateDevice(req);
   if (auth instanceof NextResponse) return auth;
 

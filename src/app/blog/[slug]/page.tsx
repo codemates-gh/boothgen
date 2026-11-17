@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { Clock, ArrowLeft } from 'lucide-react';
 
+
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
@@ -15,7 +16,8 @@ export async function generateStaticParams() {
   return posts.map(p => ({ slug: p.slug }));
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const post = await getPost(params.slug);
   if (!post) return {};
   return {
@@ -34,7 +36,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+export default async function BlogPostPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const post = await getPost(params.slug);
   if (!post || (post.publishedAt && new Date(post.publishedAt) > new Date())) notFound();
 

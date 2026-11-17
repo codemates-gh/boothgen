@@ -18,7 +18,8 @@ import { eventProps, propView, propsData } from '@/lib/genie/props';
 import { backdropView, backdropsData, eventBackdrops } from '@/lib/genie/backdrops';
 
 // Everything the event's Genie dashboard shows
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const event = await findAdminEvent(auth.tenantId, params.id);
@@ -74,7 +75,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 const SetUp = z.object({ timeZone: z.string().refine(isValidTimeZone, 'Unknown time zone').optional() }).strict();
 
 // Turns Genie on for the event with default settings
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const parsed = SetUp.safeParse(await req.json().catch(() => null));
@@ -92,7 +94,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props0: { params: Promise<{ id: string }> }) {
+  const params = await props0.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const parsed = SettingsPatch.safeParse(await req.json().catch(() => null));

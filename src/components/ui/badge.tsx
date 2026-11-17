@@ -1,13 +1,38 @@
 
+import { Chip } from '@heroui/react';
 import { cn } from '@/lib/utils';
-const variants: Record<string, string> = {
-  default:  'bg-[#676879] text-white',
-  success:  'bg-[#00C875] text-white',
-  warning:  'bg-[#FDAB3D] text-white',
-  danger:   'bg-[#E2445C] text-white',
-  info:     'bg-[#0085FF] text-white',
-  brand:    'bg-[#F97316] text-white',
+
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'brand';
+
+const colorMap: Record<BadgeVariant, 'default' | 'success' | 'warning' | 'danger' | 'primary' | 'secondary'> = {
+  default: 'default',
+  success: 'success',
+  warning: 'warning',
+  danger:  'danger',
+  info:    'primary',
+  brand:   'secondary',
 };
-export function Badge({ className, variant = 'default', ...p }: React.HTMLAttributes<HTMLSpanElement> & { variant?: keyof typeof variants }) {
-  return <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold tracking-wide', variants[variant], className)} {...p} />;
+
+const customColors: Partial<Record<BadgeVariant, string>> = {
+  brand: 'bg-[#F97316] text-white',
+};
+
+export function Badge({
+  className,
+  variant = 'default',
+  ...p
+}: React.HTMLAttributes<HTMLSpanElement> & { variant?: BadgeVariant }) {
+  return (
+    <Chip
+      color={colorMap[variant]}
+      size="sm"
+      radius="sm"
+      className={cn(
+        'text-[11px] font-semibold tracking-wide px-2 py-0.5',
+        customColors[variant],
+        className
+      )}
+      {...(p as any)}
+    />
+  );
 }

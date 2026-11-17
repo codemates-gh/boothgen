@@ -6,7 +6,8 @@ import { prisma } from '@/lib/prisma/client';
 import { inngest } from '@/lib/inngest/client';
 
 // Only HOST_ADMIN may submit a design for client approval — this triggers a client-facing email.
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 

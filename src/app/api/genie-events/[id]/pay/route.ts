@@ -17,12 +17,13 @@ async function load(tenantId: string, eventId: string) {
 }
 
 // Starts Stripe Checkout for one event payment (another payment adds 2 more iPads)
-export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const { tenant, event } = await load(auth.tenantId, params.id);
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (await eventPriceFor(tenant) === null) return NextResponse.json({ error: 'Your plan doesn\'t pay per event', code: 'not_needed' }, { status: 409 });
+  if ((await eventPriceFor(tenant)) === null) return NextResponse.json({ error: 'Your plan doesn\'t pay per event', code: 'not_needed' }, { status: 409 });
   if (!event.genieSettings) return NextResponse.json({ error: 'Set up Genie for this event first', code: 'not_configured' }, { status: 409 });
   const user = await prisma.user.findUnique({ where: { id: auth.userId }, select: { email: true } });
   const url = await startCheckout(tenant, event, APP_URL, user?.email);
@@ -32,7 +33,8 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
 const Confirm = z.object({ sessionId: z.string().min(1).max(255) }).strict();
 
 // The operator came back from Checkout: record the payment now instead of waiting for the webhook
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const parsed = Confirm.safeParse(await req.json().catch(() => null));

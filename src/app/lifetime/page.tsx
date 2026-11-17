@@ -5,6 +5,7 @@ import { Check, Star, Shield, ArrowRight, Users } from 'lucide-react';
 import { ClaimForm } from './ClaimForm';
 import type { Metadata } from 'next';
 
+
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {

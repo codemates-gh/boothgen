@@ -6,7 +6,11 @@ import { requireGenieAdmin } from '@/lib/genie/admin';
 
 // Sends a failed text/email again. Only a failed share can be resent, and the status flip is atomic, so a double
 // click (or two admins) queues one send. Each attempt gets its own Inngest event id.
-export async function POST(_req: NextRequest, { params }: { params: { id: string; shareId: string } }) {
+export async function POST(
+  _req: NextRequest,
+  props: { params: Promise<{ id: string; shareId: string }> }
+) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const share = await prisma.genieShare.findFirst({ where: { id: params.shareId, eventId: params.id, tenantId: auth.tenantId }, select: { id: true } });

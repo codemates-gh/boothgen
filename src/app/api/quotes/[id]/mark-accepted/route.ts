@@ -8,7 +8,8 @@ import { sendHostNotificationEmail } from '@/lib/email/send';
 
 // Admin bypass: mark a quote accepted without requiring the client portal flow.
 // Used when a quote is accepted via phone, email, or other out-of-band channel.
-export async function POST(_: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (session.tenantRole !== 'HOST_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

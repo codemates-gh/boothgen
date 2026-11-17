@@ -6,6 +6,7 @@ import { MarketingContactForm } from '../MarketingContactForm';
 import { MarketingNav } from '../MarketingNav';
 import { MarketingFooter, PlansSection, getMarketingPricing } from '../GenieMarketing';
 
+
 export const metadata: Metadata = {
   title: 'Genius, the Photo Booth CRM',
   description:

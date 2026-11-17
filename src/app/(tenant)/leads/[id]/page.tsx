@@ -5,7 +5,9 @@ import { prisma } from '@/lib/prisma/client';
 import { TopBar } from '@/components/layout/TopBar';
 import { LeadDetail } from './LeadDetail';
 
-export default async function LeadDetailPage({ params }: { params: { id: string } }) {
+
+export default async function LeadDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await requireTenantSession();
   const lead = await prisma.leadSubmission.findFirst({
     where: { id: params.id, tenantId: session.tenantId },

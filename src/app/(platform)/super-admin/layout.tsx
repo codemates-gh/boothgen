@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { requireSuperAdminSession } from '@/lib/auth/session';
 
+
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };

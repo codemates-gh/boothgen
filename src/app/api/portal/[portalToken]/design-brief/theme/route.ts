@@ -14,7 +14,8 @@ const schema = z.object({
   })).length(3),
 });
 
-export async function POST(req: NextRequest, { params }: { params: { portalToken: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ portalToken: string }> }) {
+  const params = await props.params;
   const event = await prisma.event.findFirst({ where: { portalToken: params.portalToken } });
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   { const closed = await closedForClients(event.tenantId); if (closed) return closed; } // Genie-only account: CRM is closed

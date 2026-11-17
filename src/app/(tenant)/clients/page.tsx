@@ -9,6 +9,7 @@ import { Users, Mail, Phone, ArrowRight, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ClickableRow } from '@/components/ui/ClickableRow';
 
+
 export default async function ClientsPage() {
   const session = await requireTenantSession();
   const clients = await prisma.client.findMany({ where: { tenantId: session.tenantId }, include: { _count: { select: { events: true } } }, orderBy: { createdAt: 'desc' }, take: 200 });

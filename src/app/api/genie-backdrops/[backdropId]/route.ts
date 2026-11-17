@@ -5,11 +5,12 @@ import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { backdropView, deleteUnusedBackdropFiles, eventsUsingBackdrop, removeBackdropFromEvents } from '@/lib/genie/backdrops';
 
-type Ctx = { params: { backdropId: string } };
+type Ctx = { params: Promise<{ backdropId: string }> };
 const Rename = z.object({ name: z.string().trim().min(1, 'Give the backdrop a name').max(80, 'Keep the name to 80 characters') }).strict();
 
 // Renames one of My backdrops
-export async function PATCH(req: NextRequest, { params }: Ctx) {
+export async function PATCH(req: NextRequest, props: Ctx) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const b = await prisma.genieBackdrop.findFirst({ where: { id: params.backdropId, tenantId: auth.tenantId } });
@@ -21,7 +22,8 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 
 // Deletes one of My backdrops. If events use it, the first call answers 409 with how many; ?confirm=1 deletes it
 // and takes it off those events.
-export async function DELETE(req: NextRequest, { params }: Ctx) {
+export async function DELETE(req: NextRequest, props: Ctx) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const b = await prisma.genieBackdrop.findFirst({ where: { id: params.backdropId, tenantId: auth.tenantId } });

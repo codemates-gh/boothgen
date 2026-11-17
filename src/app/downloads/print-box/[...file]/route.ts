@@ -6,7 +6,8 @@ import { NextRequest, NextResponse } from 'next/server';
 // are built to fetch https://boothgen.com/downloads/print-box/<file>, so this forwards there.
 // Temporary redirect, never cached: GENIE_DOWNLOADS_URL can move without breaking boxes.
 // Public (no session): print boxes download anonymously.
-export async function GET(_: NextRequest, { params }: { params: { file: string[] } }) {
+export async function GET(_: NextRequest, props: { params: Promise<{ file: string[] }> }) {
+  const params = await props.params;
   const base = process.env.GENIE_DOWNLOADS_URL?.trim().replace(/\/+$/, '');
   const parts = params.file ?? [];
   if (!base || !parts.length || parts.some(p => !p || p === '.' || p === '..')) {

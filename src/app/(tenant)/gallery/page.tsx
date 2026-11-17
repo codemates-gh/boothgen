@@ -8,6 +8,7 @@ import { Camera, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 
+
 const GC: Record<string,any> = { PENDING_UPLOAD:'default', PENDING_REVIEW:'info', APPROVED:'success', CHANGES_REQUESTED:'warning' };
 function approvalLabel(status: string, photoCount: number, isPublished: boolean) {
   if (isPublished && photoCount > 0) return { variant: 'success', label: 'APPROVED' };

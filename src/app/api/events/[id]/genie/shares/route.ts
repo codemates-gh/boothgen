@@ -4,7 +4,8 @@ import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 
 // Recent guest texts and emails for the event, newest first
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const event = await prisma.event.findFirst({ where: { id: params.id, tenantId: auth.tenantId }, select: { id: true } });

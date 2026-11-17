@@ -7,9 +7,10 @@ import { canEditTemplate, findDesignerTemplate, libraryView } from '@/lib/genie/
 import { TemplateBody, clientOptionsData, prepareTemplate } from '@/lib/genie/designer';
 import { allowedPrefixes, deleteUnusedTemplateAssets, templateAssetUrls } from '@/lib/genie/templateAssets';
 
-type P = { params: { templateId: string } };
+type P = { params: Promise<{ templateId: string }> };
 
-export async function GET(_req: NextRequest, { params }: P) {
+export async function GET(_req: NextRequest, props: P) {
+  const params = await props.params;
   const auth = await requireTemplateEditor();
   if (auth instanceof NextResponse) return auth;
   const t = await findDesignerTemplate(auth, params.templateId);
@@ -17,7 +18,8 @@ export async function GET(_req: NextRequest, { params }: P) {
   return NextResponse.json({ ...libraryView(t), format: t.format, orientation: t.orientation, canEdit: canEditTemplate(auth, t) });
 }
 
-export async function PUT(req: NextRequest, { params }: P) {
+export async function PUT(req: NextRequest, props: P) {
+  const params = await props.params;
   const auth = await requireTemplateEditor();
   if (auth instanceof NextResponse) return auth;
   const t = await findDesignerTemplate(auth, params.templateId);
@@ -50,7 +52,8 @@ export async function PUT(req: NextRequest, { params }: P) {
 }
 
 // Quick visibility switch without re-saving the layout: Standard → isPublished (BoothGen), My templates → offerToClients
-export async function PATCH(req: NextRequest, { params }: P) {
+export async function PATCH(req: NextRequest, props: P) {
+  const params = await props.params;
   const auth = await requireTemplateEditor();
   if (auth instanceof NextResponse) return auth;
   const t = await findDesignerTemplate(auth, params.templateId);
@@ -64,7 +67,8 @@ export async function PATCH(req: NextRequest, { params }: P) {
 }
 
 // Hides the template from the library. Events keep their copies; design briefs that chose it keep working.
-export async function DELETE(_req: NextRequest, { params }: P) {
+export async function DELETE(_req: NextRequest, props: P) {
+  const params = await props.params;
   const auth = await requireTemplateEditor();
   if (auth instanceof NextResponse) return auth;
   const t = await findDesignerTemplate(auth, params.templateId);

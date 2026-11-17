@@ -25,12 +25,17 @@ import EventInvoicePanel from './EventInvoicePanel';
 import { settleZeroInvoice } from '@/lib/invoices/payments';
 import { clientDisplayName } from '@/lib/clientName';
 
+
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger', LOST:'default' };
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
 const CC: Record<string,any> = { DRAFT:'default', SENT_TO_CLIENT:'info', CLIENT_SIGNED:'warning', HOST_SIGNED:'warning', FULLY_EXECUTED:'success', VOIDED:'danger' };
 const QC: Record<string,any> = { DRAFT:'default', SENT:'info', VIEWED:'info', ACCEPTED:'success', DECLINED:'danger', EXPIRED:'default' };
 
-export default async function EventDetailPage({ params, searchParams }: { params: { id: string }; searchParams?: { followup?: string } }) {
+export default async function EventDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams?: Promise<{ followup?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const session = await requireTenantSession();
   const isAdmin = session.tenantRole === 'HOST_ADMIN';
 

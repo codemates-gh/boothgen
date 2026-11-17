@@ -7,7 +7,8 @@ import { triggerAutomation } from '@/lib/inngest/trigger';
 import { sendQuoteLink } from '@/lib/email/send';
 import { fmtCents } from '@/lib/utils';
 
-export async function POST(_: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -42,9 +43,9 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
   const fmt = (c: number) => fmtCents(c, q.currency ?? 'usd');
 
   // Skip hardcoded email if an active automation rule covers QUOTE_SENT
-  const hasQuoteRule = await prisma.automationRule.count({
+  const hasQuoteRule = (await prisma.automationRule.count({
     where: { tenantId: session.tenantId, trigger: 'QUOTE_SENT', isActive: true, actionType: 'EMAIL' },
-  }) > 0;
+  })) > 0;
   let emailResult: any = null;
   if (!hasQuoteRule) {
     emailResult = await sendQuoteLink({

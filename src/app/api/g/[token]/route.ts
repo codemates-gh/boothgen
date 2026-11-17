@@ -16,7 +16,8 @@ function liveOrder<T extends { genieSessionId: string | null; sortOrder: number;
   return [...assets].sort((a, b) => (firstSeen.get(a.genieSessionId!)! - firstSeen.get(b.genieSessionId!)!) || a.genieSessionId!.localeCompare(b.genieSessionId!) || a.sortOrder - b.sortOrder);
 }
 
-export async function GET(req: NextRequest, { params }: { params: { token: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   const galleryCode = req.nextUrl.searchParams.get('code');
 
   const gallery = await prisma.gallery.findFirst({

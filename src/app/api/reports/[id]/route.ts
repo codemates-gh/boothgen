@@ -4,11 +4,12 @@ import { prisma } from '@/lib/prisma/client';
 import { loadReport, markReadFor, reportView, reportViewer } from '@/lib/reports/server';
 import { Triage, applyTriage } from '@/lib/reports/triage';
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 // One report, for any signed-in user (shared board). Super Admins get the triage view with ?admin=1.
 // Opening it clears the viewer's own unread marker (Super Admin, reporter or follower).
-export async function GET(req: NextRequest, { params }: Ctx) {
+export async function GET(req: NextRequest, props: Ctx) {
+  const params = await props.params;
   const viewer = await reportViewer();
   if (viewer instanceof NextResponse) return viewer;
   const r = await loadReport(params.id);
@@ -20,7 +21,8 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 }
 
 // Super Admin triage (see applyTriage)
-export async function PATCH(req: NextRequest, { params }: Ctx) {
+export async function PATCH(req: NextRequest, props: Ctx) {
+  const params = await props.params;
   const viewer = await reportViewer();
   if (viewer instanceof NextResponse) return viewer;
   if (!viewer.isAdmin) return NextResponse.json({ error: 'Super Admins only' }, { status: 403 });

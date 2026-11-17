@@ -3,10 +3,11 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { reportViewer } from '@/lib/reports/server';
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 // Get (POST) or stop (DELETE) a report's status and note emails, without changing a vote
-export async function POST(_req: Request, { params }: Ctx) {
+export async function POST(_req: Request, props: Ctx) {
+  const params = await props.params;
   const viewer = await reportViewer();
   if (viewer instanceof NextResponse) return viewer;
   const r = await prisma.feedbackReport.findUnique({ where: { id: params.id }, select: { id: true, userId: true } });
@@ -21,7 +22,8 @@ export async function POST(_req: Request, { params }: Ctx) {
   return NextResponse.json({ ok: true, following: true });
 }
 
-export async function DELETE(_req: Request, { params }: Ctx) {
+export async function DELETE(_req: Request, props: Ctx) {
+  const params = await props.params;
   const viewer = await reportViewer();
   if (viewer instanceof NextResponse) return viewer;
   await prisma.feedbackFollower.updateMany({ where: { reportId: params.id, userId: viewer.userId }, data: { following: false, unread: false } });

@@ -7,6 +7,7 @@ import { SupportChat } from './SupportChat';
 import { prisma } from '@/lib/prisma/client';
 import { eventPrices, fmtPrice } from '@/lib/genie/payments';
 
+
 export const metadata: Metadata = {
   title: 'Support Center',
   description: 'Help guides, feature documentation, and step-by-step workflows for BoothGen — the photo booth business platform.',

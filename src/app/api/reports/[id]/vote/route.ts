@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { reportViewer, voteCount, votingOpen } from '@/lib/reports/server';
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 async function counts(reportId: string) {
   return voteCount(await prisma.feedbackFollower.findMany({ where: { reportId }, select: { voted: true } }));
@@ -11,7 +11,8 @@ async function counts(reportId: string) {
 
 // Vote for a suggestion / "This is my issue too" on a bug. Voting also follows the report (status and note
 // emails). A vote on a duplicate goes to the original. Closed reports keep their count but take no new votes.
-export async function POST(_req: Request, { params }: Ctx) {
+export async function POST(_req: Request, props: Ctx) {
+  const params = await props.params;
   const viewer = await reportViewer();
   if (viewer instanceof NextResponse) return viewer;
   let r = await prisma.feedbackReport.findUnique({ where: { id: params.id }, select: { id: true, userId: true, status: true, duplicateOfId: true } });
@@ -28,7 +29,8 @@ export async function POST(_req: Request, { params }: Ctx) {
 }
 
 // Take the vote back (following stays as it is; it can be turned off separately)
-export async function DELETE(_req: Request, { params }: Ctx) {
+export async function DELETE(_req: Request, props: Ctx) {
+  const params = await props.params;
   const viewer = await reportViewer();
   if (viewer instanceof NextResponse) return viewer;
   const r = await prisma.feedbackReport.findUnique({ where: { id: params.id }, select: { status: true } });

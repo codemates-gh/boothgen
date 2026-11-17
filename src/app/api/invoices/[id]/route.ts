@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireTenantSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await requireTenantSession();
 
   const invoice = await prisma.invoice.findFirst({

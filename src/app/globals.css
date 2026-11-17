@@ -1,8 +1,67 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-:root { font-feature-settings: "cv11", "ss01"; }
-body { @apply antialiased; }
+@import "tailwindcss";
+@import "@heroui/styles";
+
+@theme {
+  /* Brand colors */
+  --color-brand: #F97316;
+  --color-brand-dark: #EA6100;
+  --color-brand-light: #FED7AA;
+  --color-brand-surface: #FFF7ED;
+
+  /* Canvas / sidebar */
+  --color-canvas: #1F1F3D;
+  --color-sidebar-bg: #1F1F3D;
+  --color-sidebar-text: #A1A1C2;
+  --color-sidebar-text-active: #FFFFFF;
+
+  /* Monday-style semantic colors */
+  --color-monday-blue: #0085FF;
+  --color-monday-blue-dark: #0073E6;
+  --color-monday-green: #00C875;
+  --color-monday-orange: #FDAB3D;
+  --color-monday-red: #E2445C;
+  --color-monday-red-dark: #CC3A52;
+  --color-monday-purple: #784BD1;
+  --color-monday-muted: #676879;
+
+  /* HeroUI primary mapped to BoothGen brand blue */
+  --heroui-primary: #0085FF;
+  --heroui-primary-foreground: #FFFFFF;
+  --heroui-danger: #E2445C;
+  --heroui-danger-foreground: #FFFFFF;
+  --heroui-success: #00C875;
+  --heroui-success-foreground: #FFFFFF;
+  --heroui-warning: #FDAB3D;
+  --heroui-warning-foreground: #FFFFFF;
+
+  /* Typography */
+  --font-family-sans: 'Poppins', system-ui, sans-serif;
+
+  /* Custom shadows */
+  --shadow-card: 0 2px 16px rgba(0,0,0,0.06);
+  --shadow-card-md: 0 4px 24px rgba(0,0,0,0.08);
+
+  /* Keyframes */
+  --animate-upload-slide: upload-slide 1.6s ease-in-out infinite;
+  --animate-upload-lift: upload-lift 2s ease-in-out infinite;
+}
+
+@keyframes upload-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+@keyframes upload-lift {
+  0%, 100% { transform: translateY(2px); }
+  50%       { transform: translateY(-3px); }
+}
+
+:root {
+  font-feature-settings: "cv11", "ss01";
+}
+
+body {
+  @apply antialiased;
+}
 
 /* Blog typography */
 .blog-prose { @apply text-gray-700 leading-relaxed; }

@@ -16,7 +16,8 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: cors() });
 }
 
-export async function POST(req: NextRequest, { params }: { params: { tenantSlug: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ tenantSlug: string }> }) {
+  const params = await props.params;
   const tenant = await prisma.tenant.findUnique({
     where: { slug: params.tenantSlug },
     include: {

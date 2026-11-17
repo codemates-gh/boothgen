@@ -14,7 +14,8 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: cors() });
 }
 
-export async function GET(req: NextRequest, { params }: { params: { tenantSlug: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ tenantSlug: string }> }) {
+  const params = await props.params;
   const date = new URL(req.url).searchParams.get('date');
   if (!date) return NextResponse.json({ available: true }, { headers: cors() });
 

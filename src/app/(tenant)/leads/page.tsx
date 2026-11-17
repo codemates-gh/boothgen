@@ -11,6 +11,7 @@ import Link from 'next/link';
 import AddLeadButton from './AddLeadButton';
 import AddLeadCustomFormButton from './AddLeadCustomFormButton';
 
+
 const STATUS_COLORS: Record<string, string> = {
   NEW: 'text-blue-600 border-blue-200 bg-blue-50',
   CONTACTED: 'text-yellow-600 border-yellow-200 bg-yellow-50',

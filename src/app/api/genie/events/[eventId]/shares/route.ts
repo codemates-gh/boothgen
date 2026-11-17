@@ -10,7 +10,8 @@ import { normalizePhone } from '@/lib/sms/phone';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export async function POST(req: NextRequest, { params }: { params: { eventId: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ eventId: string }> }) {
+  const params = await props.params;
   const auth = await authenticateDevice(req);
   if (auth instanceof NextResponse) return auth;
 

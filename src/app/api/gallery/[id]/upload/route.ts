@@ -6,10 +6,11 @@ import { prisma } from '@/lib/prisma/client';
 import { getPresignedUploadUrl } from '@/lib/storage/r2';
 import { hasProAccess } from '@/lib/auth/session';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!await hasProAccess(session.tenantId)) return NextResponse.json({ error: 'Pro subscription required', upgrade: true }, { status: 403 });
+  if (!(await hasProAccess(session.tenantId))) return NextResponse.json({ error: 'Pro subscription required', upgrade: true }, { status: 403 });
   const gallery = await prisma.gallery.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
   if (!gallery) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!process.env.R2_ACCOUNT_ID || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY || !process.env.R2_BUCKET_NAME) {

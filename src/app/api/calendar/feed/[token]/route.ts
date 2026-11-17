@@ -27,7 +27,8 @@ function icsDate(d: Date): string {
 
 const fmt = (c: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'usd' }).format(c / 100);
 
-export async function GET(_: NextRequest, { params }: { params: { token: string } }) {
+export async function GET(_: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   const tenant = await prisma.tenant.findUnique({
     where: { calendarToken: params.token },
     include: {

@@ -11,7 +11,11 @@ import type { StoredLayout } from '@/lib/genie/schemas';
 const Body = z.object({ mode: z.enum(['background', 'overlay']).optional() }).strict();
 
 // Uses the client-approved design as this event template's artwork (frames stay as designed)
-export async function POST(req: NextRequest, { params }: { params: { id: string; templateId: string } }) {
+export async function POST(
+  req: NextRequest,
+  props: { params: Promise<{ id: string; templateId: string }> }
+) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const parsed = Body.safeParse(await req.json().catch(() => ({})));

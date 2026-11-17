@@ -8,6 +8,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { genieOnlyBlock, GENIE_HOME, isGenieOnly, UPGRADE_PATH } from '@/lib/product';
 
+
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
@@ -23,7 +24,7 @@ export default async function TenantLayout({ children }: { children: React.React
   // old; the middleware checks every request against the token)
   const genieOnly = isGenieOnly(tenant);
   if (genieOnly) {
-    const path = headers().get('x-pathname') ?? '';
+    const path = (await headers()).get('x-pathname') ?? '';
     const block = genieOnlyBlock(path);
     if (block?.kind === 'home') redirect(GENIE_HOME);
     if (block) redirect(UPGRADE_PATH + '?from=' + encodeURIComponent(path));

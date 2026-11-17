@@ -4,6 +4,7 @@ import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 import { Mail, MessageCircle, Clock, HelpCircle, Bug, CreditCard, Lightbulb, Handshake } from 'lucide-react';
 import { MarketingContactForm } from '../MarketingContactForm';
 
+
 export const metadata: Metadata = {
   title: 'Contact Us',
   description: 'Reach out to the BoothGen team with questions, technical issues, billing inquiries, or partnership opportunities.',

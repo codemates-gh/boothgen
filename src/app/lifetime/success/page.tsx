@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CheckCircle, Mail } from 'lucide-react';
 import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 
+
 export const metadata = { title: 'Welcome, Founding Member — BoothGen', robots: 'noindex' };
 
 export default function LifetimeSuccessPage() {

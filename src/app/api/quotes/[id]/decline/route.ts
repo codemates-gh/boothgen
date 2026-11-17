@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { closedForClients } from '@/lib/genius';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { reason, portalToken } = await req.json();
   const quote = await prisma.quote.findFirst({ where: { id: params.id }, include: { event: true } });
   if (!quote || quote.event.portalToken !== portalToken) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -8,10 +8,11 @@ import { hasProAccess } from '@/lib/auth/session';
 import { sendGalleryPublishedEmail } from '@/lib/email/send';
 import { triggerAutomation } from '@/lib/inngest/trigger';
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!await hasProAccess(session.tenantId)) return NextResponse.json({ error: 'Pro subscription required', upgrade: true }, { status: 403 });
+  if (!(await hasProAccess(session.tenantId))) return NextResponse.json({ error: 'Pro subscription required', upgrade: true }, { status: 403 });
   const [gallery, { expireDays, deleteDays }] = await Promise.all([
     prisma.gallery.findFirst({
       where: { id: params.id, tenantId: session.tenantId },
@@ -23,10 +24,11 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   return NextResponse.json({ ...gallery, expireDays, deleteDays });
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!await hasProAccess(session.tenantId)) return NextResponse.json({ error: 'Pro subscription required', upgrade: true }, { status: 403 });
+  if (!(await hasProAccess(session.tenantId))) return NextResponse.json({ error: 'Pro subscription required', upgrade: true }, { status: 403 });
   const gallery = await prisma.gallery.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
   if (!gallery) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const body = await req.json();
@@ -49,7 +51,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
     // Skip hardcoded email if an active automation rule covers GALLERY_PUBLISHED
     const hasGalleryRule = updated.eventId
-      ? await prisma.automationRule.count({ where: { tenantId: session.tenantId, trigger: 'GALLERY_PUBLISHED', isActive: true, actionType: 'EMAIL' } }) > 0
+      ? (await prisma.automationRule.count({ where: { tenantId: session.tenantId, trigger: 'GALLERY_PUBLISHED', isActive: true, actionType: 'EMAIL' } })) > 0
       : false;
     if (!hasGalleryRule) {
       await sendGalleryPublishedEmail({

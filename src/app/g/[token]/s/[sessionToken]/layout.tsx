@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma/client';
 
+
 // Link previews (texts, chats): the boomerang's poster, else the gallery image
-export async function generateMetadata({ params }: { params: { token: string; sessionToken: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ token: string; sessionToken: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const session = await prisma.genieSession.findUnique({
     where: { publicToken: params.sessionToken },
     select: {

@@ -13,7 +13,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
-  const sig  = headers().get('stripe-signature');
+  const sig  = (await headers()).get('stripe-signature');
   if (!sig) return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
 
   // Try both secrets — Destination 1 (payments) and Destination 2 (connect accounts)
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
               const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
               // Skip hardcoded confirmation if an active automation rule covers PAYMENT_RECEIVED
               const hasPaymentRule = inv.eventId
-                ? await prisma.automationRule.count({ where: { tenantId: inv.tenantId, trigger: 'PAYMENT_RECEIVED', isActive: true, actionType: 'EMAIL' } }) > 0
+                ? (await prisma.automationRule.count({ where: { tenantId: inv.tenantId, trigger: 'PAYMENT_RECEIVED', isActive: true, actionType: 'EMAIL' } })) > 0
                 : false;
               if (!hasPaymentRule) {
                 sendPaymentConfirmationEmail({

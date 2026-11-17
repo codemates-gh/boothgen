@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { ArrowLeft, ThumbsUp, Users } from 'lucide-react';
@@ -21,7 +21,8 @@ type Report = {
   attachments: { index: number; name: string; contentType: string; bytes: number; url: string }[]; notes: ThreadNote[];
 };
 
-export default function ReportPage({ params }: { params: { id: string } }) {
+export default function ReportPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const [report, setReport] = useState<Report | null>(null);
   const [missing, setMissing] = useState(false);
   const [reply, setReply] = useState('');

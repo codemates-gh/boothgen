@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import bcrypt from 'bcryptjs';
 
-export async function GET(_: NextRequest, { params }: { params: { token: string } }) {
+export async function GET(_: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   const membership = await prisma.tenantMembership.findUnique({
     where: { inviteToken: params.token },
     include: { user: { select: { email: true, name: true, passwordHash: true } }, tenant: { select: { name: true, branding: { select: { companyName: true } } } } },
@@ -19,7 +20,8 @@ export async function GET(_: NextRequest, { params }: { params: { token: string 
   });
 }
 
-export async function POST(req: NextRequest, { params }: { params: { token: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   const { password } = await req.json();
   const membership = await prisma.tenantMembership.findUnique({
     where: { inviteToken: params.token },

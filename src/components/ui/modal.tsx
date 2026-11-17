@@ -1,18 +1,40 @@
 
 'use client';
+import { Modal as HeroModal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalHeading, ModalBody, ModalCloseTrigger } from '@heroui/react';
 import { cn } from '@/lib/utils';
-import { useEffect } from 'react';
-import { X } from 'lucide-react';
-export function Modal({ open, onClose, title, children, className }: { open: boolean; onClose: () => void; title?: string; children: React.ReactNode; className?: string }) {
-  useEffect(() => { if (open) document.body.style.overflow = 'hidden'; else document.body.style.overflow = ''; return () => { document.body.style.overflow = ''; }; }, [open]);
-  if (!open) return null;
+
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  className,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className={cn('relative z-10 bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto', className)}>
-        {title && <div className="flex items-center justify-between px-6 py-4 border-b"><h2 className="text-lg font-semibold">{title}</h2><button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5"/></button></div>}
-        <div className="p-6">{children}</div>
-      </div>
-    </div>
+    <HeroModal>
+      <ModalBackdrop
+        isOpen={open}
+        onOpenChange={(isOpen: boolean) => { if (!isOpen) onClose(); }}
+        isDismissable
+      >
+        <ModalContainer>
+          <ModalDialog className={cn('max-h-[90vh] overflow-y-auto w-full max-w-lg', className)}>
+            {title && (
+              <ModalHeader className="border-b px-6 py-4 flex items-center justify-between">
+                <ModalHeading className="text-lg font-semibold">{title}</ModalHeading>
+                <ModalCloseTrigger className="text-gray-400 hover:text-gray-600" />
+              </ModalHeader>
+            )}
+            <ModalBody className="p-6">{children}</ModalBody>
+          </ModalDialog>
+        </ModalContainer>
+      </ModalBackdrop>
+    </HeroModal>
   );
 }

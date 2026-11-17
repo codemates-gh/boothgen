@@ -22,7 +22,11 @@ const Patch = z.object({
   alternate: z.boolean().optional(),
 }).strict();
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string; templateId: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  props: { params: Promise<{ id: string; templateId: string }> }
+) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const parsed = Patch.safeParse(await req.json().catch(() => null));
@@ -46,7 +50,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json(templateView(saved));
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string; templateId: string } }) {
+export async function DELETE(
+  _req: NextRequest,
+  props: { params: Promise<{ id: string; templateId: string }> }
+) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const found = await load(auth.tenantId, params.id, params.templateId);

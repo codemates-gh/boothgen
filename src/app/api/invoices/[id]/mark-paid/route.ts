@@ -6,7 +6,8 @@ import { prisma } from '@/lib/prisma/client';
 import { markInvoicePaid } from '@/lib/invoices/payments';
 
 // Full-payment invoice (no payment schedule) paid outside Stripe. Milestone invoices use milestones/[id]/mark-paid.
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (session.tenantRole !== 'HOST_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

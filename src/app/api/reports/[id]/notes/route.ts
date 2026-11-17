@@ -17,7 +17,8 @@ const Body = z.object({
 
 // A note: from a Super Admin (visible to everyone unless internal; reporter and followers are emailed),
 // or a reply from the reporter or a follower (BoothGen is emailed; the other watchers get it too)
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const viewer = await reportViewer();
   if (viewer instanceof NextResponse) return viewer;
   if (!checkRateLimit('report-note:' + viewer.userId, 60, 3600_000).success) return NextResponse.json({ error: 'Too many notes, try again later' }, { status: 429 });

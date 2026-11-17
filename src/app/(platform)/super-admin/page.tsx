@@ -23,6 +23,7 @@ import GenieUsage from './GenieUsage';
 import GeniusRuleCard from './GeniusRuleCard';
 import ReportsTriage from './ReportsTriage';
 
+
 const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'props', 'backdrops', 'genie-usage', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
 type Tab = typeof VALID_TABS[number];
 
@@ -30,7 +31,8 @@ const TENANT_BADGE: Record<string, 'warning' | 'success' | 'danger' | 'default'>
   TRIAL: 'warning', ACTIVE: 'success', SUSPENDED: 'danger', CANCELLED: 'default',
 };
 
-export default async function SuperAdminPage({ searchParams }: { searchParams: { tab?: string; report?: string } }) {
+export default async function SuperAdminPage(props: { searchParams: Promise<{ tab?: string; report?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSuperAdminSession();
   const tab: Tab = (VALID_TABS as readonly string[]).includes(searchParams?.tab ?? '')
     ? searchParams.tab as Tab

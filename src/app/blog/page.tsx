@@ -6,6 +6,7 @@ import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 import { format } from 'date-fns';
 import { Clock, ArrowRight } from 'lucide-react';
 
+
 export const revalidate = 3600;
 
 export const metadata: Metadata = {

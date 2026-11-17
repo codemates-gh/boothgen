@@ -8,7 +8,8 @@ import { sendPaymentConfirmationEmail } from '@/lib/email/send';
 import { settleZeroInvoice } from '@/lib/invoices/payments';
 import { closedForClients } from '@/lib/genius';
 
-export async function GET(req: NextRequest, { params }: { params: { portalToken: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ portalToken: string }> }) {
+  const params = await props.params;
   const event = await prisma.event.findFirst({
     where: { portalToken: params.portalToken },
     include: {
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: { portalToken:
   const portalUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com') + '/portal/' + params.portalToken + '?tab=invoice';
 
   // A sent $0 invoice has nothing to collect: it counts as paid so the client moves on to the next step
-  if (rawInvoice && await settleZeroInvoice(prisma, rawInvoice.id)) {
+  if (rawInvoice && (await settleZeroInvoice(prisma, rawInvoice.id))) {
     rawInvoice = await prisma.invoice.findUniqueOrThrow({
       where: { id: rawInvoice.id },
       include: { lineItems: { orderBy: { sortOrder: 'asc' } }, PaymentMilestone: { orderBy: { dueDate: 'asc' } } },

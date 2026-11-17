@@ -4,10 +4,12 @@ import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 import { AlertCircle, Star } from 'lucide-react';
 import { SetupForm } from '../SetupForm';
 
+
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Set Up Your Account — BoothGen', robots: 'noindex' };
 
-export default async function SetupPage({ searchParams }: { searchParams: { token?: string } }) {
+export default async function SetupPage(props: { searchParams: Promise<{ token?: string }> }) {
+  const searchParams = await props.searchParams;
   const token = searchParams.token ?? '';
 
   if (!token) {

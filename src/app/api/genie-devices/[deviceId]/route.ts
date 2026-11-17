@@ -10,7 +10,8 @@ async function findDevice(tenantId: string, id: string) {
 
 const Rename = z.object({ name: z.string().trim().min(1, "Name can't be empty").max(80) }).strict();
 
-export async function PATCH(req: NextRequest, { params }: { params: { deviceId: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ deviceId: string }> }) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const parsed = Rename.safeParse(await req.json().catch(() => null));
@@ -23,7 +24,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { deviceId: 
 
 // Removes the iPad: its token stops working at once (401 device_revoked) and its event spots open up.
 // Photos it already uploaded stay.
-export async function DELETE(_req: NextRequest, { params }: { params: { deviceId: string } }) {
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ deviceId: string }> }) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const device = await findDevice(auth.tenantId, params.deviceId);

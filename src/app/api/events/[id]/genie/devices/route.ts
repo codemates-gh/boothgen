@@ -5,7 +5,8 @@ import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 
 // Devices holding (or released from) this event's Genie slots, plus paired iPads that can still open it
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const event = await prisma.event.findFirst({ where: { id: params.id, tenantId: auth.tenantId }, select: { id: true, genieSettings: { select: { maxDevices: true } } } });
@@ -33,7 +34,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 const Body = z.object({ deviceId: z.string().min(1), action: z.enum(['release', 'allow']) });
 
 // release: frees the slot and stops that device syncing this event. allow: lets a released device claim a slot again.
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const parsed = Body.safeParse(await req.json().catch(() => null));

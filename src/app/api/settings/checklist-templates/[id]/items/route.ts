@@ -5,7 +5,8 @@ import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 import { isCompleteOrder } from '@/lib/checklists/reorder';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const tpl = await prisma.checklistTemplate.findFirst({ where: { id: params.id, tenantId: session.tenantId }, select: { id: true } });
@@ -18,7 +19,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 }
 
 /** Reorders a template's items. Body: { order: [itemId, …] } naming every item once, top first. */
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const tpl = await prisma.checklistTemplate.findFirst({

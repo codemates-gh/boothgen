@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { BoothGenLogo } from '@/components/brand/BoothGenLogo';
 import type { Metadata } from 'next';
 
+
 export const metadata: Metadata = {
   title: 'Terms of Service',
   description: 'BoothGen terms of service — the rules and conditions governing use of the platform.',

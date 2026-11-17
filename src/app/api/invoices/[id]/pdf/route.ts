@@ -6,7 +6,8 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { InvoicePDF } from '@/lib/pdf/invoice-pdf';
 import React from 'react';
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await requireTenantSession();
   const [inv, branding] = await Promise.all([
     prisma.invoice.findFirst({

@@ -17,6 +17,7 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import { clientDisplayName } from '@/lib/clientName';
 
+
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger', LOST:'default' };
 
 export default async function DashboardPage() {

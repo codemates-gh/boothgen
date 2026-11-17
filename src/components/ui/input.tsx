@@ -1,8 +1,24 @@
 
+'use client';
+import { Input as HeroInput } from '@heroui/react';
+import { forwardRef, type InputHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
-import { InputHTMLAttributes, forwardRef } from 'react';
-const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(({ className, ...props }, ref) => (
-  <input ref={ref} className={cn('flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent disabled:opacity-50', className)} {...props} />
-));
+
+const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+  ({ className, ...props }, ref) => (
+    <HeroInput
+      ref={ref}
+      fullWidth
+      className={cn(
+        'flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm',
+        'placeholder:text-gray-400',
+        'focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent',
+        'disabled:opacity-50',
+        className
+      )}
+      {...(props as any)}
+    />
+  )
+);
 Input.displayName = 'Input';
 export { Input };

@@ -6,6 +6,7 @@ import {
   faqSchema, genieFaq, getMarketingPricing,
 } from '../GenieMarketing';
 
+
 // Genie, the photo booth app: the page for search ("photo booth app") and ads
 
 const TITLE = 'Genie, the Photo Booth App';

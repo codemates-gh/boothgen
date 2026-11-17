@@ -13,7 +13,8 @@ const Schema = z.object({
   signerName: z.string().min(1).max(200),
 });
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
   const body = await req.json();
   const parsed = Schema.safeParse(body);
