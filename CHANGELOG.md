@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.100.6] — 2026-11-17
+
+### Changed
+- **Genie-only menu matches Genius.** It uses the same groups and order:
+  - **Templates:** Layouts, Template Settings
+  - **Genie:** Events, Gallery, Event Defaults, Props, Backdrops, Devices, Guest Sharing
+- **Gallery** sits right after Events, where Genius has it as an Events tab. Switching between the two products feels the same
+
+---
+
 ## [2.100.5] — 2026-11-17
 
 ### Fixed

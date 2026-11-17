@@ -60,27 +60,24 @@ const genieSection: NavSection = {
 };
 
 // Genie-only accounts: the booth, its designs and galleries; no CRM (src/lib/product.ts)
+// Same groups and order as the Genius menu (Templates, then Genie) so switching between them isn't confusing.
+// Gallery sits after Events, where Genius has it as an Events tab.
 const genieOnlySections: NavSection[] = [
   {
-    label: 'Booth',
-    items: [
-      { href: '/genie/events', label: 'Events', icon: CalendarCheck },
-      { href: '/genie/defaults', label: 'Event Defaults', icon: SlidersHorizontal },
-      { href: '/gallery', label: 'Gallery', icon: Camera },
-    ],
-  },
-  {
-    label: 'Designs',
+    label: 'Templates',
     items: [
       { href: '/templates', label: 'Layouts', icon: LayoutTemplate },
       { href: '/templates/settings', label: 'Template Settings', icon: SlidersHorizontal },
-      { href: '/genie/props', label: 'Props', icon: Smile },
-      { href: '/genie/backdrops', label: 'Backdrops', icon: ImageIcon },
     ],
   },
   {
-    label: 'Setup',
+    label: 'Genie',
     items: [
+      { href: '/genie/events', label: 'Events', icon: CalendarCheck },
+      { href: '/gallery', label: 'Gallery', icon: Camera },
+      { href: '/genie/defaults', label: 'Event Defaults', icon: SlidersHorizontal },
+      { href: '/genie/props', label: 'Props', icon: Smile },
+      { href: '/genie/backdrops', label: 'Backdrops', icon: ImageIcon },
       { href: '/genie/devices', label: 'Devices', icon: Tablet },
       { href: '/genie/sharing', label: 'Guest Sharing', icon: Send },
     ],
