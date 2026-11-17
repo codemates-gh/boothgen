@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.100.1] — 2026-11-17
+
+### Fixed
+- **Super Admin → Storage:** the description shows the current per-gallery limit from Settings → Gallery Uploads instead of a fixed "10 GB"
+
+---
+
 ## [2.100.0] — 2026-11-17
 
 ### Added

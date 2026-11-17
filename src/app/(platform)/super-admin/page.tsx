@@ -23,7 +23,7 @@ import GenieUsage from './GenieUsage';
 import GeniusRuleCard from './GeniusRuleCard';
 import ReportsTriage from './ReportsTriage';
 import StorageUsage from './StorageUsage';
-import { DEFAULT_UPLOAD_LIMITS } from '@/lib/gallery/uploadLimits';
+import { DEFAULT_UPLOAD_LIMITS, getUploadLimits } from '@/lib/gallery/uploadRules';
 
 
 const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'props', 'backdrops', 'genie-usage', 'storage', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
@@ -39,6 +39,7 @@ export default async function SuperAdminPage(props: { searchParams: Promise<{ ta
   const tab: Tab = (VALID_TABS as readonly string[]).includes(searchParams?.tab ?? '')
     ? searchParams.tab as Tab
     : 'overview';
+  const uploadLimits = tab === 'storage' ? await getUploadLimits() : DEFAULT_UPLOAD_LIMITS;
 
   const [tenants, totalUsers, totalEvents, allSettings, failedCounts, failedTotal, proSubscriberCount, foundingSettings, foundingMembers, reportsUnread] = await Promise.all([
     prisma.tenant.findMany({
@@ -310,7 +311,7 @@ export default async function SuperAdminPage(props: { searchParams: Promise<{ ta
           <>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Storage</h1>
-              <p className="text-sm text-gray-500 mt-1">Gallery photos stored per operator, largest first. Flags accounts over the review line or with a gallery near its 10 GB limit.</p>
+              <p className="text-sm text-gray-500 mt-1">Gallery photos stored per operator, largest first. Flags accounts over 50 GB or with a gallery near its {uploadLimits.galleryMaxGb} GB limit (Settings → Gallery Uploads).</p>
             </div>
             <StorageUsage />
           </>
