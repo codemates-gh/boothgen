@@ -63,9 +63,3 @@ Ideas agreed on but not scheduled yet. Newest first. When one is picked up, move
 ## Genie iPad app: larger upload limits
 
 **Added:** 2026-11-17. BoothGen now accepts iPad photos up to 25 MB and boomerang MP4s up to 100 MB (2.100.0; adjustable in Super Admin → Settings → Gallery Uploads). If the iPad app checks file size itself before uploading, update it in the Genie repo so it no longer stops at 15 MB.
-
----
-
-## Vercel Skew Protection
-
-**Added:** 2026-11-17. After a deploy, a page that was already open can show "This page couldn't load" on its next click (Reload fixes it). Vercel's Skew Protection keeps serving the old version to pages opened before the deploy. Turn it on in Vercel → boothgen project → Settings → Advanced → Skew Protection (paid Vercel plans).
