@@ -4,6 +4,20 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.97.1] — 2026-11-17
+
+### Changed
+- **Cleaner event page.** Event details, client and assigned-to now share one card in three columns, so there's no empty space and no long portal link. The client column has an **Open Client Portal** button and a copy-link button
+- The header has one row of buttons: Client Portal, Genie, Edit Event and a **•••** menu (Duplicate, Mark as Lost, Cancel Event, Delete, plus Mark Complete, Archive or Reinstate when they apply). Each action asks to confirm in a dialog
+- A **next-step banner** under the overview: a new lead offers New Quote, Mark as Lost and Cancel; a draft quote offers to open it; a sent quote offers Send Follow-Up. It hides once a quote is accepted
+- Quotes, contracts and invoices share one **Financials & Documents** card with New Quote, Create Contract and Create Invoice at the top
+- Template Designs and Checklist sit side by side
+
+### Added
+- **Duplicate Event**: copies an event as a new Lead for the same client (venue, times, package, guests), without quotes, invoices, notes or photos, and without emailing the client. Opens the copy's edit page to set its date
+
+---
+
 ## [2.97.0] — 2026-11-17
 
 ### Changed
