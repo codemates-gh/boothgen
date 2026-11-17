@@ -23,14 +23,14 @@ const under = (pathname: string, p: string) => pathname === p || pathname.starts
 // CRM pages a Genie-only operator can't open. An event's Genie page (/events/<id>/genie) stays open.
 const CRM_PAGES = [
   '/calendar', '/events', '/clients', '/leads', '/messages', '/quotes', '/invoices', '/contracts',
-  '/automation', '/analytics',
+  '/automation', '/analytics', '/bookkeeping',
   '/settings/packages', '/settings/team', '/settings/coupons', '/settings/embed', '/settings/checklists',
   '/settings/import', '/settings/print-costs', '/settings/billing',
 ];
 
 // CRM APIs a Genie-only operator can't call. /api/events/<id>/genie… stays open.
 const CRM_APIS = [
-  '/api/analytics', '/api/automation', '/api/blackout-dates', '/api/calendar', '/api/clients', '/api/contracts',
+  '/api/analytics', '/api/automation', '/api/bookkeeping', '/api/blackout-dates', '/api/calendar', '/api/clients', '/api/contracts',
   '/api/events', '/api/import', '/api/invoices', '/api/leads', '/api/messages', '/api/quotes', '/api/search',
   '/api/settings/packages', '/api/settings/coupons', '/api/settings/team', '/api/settings/checklist-templates',
   '/api/settings/consumable-profiles', '/api/settings/lead-fields', '/api/settings/design-brief-settings',

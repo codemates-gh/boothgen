@@ -262,6 +262,9 @@ model Tenant {
   // Standard layout templates this operator hid from their library and their clients' picker (template ids)
   hiddenStandardTemplates Json @default("[]")
 
+  ledgerTransactions LedgerTransaction[]
+  ledgerCategories   LedgerCategory[]
+
   @@map("tenants")
 }
 
@@ -398,6 +401,8 @@ model Client {
   contracts Contract[]
   leads     LeadSubmission[]
 
+  ledgerTransactions LedgerTransaction[]
+
   @@unique([tenantId, email])
   @@index([tenantId])
   @@map("clients")
@@ -455,6 +460,8 @@ model Event {
   genieTemplates       EventGenieTemplate[]
   genieDevices         GenieEventDevice[]
   geniePayments        GenieEventPayment[]
+
+  ledgerTransactions LedgerTransaction[]
 
   @@index([tenantId])
   @@index([tenantId, eventDate])
@@ -526,6 +533,8 @@ model Invoice {
   lineItems        InvoiceLineItem[]
   payments         Payment[]
   PaymentMilestone PaymentMilestone[]
+
+  ledgerTransactions LedgerTransaction[]
 
   @@unique([tenantId, invoiceNumber])
   @@index([tenantId])
@@ -1788,4 +1797,62 @@ model GenieBackdrop {
 
   @@index([tenantId])
   @@map("genie_backdrops")
+}
+
+// ─── Bookkeeping (Insights → Bookkeeping) ────────────────────────────────────
+// Income and expenses per account. Rows with a sourceKey are filled in automatically from paid invoices and payment
+// schedule payments (src/lib/bookkeeping/sync.ts); the rest are entered by hand.
+
+enum LedgerType {
+  INCOME
+  EXPENSE
+}
+
+model LedgerCategory {
+  id        String     @id @default(cuid())
+  tenantId  String
+  name      String
+  type      LedgerType
+  hidden    Boolean    @default(false)
+  sortOrder Int        @default(0)
+  createdAt DateTime   @default(now())
+
+  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  transactions LedgerTransaction[]
+
+  @@unique([tenantId, type, name])
+  @@map("ledger_categories")
+}
+
+model LedgerTransaction {
+  id          String     @id @default(cuid())
+  tenantId    String
+  date        DateTime
+  type        LedgerType
+  amountCents Int // always positive; type says which way it goes
+  description String
+  payee       String?
+  notes       String?    @db.Text
+  categoryId  String?
+  // "payment" (BoothGen payment, Stripe or marked paid), "fee" (BoothGen processing fee) or "manual"
+  source      String     @default("manual")
+  sourceKey   String? // automatic rows: what they were made from, e.g. "milestone:<id>"; never set on manual rows
+  invoiceId   String?
+  eventId     String?
+  clientId    String?
+  receiptUrl  String?
+  receiptName String?
+  verified    Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category LedgerCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  invoice  Invoice?        @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  event    Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  client   Client?         @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, sourceKey])
+  @@index([tenantId, date])
+  @@map("ledger_transactions")
 }

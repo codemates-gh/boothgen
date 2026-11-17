@@ -40,13 +40,13 @@ const PORTAL_CLIENT = [
   /^\/api\/template-designs\/[^/]+\/(approve|request-revision)$/,
 ];
 
-const TENANT = ['/dashboard', '/events', '/clients', '/leads', '/invoices', '/contracts', '/automation', '/messages', '/settings', '/gallery', '/genie', '/templates'];
+const TENANT = ['/dashboard', '/events', '/clients', '/leads', '/invoices', '/contracts', '/automation', '/messages', '/settings', '/gallery', '/genie', '/templates', '/bookkeeping'];
 const ADMIN  = ['/super-admin', '/api/super-admin'];
 
 // Routes team members cannot access (redirect to /events)
 const TEAM_MEMBER_BLOCKED = [
   '/dashboard', '/clients', '/leads', '/quotes', '/invoices',
-  '/contracts', '/gallery', '/automation', '/messages/automations', '/messages/templates', '/settings', '/genie', '/templates',
+  '/contracts', '/gallery', '/automation', '/messages/automations', '/messages/templates', '/settings', '/genie', '/templates', '/bookkeeping',
 ];
 
 export async function proxy(req: NextRequest) {

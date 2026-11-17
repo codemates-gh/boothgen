@@ -4,6 +4,22 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.101.0] — 2026-11-17
+
+### Added
+- **Bookkeeping** (sidebar → Insights → Bookkeeping, account admins only): income and expenses for the business.
+  - **Filled in automatically:** paid invoices, payment-schedule payments (Stripe or marked paid) and the BoothGen processing fee on each Stripe payment, each linked to its invoice, client and event. Genie per-event payments come in as an expense. Undoing a payment removes its row; your category, notes, receipt and event changes are kept. **Refresh** brings in anything new.
+  - **New Income / New Expense** with date, amount, payee, category, event, notes and a receipt (photo or PDF, up to 25 MB; your phone camera works).
+  - **Tabs:** All Transactions · To Be Categorized (with a count) · Categorized.
+  - **Filters:** source, category, type, dates, amount, keywords. Income, expense and net totals show for what's filtered.
+  - **Bulk actions:** Categorize, Verify, Assign to Event, Delete (hand-entered rows only).
+  - **Row menu:** View Invoice, View Event, Add/Replace Receipt, Verify, Edit, Delete.
+  - **Categories:** a starting set for photo booth businesses (Sales, Tips, Merchant Fees, Print Media, Props & Backdrops, Equipment, Travel & Mileage, Staff & Attendants, Marketing…). Add, rename or hide them under ⚙ → Categories.
+  - **Reports:** Profit & Loss by category, month by month, with net profit; Client Sales. Each downloads as CSV, as does the filtered transaction list (⚙ → Export CSV), ready for an accountant.
+- Plan and later ideas (bank feeds, mileage, sales tax) are in docs/BACKLOG.md.
+
+---
+
 ## [2.100.7] — 2026-11-17
 
 ### Changed

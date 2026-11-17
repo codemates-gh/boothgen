@@ -20,6 +20,7 @@ export default function robots(): MetadataRoute.Robots {
           '/analytics',
           '/automation',
           '/messages',
+          '/bookkeeping',
           '/settings',
           '/calendar',
           '/super-admin',

@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Users, FileText, Receipt, Camera, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send, CalendarCheck, SlidersHorizontal, Smile, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, Receipt, Camera, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send, CalendarCheck, SlidersHorizontal, Smile, Image as ImageIcon, Sparkles, BookOpen } from 'lucide-react';
 import { BoothGenIcon } from '@/components/brand/BoothGenLogo';
 import { APP_VERSION } from '@/lib/version';
 
@@ -43,6 +43,7 @@ const insightsSection: NavSection = {
   label: 'Insights',
   items: [
     { href: '/analytics', label: 'Analytics', icon: BarChart2 },
+    { href: '/bookkeeping', label: 'Bookkeeping', icon: BookOpen },
   ],
 };
 
