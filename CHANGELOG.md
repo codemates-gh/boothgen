@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.98.7] — 2026-11-17
+
+### Changed
+- **Stay on the event:** a quote, contract or invoice opened from an event page (or created with its New Quote / Create Contract / Create Invoice buttons) now leads back to the event. **Back to Event** replaces Back to Quotes / Contracts / Invoices, and deleting it, saving a quote edit, or sending an invoice or reminder keeps you in the event instead of jumping to the Quotes, Contracts or Invoices list. Opened from those lists, they still go back to the list
+
+---
+
 ## [2.98.6] — 2026-11-17
 
 ### Changed

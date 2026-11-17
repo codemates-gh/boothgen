@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ const PKG_CATS: [string, string][] = [
 function QuoteEditForm() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const quoteHref = `/quotes/${id}` + (useSearchParams().get('from') === 'event' ? '?from=event' : '');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -51,7 +52,7 @@ function QuoteEditForm() {
       fetch('/api/contracts/templates').then(r => r.json()),
       fetch('/api/settings/coupons').then(r => r.json()),
     ]).then(([q, pkgs, tmpl, cpns]) => {
-      if (q.status === 'ACCEPTED') { router.push(`/quotes/${id}`); return; }
+      if (q.status === 'ACCEPTED') { router.push(quoteHref); return; }
       setItems(q.lineItems?.map((li: any) => ({ description: li.description, quantity: li.quantity, unitPrice: (li.unitCents / 100).toFixed(2) })) || [{ description: '', quantity: 1, unitPrice: '' }]);
       setTaxRate(String(q.taxRatePercent || 0));
       setValidUntil(q.validUntil ? q.validUntil.split('T')[0] : '');
@@ -152,7 +153,7 @@ function QuoteEditForm() {
       }),
     });
     const data = await res.json();
-    if (res.ok) router.push(`/quotes/${id}`);
+    if (res.ok) router.push(quoteHref);
     else { setError(data.error || 'Failed to save'); setSaving(false); }
   }
 
@@ -162,7 +163,7 @@ function QuoteEditForm() {
     <>
       <TopBar title="Edit Quote" />
       <div className="p-4 sm:p-8 max-w-3xl space-y-6">
-        <Link href={`/quotes/${id}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
+        <Link href={quoteHref} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
           <ArrowLeft className="w-4 h-4" /> Back to Quote
         </Link>
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
@@ -336,7 +337,7 @@ function QuoteEditForm() {
 
           {error && <p className="text-red-600 text-sm bg-red-50 rounded-lg px-4 py-3">{error}</p>}
           <div className="flex justify-end gap-3">
-            <Link href={`/quotes/${id}`}><Button type="button" variant="outline">Cancel</Button></Link>
+            <Link href={quoteHref}><Button type="button" variant="outline">Cancel</Button></Link>
             <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
           </div>
         </form>

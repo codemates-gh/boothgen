@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,8 @@ const EDITABLE = ['DRAFT', 'SENT', 'VIEWED', 'DECLINED', 'EXPIRED'];
 export default function QuoteDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  // Opened from an event: Back, Edit and Delete keep the operator on that event
+  const fromEvent = useSearchParams().get('from') === 'event';
   const [quote, setQuote] = useState<any>(null);
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,7 +80,7 @@ export default function QuoteDetailPage() {
         contractTemplateId: templateId || null,
       }),
     });
-    if (res.ok) router.push(`/quotes/${id}/edit`);
+    if (res.ok) router.push(`/quotes/${id}/edit` + (fromEvent ? '?from=event' : ''));
     setSaving(false);
   }
 
@@ -144,7 +146,7 @@ export default function QuoteDetailPage() {
     if (!confirm('Delete this quote? This cannot be undone.')) return;
     setDeleting(true);
     await fetch(`/api/quotes/${id}`, { method: 'DELETE' });
-    router.push('/quotes');
+    router.push(fromEvent && quote?.eventId ? `/events/${quote.eventId}` : '/quotes');
   }
 
   if (loading) return (
@@ -165,12 +167,14 @@ export default function QuoteDetailPage() {
   const portalUrl = `/portal/${quote.event?.portalToken}?tab=quote`;
   const canEdit = EDITABLE.includes(quote.status);
   const isDraft = quote.status === 'DRAFT';
+  const backToEvent = fromEvent && !!quote.eventId;
+  const backHref = backToEvent ? `/events/${quote.eventId}` : '/quotes';
 
   return (
     <>
       <TopBar title={`Quote ${quote.quoteNumber}`} />
       <div className="p-4 sm:p-8 max-w-3xl space-y-6">
-        <Link href="/quotes" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Back to Quotes</Link>
+        <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>{backToEvent ? 'Back to Event' : 'Back to Quotes'}</Link>
 
         {/* Header: number, status and event on the left; main actions and the ••• menu on the right (same as events) */}
         <div className="flex flex-col lg:flex-row gap-4 lg:items-start lg:justify-between">
@@ -188,7 +192,7 @@ export default function QuoteDetailPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:flex-shrink-0">
             {isDraft && (
-              <Link href={`/quotes/${id}/edit`}><Button variant="outline" size="sm"><Edit2 className="w-3.5 h-3.5 mr-1.5" />Edit</Button></Link>
+              <Link href={`/quotes/${id}/edit` + (fromEvent ? '?from=event' : '')}><Button variant="outline" size="sm"><Edit2 className="w-3.5 h-3.5 mr-1.5" />Edit</Button></Link>
             )}
             {isDraft && (
               <Button size="sm" onClick={sendQuote} disabled={sending}>

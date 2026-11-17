@@ -1,7 +1,7 @@
 
 'use client';
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,8 @@ const CC: Record<string, any> = { DRAFT:'default', SENT_TO_CLIENT:'info', CLIENT
 export default function ContractDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  // Opened from an event: Back and Delete keep the operator on that event
+  const fromEvent = useSearchParams().get('from') === 'event';
   const [contract, setContract] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sigMode, setSigMode] = useState<'draw' | 'type'>('draw');
@@ -89,7 +91,7 @@ export default function ContractDetailPage() {
     setDeleting(true);
     const res = await fetch('/api/contracts/' + id, { method: 'DELETE' });
     const d = await res.json();
-    if (res.ok) router.push('/contracts');
+    if (res.ok) router.push(fromEvent && contract?.eventId ? `/events/${contract.eventId}` : '/contracts');
     else { alert(d.error); setDeleting(false); setShowDeleteConfirm(false); }
   }
 
@@ -143,7 +145,7 @@ export default function ContractDetailPage() {
     <>
       <TopBar title={contract.title} />
       <div className="p-4 sm:p-8 max-w-4xl space-y-6">
-        <Link href="/contracts" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Back to Contracts</Link>
+        <Link href={fromEvent && contract.eventId ? `/events/${contract.eventId}` : '/contracts'} className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>{fromEvent && contract.eventId ? 'Back to Event' : 'Back to Contracts'}</Link>
         {/* Header: title, status and client on the left; main actions and the ••• menu on the right (same as events) */}
         <div className="flex flex-col lg:flex-row gap-4 lg:items-start lg:justify-between">
           <div className="min-w-0">

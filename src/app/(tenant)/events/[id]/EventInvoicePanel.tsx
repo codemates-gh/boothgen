@@ -169,7 +169,7 @@ export default function EventInvoicePanel({ invoices }: Props) {
         const hasMilestones = inv.milestones.length > 0;
         return (
           <div key={inv.id} className="border-b border-gray-100 last:border-0">
-            <Link href={'/invoices/' + inv.id} className={DOC_ROW}>
+            <Link href={'/invoices/' + inv.id + '?from=event'} className={DOC_ROW}>
               <span className="font-medium min-w-0">
                 <span className="block truncate">{inv.invoiceNumber}</span>
                 <span className={DOC_NARROW}>{fmt(inv.totalCents)} · {fmt(inv.balanceDueCents)} due</span>

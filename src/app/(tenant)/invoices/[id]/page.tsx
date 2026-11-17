@@ -38,7 +38,7 @@ function DescriptionCell({ text }: { text: string }) {
 }
 
 export default async function InvoiceDetailPage(
-  props: { params: Promise<{ id: string }>; searchParams?: Promise<{ reminded?: string }> }
+  props: { params: Promise<{ id: string }>; searchParams?: Promise<{ reminded?: string; from?: string }> }
 ) {
   const searchParams = await props.searchParams;
   const params = await props.params;
@@ -57,11 +57,14 @@ export default async function InvoiceDetailPage(
   // Full-payment invoices (no schedule) get a single "Payment in full" row to mark paid; Stripe payments can't be undone here
   const fullPaymentMethod = inv.PaymentMilestone.length === 0 && inv.status === 'PAID' ? await manualPaymentMethod(inv.id) : null;
   const fmt = (c: number) => fmtCents(c, inv.currency ?? 'usd');
+  // Opened from an event: Back, Send and Delete keep the operator on that event
+  const backToEvent = searchParams?.from === 'event' && !!inv.eventId;
+  const fromQs = backToEvent ? '?from=event' : '';
   return (
     <>
       <TopBar title={'Invoice ' + inv.invoiceNumber} />
       <div className="p-4 sm:p-8 max-w-4xl space-y-6">
-        <Link href="/invoices" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>Back to Invoices</Link>
+        <Link href={backToEvent ? '/events/' + inv.eventId : '/invoices'} className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"><ArrowLeft className="w-4 h-4"/>{backToEvent ? 'Back to Event' : 'Back to Invoices'}</Link>
         {searchParams?.reminded === '1' && (
           <div className="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
             <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
@@ -78,13 +81,13 @@ export default async function InvoiceDetailPage(
             <p className="text-gray-500 text-sm">{[clientDisplayName(inv.client), inv.event?.title].filter(Boolean).join(' · ')}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:flex-shrink-0">
-            {inv.status === 'DRAFT' && <form action={'/api/invoices/' + inv.id + '/send'} method="POST"><Button size="sm"><Send className="w-3.5 h-3.5 mr-1.5"/>Send to Client</Button></form>}
+            {inv.status === 'DRAFT' && <form action={'/api/invoices/' + inv.id + '/send' + fromQs} method="POST"><Button size="sm"><Send className="w-3.5 h-3.5 mr-1.5"/>Send to Client</Button></form>}
             {['SENT', 'PARTIALLY_PAID', 'OVERDUE'].includes(inv.status) && inv.balanceDueCents > 0 && (
-              <form action={'/api/invoices/' + inv.id + '/remind'} method="POST">
+              <form action={'/api/invoices/' + inv.id + '/remind' + fromQs} method="POST">
                 <Button variant="outline" size="sm"><Bell className="w-3.5 h-3.5 mr-1.5"/>Send Reminder</Button>
               </form>
             )}
-            <InvoiceActionsMenu invoiceId={inv.id} invoiceNumber={inv.invoiceNumber} eventId={inv.eventId ?? null} canDelete={isAdmin} />
+            <InvoiceActionsMenu invoiceId={inv.id} invoiceNumber={inv.invoiceNumber} eventId={inv.eventId ?? null} canDelete={isAdmin} afterDelete={backToEvent ? '/events/' + inv.eventId : '/invoices'} />
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

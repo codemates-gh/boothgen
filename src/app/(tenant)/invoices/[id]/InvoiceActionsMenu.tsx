@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { MoreMenu } from '@/components/ui/MoreMenu';
 
-export default function InvoiceActionsMenu({ invoiceId, invoiceNumber, eventId, canDelete }: { invoiceId: string; invoiceNumber: string; eventId: string | null; canDelete: boolean }) {
+export default function InvoiceActionsMenu({ invoiceId, invoiceNumber, eventId, canDelete, afterDelete }: { invoiceId: string; invoiceNumber: string; eventId: string | null; canDelete: boolean; afterDelete: string }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -16,7 +16,7 @@ export default function InvoiceActionsMenu({ invoiceId, invoiceNumber, eventId, 
   async function handleDelete() {
     setDeleting(true); setError('');
     const res = await fetch(`/api/invoices/${invoiceId}`, { method: 'DELETE' });
-    if (res.ok) { router.push('/invoices'); return; }
+    if (res.ok) { router.push(afterDelete); return; }
     setDeleting(false);
     setError((await res.json().catch(() => ({}))).error ?? 'Could not delete the invoice.');
   }

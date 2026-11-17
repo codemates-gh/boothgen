@@ -155,7 +155,7 @@ function QuoteNewForm() {
       }),
     });
     const data = await res.json();
-    if (res.ok) router.push('/quotes/' + data.id);
+    if (res.ok) router.push('/quotes/' + data.id + (eventId ? '?from=event' : ''));
     else { setError(data.error || 'Failed to create quote'); setLoading(false); }
   }
 

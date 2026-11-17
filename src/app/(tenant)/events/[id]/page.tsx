@@ -128,7 +128,7 @@ export default async function EventDetailPage(
   const banner = !isAdmin || hasAcceptedQuote ? null
     : event.status === 'LEAD' ? (
         draftQuote
-          ? { text: `Next step: quote ${draftQuote.quoteNumber} is a draft. Review it and send it to the client.`, href: '/quotes/' + draftQuote.id, label: 'Open Quote', icon: 'quote' as const }
+          ? { text: `Next step: quote ${draftQuote.quoteNumber} is a draft. Review it and send it to the client.`, href: '/quotes/' + draftQuote.id + '?from=event', label: 'Open Quote', icon: 'quote' as const }
           : { text: 'Initial step: start this event with a quote.', href: '/quotes/new?eventId=' + event.id, label: 'New Quote', icon: 'new' as const }
       )
     : showFollowUp && openQuote ? { text: `Waiting on the client to accept quote ${openQuote.quoteNumber}${openQuote.sentAt ? ', sent ' + format(openQuote.sentAt, 'MMM d') : ''}.`, href: `/events/${event.id}?followup=1#messages`, label: 'Send Follow-Up', icon: 'follow' as const }
@@ -253,7 +253,7 @@ export default async function EventDetailPage(
                   <div className={boxHead}><ClipboardList className="w-4 h-4 text-gray-400"/>Quotes{count(event.Quote.length)}</div>
                   <div className={DOC_HEAD}><span>Quote</span><span className={DOC_WIDE}>Total</span><span className={DOC_WIDE}>Sent</span><span>Status</span><span/></div>
                   {event.Quote.map(q => (
-                    <Link key={q.id} href={'/quotes/' + q.id} className={DOC_ROW + ' border-b border-gray-100 last:border-0'}>
+                    <Link key={q.id} href={'/quotes/' + q.id + '?from=event'} className={DOC_ROW + ' border-b border-gray-100 last:border-0'}>
                       <span className="font-medium min-w-0">
                         <span className="block truncate">{q.quoteNumber}</span>
                         <span className={DOC_NARROW}>{fmt(q.totalCents)} · {q.sentAt ? 'Sent ' + format(q.sentAt, 'MMM d, yyyy') : 'Not sent'}</span>
@@ -272,7 +272,7 @@ export default async function EventDetailPage(
                   <div className={boxHead}><FileText className="w-4 h-4 text-gray-400"/>Contracts{count(event.contracts.length)}</div>
                   <div className={DOC_HEAD}><span className="sm:col-span-3">Title</span><span>Status</span><span/></div>
                   {event.contracts.map(c => (
-                    <Link key={c.id} href={'/contracts/' + c.id} className={DOC_ROW + ' border-b border-gray-100 last:border-0' + (c.status === 'CLIENT_SIGNED' ? ' bg-amber-50/60' : '')}>
+                    <Link key={c.id} href={'/contracts/' + c.id + '?from=event'} className={DOC_ROW + ' border-b border-gray-100 last:border-0' + (c.status === 'CLIENT_SIGNED' ? ' bg-amber-50/60' : '')}>
                       <span className="sm:col-span-3 font-medium flex items-center gap-2 min-w-0"><FileText className="w-4 h-4 text-gray-400 flex-shrink-0"/><span className="truncate">{c.title}</span></span>
                       <span className="flex items-center gap-2">
                         <Badge variant={CC[c.status]}>{c.status.replace(/_/g,' ')}</Badge>

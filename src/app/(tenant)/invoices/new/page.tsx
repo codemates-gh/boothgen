@@ -153,7 +153,7 @@ function InvoiceNewForm() {
       }),
     });
     const data = await res.json();
-    if (res.ok) router.push('/invoices/' + data.id);
+    if (res.ok) router.push('/invoices/' + data.id + (eventId ? '?from=event' : ''));
     else { setError(data.error || 'Failed'); setLoading(false); }
   }
 

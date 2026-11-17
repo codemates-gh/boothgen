@@ -29,7 +29,7 @@ export default function NewContractPage() {
     try {
       const res = await fetch('/api/contracts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, eventId: selectedEvent || null, templateId: selectedTemplate || null }) });
       const data = await res.json();
-      if (res.ok) router.push('/contracts/' + data.id);
+      if (res.ok) router.push('/contracts/' + data.id + (eventId ? '?from=event' : ''));
       else alert(data.error ?? 'Failed');
     } finally { setLoading(false); }
   }
