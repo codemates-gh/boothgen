@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { DOC_GRID, DOC_ROW } from './docGrid';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -87,17 +88,17 @@ function MilestoneRow({ milestone, invoiceId, currency, onUpdate, full = false, 
 
   return (
     <div className="border-t border-gray-100">
-      <div className="flex items-center gap-3 px-6 py-2.5 text-sm">
-        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: isPaid ? '#16a34a' : '#d97706' }} />
-        <span className="flex-1 text-gray-700">{milestone.label}</span>
+      {/* Same columns as the invoice row: label | amount | due/paid date | paid or Mark Paid */}
+      <div className={DOC_GRID + ' py-2.5 text-sm'}>
+        <span className="flex items-center gap-2 min-w-0 pl-3"><span className={'w-2 h-2 rounded-full flex-shrink-0 ' + (isPaid ? 'bg-green-600' : 'bg-amber-600')} /><span className="truncate text-gray-700">{milestone.label}</span></span>
         <span className="text-gray-500 tabular-nums">{fmt(milestone.amountCents)}</span>
-        <span className="text-xs text-gray-400 w-24 text-right hidden sm:block">
+        <span className="text-xs text-gray-400">
           {isPaid && milestone.paidAt
             ? `Paid ${format(new Date(milestone.paidAt), 'MMM d')}`
             : `Due ${format(new Date(milestone.dueDate), 'MMM d, yyyy')}`}
         </span>
         {isPaid ? (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 justify-self-start">
             <Badge variant="success" className="text-xs">{milestone.paymentMethod ?? 'Paid'}</Badge>
             {canUndo && milestone.amountCents > 0 && <button
               onClick={undoPayment}
@@ -111,7 +112,7 @@ function MilestoneRow({ milestone, invoiceId, currency, onUpdate, full = false, 
         ) : (
           <button
             onClick={() => setExpanded(e => !e)}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+            className="justify-self-start flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
           >
             Mark Paid {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
@@ -167,15 +168,13 @@ export default function EventInvoicePanel({ invoices }: Props) {
         const fmt = (c: number) => fmtCents(c, inv.currency ?? 'usd');
         const hasMilestones = inv.milestones.length > 0;
         return (
-          <div key={inv.id} className="border-b last:border-0">
-            <div className="flex items-center gap-3 px-6 py-3 text-sm hover:bg-gray-50">
-              <span className="font-medium w-24">{inv.invoiceNumber}</span>
-              <span className="text-gray-600 hidden sm:block w-24">{fmt(inv.totalCents)}</span>
-              <span className="text-gray-600 w-24">{fmt(inv.balanceDueCents)} due</span>
-              <Badge variant={IC[inv.status]}>{inv.status}</Badge>
-              <Link href={'/invoices/' + inv.id} className="ml-auto">
-                <Button variant="ghost" size="sm">View</Button>
-              </Link>
+          <div key={inv.id} className="border-b border-gray-100 last:border-0">
+            <div className={DOC_ROW}>
+              <span className="font-medium truncate">{inv.invoiceNumber}</span>
+              <span>{fmt(inv.totalCents)}</span>
+              <span className="text-gray-600">{fmt(inv.balanceDueCents)} due</span>
+              <span><Badge variant={IC[inv.status]}>{inv.status}</Badge></span>
+              <span className="text-right"><Link href={'/invoices/' + inv.id}><Button variant="ghost" size="sm">View</Button></Link></span>
             </div>
             {hasMilestones && inv.milestones.map(m => (
               <MilestoneRow

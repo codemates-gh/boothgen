@@ -18,6 +18,7 @@ import EventChecklist from './EventChecklist';
 import EventMessagePanel from './EventMessagePanel';
 import EventProfitability from './EventProfitability';
 import EventInvoicePanel from './EventInvoicePanel';
+import { DOC_HEAD, DOC_ROW } from './docGrid';
 import EventAutomations, { type EventAutomationRow } from './EventAutomations';
 import { settleZeroInvoice } from '@/lib/invoices/payments';
 import { clientDisplayName } from '@/lib/clientName';
@@ -132,8 +133,10 @@ export default async function EventDetailPage(
       )
     : showFollowUp && openQuote ? { text: `Waiting on the client to accept quote ${openQuote.quoteNumber}${openQuote.sentAt ? ', sent ' + format(openQuote.sentAt, 'MMM d') : ''}.`, href: `/events/${event.id}?followup=1#messages`, label: 'Send Follow-Up', icon: 'follow' as const }
     : null;
-  const th = 'text-left px-6 py-2.5 text-xs font-medium text-gray-500 uppercase';
-  const section = 'text-xs font-semibold uppercase tracking-wide text-gray-400 px-6 pt-5 pb-2';
+  // Financials & Documents: each kind in its own outlined box with a shaded title bar
+  const box = 'rounded-lg border border-gray-200 overflow-hidden';
+  const boxHead = 'flex items-center gap-2 bg-gray-50 border-b border-gray-200 px-4 py-2.5 text-sm font-semibold text-[#1F1F3D]';
+  const count = (n: number) => <span className="ml-1 rounded-full bg-white border border-gray-200 px-2 py-0.5 text-xs font-medium text-gray-500">{n}</span>;
   const venueLine = [event.venueAddress, event.venueCity, event.venueState, (event as any).venuePostalCode].filter(Boolean).join(', ');
   const followUpSubject = isFollowUp ? `Following up on your quote — ${event.title}` : undefined;
   return (
@@ -240,54 +243,50 @@ export default async function EventDetailPage(
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-0 pb-2">
+            <CardContent className="pt-5 space-y-4">
               {event.Quote.length + event.contracts.length + event.invoices.length === 0 && (
-                <p className="px-6 py-5 text-sm text-gray-500">No quotes, contracts or invoices yet.</p>
+                <p className="text-sm text-gray-500">No quotes, contracts or invoices yet.</p>
               )}
 
               {event.Quote.length > 0 && (
-                <>
-                  <p className={section}>Quotes</p>
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[480px]">
-                      <thead><tr className="border-y border-gray-100"><th className={th}>Quote</th><th className={th}>Total</th><th className={th}>Sent</th><th className={th}>Status</th><th className="px-6 py-2.5"></th></tr></thead>
-                      <tbody>
-                        {event.Quote.map(q => (
-                          <tr key={q.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                            <td className="px-6 py-3 text-sm font-medium">{q.quoteNumber}</td>
-                            <td className="px-6 py-3 text-sm">{fmt(q.totalCents)}</td>
-                            <td className="px-6 py-3 text-sm text-gray-500">{q.sentAt ? format(q.sentAt, 'MMM d, yyyy') : <span className="text-gray-400">Not sent</span>}</td>
-                            <td className="px-6 py-3"><Badge variant={QC[q.status]}>{q.status}</Badge></td>
-                            <td className="px-6 py-3 text-right"><Link href={'/quotes/' + q.id}><Button variant="ghost" size="sm">View Quote</Button></Link></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
+                <div className={box}>
+                  <div className={boxHead}><ClipboardList className="w-4 h-4 text-gray-400"/>Quotes{count(event.Quote.length)}</div>
+                  <div className="overflow-x-auto"><div className="min-w-[560px]">
+                    <div className={DOC_HEAD}><span>Quote</span><span>Total</span><span>Sent</span><span>Status</span><span/></div>
+                    {event.Quote.map(q => (
+                      <div key={q.id} className={DOC_ROW + ' border-b border-gray-100 last:border-0'}>
+                        <span className="font-medium truncate">{q.quoteNumber}</span>
+                        <span>{fmt(q.totalCents)}</span>
+                        <span className="text-gray-500">{q.sentAt ? format(q.sentAt, 'MMM d, yyyy') : <span className="text-gray-400">Not sent</span>}</span>
+                        <span><Badge variant={QC[q.status]}>{q.status}</Badge></span>
+                        <span className="text-right"><Link href={'/quotes/' + q.id}><Button variant="ghost" size="sm">View Quote</Button></Link></span>
+                      </div>
+                    ))}
+                  </div></div>
+                </div>
               )}
 
               {event.contracts.length > 0 && (
-                <>
-                  <p className={section}>Contracts</p>
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[400px]">
-                      <thead><tr className="border-y border-gray-100"><th className={th}>Title</th><th className={th}>Status</th><th className="px-6 py-2.5"></th></tr></thead>
-                      <tbody>{event.contracts.map(c => (
-                        <tr key={c.id} className={`border-b border-gray-100 last:border-0 ${c.status === 'CLIENT_SIGNED' ? 'bg-amber-50/60' : ''}`}>
-                          <td className="px-6 py-3 text-sm font-medium"><FileText className="inline w-4 h-4 mr-2 text-gray-400"/>{c.title}</td>
-                          <td className="px-6 py-3"><div className="flex items-center gap-2"><Badge variant={CC[c.status]}>{c.status.replace(/_/g,' ')}</Badge>{c.status === 'CLIENT_SIGNED' && <PenLine className="w-3.5 h-3.5 text-amber-500" />}</div></td>
-                          <td className="px-6 py-3 text-right"><Link href={'/contracts/' + c.id}><Button variant={c.status === 'CLIENT_SIGNED' ? 'default' : 'ghost'} size="sm">{c.status === 'CLIENT_SIGNED' ? 'Sign Now' : 'View'}</Button></Link></td>
-                        </tr>
-                      ))}</tbody>
-                    </table>
-                  </div>
-                </>
+                <div className={box}>
+                  <div className={boxHead}><FileText className="w-4 h-4 text-gray-400"/>Contracts{count(event.contracts.length)}</div>
+                  <div className="overflow-x-auto"><div className="min-w-[560px]">
+                    <div className={DOC_HEAD}><span className="col-span-3">Title</span><span>Status</span><span/></div>
+                    {event.contracts.map(c => (
+                      <div key={c.id} className={DOC_ROW + ' border-b border-gray-100 last:border-0' + (c.status === 'CLIENT_SIGNED' ? ' bg-amber-50/60' : '')}>
+                        <span className="col-span-3 font-medium flex items-center gap-2 min-w-0"><FileText className="w-4 h-4 text-gray-400 flex-shrink-0"/><span className="truncate">{c.title}</span></span>
+                        <span className="flex items-center gap-2"><Badge variant={CC[c.status]}>{c.status.replace(/_/g,' ')}</Badge>{c.status === 'CLIENT_SIGNED' && <PenLine className="w-3.5 h-3.5 text-amber-500" />}</span>
+                        <span className="text-right"><Link href={'/contracts/' + c.id}><Button variant={c.status === 'CLIENT_SIGNED' ? 'default' : 'ghost'} size="sm">{c.status === 'CLIENT_SIGNED' ? 'Sign Now' : 'View'}</Button></Link></span>
+                      </div>
+                    ))}
+                  </div></div>
+                </div>
               )}
 
               {event.invoices.length > 0 && (
-                <>
-                  <p className={section}>Invoices</p>
+                <div className={box}>
+                  <div className={boxHead}><Receipt className="w-4 h-4 text-gray-400"/>Invoices{count(event.invoices.length)}</div>
+                  <div className="overflow-x-auto"><div className="min-w-[560px]">
+                  <div className={DOC_HEAD}><span>Invoice</span><span>Total</span><span>Balance</span><span>Status</span><span/></div>
                   <EventInvoicePanel
                     invoices={event.invoices.map(inv => ({
                       id: inv.id,
@@ -313,7 +312,8 @@ export default async function EventDetailPage(
                       })),
                     }))}
                   />
-                </>
+                  </div></div>
+                </div>
               )}
             </CardContent>
           </Card>

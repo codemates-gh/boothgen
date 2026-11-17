@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.98.1] — 2026-11-17
+
+### Changed
+- **Event page, Financials & Documents:** Quotes, Contracts and Invoices each sit in their own outlined box with a shaded title and a count, and share the same columns, so totals, dates, statuses and buttons line up down the card. Payments under an invoice line up with it too
+
+---
+
 ## [2.98.0] — 2026-11-17
 
 ### Changed
