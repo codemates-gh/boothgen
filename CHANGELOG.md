@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.102.4] — 2026-11-17
+
+### Fixed
+- **Analytics: "This page couldn't load" when opening Analytics again** (e.g. after the Profitability tab). The event-status list sorted the same data the pie chart uses, which the chart library locks, so the page crashed on a second render. It now sorts a copy. Found with the new error reporting.
+
+---
+
 ## [2.102.3] — 2026-11-17
 
 ### Added

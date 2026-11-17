@@ -169,7 +169,8 @@ export default function AnalyticsPage() {
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="space-y-2 flex-1">
-                      {statusDist.sort((a: any, b: any) => b.count - a.count).map((s: any) => (
+                      {/* Sort a copy: the pie chart (Recharts) freezes the data it's given, so sorting it in place fails on a re-render */}
+                      {[...statusDist].sort((a: any, b: any) => b.count - a.count).map((s: any) => (
                         <div key={s.status} className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2">
                             <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: STATUS_COLORS[s.status] ?? '#e5e7eb' }} />
