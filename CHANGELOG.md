@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.103.3] — 2026-11-17
+
+### Fixed
+- **New Booth Event: Date field.** The calendar button no longer covers the end of the date.
+
+---
+
 ## [2.103.2] — 2026-11-17
 
 ### Fixed

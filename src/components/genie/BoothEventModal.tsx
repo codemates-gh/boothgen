@@ -60,7 +60,7 @@ export function BoothEventModal({ open, onClose, initial, eventId, lockedTimes, 
             {/* The browser's own calendar icon isn't shown everywhere (Safari), so the field has its own button */}
             <div className="relative">
               <Input ref={dateRef} type="date" value={v.date} onChange={e => set('date', e.target.value)} disabled={lockedTimes}
-                onClick={() => openDatePicker()} className="pr-10 [&::-webkit-calendar-picker-indicator]:hidden"/>
+                onClick={() => openDatePicker()} className="!pr-9 [&::-webkit-calendar-picker-indicator]:hidden"/>
               <button type="button" aria-label="Pick a date" disabled={lockedTimes} onClick={() => openDatePicker()}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-800 disabled:opacity-50">
                 <Calendar className="w-4 h-4"/>
