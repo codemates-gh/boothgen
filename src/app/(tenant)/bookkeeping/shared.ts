@@ -8,6 +8,19 @@ export type Txn = {
   category: { id: string; name: string } | null; event: { id: string; title: string } | null; invoice: { id: string; invoiceNumber: string } | null;
 };
 
+// Where an automatic row came from, and what to change instead of the row itself
+export const SOURCE_LABEL: Record<string, string> = {
+  manual: 'Added by hand', payment: 'BoothGen payment', fee: 'BoothGen fee', genie: 'Genie', refund: 'Refund', print: 'Print log', event: 'Event expense',
+};
+export const SOURCE_NOTE: Record<string, string> = {
+  payment: 'From a BoothGen payment. The amount and date follow the invoice.',
+  fee: 'The BoothGen processing fee on a Stripe payment.',
+  genie: 'A Genie booth event payment.',
+  refund: 'A refunded payment. It lowers your income; the original payment stays listed.',
+  print: "From the event's Print Log (prints × cost per print). Change the count there.",
+  event: "From the event's Profitability card. Change the amount there.",
+};
+
 const RECEIPT_TYPES = ['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp', 'application/pdf'];
 
 // Upload a receipt straight to storage; returns its link

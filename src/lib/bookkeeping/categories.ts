@@ -4,15 +4,20 @@ import { prisma } from '@/lib/prisma/client';
 import type { LedgerType } from '@prisma/client';
 
 export const DEFAULT_CATEGORIES: Record<LedgerType, string[]> = {
-  INCOME: ['Sales', 'Add-ons', 'Travel Fees', 'Tips', 'Other Income'],
+  INCOME: ['Sales', 'Add-ons', 'Travel Fees', 'Tips', 'Refunds', 'Other Income'],
   EXPENSE: [
     'Merchant Fees', 'Print Media', 'Props & Backdrops', 'Equipment', 'Software & Subscriptions', 'Travel & Mileage',
-    'Staff & Attendants', 'Marketing', 'Insurance', 'Rent & Storage', 'Other Expenses',
+    'Staff & Attendants', 'Supplies', 'Marketing', 'Insurance', 'Rent & Storage', 'Other Expenses',
   ],
 };
 
 // Categories used for rows BoothGen fills in by itself
-export const AUTO_CATEGORY = { payment: 'Sales', fee: 'Merchant Fees', genie: 'Software & Subscriptions' } as const;
+export const AUTO_CATEGORY = { payment: 'Sales', fee: 'Merchant Fees', genie: 'Software & Subscriptions', refund: 'Refunds', print: 'Print Media' } as const;
+
+// Expenses from an event's Profitability card, by its category
+export const EVENT_EXPENSE_CATEGORY: Record<string, string> = {
+  labor: 'Staff & Attendants', travel: 'Travel & Mileage', supplies: 'Supplies', rental: 'Equipment', other: 'Other Expenses',
+};
 
 // Make sure the account has its categories; returns them all (hidden included)
 export async function ensureCategories(tenantId: string) {

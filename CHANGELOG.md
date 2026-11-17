@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.101.1] — 2026-11-17
+
+### Added
+- **Bookkeeping now also fills in:**
+  - **Refunds:** cancelling an event with a refund keeps the original payment and adds a negative "Refunds" line, so income and the P&L show what you actually kept.
+  - **Print costs:** each event's Print Log (prints × cost per print) becomes a "Print Media" expense on the event date. It updates when you change the count and goes away if you clear it.
+  - **Event expenses:** expenses on an event's Profitability card come in by category (Operator Pay → Staff & Attendants, Travel → Travel & Mileage, Supplies, Equipment Rental → Equipment, Other), so the P&L matches Profitability.
+- New default categories: Refunds (income) and Supplies (expense). Existing accounts get them automatically.
+
+---
+
 ## [2.101.0] — 2026-11-17
 
 ### Added

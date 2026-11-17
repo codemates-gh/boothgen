@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Paperclip, X } from 'lucide-react';
-import { uploadReceipt, type Category, type EventOption, type Txn } from './shared';
+import { uploadReceipt, SOURCE_NOTE, type Category, type EventOption, type Txn } from './shared';
 
 export default function TransactionModal({ open, type, txn, categories, events, onClose, onSaved }: {
   open: boolean;
@@ -67,7 +67,7 @@ export default function TransactionModal({ open, type, txn, categories, events, 
     onSaved();
   }
 
-  const title = txn ? (auto ? 'Edit Payment' : kind === 'INCOME' ? 'Edit Income' : 'Edit Expense') : (type === 'INCOME' ? 'New Income' : 'New Expense');
+  const title = txn ? (auto ? 'Edit Transaction' : kind === 'INCOME' ? 'Edit Income' : 'Edit Expense') : (type === 'INCOME' ? 'New Income' : 'New Expense');
   const label = 'block text-sm font-medium text-gray-700 mb-1';
   return (
     <Modal open={open} onClose={onClose} title={title}>
@@ -75,7 +75,7 @@ export default function TransactionModal({ open, type, txn, categories, events, 
         {auto ? (
           <div className="rounded-lg bg-gray-50 px-3 py-2.5 text-sm">
             <p className="font-medium text-[#1F1F3D]">{txn!.description}</p>
-            <p className="text-xs text-gray-500 mt-0.5">From a BoothGen payment. The amount and date follow the invoice.</p>
+            <p className="text-xs text-gray-500 mt-0.5">{SOURCE_NOTE[txn!.source] ?? 'Filled in by BoothGen.'}</p>
           </div>
         ) : (
           <>

@@ -14,7 +14,7 @@ import { fmtCents } from '@/lib/utils';
 import { RefreshCw, Plus, BarChart3, Settings2, Paperclip, CheckCircle2, Pencil, Trash2, Receipt, Calendar, RotateCcw, Download } from 'lucide-react';
 import TransactionModal from './TransactionModal';
 import CategoriesModal from './CategoriesModal';
-import { uploadReceipt, type Category, type EventOption, type Txn } from './shared';
+import { uploadReceipt, SOURCE_LABEL, type Category, type EventOption, type Txn } from './shared';
 
 type Tab = 'all' | 'uncategorized' | 'categorized';
 const EMPTY_FILTERS = { source: '', categoryId: '', type: '', from: '', to: '', amount: '', q: '' };
@@ -61,12 +61,12 @@ export default function BookkeepingPage() {
 
   async function bulk(action: string, extra: Record<string, unknown> = {}) {
     if (selected.size === 0) return;
-    if (action === 'delete' && !confirm(`Delete ${selected.size} selected transaction${selected.size === 1 ? '' : 's'}? Payments from BoothGen are kept; undo those on the invoice.`)) return;
+    if (action === 'delete' && !confirm(`Delete ${selected.size} selected transaction${selected.size === 1 ? '' : 's'}? Rows BoothGen filled in (payments, refunds, fees, print logs, event expenses) are kept; change those where they came from.`)) return;
     setBusy(action); setNote(''); setError('');
     const res = await fetch('/api/bookkeeping/transactions/bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [...selected], action, ...extra }) });
     const r = await res.json().catch(() => ({}));
     if (!res.ok) setError(r.error ?? 'Something went wrong');
-    else if (r.skipped) setNote(`${r.count} updated. ${r.skipped} skipped (${action === 'delete' ? 'payments from BoothGen' : 'a different kind: income categories only go on income, expense categories on expenses'}).`);
+    else if (r.skipped) setNote(`${r.count} updated. ${r.skipped} skipped (${action === 'delete' ? 'filled in by BoothGen' : 'a different kind: income categories only go on income, expense categories on expenses'}).`);
     setSelected(new Set()); await load(); setBusy('');
   }
 
@@ -102,7 +102,7 @@ export default function BookkeepingPage() {
       <div className="p-4 sm:p-8 space-y-5">
         {/* Header actions */}
         <div className="flex flex-col xl:flex-row gap-3 xl:items-center xl:justify-between">
-          <p className="text-sm text-gray-500 max-w-2xl">Income and expenses. Payments on your invoices and BoothGen processing fees are added automatically; add anything else with New Income or New Expense.</p>
+          <p className="text-sm text-gray-500 max-w-2xl">Income and expenses. Payments, refunds, BoothGen fees, print costs and event expenses are added automatically; add anything else with New Income or New Expense.</p>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={refresh} disabled={busy === 'refresh'}><RefreshCw className={'w-3.5 h-3.5 mr-1.5 ' + (busy === 'refresh' ? 'animate-spin' : '')} />Refresh</Button>
             <Button variant="outline" size="sm" onClick={() => setModal({ type: 'INCOME', txn: null })}><Plus className="w-3.5 h-3.5 mr-1" />New Income</Button>
@@ -133,7 +133,7 @@ export default function BookkeepingPage() {
 
         {/* Filters */}
         <form onSubmit={e => { e.preventDefault(); setApplied(filters); }} className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2">
-          <Select value={filters.source} onChange={e => setFilters(f => ({ ...f, source: e.target.value }))} aria-label="Source"><option value="">All sources</option><option value="auto">From BoothGen</option><option value="manual">Added by hand</option></Select>
+          <Select value={filters.source} onChange={e => setFilters(f => ({ ...f, source: e.target.value }))} aria-label="Source"><option value="">All sources</option><option value="auto">From BoothGen (payments, fees, refunds, print logs, event expenses)</option><option value="manual">Added by hand</option></Select>
           <Select value={filters.categoryId} onChange={e => setFilters(f => ({ ...f, categoryId: e.target.value }))} aria-label="Category"><option value="">All categories</option>{(data?.categories ?? []).map(c => <option key={c.id} value={c.id}>{c.name}{c.hidden ? ' (hidden)' : ''}</option>)}</Select>
           <Select value={filters.type} onChange={e => setFilters(f => ({ ...f, type: e.target.value }))} aria-label="Type"><option value="">All types</option><option value="INCOME">Income</option><option value="EXPENSE">Expenses</option></Select>
           <Input type="date" aria-label="From" value={filters.from} onChange={e => setFilters(f => ({ ...f, from: e.target.value }))} />
@@ -193,12 +193,12 @@ export default function BookkeepingPage() {
                 </span>
                 <span className="block text-xs text-gray-400 truncate">
                   <span className="md:hidden">{format(new Date(t.date), 'MMM d, yyyy')} · {t.category?.name ?? 'To be categorized'} · </span>
-                  {[t.source === 'manual' ? 'Added by hand' : t.source === 'fee' ? 'BoothGen fee' : t.source === 'genie' ? 'Genie' : 'BoothGen payment', t.event?.title].filter(Boolean).join(' · ')}
+                  {[SOURCE_LABEL[t.source] ?? t.source, t.event?.title].filter(Boolean).join(' · ')}
                 </span>
               </span>
               <span className="hidden md:block">{t.receiptUrl && <a href={t.receiptUrl} target="_blank" rel="noopener noreferrer" title={t.receiptName ?? 'Receipt'} className="text-gray-500 hover:text-[#0085FF]"><Paperclip className="w-4 h-4" /></a>}</span>
               <span className={'hidden md:block truncate ' + (t.category ? 'text-gray-700' : 'text-amber-600')}>{t.category?.name ?? 'To be categorized'}</span>
-              <span className={'text-right font-semibold tabular-nums ' + (t.type === 'INCOME' ? 'text-green-600' : 'text-red-600')}>{t.type === 'EXPENSE' ? '-' : ''}{fmt(t.amountCents)}</span>
+              <span className={'text-right font-semibold tabular-nums ' + (t.type === 'INCOME' && t.amountCents > 0 ? 'text-green-600' : 'text-red-600')}>{t.type === 'EXPENSE' ? '-' : ''}{fmt(t.amountCents)}</span>
               <MoreMenu items={[
                 t.invoice && { label: 'View Invoice ' + t.invoice.invoiceNumber, icon: Receipt, href: '/invoices/' + t.invoice.id },
                 t.event && { label: 'View Event', icon: Calendar, href: '/events/' + t.event.id },

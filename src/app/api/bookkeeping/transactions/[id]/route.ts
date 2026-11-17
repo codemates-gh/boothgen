@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const d = parsed.data;
   const auto = row.source !== 'manual';
   if (auto && (d.date !== undefined || d.amountCents !== undefined || d.description !== undefined || d.payee !== undefined)) {
-    return NextResponse.json({ error: 'This came from a BoothGen payment: change it on the invoice instead' }, { status: 400 });
+    return NextResponse.json({ error: 'BoothGen filled this in: change it where it came from (the invoice, Print Log or the event\'s Profitability card)' }, { status: 400 });
   }
   if (d.categoryId && !(await prisma.ledgerCategory.findFirst({ where: { id: d.categoryId, tenantId: who.tenantId, type: row.type } }))) {
     return NextResponse.json({ error: 'Pick a category of the right kind' }, { status: 400 });
@@ -68,7 +68,7 @@ export async function DELETE(_: NextRequest, props: { params: Promise<{ id: stri
   if (who instanceof NextResponse) return who;
   const row = await prisma.ledgerTransaction.findFirst({ where: { id, tenantId: who.tenantId } });
   if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (row.source !== 'manual') return NextResponse.json({ error: 'Payments from BoothGen can\'t be deleted here. Undo the payment on the invoice instead.' }, { status: 400 });
+  if (row.source !== 'manual') return NextResponse.json({ error: 'BoothGen filled this in. Change it where it came from (the invoice, Print Log or the event\'s Profitability card).' }, { status: 400 });
   await prisma.ledgerTransaction.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

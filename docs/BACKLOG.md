@@ -6,7 +6,7 @@ Ideas agreed on but not scheduled yet. Newest first. When one is picked up, move
 
 ## Bookkeeping (under Insights, beside Analytics)
 
-**Status:** first version shipped in 2.101.0 (ledger filled from BoothGen payments and fees, manual income and expenses with receipts, categories, bulk actions, P&L and Client Sales with CSV). Still to do: refunds from Stripe as negative income, print costs posted per event, auto-categorize by payee, a QuickBooks/Xero CSV layout, and the "Later" list below.
+**Status:** first version shipped in 2.101.0 (ledger filled from BoothGen payments and fees, manual income and expenses with receipts, categories, bulk actions, P&L and Client Sales with CSV). 2.101.1 added refunds (from cancelling with a refund), print costs and event expenses. Still to do: refunds made directly in the Stripe dashboard, auto-categorize by payee, a QuickBooks/Xero CSV layout, and the "Later" list below.
 
 **Added:** 2026-11-17. **Reference:** 17hats Bookkeeping (All Transactions / To Be Categorized / Categorized, New Income, New Expense, Reports, Assign to Project).
 

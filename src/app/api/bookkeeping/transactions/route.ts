@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   if (who instanceof NextResponse) return who;
   const f = filtersFrom(req.nextUrl.searchParams);
   const where = ledgerWhere(who.tenantId, f);
-  const base = { tenantId: who.tenantId, amountCents: { gt: 0 } };
+  const base = { tenantId: who.tenantId, amountCents: { not: 0 } };
   const [rows, totals, uncategorized, categories, events] = await Promise.all([
     prisma.ledgerTransaction.findMany({
       where, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }], take: 1000,

@@ -7,12 +7,12 @@ export type LedgerFilters = {
 };
 
 export function ledgerWhere(tenantId: string, f: LedgerFilters): Prisma.LedgerTransactionWhereInput {
-  const where: Prisma.LedgerTransactionWhereInput = { tenantId, amountCents: { gt: 0 } }; // $0 fee markers stay hidden
+  const where: Prisma.LedgerTransactionWhereInput = { tenantId, amountCents: { not: 0 } }; // $0 fee markers stay hidden; refunds are negative
   if (f.tab === 'uncategorized') where.categoryId = null;
   if (f.tab === 'categorized') where.categoryId = { not: null };
   if (f.type === 'INCOME' || f.type === 'EXPENSE') where.type = f.type;
   if (f.categoryId) where.categoryId = f.categoryId;
-  if (f.source === 'auto') where.source = { in: ['payment', 'fee', 'genie'] };
+  if (f.source === 'auto') where.source = { not: 'manual' };
   if (f.source === 'manual') where.source = 'manual';
   if (f.eventId) where.eventId = f.eventId;
   const date: Prisma.DateTimeFilter = {};
@@ -20,7 +20,7 @@ export function ledgerWhere(tenantId: string, f: LedgerFilters): Prisma.LedgerTr
   if (f.to) date.lte = new Date(f.to + 'T23:59:59.999');
   if (f.from || f.to) where.date = date;
   const amt = f.amount ? Math.round(parseFloat(f.amount.replace(/[$,]/g, '')) * 100) : NaN;
-  if (Number.isFinite(amt) && amt > 0) where.amountCents = amt;
+  if (Number.isFinite(amt) && amt > 0) where.amountCents = { in: [amt, -amt] };
   if (f.q?.trim()) {
     const q = f.q.trim();
     where.OR = [
