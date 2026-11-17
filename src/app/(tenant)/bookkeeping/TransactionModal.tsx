@@ -23,7 +23,7 @@ export default function TransactionModal({ open, type, txn, categories, events, 
   const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState(() => ({
     date: txn ? txn.date.slice(0, 10) : today,
-    amount: txn ? (txn.amountCents / 100).toFixed(2) : '',
+    amount: txn ? (Math.abs(txn.amountCents) / 100).toFixed(2) : '',
     description: txn?.description ?? '',
     payee: txn?.payee ?? '',
     categoryId: txn?.categoryId ?? '',

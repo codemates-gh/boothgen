@@ -48,7 +48,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     where: { id },
     data: {
       ...(d.date ? { date: new Date(d.date + 'T12:00:00') } : {}),
-      ...(d.amountCents !== undefined ? { amountCents: d.amountCents } : {}),
+      ...(d.amountCents !== undefined ? { amountCents: row.amountCents < 0 ? -d.amountCents : d.amountCents } : {}), // refunds stay negative
       ...(d.description !== undefined ? { description: d.description } : {}),
       ...(d.payee !== undefined ? { payee: d.payee || null } : {}),
       ...(d.notes !== undefined ? { notes: d.notes || null } : {}),

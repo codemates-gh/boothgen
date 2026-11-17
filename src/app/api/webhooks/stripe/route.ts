@@ -8,6 +8,7 @@ import { sendPaymentConfirmationEmail, sendHostNotificationEmail, sendEmail } fr
 import { triggerAutomation } from '@/lib/inngest/trigger';
 import type Stripe from 'stripe';
 import { PAYMENT_KIND as GENIE_PAYMENT_KIND, recordCheckout, recordStripeRefundOrDispute } from '@/lib/genie/payments';
+import { recordStripeRefund } from '@/lib/bookkeeping/refunds';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
 
@@ -148,7 +149,10 @@ export async function POST(req: NextRequest) {
       // Genie event payments refunded in the Stripe dashboard or disputed by the operator's bank
       case 'charge.refunded': {
         const charge = event.data.object as Stripe.Charge;
-        if (charge.refunded) await recordStripeRefundOrDispute('refunded', typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id);
+        const piId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id;
+        if (charge.refunded) await recordStripeRefundOrDispute('refunded', piId);
+        // Invoice payments refunded in Stripe (full or partial) go into the operator's Bookkeeping
+        await recordStripeRefund(piId, charge.amount_refunded).catch(e => console.error('[stripe-webhook] bookkeeping refund error:', e));
         break;
       }
       case 'charge.dispute.created': {

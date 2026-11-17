@@ -36,6 +36,9 @@ export async function syncLedger(tenantId: string): Promise<{ added: number; rem
     },
   });
 
+  // Payments already refunded through Stripe have their own line (src/lib/bookkeeping/refunds.ts)
+  const stripeRefunded = new Set((await prisma.ledgerTransaction.findMany({ where: { tenantId, source: 'stripe-refund' }, select: { sourceKey: true } }))
+    .map(r => r.sourceKey!.slice('stripe-refund:'.length)));
   const rows: AutoRow[] = [];
   const paymentIntents = new Map<string, { date: Date; invoiceId: string; eventId: string | null; clientId: string; number: string; payee: string }>();
   for (const inv of invoices) {
@@ -45,7 +48,7 @@ export async function syncLedger(tenantId: string): Promise<{ added: number; rem
       for (const m of inv.PaymentMilestone) {
         if (m.amountCents <= 0) continue;
         rows.push({ ...base, sourceKey: 'milestone:' + m.id, source: 'payment', type: 'INCOME', date: m.paidAt ?? inv.updatedAt, amountCents: m.amountCents, description: `Payment for invoice ${inv.invoiceNumber} (${m.label}) - ${payee}` });
-        if (m.status === 'REFUNDED') {
+        if (m.status === 'REFUNDED' && !(m.stripePaymentIntentId && stripeRefunded.has(m.stripePaymentIntentId))) {
           // Dated when BoothGen first sees the refund (kept after that)
           rows.push({ ...base, sourceKey: 'refund:milestone:' + m.id, source: 'refund', type: 'INCOME', date: new Date(), amountCents: -m.amountCents, description: `Refund for invoice ${inv.invoiceNumber} (${m.label}) - ${payee}` });
         }

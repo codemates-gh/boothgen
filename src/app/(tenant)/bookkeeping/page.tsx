@@ -11,9 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { MoreMenu } from '@/components/ui/MoreMenu';
 import { fmtCents } from '@/lib/utils';
-import { RefreshCw, Plus, BarChart3, Settings2, Paperclip, CheckCircle2, Pencil, Trash2, Receipt, Calendar, RotateCcw, Download } from 'lucide-react';
+import { RefreshCw, Plus, BarChart3, Settings2, Paperclip, CheckCircle2, Pencil, Trash2, Receipt, Calendar, RotateCcw, Download, Undo2 } from 'lucide-react';
 import TransactionModal from './TransactionModal';
 import CategoriesModal from './CategoriesModal';
+import RefundModal from './RefundModal';
 import { uploadReceipt, SOURCE_LABEL, type Category, type EventOption, type Txn } from './shared';
 
 type Tab = 'all' | 'uncategorized' | 'categorized';
@@ -32,6 +33,7 @@ export default function BookkeepingPage() {
   const [error, setError] = useState('');
   const [modal, setModal] = useState<{ type: 'INCOME' | 'EXPENSE'; txn: Txn | null } | null>(null);
   const [catsOpen, setCatsOpen] = useState(false);
+  const [refunding, setRefunding] = useState<Txn | null>(null);
   const receiptFor = useRef<Txn | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const fmt = (c: number) => fmtCents(c, currency);
@@ -205,6 +207,7 @@ export default function BookkeepingPage() {
                 t.receiptUrl && { label: 'View Receipt', icon: Paperclip, href: t.receiptUrl, external: true },
                 { label: t.receiptUrl ? 'Replace Receipt' : 'Add Receipt', icon: Paperclip, onClick: () => { receiptFor.current = t; fileInput.current?.click(); } },
                 { label: t.verified ? 'Mark Unverified' : 'Verify', icon: CheckCircle2, onClick: async () => { await fetch('/api/bookkeeping/transactions/' + t.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ verified: !t.verified }) }); load(); } },
+                t.type === 'INCOME' && t.amountCents > 0 && { label: 'Record Refund', icon: Undo2, onClick: () => setRefunding(t) },
                 { label: 'Edit', icon: Pencil, onClick: () => setModal({ type: t.type, txn: t }) },
                 t.source === 'manual' && 'divider',
                 t.source === 'manual' && { label: 'Delete', icon: Trash2, danger: true, onClick: () => removeOne(t) },
@@ -220,6 +223,7 @@ export default function BookkeepingPage() {
         <TransactionModal open type={modal.type} txn={modal.txn} categories={data.categories} events={data.events} onClose={() => setModal(null)} onSaved={() => { setModal(null); load(); }} />
       )}
       {catsOpen && <CategoriesModal open onClose={() => { setCatsOpen(false); load(); }} />}
+      {refunding && <RefundModal txn={refunding} fmt={fmt} onClose={() => setRefunding(null)} onSaved={() => { setRefunding(null); load(); }} />}
     </>
   );
 }

@@ -1836,7 +1836,7 @@ model LedgerTransaction {
   categoryId  String?
   // "payment" (BoothGen payment, Stripe or marked paid), "fee" (BoothGen processing fee) or "manual"
   source      String     @default("manual")
-  sourceKey   String? // automatic rows: what they were made from, e.g. "milestone:<id>"; never set on manual rows
+  sourceKey   String? // what a row was made from, e.g. "milestone:<id>"; on hand-entered refunds, the payment refunded
   invoiceId   String?
   eventId     String?
   clientId    String?

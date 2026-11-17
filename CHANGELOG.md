@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.101.2] — 2026-11-17
+
+### Added
+- **Bookkeeping: Stripe refunds.** Refunds of invoice payments made in Stripe, full or partial, come in as a negative "Refunds" line by themselves. A refund from cancelling an event is still counted once, whichever arrives first.
+- **Bookkeeping: Record Refund** (on any income line's ••• menu) for refunds given outside Stripe: cash, check, Zelle, Venmo, bank transfer. Full or partial, never more than what's left of the payment. It's recorded in Bookkeeping only and doesn't change the invoice or send money.
+
+### Fixed
+- **Cancel Event → refund now refunds Stripe payments correctly.** Payments are taken on BoothGen's Stripe account and forwarded to yours, so the refund is now made there and the amount is pulled back from your Stripe account. Before, the refund was asked of your account directly, which Stripe would refuse.
+
+---
+
 ## [2.101.1] — 2026-11-17
 
 ### Added

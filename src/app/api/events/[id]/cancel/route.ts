@@ -60,10 +60,15 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
         }
 
         try {
-          await stripe.refunds.create(
-            { payment_intent: milestone.stripePaymentIntentId },
-            connectAccount?.stripeAccountId ? { stripeAccount: connectAccount.stripeAccountId } : undefined,
-          );
+          // Invoice payments are taken on BoothGen's Stripe account and forwarded to the operator (transfer_data), so
+          // the refund is made there and reverse_transfer pulls the amount back from the operator's account.
+          // Payments made directly on the operator's account (older setup) are refunded there instead.
+          try {
+            await stripe.refunds.create({ payment_intent: milestone.stripePaymentIntentId, reverse_transfer: true });
+          } catch (err: any) {
+            if (err?.code !== 'resource_missing' || !connectAccount?.stripeAccountId) throw err;
+            await stripe.refunds.create({ payment_intent: milestone.stripePaymentIntentId }, { stripeAccount: connectAccount.stripeAccountId });
+          }
           await prisma.paymentMilestone.update({
             where: { id: milestone.id },
             data: { status: 'REFUNDED' },

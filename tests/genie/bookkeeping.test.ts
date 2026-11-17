@@ -5,7 +5,7 @@ let tenantId = '';
 let role = 'HOST_ADMIN';
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ userId: 'u1', tenantId, tenantRole: role })) }));
 vi.mock('@/lib/auth/config', () => ({ authOptions: {} }));
-vi.mock('@/lib/stripe', () => ({ stripe: { paymentIntents: { retrieve: vi.fn(async () => ({ application_fee_amount: 4200 })) } } }));
+vi.mock('@/lib/stripe', () => ({ stripe: { paymentIntents: { retrieve: vi.fn(async () => ({ application_fee_amount: 4200 })) }, refunds: { create: vi.fn(async () => ({ id: 're_1' })) } } }));
 
 import { prisma } from '@/lib/prisma/client';
 import { stripe } from '@/lib/stripe';
@@ -14,6 +14,9 @@ import { GET as LIST, POST as CREATE } from '@/app/api/bookkeeping/transactions/
 import { DELETE as DELETE_ONE } from '@/app/api/bookkeeping/transactions/[id]/route';
 import { POST as BULK } from '@/app/api/bookkeeping/transactions/bulk/route';
 import { GET as REPORTS } from '@/app/api/bookkeeping/reports/route';
+import { POST as REFUND } from '@/app/api/bookkeeping/transactions/[id]/refund/route';
+import { POST as CANCEL } from '@/app/api/events/[id]/cancel/route';
+import { recordStripeRefund } from '@/lib/bookkeeping/refunds';
 import { req, resetDb, seedEvent, seedTenant } from './helpers';
 
 const p = (id: string) => ({ params: Promise.resolve({ id }) });
@@ -110,6 +113,64 @@ describe('Bookkeeping: refunds, print costs and event expenses', () => {
     // The P&L nets the refund out of income
     const pl = await (await REPORTS(req('/api/bookkeeping/reports?report=pl'))).json();
     expect(pl).toMatchObject({ totalIncome: 0, totalExpense: 10000, net: -10000 });
+  });
+});
+
+describe('Bookkeeping: Stripe and manual refunds', () => {
+  const refundRows = () => prisma.ledgerTransaction.findMany({ where: { tenantId, amountCents: { lt: 0 } }, select: { source: true, amountCents: true } });
+
+  it('records Stripe refunds (partial ones add up) on a full-payment invoice', async () => {
+    const { client, event } = await setup();
+    await invoice(client.id, event.id, 100000, { status: 'PAID', paidAt: new Date(), amountPaidCents: 100000, balanceDueCents: 0, stripePaymentIntentId: 'pi_full' });
+    await syncLedger(tenantId);
+    expect(await recordStripeRefund('pi_full', 25000)).toBe(true);
+    expect(await recordStripeRefund('pi_full', 60000)).toBe(true); // Stripe sends the running total
+    expect(await refundRows()).toEqual([{ source: 'stripe-refund', amountCents: -60000 }]);
+    expect(await recordStripeRefund('pi_unknown', 500)).toBe(false);
+    await syncLedger(tenantId);
+    expect(await refundRows()).toEqual([{ source: 'stripe-refund', amountCents: -60000 }]); // sync leaves it alone
+  });
+
+  it('counts a cancelled-event refund once, whichever arrives first', async () => {
+    const { client, event } = await setup();
+    const sched = await invoice(client.id, event.id, 100000, { status: 'PARTIALLY_PAID', amountPaidCents: 30000, balanceDueCents: 70000 });
+    const a = await prisma.paymentMilestone.create({ data: { tenantId, invoiceId: sched.id, label: 'Deposit', amountCents: 30000, dueDate: new Date(), status: 'REFUNDED', paidAt: new Date(), stripePaymentIntentId: 'pi_a' } });
+    // Cancel Event marked it refunded and Bookkeeping saw that first; then Stripe's notification arrives
+    await syncLedger(tenantId);
+    await recordStripeRefund('pi_a', 30000);
+    expect(await refundRows()).toEqual([{ source: 'refund', amountCents: -30000 }]);
+
+    // The other way round: Stripe's notification first, then the milestone shows as refunded
+    const b = await prisma.paymentMilestone.create({ data: { tenantId, invoiceId: sched.id, label: 'Second', amountCents: 20000, dueDate: new Date(), status: 'PAID', paidAt: new Date(), stripePaymentIntentId: 'pi_b' } });
+    await syncLedger(tenantId);
+    await recordStripeRefund('pi_b', 20000);
+    await prisma.paymentMilestone.update({ where: { id: b.id }, data: { status: 'REFUNDED' } });
+    await syncLedger(tenantId);
+    expect((await refundRows()).map(r => r.amountCents).sort()).toEqual([-30000, -20000].sort());
+    expect(a.id).toBeTruthy();
+  });
+
+  it('records a refund given outside Stripe, up to what was paid', async () => {
+    const { client, event } = await setup();
+    await invoice(client.id, event.id, 50000, { status: 'PAID', paidAt: new Date(), amountPaidCents: 50000, balanceDueCents: 0 });
+    await syncLedger(tenantId);
+    const pay = await prisma.ledgerTransaction.findFirstOrThrow({ where: { tenantId, type: 'INCOME' } });
+    const r1 = await REFUND(req('/x', { method: 'POST', body: { amountCents: 20000, date: '2026-05-01', method: 'Zelle' } }), p(pay.id));
+    expect(r1.status).toBe(201);
+    expect(await r1.json()).toMatchObject({ amountCents: -20000, source: 'manual', eventId: event.id, clientId: client.id });
+    expect((await REFUND(req('/x', { method: 'POST', body: { amountCents: 30001, date: '2026-05-02' } }), p(pay.id))).status).toBe(400);
+    expect((await REFUND(req('/x', { method: 'POST', body: { amountCents: 30000, date: '2026-05-02', method: 'Cash' } }), p(pay.id))).status).toBe(201);
+    const list = await (await LIST(req('/api/bookkeeping/transactions'))).json();
+    expect(list.income).toBe(0); // 500 paid, 200 + 300 refunded
+  });
+
+  it('refunds a cancelled event\'s Stripe payment from BoothGen\'s account, pulling it back from the operator', async () => {
+    const { client, event } = await setup();
+    const sched = await invoice(client.id, event.id, 100000, { status: 'PARTIALLY_PAID', amountPaidCents: 30000, balanceDueCents: 70000 });
+    await prisma.paymentMilestone.create({ data: { tenantId, invoiceId: sched.id, label: 'Deposit', amountCents: 30000, dueDate: new Date(), status: 'PAID', paidAt: new Date(), stripePaymentIntentId: 'pi_dep' } });
+    const res = await CANCEL(req('/x', { method: 'POST', body: { refundOption: 'all' } }), p(event.id));
+    expect(res.status).toBe(200);
+    expect(stripe.refunds.create).toHaveBeenCalledWith({ payment_intent: 'pi_dep', reverse_transfer: true });
   });
 });
 
