@@ -8,6 +8,7 @@ import { BOOMERANG_ASPECT, BOOMERANG_DEFAULT, BoomerangSettings, LOOK_AT_CAMERA_
 import { verifyAsset } from './templateAssets';
 import { storedBoomerang, type StoredBoomerang } from './boomerang';
 import { AttractPatch, attractView } from './attract';
+import { CountdownSoundPatch, countdownSoundView } from './countdownSound';
 import { PropsPatch, storedPropIds } from './props';
 import { BackdropsPatch, backdropsView } from './backdrops';
 
@@ -91,6 +92,8 @@ export const SettingsPatch = z.object({
     thankYouSeconds: int(1, 30).optional(),
     thankYouTitle: z.string().trim().min(1, "The thank-you title can't be empty").max(40, 'Keep the thank-you title to 40 characters').optional(),
     thankYouSubtitle: z.string().trim().max(100, 'Keep the thank-you line to 100 characters').optional(),
+    // Saved by countdownSoundData (it checks an uploaded file); optional so older pages keep the saved value
+    countdownSound: CountdownSoundPatch.optional(),
   }).strict(),
   filters: z.object({
     guestFiltersEnabled: z.boolean(),
@@ -136,7 +139,7 @@ export function settingsUpdateData(patch: SettingsPatch, current: EventGenieSett
   const data: Record<string, unknown> = {};
   if (patch.enabled !== undefined) data.enabled = patch.enabled;
   if (patch.timeZone !== undefined) data.timeZone = patch.timeZone;
-  if (patch.capture) Object.assign(data, patch.capture);
+  if (patch.capture) { const { countdownSound: _cs, ...capture } = patch.capture; Object.assign(data, capture); }
   if (patch.filters) {
     const available = availableFilters(current.filters);
     const chosen = patch.filters.filterIds.map(id => available.find(f => f.id === id));
@@ -208,6 +211,7 @@ export function settingsView(s: EventGenieSettings) {
       idleTimeoutSeconds: s.idleTimeoutSeconds,
       boomerangEdgeLight: s.boomerangEdgeLight,
       thankYouSeconds: s.thankYouSeconds, thankYouTitle: s.thankYouTitle, thankYouSubtitle: s.thankYouSubtitle,
+      countdownSound: countdownSoundView(s.countdownSound),
     },
     lookAtCamera: (s.lookAtCamera as LookAtCamera | null) ?? LOOK_AT_CAMERA_DEFAULT,
     liveView: { mirrorLiveView: s.mirrorLiveView, showDesignWhilePosing: s.showDesignWhilePosing },

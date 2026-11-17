@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.103.0] — 2026-11-17
+
+### Added
+- **Genie: Countdown sound.** A new **Countdown sound** setting in Capture, as an account default (Genie → Defaults) that each event can override. Choices: **Use the iPad's setting** (the default, the attendant picks on the iPad), **Off**, **Beeps**, **Female voice**, **Male voice** or **Custom sound**.
+  - **Custom sound:** upload an MP3, M4A, WAV or AIFF file (up to 20 MB). BoothGen converts it once into a small file the iPad can play (mono AAC, at most 15 seconds; anything longer is trimmed). The page then shows its name, its length and a play button. Saving again doesn't re-convert it, so iPads don't download it again.
+  - "Custom sound" can't be saved without an uploaded file. A replaced file is deleted once nothing uses it, and abandoned uploads are cleaned up daily.
+  - The iPad receives the choice in the event's settings. "Use the iPad's setting" sends nothing, so the iPad keeps its own choice.
+  - **Setup:** two new database columns (`countdownSound` on `event_genie_settings` and `genie_defaults`).
+
+---
+
 ## [2.102.4] — 2026-11-17
 
 ### Fixed

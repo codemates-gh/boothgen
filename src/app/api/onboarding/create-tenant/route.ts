@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     data: {
       name: name.trim(), slug,
       ...(genie
-        ? { product: 'genie', status: 'ACTIVE' as const, genieEnabled: true, genieEnabledAt: new Date(), ...(timeZone ? { genieDefaults: { create: { ...BUILT_IN_DEFAULTS, attract: BUILT_IN_DEFAULTS.attract ?? Prisma.DbNull, timeZone } } } : {}) }
+        ? { product: 'genie', status: 'ACTIVE' as const, genieEnabled: true, genieEnabledAt: new Date(), ...(timeZone ? { genieDefaults: { create: { ...BUILT_IN_DEFAULTS, attract: BUILT_IN_DEFAULTS.attract ?? Prisma.DbNull, countdownSound: BUILT_IN_DEFAULTS.countdownSound ?? Prisma.DbNull, timeZone } } } : {}) }
         : { status: 'TRIAL' as const, trialEndsAt: new Date(Date.now() + 14 * 86400000) }),
       branding: { create: { companyName: name.trim(), primaryColor: '#F97316', secondaryColor: '#EA6100' } },
       memberships: { create: { userId: session.userId, role: 'HOST_ADMIN', status: 'ACTIVE', joinedAt: new Date() } },

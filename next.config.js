@@ -8,6 +8,7 @@ const nextConfig = {
     // ffmpeg binary for attract-screen encoder and backdrop uploads
     '/api/genie-attract/encode': ['./node_modules/ffmpeg-static/ffmpeg'],
     '/api/genie-backdrops/process': ['./node_modules/ffmpeg-static/ffmpeg'],
+    '/api/genie-countdown/encode': ['./node_modules/ffmpeg-static/ffmpeg'],
     '/blog': ['./content/blog/**/*'],
     '/blog/[slug]': ['./content/blog/**/*'],
     '/sitemap.xml': ['./content/blog/**/*'],

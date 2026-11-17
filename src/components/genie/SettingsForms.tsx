@@ -17,7 +17,10 @@ export type Capture = {
   perShotPreviewSeconds: number; allowReviewRetake: boolean; retakesPerShot: number; idleTimeoutSeconds: number;
   boomerangEdgeLight: boolean;
   thankYouSeconds: number; thankYouTitle: string; thankYouSubtitle: string;
+  // 'ipad' = "Use the iPad's setting"; custom.url is an encoded sound from /api/genie-countdown/encode
+  countdownSound?: CountdownSound;
 };
+export type CountdownSound = { style: 'ipad' | 'off' | 'beeps' | 'femaleVoice' | 'maleVoice' | 'custom'; custom: { url: string; name: string; durationMs: number; bytes: number } | null };
 export type Sharing = { smsEnabled: boolean; emailEnabled: boolean; qrEnabled: boolean; guestLinkScope: 'own' | 'all'; smsBody: string; emailSubject: string; emailBody: string; smsConsentText: string };
 export type Printing = { enabled: boolean; maxCopies: number; defaultCopies: number };
 export type AttractMedia = { url: string; kind: 'image' | 'video'; width: number; height: number; bytes: number; durationMs: number | null };
@@ -127,6 +130,7 @@ export function CaptureFields({ value, onChange, disabled, children }: { value: 
         <Field label="First countdown (sec)" hint="0–10"><Num value={value.initialCountdownSeconds} min={0} max={10} disabled={disabled} onChange={n => onChange({ initialCountdownSeconds: n })}/></Field>
         <Field label="Between photos (sec)" hint="0–10"><Num value={value.betweenShotsCountdownSeconds} min={0} max={10} disabled={disabled} onChange={n => onChange({ betweenShotsCountdownSeconds: n })}/></Field>
       </div>
+      <CountdownSoundField value={value.countdownSound ?? { style: 'ipad', custom: null }} disabled={disabled} onChange={c => onChange({ countdownSound: c })}/>
       {children}
       <div className="space-y-3 border-t pt-4">
         <Toggle checked={value.showPerShotPreview} disabled={disabled} onChange={v => onChange({ showPerShotPreview: v })} label="Show each photo after it's taken"/>
@@ -214,6 +218,78 @@ export function PrintingFields({ value, onChange, disabled }: { value: Printing;
 }
 
 // Every number field filled in (number inputs hold NaN while empty)
+const COUNTDOWN_OPTIONS: [CountdownSound['style'], string][] = [
+  ['ipad', "Use the iPad's setting"], ['off', 'Off'], ['beeps', 'Beeps'], ['femaleVoice', 'Female voice'], ['maleVoice', 'Male voice'], ['custom', 'Custom sound'],
+];
+const COUNTDOWN_ACCEPT = '.mp3,.m4a,.aac,.wav,.aif,.aiff,audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,audio/wav,audio/x-wav,audio/aiff,audio/x-aiff';
+
+// Countdown sound: what the iPad plays with the countdown. A custom sound is converted once on upload (≤ 15 s).
+function CountdownSoundField({ value, onChange, disabled }: { value: CountdownSound; onChange: (c: CountdownSound) => void; disabled?: boolean }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [phase, setPhase] = useState<'' | 'uploading' | 'converting'>('');
+  const [pct, setPct] = useState(0);
+  const [error, setError] = useState('');
+  const [note, setNote] = useState('');
+
+  async function upload(file: File) {
+    setError(''); setNote('');
+    // Some browsers report no type for .aiff/.m4a; go by the extension then
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+    const type = file.type || ({ mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', wav: 'audio/wav', aif: 'audio/aiff', aiff: 'audio/aiff' } as Record<string, string>)[ext] || '';
+    if (!type) { setError('Use an MP3, M4A, WAV or AIFF sound.'); return; }
+    if (file.size > 20 * 1024 * 1024) { setError('Sounds must be 20 MB or smaller.'); return; }
+    setPhase('uploading'); setPct(0);
+    try {
+      const r = await fetch('/api/genie-countdown/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contentType: type, bytes: file.size }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Could not start the upload');
+      const put = new File([file], file.name, { type });
+      if (!(await putWithProgress(d.uploadUrl, put, setPct))) throw new Error("The upload didn't go through. Check your connection and try again.");
+      setPhase('converting');
+      const e = await fetch('/api/genie-countdown/encode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: d.url, name: file.name }) });
+      const ed = await e.json().catch(() => ({}));
+      if (!e.ok) throw new Error(ed.error || "That sound couldn't be converted. Try an MP3 or M4A.");
+      onChange({ style: 'custom', custom: ed.sound });
+      setNote(ed.trimmed ? 'Only the first 15 seconds are used.' : '');
+    } catch (err) {
+      setError((err as Error).message);
+    }
+    setPhase('');
+  }
+
+  const busy = phase !== '';
+  const c = value.custom;
+  return (
+    <div className="space-y-2 border-t pt-4">
+      <Field label="Countdown sound" hint="Beeps or a voice count down with the numbers on screen, and a shutter clicks at the photo. Voices use the iPad's own voice in the iPad's language. A custom sound is timed to end as the photo is taken, so a &quot;3, 2, 1, smile!&quot; recording lines up. Guests only hear it if the iPad's volume is up.">
+        <Select value={value.style} disabled={disabled} onChange={e => onChange({ style: e.target.value as CountdownSound['style'], custom: value.custom })} className="sm:max-w-xs">
+          {COUNTDOWN_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </Select>
+      </Field>
+      {value.style === 'custom' && (
+        <div className="ml-0 sm:ml-1 space-y-2">
+          {c && (
+            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700">
+              <span className="font-medium">{c.name}</span>
+              <span className="text-gray-500">{(c.durationMs / 1000).toFixed(1)} s</span>
+              <audio src={c.url} controls preload="none" className="h-8" />
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <input ref={fileRef} type="file" accept={COUNTDOWN_ACCEPT} className="hidden" onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) upload(f); }}/>
+            <Button type="button" variant="outline" size="sm" disabled={disabled || busy} onClick={() => fileRef.current?.click()}>
+              {phase === 'uploading' ? `Uploading… ${pct}%` : phase === 'converting' ? 'Converting for the iPad…' : c ? 'Replace sound' : 'Upload sound'}
+            </Button>
+          </div>
+          <p className="text-xs text-gray-400">MP3, M4A, WAV or AIFF up to 20 MB. We convert it for the iPad and use at most the first 15 seconds (the iPad won&apos;t play anything longer).{!c && ' Upload a sound to save this choice.'}</p>
+          {note && <p className="text-xs text-green-700">{note} Save to use it.</p>}
+          {error && <p className="text-sm text-red-600">{error}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function numbersFilled(...groups: object[]): boolean {
   return groups.every(g => Object.values(g).every(v => typeof v !== 'number' || Number.isFinite(v)));
 }

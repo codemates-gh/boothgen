@@ -703,7 +703,11 @@ export const sweepAbandonedAttract = inngest.createFunction(
   async () => {
     const r = await sweepAbandonedAttractFiles();
     console.log(`[ATTRACT_SWEEP] Deleted ${r.sources} unencoded uploads and ${r.unsaved} unsaved attract files`);
-    return r;
+    // Custom countdown sounds: same rules
+    const { sweepAbandonedCountdownFiles } = await import('@/lib/genie/countdownSound');
+    const c = await sweepAbandonedCountdownFiles();
+    console.log(`[COUNTDOWN_SWEEP] Deleted ${c.sources} unencoded uploads and ${c.unsaved} unsaved countdown sounds`);
+    return { ...r, countdown: c };
   }
 );
 

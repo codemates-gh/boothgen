@@ -8,6 +8,7 @@ import { SettingsPatch } from '@/lib/genie/eventAdmin';
 import { DefaultSection, SECTION_NAMES, applyDefaultsToEvents, getDefaults, sameSection } from '@/lib/genie/defaults';
 import { findLibraryTemplate, libraryView } from '@/lib/genie/library';
 import { attractData, attractView, deleteUnusedAttractMedia, storedAttract } from '@/lib/genie/attract';
+import { countdownSoundData, countdownSoundView, deleteUnusedCountdownSounds, storedCountdownSound } from '@/lib/genie/countdownSound';
 
 function view(d: Awaited<ReturnType<typeof getDefaults>>) {
   const v = d.values;
@@ -20,6 +21,7 @@ function view(d: Awaited<ReturnType<typeof getDefaults>>) {
       allowReviewRetake: v.allowReviewRetake, retakesPerShot: v.retakesPerShot, idleTimeoutSeconds: v.idleTimeoutSeconds,
       boomerangEdgeLight: v.boomerangEdgeLight,
       thankYouSeconds: v.thankYouSeconds, thankYouTitle: v.thankYouTitle, thankYouSubtitle: v.thankYouSubtitle,
+      countdownSound: countdownSoundView(v.countdownSound),
     },
     sharing: {
       smsEnabled: v.smsEnabled, emailEnabled: v.emailEnabled, qrEnabled: v.qrEnabled, guestLinkScope: v.guestLinkScope as 'own' | 'all',
@@ -76,9 +78,17 @@ export async function PUT(req: NextRequest) {
     if ('error' in a) return NextResponse.json({ error: a.error, path: 'attract.mediaUrl' }, { status: 400 });
     attract = a.data;
   }
+  let countdown = {};
+  const { countdownSound: soundPatch, ...capture } = b.capture ?? {};
+  if (soundPatch) {
+    const c = await countdownSoundData(soundPatch, before.values.countdownSound, auth.tenantId);
+    if ('error' in c) return NextResponse.json({ error: c.error, path: 'capture.countdownSound' }, { status: 400 });
+    countdown = { countdownSound: c.value };
+  }
   const data = {
     ...(b.timeZone ? { timeZone: b.timeZone } : {}),
-    ...(b.capture ?? {}),
+    ...capture,
+    ...countdown,
     ...(b.sharing ?? {}),
     ...(b.printing ? { printingEnabled: b.printing.enabled, printMaxCopies: b.printing.maxCopies, printDefaultCopies: b.printing.defaultCopies } : {}),
     ...attract,
@@ -86,7 +96,7 @@ export async function PUT(req: NextRequest) {
   };
   await prisma.genieDefaults.upsert({
     where: { tenantId: auth.tenantId },
-    create: { tenantId: auth.tenantId, ...before.values, attract: before.values.attract ?? Prisma.DbNull, ...data },
+    create: { tenantId: auth.tenantId, ...before.values, attract: before.values.attract ?? Prisma.DbNull, countdownSound: before.values.countdownSound ?? Prisma.DbNull, ...data },
     update: data,
   });
   const after = await getDefaults(auth.tenantId);
@@ -95,5 +105,8 @@ export async function PUT(req: NextRequest) {
   // The replaced attract file is deleted once no event uses it any more
   const oldAttract = storedAttract(before.values.attract)?.media.url;
   if (oldAttract && oldAttract !== storedAttract(after.values.attract)?.media.url) await deleteUnusedAttractMedia([oldAttract]);
+  const customUrl = (v: unknown) => { const c = storedCountdownSound(v); return c?.style === 'custom' ? c.custom.url : null; };
+  const oldSound = customUrl(before.values.countdownSound);
+  if (oldSound && oldSound !== customUrl(after.values.countdownSound)) await deleteUnusedCountdownSounds([oldSound]);
   return NextResponse.json({ ...view(after), eventsUpdated });
 }

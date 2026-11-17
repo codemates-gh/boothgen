@@ -6,7 +6,7 @@ import { THANK_YOU_DEFAULT } from './schemas';
 // Sections that have account-wide defaults. Field names are the same on GenieDefaults and EventGenieSettings.
 export const DEFAULT_SECTIONS = {
   timeZone: ['timeZone'],
-  capture: ['shotCount', 'initialCountdownSeconds', 'betweenShotsCountdownSeconds', 'showPerShotPreview', 'allowPerShotRetake', 'perShotPreviewSeconds', 'allowReviewRetake', 'retakesPerShot', 'idleTimeoutSeconds', 'boomerangEdgeLight', 'thankYouSeconds', 'thankYouTitle', 'thankYouSubtitle'],
+  capture: ['shotCount', 'initialCountdownSeconds', 'betweenShotsCountdownSeconds', 'showPerShotPreview', 'allowPerShotRetake', 'perShotPreviewSeconds', 'allowReviewRetake', 'retakesPerShot', 'idleTimeoutSeconds', 'boomerangEdgeLight', 'thankYouSeconds', 'thankYouTitle', 'thankYouSubtitle', 'countdownSound'],
   sharing: ['smsEnabled', 'emailEnabled', 'qrEnabled', 'guestLinkScope', 'smsBody', 'emailSubject', 'emailBody', 'smsConsentText'],
   printing: ['printingEnabled', 'printMaxCopies', 'printDefaultCopies'],
   attract: ['attract', 'attractReturnAfterSeconds'],
@@ -25,6 +25,7 @@ export const BUILT_IN_DEFAULTS: DefaultsValues = {
   timeZone: 'America/New_York',
   shotCount: 3, initialCountdownSeconds: 5, betweenShotsCountdownSeconds: 3, showPerShotPreview: true, allowPerShotRetake: true,
   perShotPreviewSeconds: 2, allowReviewRetake: false, retakesPerShot: 1, idleTimeoutSeconds: 60, boomerangEdgeLight: true,
+  countdownSound: null,
   ...THANK_YOU_DEFAULT,
   smsEnabled: true, emailEnabled: true, qrEnabled: true, guestLinkScope: 'own', ...GENIE_SETTINGS_DEFAULTS,
   printingEnabled: true, printMaxCopies: 4, printDefaultCopies: 1,
@@ -40,7 +41,7 @@ export async function getDefaults(tenantId: string): Promise<{ values: DefaultsV
 
 // Values to write (a JSON column's null is written as SQL NULL)
 export function sectionValues(src: Record<string, unknown>, section: DefaultSection): Record<string, unknown> {
-  return Object.fromEntries(DEFAULT_SECTIONS[section].map(k => [k, src[k] === null && k === 'attract' ? Prisma.DbNull : src[k]]));
+  return Object.fromEntries(DEFAULT_SECTIONS[section].map(k => [k, src[k] === null && (k === 'attract' || k === 'countdownSound') ? Prisma.DbNull : src[k]]));
 }
 
 // Key order doesn't matter for JSON columns (Postgres jsonb reorders keys)
@@ -59,6 +60,7 @@ export function newEventSettingsData(defaults: DefaultsValues, timeZone?: string
   return {
     ...defaults,
     attract: defaults.attract ?? Prisma.DbNull,
+    countdownSound: defaults.countdownSound ?? Prisma.DbNull,
     ...(timeZone ? { timeZone } : {}),
     customTimeZone: !!timeZone && timeZone !== defaults.timeZone,
     customCapture: false, customSharing: false, customPrinting: false, customAttract: false,

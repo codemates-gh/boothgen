@@ -6,6 +6,7 @@ import { galleryUrl, sessionUrl } from './urls';
 import { messagingRoutes } from './messaging';
 import { bundleBoomerang } from './boomerang';
 import { bundleAttract } from './attract';
+import { bundleCountdownSound } from './countdownSound';
 import { bundleProps, eventProps } from './props';
 import { bundleBackdrops, eventBackdrops } from './backdrops';
 import { isBoothClient } from './boothClient';
@@ -146,6 +147,8 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
       ...(settings.lookAtCamera ? { lookAtCamera: settings.lookAtCamera } : {}),
       ...(thankYouChanged(settings) ? { thankYou: { seconds: settings.thankYouSeconds, title: settings.thankYouTitle, subtitle: settings.thankYouSubtitle } } : {}),
       ...(settings.boomerang ? { boomerang: bundleBoomerang(settings.boomerang, settings.boomerangEdgeLight) } : {}),
+      // Left out for "Use the iPad's setting", so the attendant picks on the iPad
+      ...(bundleCountdownSound(settings.countdownSound) ? { countdownSound: bundleCountdownSound(settings.countdownSound) } : {}),
     },
     templates: [...event.genieTemplates].sort((a, b) => a.sortOrder - b.sortOrder).map(eventTemplateJson),
     processing: settings.processing,

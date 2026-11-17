@@ -14,6 +14,7 @@ import { designApprovalPending, effectiveLockedAt, eventLocksAt, isValidTimeZone
 import { SettingsPatch, boomerangData, findAdminEvent, lockedError, providerWarnings, settingsUpdateData, settingsView, templateView } from '@/lib/genie/eventAdmin';
 import { galleryRetentionDates, getGalleryRetention } from '@/lib/gallery/retention';
 import { attractData, deleteUnusedAttractMedia, storedAttract } from '@/lib/genie/attract';
+import { countdownSoundData, deleteUnusedCountdownSounds, storedCountdownSound } from '@/lib/genie/countdownSound';
 import { eventProps, propView, propsData } from '@/lib/genie/props';
 import { backdropView, backdropsData, eventBackdrops } from '@/lib/genie/backdrops';
 
@@ -116,6 +117,11 @@ export async function PATCH(req: NextRequest, props0: { params: Promise<{ id: st
     if ('error' in b) return NextResponse.json({ error: b.error, path: 'boomerang.overlayUrl' }, { status: 400 });
     result.data.boomerang = b.value;
   }
+  if (parsed.data.capture?.countdownSound) {
+    const c = await countdownSoundData(parsed.data.capture.countdownSound, s.countdownSound, auth.tenantId);
+    if ('error' in c) return NextResponse.json({ error: c.error, path: 'capture.countdownSound' }, { status: 400 });
+    result.data.countdownSound = c.value;
+  }
   if (parsed.data.attract) {
     const a = await attractData(parsed.data.attract, s.attract, auth.tenantId);
     if ('error' in a) return NextResponse.json({ error: a.error, path: 'attract.mediaUrl' }, { status: 400 });
@@ -141,5 +147,8 @@ export async function PATCH(req: NextRequest, props0: { params: Promise<{ id: st
   // A replaced attract file nothing else uses is deleted
   const oldAttract = storedAttract(s.attract)?.media.url;
   if (oldAttract && oldAttract !== storedAttract(saved.attract)?.media.url) await deleteUnusedAttractMedia([oldAttract]);
+  const customUrl = (v: unknown) => { const c = storedCountdownSound(v); return c?.style === 'custom' ? c.custom.url : null; };
+  const oldSound = customUrl(s.countdownSound);
+  if (oldSound && oldSound !== customUrl(saved.countdownSound)) await deleteUnusedCountdownSounds([oldSound]);
   return NextResponse.json(settingsView(saved));
 }
