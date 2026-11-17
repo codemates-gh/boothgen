@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { fmtCents } from '@/lib/utils';
-import { TrendingUp, Printer, DollarSign, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingUp, Printer, DollarSign, Plus, Trash2, ChevronDown, ChevronUp, Car } from 'lucide-react';
+import { MileageTripModal } from '@/app/(tenant)/bookkeeping/MileageModals';
 
 type Profile = { id: string; name: string; costPerPrintCents?: number; isDefault: boolean };
 type Expense = { id: string; description: string; amountCents: number; category: string };
@@ -17,7 +18,7 @@ type PrintLog = {
 
 const CATEGORIES = [
   ['labor', 'Operator Pay'],
-  ['travel', 'Travel'],
+  ['travel', 'Travel (tolls, parking, lodging)'], // mileage itself is logged automatically (Bookkeeping)
   ['supplies', 'Supplies'],
   ['rental', 'Equipment Rental'],
   ['other', 'Other'],
@@ -161,6 +162,14 @@ function FullProfitability({
   const [printForm, setPrintForm] = useState({ printCount: '', consumableProfileId: '', notes: '' });
   const [savingPrint, setSavingPrint] = useState(false);
 
+  // Mileage from Bookkeeping's automatic log (read-only here; Edit opens the same mileage editor)
+  const [mileage, setMileage] = useState<{ enabled: boolean; eligible: boolean; status: string; error: string | null; calc: { miles: number; amountCents: number; text: string } | null } | null>(null);
+  const [editingMileage, setEditingMileage] = useState(false);
+  const loadMileage = useCallback(() => {
+    fetch(`/api/bookkeeping/mileage/${eventId}`).then(r => (r.ok ? r.json() : null)).then(setMileage).catch(() => {});
+  }, [eventId]);
+  useEffect(() => { loadMileage(); }, [loadMileage]);
+
   const [expForm, setExpForm] = useState({ description: '', amount: '', category: 'labor' });
   const [addingExp, setAddingExp] = useState(false);
   const [savingExp, setSavingExp] = useState(false);
@@ -230,7 +239,8 @@ function FullProfitability({
     ? (printLog.printCount ?? 0) * (printLog.consumableProfile?.costPerPrintCents ?? 0)
     : 0;
   const otherCostCents = expenses.reduce((sum, e) => sum + e.amountCents, 0);
-  const totalCostCents = printCostCents + otherCostCents;
+  const mileageCents = mileage?.enabled && mileage.eligible ? mileage.calc?.amountCents ?? 0 : 0;
+  const totalCostCents = printCostCents + otherCostCents + mileageCents;
   const profitCents = revenueCents - totalCostCents;
   const marginPct = revenueCents > 0 ? Math.round((profitCents / revenueCents) * 100) : null;
   const profitColor = profitCents >= 0 ? 'text-emerald-600' : 'text-red-600';
@@ -339,6 +349,31 @@ function FullProfitability({
             )}
           </div>
 
+          {/* Mileage (automatic) */}
+          {mileage?.enabled && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><Car className="w-4 h-4 text-gray-400" />Mileage</p>
+                {mileage.eligible && <button onClick={() => setEditingMileage(true)} className="text-xs text-[#0085FF] hover:underline">Edit</button>}
+              </div>
+              {!mileage.eligible ? (
+                <p className="text-sm text-gray-400 italic">Logged automatically once the event is booked.</p>
+              ) : mileage.calc ? (
+                <div className="text-sm text-gray-700 bg-gray-50 rounded-lg px-4 py-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="font-medium">{mileage.calc.miles} mi</span>
+                    <p className="text-xs text-gray-500 mt-0.5 break-words">{mileage.calc.text}</p>
+                  </div>
+                  <span className="font-semibold text-sm flex-shrink-0">{fmt(mileage.calc.amountCents)}</span>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 italic">{mileage.error ?? 'Distance not looked up yet.'}</p>
+              )}
+              <p className="text-[11px] text-gray-400 mt-1">From Bookkeeping&apos;s mileage log, so there&apos;s no need to add mileage as an expense below.</p>
+            </div>
+          )}
+          {editingMileage && <MileageTripModal eventId={eventId} fmt={fmt} onClose={() => { setEditingMileage(false); loadMileage(); }} onSaved={loadMileage} />}
+
           {/* Expenses */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -376,7 +411,7 @@ function FullProfitability({
                   <Input
                     value={expForm.description}
                     onChange={e => setExpForm(f => ({ ...f, description: e.target.value }))}
-                    placeholder="e.g. Juan — operator fee, Round-trip mileage"
+                    placeholder="e.g. Juan — operator fee, Parking"
                   />
                 </div>
                 <div className="flex justify-end gap-2">
@@ -421,6 +456,7 @@ function FullProfitability({
           {/* Summary */}
           <div className="border-t pt-4 flex flex-wrap gap-4 text-sm">
             <div><span className="text-gray-500">Print cost:</span> <span className="font-semibold">{fmt(printCostCents)}</span></div>
+            {mileageCents > 0 && <div><span className="text-gray-500">Mileage:</span> <span className="font-semibold">{fmt(mileageCents)}</span></div>}
             <div><span className="text-gray-500">Other expenses:</span> <span className="font-semibold">{fmt(otherCostCents)}</span></div>
             <div><span className="text-gray-500">Total cost:</span> <span className="font-semibold">{fmt(totalCostCents)}</span></div>
             <div><span className="text-gray-500">Net profit:</span> <span className={`font-bold ${profitColor}`}>{fmt(profitCents)}</span></div>

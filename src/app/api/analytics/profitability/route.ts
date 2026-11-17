@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
+import { mileageRows } from '@/lib/bookkeeping/mileage';
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -54,11 +55,15 @@ export async function GET() {
     expensesByEvent[e.eventId] = (expensesByEvent[e.eventId] ?? 0) + e.amountCents;
   }
 
+  // Mileage (Bookkeeping's automatic log) is part of each event's cost
+  const mileageByEvent = Object.fromEntries((await mileageRows(tenantId)).map(m => [m.eventId, m.amountCents]));
+
   const rows = events.map((ev) => {
     const revenue = revenueByEvent[ev.id] ?? 0;
     const printCost = printCostByEvent[ev.id] ?? 0;
     const otherExpenses = expensesByEvent[ev.id] ?? 0;
-    const totalCost = printCost + otherExpenses;
+    const mileage = mileageByEvent[ev.id] ?? 0;
+    const totalCost = printCost + otherExpenses + mileage;
     const profit = revenue - totalCost;
     const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : null;
     return {
@@ -70,6 +75,7 @@ export async function GET() {
       printCostCents: printCost,
       printCount: printCountByEvent[ev.id] ?? 0,
       otherExpensesCents: otherExpenses,
+      mileageCents: mileage,
       totalCostCents: totalCost,
       profitCents: profit,
       marginPct: margin,

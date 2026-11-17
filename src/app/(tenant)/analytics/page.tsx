@@ -269,7 +269,7 @@ function ProfitabilityTab({ data }: { data: { rows: any[]; totals: any } }) {
                     <th className="text-right px-4 py-3 w-[100px]">Revenue</th>
                     <th className="text-right px-4 py-3 w-[80px]">Prints</th>
                     <th className="text-right px-4 py-3 w-[100px]">Print Cost</th>
-                    <th className="text-right px-4 py-3 w-[100px]">Other Exp.</th>
+                    <th className="text-right px-4 py-3 w-[110px]" title="Other expenses and mileage">Other + Miles</th>
                     <th className="text-right px-4 py-3 w-[100px]">Profit</th>
                     <th className="text-right px-4 py-3 w-[70px]">Margin</th>
                   </tr>
@@ -286,7 +286,7 @@ function ProfitabilityTab({ data }: { data: { rows: any[]; totals: any } }) {
                         <td className="px-4 py-3 text-right text-sm font-medium">{fmtD(r.revenueCents)}</td>
                         <td className="px-4 py-3 text-right text-sm text-gray-600">{r.printCount > 0 ? r.printCount : <span className="text-gray-300">—</span>}</td>
                         <td className="px-4 py-3 text-right text-sm">{r.printCostCents > 0 ? fmtD(r.printCostCents) : <span className="text-gray-300">—</span>}</td>
-                        <td className="px-4 py-3 text-right text-sm">{r.otherExpensesCents > 0 ? fmtD(r.otherExpensesCents) : <span className="text-gray-300">—</span>}</td>
+                        <td className="px-4 py-3 text-right text-sm">{r.otherExpensesCents + (r.mileageCents ?? 0) > 0 ? fmtD(r.otherExpensesCents + (r.mileageCents ?? 0)) : <span className="text-gray-300">—</span>}</td>
                         <td className={`px-4 py-3 text-right text-sm font-bold ${profitPos ? 'text-emerald-600' : 'text-red-600'}`}>{fmtD(r.profitCents)}</td>
                         <td className={`px-4 py-3 text-right text-sm font-medium ${profitPos ? 'text-emerald-600' : 'text-red-600'}`}>{r.marginPct !== null ? `${r.marginPct}%` : <span className="text-gray-300">—</span>}</td>
                       </tr>

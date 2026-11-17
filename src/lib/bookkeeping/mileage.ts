@@ -10,7 +10,9 @@ import { prisma } from '@/lib/prisma/client';
 import { getIrsRates, rateOn, type RatePeriod } from './mileageRates';
 
 const MILE_METERS = 1609.344;
-const ELIGIBLE = ['BOOKED', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED'] as const;
+// Events that get mileage: booked or later (not leads, lost or cancelled)
+export const MILEAGE_EVENT_STATUSES = ['BOOKED', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED'] as const;
+const ELIGIBLE = MILEAGE_EVENT_STATUSES;
 
 export function venueAddress(e: { venueName?: string | null; venueAddress?: string | null; venueCity?: string | null; venueState?: string | null; venuePostalCode?: string | null }): string | null {
   const parts = [e.venueAddress, e.venueCity, [e.venueState, e.venuePostalCode].filter(Boolean).join(' ')].map(p => p?.trim()).filter(Boolean);

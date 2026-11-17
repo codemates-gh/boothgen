@@ -4,21 +4,22 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { bookkeeper } from '@/lib/bookkeeping/auth';
-import { ensureMileage, mileageCalc, venueAddress } from '@/lib/bookkeeping/mileage';
+import { ensureMileage, mileageCalc, venueAddress, MILEAGE_EVENT_STATUSES } from '@/lib/bookkeeping/mileage';
 import { getIrsRates } from '@/lib/bookkeeping/mileageRates';
 import { syncLedger } from '@/lib/bookkeeping/sync';
 import { z } from 'zod';
 
 async function view(tenantId: string, eventId: string) {
   const [event, branding, irs] = await Promise.all([
-    prisma.event.findFirst({ where: { id: eventId, tenantId }, select: { id: true, title: true, eventDate: true, venueName: true, venueAddress: true, venueCity: true, venueState: true, venuePostalCode: true, mileage: true } }),
-    prisma.tenantBranding.findUnique({ where: { tenantId }, select: { businessAddress: true, mileageRateCents: true } }),
+    prisma.event.findFirst({ where: { id: eventId, tenantId }, select: { id: true, title: true, status: true, eventDate: true, venueName: true, venueAddress: true, venueCity: true, venueState: true, venuePostalCode: true, mileage: true } }),
+    prisma.tenantBranding.findUnique({ where: { tenantId }, select: { businessAddress: true, mileageRateCents: true, mileageEnabled: true } }),
     getIrsRates(),
   ]);
   if (!event) return null;
   const m = event.mileage;
   return {
     eventId: event.id, title: event.title, venue: venueAddress(event), homeBase: branding?.businessAddress ?? null,
+    enabled: branding?.mileageEnabled ?? true, eligible: (MILEAGE_EVENT_STATUSES as readonly string[]).includes(event.status),
     startAddress: m?.startAddress ?? null, returnAddress: m?.returnAddress ?? null, roundTrip: m?.roundTrip ?? true,
     overrideMiles: m?.overrideMiles ?? null, oneWayMiles: m?.oneWayMiles ?? null, returnMiles: m?.returnMiles ?? null,
     status: m?.status ?? 'pending', error: m?.error ?? null, computedAt: m?.computedAt ?? null,
@@ -30,7 +31,12 @@ export async function GET(_: NextRequest, props: { params: Promise<{ eventId: st
   const { eventId } = await props.params;
   const who = await bookkeeper();
   if (who instanceof NextResponse) return who;
-  const v = await view(who.tenantId, eventId);
+  let v = await view(who.tenantId, eventId);
+  if (v && v.enabled && v.eligible && v.status === 'pending' && !v.calc) {
+    // First time this event is looked at: get its distance now
+    await ensureMileage(who.tenantId, { eventId });
+    v = await view(who.tenantId, eventId);
+  }
   return v ? NextResponse.json(v) : NextResponse.json({ error: 'Not found' }, { status: 404 });
 }
 

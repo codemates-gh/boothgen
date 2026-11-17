@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.102.2] — 2026-11-17
+
+### Changed
+- **Event Profitability card: mileage is automatic.**
+  - **Mileage line:** a new read-only line shows the event's mileage from Bookkeeping's log (miles, how it's worked out, amount). It counts toward the event's total cost and profit, and its **Edit** opens the same mileage editor (start, return, round trip, your own miles).
+  - **Travel category:** renamed "Travel (tolls, parking, lodging)", the costs the mileage rate doesn't cover.
+  - **Expense hint:** no longer suggests adding mileage as an expense, so it isn't counted twice.
+- **Analytics → Profitability** counts mileage in each event's cost too (shown in "Other + Miles").
+
+---
+
 ## [2.102.1] — 2026-11-17
 
 ### Changed
