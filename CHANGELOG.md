@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.98.6] — 2026-11-17
+
+### Changed
+- **Template Designs: Send to Client.** Uploading a design no longer emails the client right away. It's saved as a draft so you can check the file first, then press **Send to Client** (on the orange "ready to send" banner or in Design History) to email your client to review and approve it. Clients don't see drafts in their portal. To swap the file before sending, delete the draft and upload again
+
+---
+
 ## [2.98.5] — 2026-11-17
 
 ### Fixed

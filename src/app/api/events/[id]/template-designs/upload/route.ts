@@ -4,7 +4,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 import { uploadToR2 } from '@/lib/storage/r2';
-import { sendDesignReadyEmail } from '@/lib/email/send';
 
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -13,10 +12,6 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
 
   const event = await prisma.event.findFirst({
     where: { id: params.id, tenantId: session.tenantId },
-    include: {
-      client: true,
-      tenant: { include: { branding: { select: { companyName: true } } } },
-    },
   });
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -49,32 +44,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const version = (latest?.version ?? 0) + 1;
 
   const design = await prisma.templateDesign.create({
-    data: { tenantId: session.tenantId, eventId: params.id, fileUrl: publicUrl, filename: file.name, version, status: 'PENDING_APPROVAL' },
+    data: { tenantId: session.tenantId, eventId: params.id, fileUrl: publicUrl, filename: file.name, version, status: 'DRAFT' },
+    // Saved as a draft: the client isn't emailed until the operator presses Send to Client (request-approval)
   });
-
-  // Notify the client — awaited so Vercel doesn't freeze the function before the email sends
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
-  const companyName = (event as any).tenant?.branding?.companyName || (event as any).tenant?.name || 'Your photo booth company';
-  const clientEmail: string | undefined = (event as any).client?.email;
-  const clientFirstName: string = (event as any).client?.firstName ?? 'there';
-
-  if (!clientEmail) {
-    console.error('[design-upload] no client email on event', params.id);
-  } else {
-    console.log('[design-upload] sending design-ready email to', clientEmail, 'version', version);
-    const result = await sendDesignReadyEmail({
-      to: clientEmail,
-      firstName: clientFirstName,
-      companyName,
-      version,
-      portalUrl: appUrl + '/portal/' + event.portalToken + '?tab=design',
-    });
-    if (!result.success) {
-      console.error('[design-upload] sendDesignReadyEmail failed:', result.error);
-    } else {
-      console.log('[design-upload] email sent ok, id:', result.id);
-    }
-  }
 
   return NextResponse.json(design, { status: 201 });
 }

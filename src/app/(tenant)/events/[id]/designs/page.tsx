@@ -5,7 +5,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Upload, FileImage, ArrowLeft, CheckCircle2, Clock, MessageSquare, Trash2, Bell, Palette, ChevronDown, ChevronUp, Sparkles, PenLine, Download, AlertTriangle } from 'lucide-react';
+import { Upload, FileImage, ArrowLeft, CheckCircle2, Clock, MessageSquare, Trash2, Bell, Palette, ChevronDown, ChevronUp, Sparkles, PenLine, Download, AlertTriangle, Send } from 'lucide-react';
 import { downloadLayoutPng } from '@/components/genie/layoutImage';
 import Link from 'next/link';
 import { CUSTOM_FIELDS } from '@/lib/templates/customRequest';
@@ -25,6 +25,7 @@ export default function TemplateDesignsPage() {
   const [sizeWarning, setSizeWarning] = useState('');
   const [reminding, setReminding] = useState<string | null>(null);
   const [reminderSent, setReminderSent] = useState<string | null>(null);
+  const [sendingId, setSendingId] = useState<string | null>(null);
   const [brief, setBrief] = useState<any>(null);
   const [briefEnabled, setBriefEnabled] = useState(false);
   const [briefAuto, setBriefAuto] = useState(false);
@@ -94,6 +95,15 @@ export default function TemplateDesignsPage() {
       await load();
     } catch (err: any) { setError(err.message || 'Upload failed. Please try again.'); }
     setUploading(false);
+  }
+
+  // Email the client that this version is ready to review (uploads are saved as drafts until then)
+  async function sendToClient(designId: string) {
+    setSendingId(designId); setError('');
+    const res = await fetch('/api/template-designs/' + designId + '/request-approval', { method: 'PATCH' });
+    if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error || 'Could not send to the client'); }
+    await load();
+    setSendingId(null);
   }
 
   async function sendReminder(designId: string) {
@@ -344,7 +354,7 @@ export default function TemplateDesignsPage() {
                   <>
                     <Upload className="w-10 h-10 mx-auto mb-3 text-gray-300"/>
                     <p className="text-gray-600 font-medium">Drop a file here or click to browse</p>
-                    <p className="text-xs text-gray-400 mt-1">Images and PDF files supported — uploading automatically sends to client for review</p>
+                    <p className="text-xs text-gray-400 mt-1">Images and PDF files supported. You can check it before sending it to the client.</p>
                     <label className="mt-4 inline-block cursor-pointer">
                       <input type="file" className="hidden" accept="image/*,.pdf" onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(f); }}/>
                       <span className="mt-4 inline-block px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">Browse File</span>
@@ -354,6 +364,21 @@ export default function TemplateDesignsPage() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {latestDesign?.status === 'DRAFT' && (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-orange-50 border border-orange-200 rounded-xl">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <Send className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5"/>
+              <div>
+                <p className="font-semibold text-orange-800">Version {latestDesign.version} is ready to send</p>
+                <p className="text-sm text-orange-700">Check the file, then send it. Your client gets an email to review and approve it in their portal. To use a different file, delete this version and upload again.</p>
+              </div>
+            </div>
+            <Button onClick={() => sendToClient(latestDesign.id)} disabled={sendingId === latestDesign.id} className="flex-shrink-0">
+              <Send className="w-4 h-4 mr-1.5"/>{sendingId === latestDesign.id ? 'Sending…' : 'Send to Client'}
+            </Button>
+          </div>
         )}
 
         {latestDesign?.status === 'PENDING_APPROVAL' && (
@@ -411,6 +436,11 @@ export default function TemplateDesignsPage() {
                             <Bell className="w-3 h-3"/>{reminderSent === d.id ? 'Sent!' : reminding === d.id ? 'Sending…' : 'Send reminder'}
                           </button>
                         </div>
+                      )}
+                      {d.status === 'DRAFT' && d.id === latestDesign?.id && (
+                        <button onClick={() => sendToClient(d.id)} disabled={sendingId === d.id} className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 font-medium disabled:opacity-50">
+                          <Send className="w-3 h-3"/>{sendingId === d.id ? 'Sending…' : 'Send to client'}
+                        </button>
                       )}
                       {d.status === 'APPROVED' && <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/>Approved</span>}
                       {d.status !== 'APPROVED' && <button onClick={() => deleteDesign(d.id)} title="Delete this version" className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4"/></button>}

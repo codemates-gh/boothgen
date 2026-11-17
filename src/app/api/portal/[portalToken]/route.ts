@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ portalTok
       contracts: { orderBy: { createdAt: 'desc' }, take: 1 },
       Quote: { include: { lineItems: { orderBy: { sortOrder: 'asc' } } }, orderBy: { createdAt: 'desc' }, take: 1 },
       gallery: { include: { assets: { where: { approvalStatus: 'APPROVED', ...NOT_PRINT_SHEET }, orderBy: { createdAt: 'asc' } } } },
-      templateDesigns: { orderBy: { version: 'desc' } },
+      templateDesigns: { where: { status: { not: 'DRAFT' } }, orderBy: { version: 'desc' } }, // drafts aren't sent yet
     },
   });
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
