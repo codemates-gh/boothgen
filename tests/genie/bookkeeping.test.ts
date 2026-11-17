@@ -11,7 +11,7 @@ import { prisma } from '@/lib/prisma/client';
 import { stripe } from '@/lib/stripe';
 import { syncLedger } from '@/lib/bookkeeping/sync';
 import { GET as LIST, POST as CREATE } from '@/app/api/bookkeeping/transactions/route';
-import { DELETE as DELETE_ONE } from '@/app/api/bookkeeping/transactions/[id]/route';
+import { DELETE as DELETE_ONE, PATCH as PATCH_ONE } from '@/app/api/bookkeeping/transactions/[id]/route';
 import { POST as BULK } from '@/app/api/bookkeeping/transactions/bulk/route';
 import { GET as REPORTS } from '@/app/api/bookkeeping/reports/route';
 import { POST as REFUND } from '@/app/api/bookkeeping/transactions/[id]/refund/route';
@@ -210,6 +210,41 @@ describe('Cancel Event: refunding invoices paid in full', () => {
   });
 });
 
+describe('Bookkeeping: auto-categorize by payee', () => {
+  it('remembers the category for a payee, fills in uncategorized ones, and never changes categorized ones', async () => {
+    await setup();
+    const cat = async (name: string) => (await prisma.ledgerCategory.findFirstOrThrow({ where: { tenantId, name } })).id;
+    const add = async (body: Record<string, unknown>) => (await CREATE(req('/x', { method: 'POST', body: { type: 'EXPENSE', date: '2026-06-01', amountCents: 1000, description: 'x', ...body } }))).json();
+    await syncLedger(tenantId); // creates the default categories
+
+    // Two uncategorized from Photo Supply, one already "Equipment"
+    const a = await add({ payee: 'Photo Supply Co' });
+    const b = await add({ payee: 'photo supply co ' });
+    const c = await add({ payee: 'Photo Supply Co', categoryId: await cat('Equipment') });
+    expect(c.autoCategorized).toBe(false);
+
+    // Categorizing one fills in the other uncategorized one (any case), not the Equipment one
+    const r = await (await PATCH_ONE(req('/x', { method: 'PATCH', body: { categoryId: await cat('Print Media') } }), p(a.id))).json();
+    expect(r.alsoCategorized).toBe(1);
+    expect((await prisma.ledgerTransaction.findUniqueOrThrow({ where: { id: b.id } })).categoryId).toBe(await cat('Print Media'));
+    expect((await prisma.ledgerTransaction.findUniqueOrThrow({ where: { id: c.id } })).categoryId).toBe(await cat('Equipment'));
+
+    // A new one with no category gets the payee's latest category
+    const d = await add({ payee: 'PHOTO SUPPLY CO' });
+    expect(d).toMatchObject({ autoCategorized: true, categoryId: await cat('Print Media') });
+    // Income doesn't borrow an expense category
+    const e = await add({ type: 'INCOME', payee: 'Photo Supply Co' });
+    expect(e).toMatchObject({ autoCategorized: false, categoryId: null });
+
+    // Bulk categorize spreads too
+    const f = await add({ payee: 'Canva' });
+    const g = await add({ payee: 'Canva' });
+    const bulk = await (await BULK(req('/x', { method: 'POST', body: { ids: [f.id], action: 'categorize', categoryId: await cat('Software & Subscriptions') } }))).json();
+    expect(bulk).toMatchObject({ count: 1, alsoCategorized: 1 });
+    expect((await prisma.ledgerTransaction.findUniqueOrThrow({ where: { id: g.id } })).categoryId).toBe(await cat('Software & Subscriptions'));
+  });
+});
+
 describe('Bookkeeping API', () => {
   it('adds an expense by hand, categorizes by kind, protects BoothGen payments and reports P&L', async () => {
     const { client, event } = await setup();
@@ -228,7 +263,7 @@ describe('Bookkeeping API', () => {
     const income = await prisma.ledgerTransaction.findFirstOrThrow({ where: { tenantId, type: 'INCOME' } });
     const printMedia = await prisma.ledgerCategory.findFirstOrThrow({ where: { tenantId, name: 'Print Media' } });
     const cat = await (await BULK(req('/x', { method: 'POST', body: { ids: [expense.id, income.id], action: 'categorize', categoryId: printMedia.id } }))).json();
-    expect(cat).toEqual({ count: 1, skipped: 1 }); // an expense category doesn't go on income
+    expect(cat).toMatchObject({ count: 1, skipped: 1 }); // an expense category doesn't go on income
 
     expect((await DELETE_ONE(req('/x', { method: 'DELETE' }), p(income.id))).status).toBe(400);
     const del = await (await BULK(req('/x', { method: 'POST', body: { ids: [expense.id, income.id], action: 'delete' } }))).json();

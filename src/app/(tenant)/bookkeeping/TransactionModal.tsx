@@ -10,14 +10,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Paperclip, X } from 'lucide-react';
 import { uploadReceipt, SOURCE_NOTE, type Category, type EventOption, type Txn } from './shared';
 
-export default function TransactionModal({ open, type, txn, categories, events, onClose, onSaved }: {
+export default function TransactionModal({ open, type, txn, categories, events, payees = [], onClose, onSaved }: {
   open: boolean;
   type: 'INCOME' | 'EXPENSE';
   txn: Txn | null; // null = new
   categories: Category[];
   events: EventOption[];
+  payees?: string[];
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (note?: string) => void;
 }) {
   const auto = !!txn && txn.source !== 'manual';
   const today = new Date().toISOString().slice(0, 10);
@@ -63,8 +64,11 @@ export default function TransactionModal({ open, type, txn, categories, events, 
       ? await fetch('/api/bookkeeping/transactions/' + txn.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       : await fetch('/api/bookkeeping/transactions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, type }) });
     setSaving(false);
-    if (!res.ok) { setError((await res.json().catch(() => ({}))).error ?? 'Could not save'); return; }
-    onSaved();
+    const r = await res.json().catch(() => ({}));
+    if (!res.ok) { setError(r.error ?? 'Could not save'); return; }
+    const cat = categories.find(c => c.id === r.categoryId)?.name;
+    onSaved(r.autoCategorized && cat ? `Categorized as ${cat}, like earlier transactions from ${form.payee.trim()}.`
+      : r.alsoCategorized ? `Also categorized ${r.alsoCategorized} other transaction${r.alsoCategorized === 1 ? '' : 's'} from ${txn?.payee ?? form.payee.trim()}.` : undefined);
   }
 
   const title = txn ? (auto ? 'Edit Transaction' : kind === 'INCOME' ? 'Edit Income' : 'Edit Expense') : (type === 'INCOME' ? 'New Income' : 'New Expense');
@@ -84,7 +88,9 @@ export default function TransactionModal({ open, type, txn, categories, events, 
               <div><label className={label}>Amount</label><Input inputMode="decimal" placeholder="0.00" value={form.amount} onChange={e => set('amount', e.target.value)} /></div>
             </div>
             <div><label className={label}>Description</label><Input value={form.description} onChange={e => set('description', e.target.value)} placeholder={type === 'INCOME' ? 'e.g. Cash tip at the Rivera wedding' : 'e.g. DNP print media, 2 rolls'} /></div>
-            <div><label className={label}>{kind === 'INCOME' ? 'Received from' : 'Paid to'} <span className="font-normal text-gray-400">(optional)</span></label><Input value={form.payee} onChange={e => set('payee', e.target.value)} /></div>
+            <div><label className={label}>{kind === 'INCOME' ? 'Received from' : 'Paid to'} <span className="font-normal text-gray-400">(optional)</span></label><Input list="bk-payees" value={form.payee} onChange={e => set('payee', e.target.value)} />
+              <datalist id="bk-payees">{payees.map(p => <option key={p} value={p} />)}</datalist>
+              {!form.categoryId && form.payee.trim() && <p className="text-xs text-gray-400 mt-1">Leave the category empty to use the one you last used for this payee.</p>}</div>
           </>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

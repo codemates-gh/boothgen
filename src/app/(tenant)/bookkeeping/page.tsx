@@ -25,7 +25,7 @@ export default function BookkeepingPage() {
   const [tab, setTab] = useState<Tab>('all');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [applied, setApplied] = useState(EMPTY_FILTERS);
-  const [data, setData] = useState<{ rows: Txn[]; income: number; expense: number; uncategorized: number; categories: Category[]; events: EventOption[] } | null>(null);
+  const [data, setData] = useState<{ rows: Txn[]; income: number; expense: number; uncategorized: number; categories: Category[]; events: EventOption[]; payees: string[] } | null>(null);
   const [currency, setCurrency] = useState('usd');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState('');
@@ -68,7 +68,12 @@ export default function BookkeepingPage() {
     const res = await fetch('/api/bookkeeping/transactions/bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [...selected], action, ...extra }) });
     const r = await res.json().catch(() => ({}));
     if (!res.ok) setError(r.error ?? 'Something went wrong');
-    else if (r.skipped) setNote(`${r.count} updated. ${r.skipped} skipped (${action === 'delete' ? 'filled in by BoothGen' : 'a different kind: income categories only go on income, expense categories on expenses'}).`);
+    else {
+      const parts: string[] = [];
+      if (r.skipped) parts.push(`${r.count} updated. ${r.skipped} skipped (${action === 'delete' ? 'filled in by BoothGen' : 'a different kind: income categories only go on income, expense categories on expenses'}).`);
+      if (r.alsoCategorized) parts.push(`Also categorized ${r.alsoCategorized} other transaction${r.alsoCategorized === 1 ? '' : 's'} from the same payee${r.alsoCategorized === 1 ? '' : 's'}.`);
+      if (parts.length) setNote(parts.join(' '));
+    }
     setSelected(new Set()); await load(); setBusy('');
   }
 
@@ -220,7 +225,7 @@ export default function BookkeepingPage() {
 
       <input ref={fileInput} type="file" accept="image/*,application/pdf" className="sr-only" onChange={e => attachReceipt(e.target.files?.[0])} />
       {modal && data && (
-        <TransactionModal open type={modal.type} txn={modal.txn} categories={data.categories} events={data.events} onClose={() => setModal(null)} onSaved={() => { setModal(null); load(); }} />
+        <TransactionModal open type={modal.type} txn={modal.txn} categories={data.categories} events={data.events} payees={data.payees} onClose={() => setModal(null)} onSaved={msg => { setModal(null); setNote(msg ?? ''); load(); }} />
       )}
       {catsOpen && <CategoriesModal open onClose={() => { setCatsOpen(false); load(); }} />}
       {refunding && <RefundModal txn={refunding} fmt={fmt} onClose={() => setRefunding(null)} onSaved={() => { setRefunding(null); load(); }} />}

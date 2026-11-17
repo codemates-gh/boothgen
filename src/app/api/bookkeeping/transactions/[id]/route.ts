@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { bookkeeper, receiptPrefix } from '@/lib/bookkeeping/auth';
+import { categorizeSamePayee } from '@/lib/bookkeeping/payees';
 import { z } from 'zod';
 
 const Patch = z.object({
@@ -59,7 +60,9 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       ...(d.verified !== undefined ? { verified: d.verified } : {}),
     },
   });
-  return NextResponse.json(updated);
+  // Categorized: other uncategorized transactions from the same payee get the same category
+  const alsoCategorized = d.categoryId && d.categoryId !== row.categoryId ? await categorizeSamePayee(who.tenantId, [id], d.categoryId) : 0;
+  return NextResponse.json({ ...updated, alsoCategorized });
 }
 
 export async function DELETE(_: NextRequest, props: { params: Promise<{ id: string }> }) {

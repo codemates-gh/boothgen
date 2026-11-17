@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { bookkeeper } from '@/lib/bookkeeping/auth';
+import { categorizeSamePayee } from '@/lib/bookkeeping/payees';
 import { z } from 'zod';
 
 const Bulk = z.object({
@@ -37,7 +38,8 @@ export async function POST(req: NextRequest) {
     if (!cat) return NextResponse.json({ error: 'Category not found' }, { status: 400 });
     // Only rows of the category's kind (income categories on income, expense on expenses)
     const r = await prisma.ledgerTransaction.updateMany({ where: { ...where, type: cat.type }, data: { categoryId } });
-    return NextResponse.json({ count: r.count, skipped: ids.length - r.count });
+    const alsoCategorized = await categorizeSamePayee(who.tenantId, ids, categoryId);
+    return NextResponse.json({ count: r.count, skipped: ids.length - r.count, alsoCategorized });
   }
   // assign to event (or clear)
   if (eventId) {

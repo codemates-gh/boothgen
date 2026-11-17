@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma/client';
 import { bookkeeper, receiptPrefix } from '@/lib/bookkeeping/auth';
 import { ensureCategories } from '@/lib/bookkeeping/categories';
 import { ledgerWhere, filtersFrom } from '@/lib/bookkeeping/query';
+import { categoryForPayee } from '@/lib/bookkeeping/payees';
 import { z } from 'zod';
 
 export async function GET(req: NextRequest) {
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
   const f = filtersFrom(req.nextUrl.searchParams);
   const where = ledgerWhere(who.tenantId, f);
   const base = { tenantId: who.tenantId, amountCents: { not: 0 } };
-  const [rows, totals, uncategorized, categories, events] = await Promise.all([
+  const [rows, totals, uncategorized, categories, events, payees] = await Promise.all([
     prisma.ledgerTransaction.findMany({
       where, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }], take: 1000,
       include: { category: { select: { id: true, name: true } }, event: { select: { id: true, title: true } }, invoice: { select: { id: true, invoiceNumber: true } } },
@@ -22,9 +23,11 @@ export async function GET(req: NextRequest) {
     prisma.ledgerTransaction.count({ where: { ...base, categoryId: null } }),
     ensureCategories(who.tenantId),
     prisma.event.findMany({ where: { tenantId: who.tenantId }, select: { id: true, title: true, eventDate: true }, orderBy: { eventDate: 'desc' }, take: 300 }),
+    // Payees used before, for suggestions when typing one
+    prisma.ledgerTransaction.findMany({ where: { tenantId: who.tenantId, payee: { not: null } }, distinct: ['payee'], select: { payee: true }, orderBy: { payee: 'asc' }, take: 500 }),
   ]);
   const sum = (t: string) => totals.find(x => x.type === t)?._sum.amountCents ?? 0;
-  return NextResponse.json({ rows, income: sum('INCOME'), expense: sum('EXPENSE'), uncategorized, categories, events });
+  return NextResponse.json({ rows, income: sum('INCOME'), expense: sum('EXPENSE'), uncategorized, categories, events, payees: payees.map(p => p.payee).filter(Boolean) });
 }
 
 const Create = z.object({
@@ -56,12 +59,14 @@ export async function POST(req: NextRequest) {
     clientId = ev.clientId;
   }
   if (d.receiptUrl && !d.receiptUrl.startsWith(receiptPrefix(who.tenantId))) return NextResponse.json({ error: 'Invalid receipt' }, { status: 400 });
+  // No category picked: use the one last used for this payee
+  const autoCategory = !d.categoryId ? await categoryForPayee(who.tenantId, d.type, d.payee) : null;
   const row = await prisma.ledgerTransaction.create({
     data: {
       tenantId: who.tenantId, type: d.type, date: new Date(d.date + 'T12:00:00'), amountCents: d.amountCents, description: d.description,
-      payee: d.payee || null, notes: d.notes || null, categoryId: d.categoryId || null, eventId: d.eventId || null, clientId,
+      payee: d.payee || null, notes: d.notes || null, categoryId: d.categoryId || autoCategory, eventId: d.eventId || null, clientId,
       receiptUrl: d.receiptUrl || null, receiptName: d.receiptName || null, source: 'manual',
     },
   });
-  return NextResponse.json(row, { status: 201 });
+  return NextResponse.json({ ...row, autoCategorized: !!autoCategory }, { status: 201 });
 }

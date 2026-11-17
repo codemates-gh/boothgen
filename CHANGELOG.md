@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.101.4] — 2026-11-17
+
+### Added
+- **Bookkeeping: auto-categorize by payee.** Bookkeeping remembers the category you use for each payee (upper/lower case doesn't matter):
+  - **New Income / New Expense:** leave the category empty and it uses the one you last used for that payee.
+  - **Categorizing:** setting a category on a transaction, one at a time or in bulk, also fills in any other *uncategorized* transactions of the same kind from that payee. Categorized ones are never changed.
+  - **Payee field:** suggests payees you've used before, so names match.
+  - A short note says when something was categorized for you.
+
+---
+
 ## [2.101.3] — 2026-11-17
 
 ### Added
