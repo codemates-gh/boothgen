@@ -438,14 +438,19 @@ export default function ClientPortalPage() {
                       <p className="text-xs text-gray-500 uppercase font-medium">Quote</p>
                       <p className="text-xl font-bold text-gray-900 mt-0.5">{data.quote.quoteNumber}</p>
                     </div>
-                    <span className={
-                      'px-3 py-1 rounded-full text-xs font-bold ' +
-                      (data.quote.status === 'ACCEPTED' ? 'bg-green-100 text-green-700'
-                      : data.quote.status === 'DECLINED' ? 'bg-red-100 text-red-700'
-                      : 'bg-orange-100 text-orange-700')
-                    }>
-                      {data.quote.status}
-                    </span>
+                    <div className="flex gap-2">
+                      <a href={'/api/portal/' + portalToken + '/pdf/quote'} download className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
+                        <Download className="w-4 h-4"/>Download PDF
+                      </a>
+                      <span className={
+                        'px-3 py-1 rounded-full text-xs font-bold self-center ' +
+                        (data.quote.status === 'ACCEPTED' ? 'bg-green-100 text-green-700'
+                        : data.quote.status === 'DECLINED' ? 'bg-red-100 text-red-700'
+                        : 'bg-orange-100 text-orange-700')
+                      }>
+                        {data.quote.status}
+                      </span>
+                    </div>
                   </div>
                   <div className="p-6">
                     <table className="w-full text-sm mb-6">
@@ -593,6 +598,9 @@ export default function ClientPortalPage() {
                       <button onClick={() => window.print()} className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
                         <Printer className="w-4 h-4"/>Print
                       </button>
+                      <a href={'/api/portal/' + portalToken + '/pdf/contract'} download className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
+                        <Download className="w-4 h-4"/>Download PDF
+                      </a>
                       <span className={
                         'px-3 py-1 rounded-full text-xs font-bold self-center ' +
                         (contractSigned ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700')
@@ -663,12 +671,17 @@ export default function ClientPortalPage() {
                     <p className="text-xs text-gray-500 uppercase font-medium">Invoice</p>
                     <p className="text-xl font-bold text-gray-900 mt-0.5">{data.invoice.invoiceNumber}</p>
                   </div>
-                  <span className={
-                    'px-3 py-1 rounded-full text-xs font-bold ' +
-                    (data.invoice.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700')
-                  }>
-                    {data.invoice.status}
-                  </span>
+                  <div className="flex gap-2">
+                    <a href={'/api/portal/' + portalToken + '/pdf/invoice'} download className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
+                      <Download className="w-4 h-4"/>Download PDF
+                      </a>
+                    <span className={
+                      'px-3 py-1 rounded-full text-xs font-bold self-center ' +
+                      (data.invoice.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700')
+                    }>
+                      {data.invoice.status}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="p-6 space-y-4">

@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.100.3] — 2026-11-17
+
+### Added
+- **Download PDF in the client portal (report #9).** Clients can download their quote, invoice and contract as a PDF from the Quote, Invoice and Contract tabs of their portal, without signing in (the portal link gives access). The contract keeps its Print button next to it.
+
+### Fixed
+- **PDFs work again after the React 19 update.** The PDF tool was updated to a version that supports React 19, so Download PDF on quotes, invoices and contracts works again.
+
+---
+
 ## [2.100.2] — 2026-11-17
 
 ### Changed
