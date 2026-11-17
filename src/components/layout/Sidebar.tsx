@@ -215,8 +215,17 @@ export function Sidebar({ isFoundingMember, genieEnabled, genieOnly }: { isFound
         </nav>
         <div className="pr-3 pb-4 shrink-0">
           {/* Reports, Settings and Sign Out are in the account menu under the avatar (top right) */}
+          {/* Genie-only accounts: call to action for the CRM */}
           {genieOnly && (
-            <NavLink href="/upgrade" label="Get Genius CRM" Icon={Sparkles} active={path === '/upgrade'} close={close} />
+            <Link
+              href="/upgrade"
+              onClick={close}
+              className={'group block ml-3 mb-2 rounded-xl p-3.5 bg-gradient-to-br from-[#784BD1] to-[#F97316] text-white shadow-lg shadow-black/20 transition-transform hover:-translate-y-0.5 ' + (path === '/upgrade' ? 'ring-2 ring-white/70' : '')}
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="w-4 h-4" />Get Genius CRM</span>
+              <span className="mt-1 block text-[11px] leading-snug text-white/85">Leads, quotes, contracts, invoices and payments, all with your booth.</span>
+              <span className="mt-2.5 inline-flex items-center gap-1 rounded-lg bg-white/95 px-2.5 py-1 text-xs font-semibold text-[#784BD1] group-hover:bg-white">See Genius <span aria-hidden>→</span></span>
+            </Link>
           )}
           {isFoundingMember && (
             <div className="flex items-center gap-1 pl-3 pt-2">

@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.100.7] — 2026-11-17
+
+### Changed
+- **Get Genius CRM is a call to action** in the Genie-only menu: a highlighted card with a one-line pitch (leads, quotes, contracts, invoices and payments) and a "See Genius →" button, instead of a plain menu item
+
+---
+
 ## [2.100.6] — 2026-11-17
 
 ### Changed
