@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.97.3] — 2026-11-17
+
+### Fixed
+- The website menu no longer squeezes on iPads and narrow windows: phones and iPad portrait get a menu button; iPad landscape and laptops show the links on one line, with the "· Photo booth app / CRM" hints on wide screens only
+
+---
+
 ## [2.97.2] — 2026-11-17
 
 ### Fixed
