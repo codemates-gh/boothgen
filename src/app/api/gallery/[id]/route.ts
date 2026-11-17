@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getGalleryRetention } from '@/lib/gallery/retention';
+import { getUploadLimits } from '@/lib/gallery/uploadRules';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
@@ -19,7 +20,7 @@ export async function GET(_: NextRequest, props: { params: Promise<{ id: string 
     getGalleryRetention(),
   ]);
   if (!gallery) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  return NextResponse.json({ ...gallery, expireDays, deleteDays });
+  return NextResponse.json({ ...gallery, expireDays, deleteDays, uploadLimits: await getUploadLimits() });
 }
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {

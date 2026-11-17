@@ -22,9 +22,11 @@ import BackdropsManager from './BackdropsManager';
 import GenieUsage from './GenieUsage';
 import GeniusRuleCard from './GeniusRuleCard';
 import ReportsTriage from './ReportsTriage';
+import StorageUsage from './StorageUsage';
+import { DEFAULT_UPLOAD_LIMITS } from '@/lib/gallery/uploadLimits';
 
 
-const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'props', 'backdrops', 'genie-usage', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
+const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'props', 'backdrops', 'genie-usage', 'storage', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
 type Tab = typeof VALID_TABS[number];
 
 const TENANT_BADGE: Record<string, 'warning' | 'success' | 'danger' | 'default'> = {
@@ -52,7 +54,7 @@ export default async function SuperAdminPage(props: { searchParams: Promise<{ ta
     prisma.user.count().catch(() => 0),
     prisma.event.count().catch(() => 0),
     prisma.systemSetting.findMany({
-      where: { key: { in: ['message_retention_months', 'gallery_expire_days', 'gallery_delete_days', 'email_template_welcome', 'email_template_forgot_password', 'stripe_price_monthly_id', 'stripe_price_annual_id', 'price_display_monthly', 'price_display_annual', 'commission_percentage', 'support_email', 'chatbot_enabled', 'early_adopter_cap', 'terms_content', 'privacy_content'] } },
+      where: { key: { in: ['message_retention_months', 'gallery_expire_days', 'gallery_delete_days', 'email_template_welcome', 'email_template_forgot_password', 'stripe_price_monthly_id', 'stripe_price_annual_id', 'price_display_monthly', 'price_display_annual', 'commission_percentage', 'support_email', 'chatbot_enabled', 'early_adopter_cap', 'terms_content', 'privacy_content', 'upload_photo_max_mb', 'upload_motion_max_mb', 'gallery_max_files', 'gallery_max_gb', 'upload_opens_days_before'] } },
     }).catch(() => []),
     prisma.automationExecution.groupBy({ by: ['tenantId'], where: { status: 'FAILED' }, _count: { id: true } }).catch(() => []),
     prisma.automationExecution.count({ where: { status: 'FAILED' } }).catch(() => 0),
@@ -303,6 +305,17 @@ export default async function SuperAdminPage(props: { searchParams: Promise<{ ta
           </>
         )}
 
+        {/* STORAGE */}
+        {tab === 'storage' && (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Storage</h1>
+              <p className="text-sm text-gray-500 mt-1">Gallery photos stored per operator, largest first. Flags accounts over the review line or with a gallery near its 10 GB limit.</p>
+            </div>
+            <StorageUsage />
+          </>
+        )}
+
         {/* BACKDROPS */}
         {tab === 'backdrops' && (
           <>
@@ -341,6 +354,11 @@ export default async function SuperAdminPage(props: { searchParams: Promise<{ ta
                 chatbot_enabled:          settingsMap.chatbot_enabled !== 'false',
                 terms_content:            settingsMap.terms_content            ?? '',
                 privacy_content:          settingsMap.privacy_content          ?? '',
+                upload_photo_max_mb:      settingsMap.upload_photo_max_mb      ?? String(DEFAULT_UPLOAD_LIMITS.photoMaxMb),
+                upload_motion_max_mb:     settingsMap.upload_motion_max_mb     ?? String(DEFAULT_UPLOAD_LIMITS.motionMaxMb),
+                gallery_max_files:        settingsMap.gallery_max_files        ?? String(DEFAULT_UPLOAD_LIMITS.galleryMaxFiles),
+                gallery_max_gb:           settingsMap.gallery_max_gb           ?? String(DEFAULT_UPLOAD_LIMITS.galleryMaxGb),
+                upload_opens_days_before: settingsMap.upload_opens_days_before ?? String(DEFAULT_UPLOAD_LIMITS.opensDaysBefore),
               }}
             />
           </>

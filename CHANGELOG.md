@@ -4,6 +4,26 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.100.0] — 2026-11-17
+
+### Added
+- **Gallery upload rules, shown to operators.** "Gallery upload rules" on the Gallery page and in each gallery spells out the limits:
+  - photos (JPG, PNG, HEIC, WebP) up to 25 MB each
+  - GIFs, boomerangs and videos (MP4, MOV) up to 100 MB each
+  - up to 2,000 files and 10 GB per event gallery
+  - website uploads open 7 days before the event (Genie iPads can upload any time)
+  - galleries are deleted automatically after the event
+- **Clear messages for files that don't fit.** A file that breaks a rule is skipped with the reason ("IMG_1.mov is 140 MB. GIFs, boomerangs and videos can be up to 100 MB").
+- **GIFs and videos from the website.** Galleries now accept GIFs and videos (MP4, MOV) uploaded from the website, not just photos.
+- **Super Admin → Storage:** gallery storage per operator, largest first. It flags accounts over 50 GB and galleries near their limit.
+- **Super Admin → Settings → Gallery Uploads:** every limit above can be changed there, with the defaults listed.
+
+### Changed
+- **The limits are now enforced on the server.** The website upload checks file type and size (signed into the upload link) and the per-gallery cap, and only files uploaded into that gallery can be added to it.
+- **Genie iPad uploads:** photos up to 25 MB (was 15 MB) and boomerang MP4s up to 100 MB, plus the per-gallery cap.
+
+---
+
 ## [2.99.2] — 2026-11-17
 
 ### Changed

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Upload, Image, Trash2, Globe, EyeOff, X, CheckCircle2, Lock, LockOpen, Link2 } from 'lucide-react';
 import Link from 'next/link';
 import { AssetThumb } from '@/components/gallery/AssetMedia';
+import { WEB_UPLOAD_TYPES, DEFAULT_UPLOAD_LIMITS, galleryRules, maxBytesFor, isMotion, formatBytes, type UploadLimits } from '@/lib/gallery/uploadLimits';
 
 export default function GalleryDetailPage(props: { params: Promise<{ id: string }> }) {
   const params = use(props.params);
@@ -36,12 +37,18 @@ export default function GalleryDetailPage(props: { params: Promise<{ id: string 
 
   async function uploadFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
-    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
-    if (imageFiles.length === 0) return;
+    // Check type and size here first, so a skipped file says why (the server checks again)
+    const all = Array.from(files);
+    const limits: UploadLimits = gallery?.uploadLimits ?? DEFAULT_UPLOAD_LIMITS;
+    const imageFiles = all.filter(f => WEB_UPLOAD_TYPES.includes(f.type) && f.size <= maxBytesFor(f.type, limits));
+    const skipped = all.filter(f => !imageFiles.includes(f));
+    const skippedNote = skipped.length === 0 ? null
+      : `Skipped ${skipped.length} file${skipped.length === 1 ? '' : 's'}: ` + skipped.slice(0, 3).map(f => WEB_UPLOAD_TYPES.includes(f.type) ? `${f.name} (${formatBytes(f.size)}, over ${formatBytes(maxBytesFor(f.type, limits))} for ${isMotion(f.type) ? 'GIFs and videos' : 'photos'})` : `${f.name} (not a photo, GIF or video)`).join(', ') + (skipped.length > 3 ? ', …' : '') + '.';
+    if (imageFiles.length === 0) { setUploadCount({ done: 0, total: 0, failed: 0 }); setUploadError(skippedNote); return; }
 
     setUploading(true);
     setUploadCount({ done: 0, total: imageFiles.length, failed: 0 });
-    setUploadError(null);
+    setUploadError(skippedNote);
 
     const saved: Array<{ url: string; fileName: string; fileSize: number; mimeType: string }> = [];
     let firstError: string | null = null;
@@ -51,11 +58,11 @@ export default function GalleryDetailPage(props: { params: Promise<{ id: string 
         // Step 1: get presigned URL
         const presignRes = await fetch('/api/gallery/' + params.id + '/upload', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName: file.name, contentType: file.type }),
+          body: JSON.stringify({ fileName: file.name, contentType: file.type, bytes: file.size }),
         });
         if (!presignRes.ok) {
           const body = await presignRes.json().catch(() => ({}));
-          throw new Error(body.upgrade ? body.error : 'Presign failed (' + presignRes.status + '): ' + (body.error ?? 'unknown'));
+          throw new Error(body.upgrade || body.rule ? body.error : 'Presign failed (' + presignRes.status + '): ' + (body.error ?? 'unknown'));
         }
         const { uploadUrl, publicUrl } = await presignRes.json();
 
@@ -71,7 +78,7 @@ export default function GalleryDetailPage(props: { params: Promise<{ id: string 
         console.error('Upload failed:', file.name, msg);
         if (!firstError) {
           firstError = msg;
-          setUploadError(msg);
+          setUploadError(e => (e ? e + ' ' : '') + msg);
         }
         setUploadCount(c => ({ ...c, done: c.done + 1, failed: c.failed + 1 }));
       }
@@ -243,12 +250,17 @@ export default function GalleryDetailPage(props: { params: Promise<{ id: string 
           className={'border-2 border-dashed rounded-2xl p-10 text-center transition-colors ' + (dragOver ? 'border-brand bg-brand-surface' : 'border-gray-300 hover:border-brand hover:bg-gray-50')}>
           <Upload className="w-10 h-10 mx-auto mb-3 text-gray-400"/>
           <p className="font-semibold text-gray-700 mb-1">Drop photos here or click to upload</p>
-          <p className="text-sm text-gray-400 mb-4">JPG, PNG, WEBP</p>
+          <p className="text-sm text-gray-400 mb-4">Photos up to {(gallery?.uploadLimits ?? DEFAULT_UPLOAD_LIMITS).photoMaxMb} MB · GIFs, boomerangs and videos up to {(gallery?.uploadLimits ?? DEFAULT_UPLOAD_LIMITS).motionMaxMb} MB</p>
           <label className="cursor-pointer">
-            <input type="file" multiple accept="image/*" className="sr-only" onChange={e => uploadFiles(e.target.files)}/>
+            <input type="file" multiple accept={WEB_UPLOAD_TYPES.join(',')} className="sr-only" onChange={e => uploadFiles(e.target.files)}/>
             <span className="px-6 py-2.5 bg-brand text-white rounded-xl text-sm font-semibold hover:bg-brand-dark transition-colors">Choose Photos</span>
           </label>
         </div>
+
+        <details className="text-xs text-gray-500 -mt-3">
+          <summary className="cursor-pointer select-none hover:text-gray-700">Gallery upload rules</summary>
+          <ul className="mt-2 ml-4 list-disc space-y-1">{galleryRules(gallery?.uploadLimits ?? DEFAULT_UPLOAD_LIMITS).map(r => <li key={r}>{r}</li>)}</ul>
+        </details>
 
         {/* Upload progress */}
         {uploading && (
@@ -264,19 +276,21 @@ export default function GalleryDetailPage(props: { params: Promise<{ id: string 
               />
             </div>
             {uploadError && (
-              <p className="text-xs text-red-500 font-mono bg-red-50 rounded p-2">{uploadError}</p>
+              <p className="text-xs text-red-600 bg-red-50 rounded p-2">{uploadError}</p>
             )}
           </CardContent></Card>
         )}
-        {!uploading && uploadCount.total > 0 && (
+        {!uploading && (uploadCount.total > 0 || uploadError) && (
           <Card><CardContent className="p-4 space-y-2">
-            <div className="flex items-center gap-2 text-sm text-green-700">
-              <CheckCircle2 className="w-4 h-4"/>
-              {uploadCount.done - uploadCount.failed} of {uploadCount.total} photos uploaded
-              {uploadCount.failed > 0 && <span className="text-red-500 ml-1">({uploadCount.failed} failed)</span>}
-            </div>
+            {uploadCount.total > 0 && (
+              <div className="flex items-center gap-2 text-sm text-green-700">
+                <CheckCircle2 className="w-4 h-4"/>
+                {uploadCount.done - uploadCount.failed} of {uploadCount.total} photos uploaded
+                {uploadCount.failed > 0 && <span className="text-red-500 ml-1">({uploadCount.failed} failed)</span>}
+              </div>
+            )}
             {uploadError && (
-              <p className="text-xs text-red-500 font-mono bg-red-50 rounded p-2">{uploadError}</p>
+              <p className="text-xs text-red-600 bg-red-50 rounded p-2">{uploadError}</p>
             )}
           </CardContent></Card>
         )}

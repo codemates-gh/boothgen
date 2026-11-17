@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { requireTenantSession, hasProAccess } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
 import { galleriesWithPhotos, FREE_GALLERY_LIMIT } from '@/lib/gallery/planLimit';
+import { galleryRules, getUploadLimits } from '@/lib/gallery/uploadRules';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,7 @@ export default async function GalleryPage() {
 
   // Without a paid plan, photos can go into one event gallery (src/lib/gallery/planLimit.ts)
   const usedGalleries = isPro ? 0 : await galleriesWithPhotos(session.tenantId);
+  const uploadLimits = await getUploadLimits();
 
   // Auto-create galleries only for active (BOOKED/IN_PROGRESS) events
   const eventsWithoutGallery = await prisma.event.findMany({
@@ -72,6 +74,13 @@ export default async function GalleryPage() {
             <Link href="/settings/billing" className="flex-shrink-0 inline-block px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg text-sm transition-colors">See plans</Link>
           </div>
         )}
+        <details className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600">
+          <summary className="cursor-pointer select-none font-medium text-[#1F1F3D]">Gallery upload rules</summary>
+          <ul className="mt-2 ml-4 list-disc space-y-1">
+            {galleryRules(uploadLimits).map(r => <li key={r}>{r}</li>)}
+            {!isPro && <li>Your current plan includes photos for {FREE_GALLERY_LIMIT} event gallery.</li>}
+          </ul>
+        </details>
         <Card><CardContent className="p-0">
           {activeGalleries.length === 0 ? (
             <div className="text-center py-16 text-gray-400"><Camera className="w-12 h-12 mx-auto mb-4 opacity-30"/><p>Gallery folders are created automatically when you book an event.</p></div>

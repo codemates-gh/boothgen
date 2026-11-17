@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { requireSuperAdminSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
 
-const ALLOWED_KEYS = ['message_retention_months', 'gallery_expire_days', 'gallery_delete_days', 'email_template_welcome', 'email_template_forgot_password', 'stripe_price_monthly_id', 'stripe_price_annual_id', 'price_display_monthly', 'price_display_annual', 'commission_percentage', 'support_email', 'chatbot_enabled', 'early_adopter_cap', 'terms_content', 'privacy_content'];
+const ALLOWED_KEYS = ['message_retention_months', 'gallery_expire_days', 'gallery_delete_days', 'email_template_welcome', 'email_template_forgot_password', 'stripe_price_monthly_id', 'stripe_price_annual_id', 'price_display_monthly', 'price_display_annual', 'commission_percentage', 'support_email', 'chatbot_enabled', 'early_adopter_cap', 'terms_content', 'privacy_content', 'upload_photo_max_mb', 'upload_motion_max_mb', 'gallery_max_files', 'gallery_max_gb', 'upload_opens_days_before'];
 
 export async function GET() {
   await requireSuperAdminSession();

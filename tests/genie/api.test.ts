@@ -357,11 +357,11 @@ describe('device storage reporting', () => {
 });
 
 describe('upload size limit', () => {
-  it('caps uploads at 15 MB and signs the exact size into the upload URL', async () => {
+  it('caps photos at 25 MB by default and signs the exact size into the upload URL', async () => {
     const { event, token } = await setup();
     const { getPresignedUploadUrl } = await import('@/lib/storage/r2');
     const body = (bytes: number) => ({ clientId: randomUUID(), fileName: 'a.jpg', contentType: 'image/jpeg', bytes });
-    const tooBig = await uploadUrl(req(`/api/genie/events/${event.id}/upload-url`, { token, body: body(15 * 1024 * 1024 + 1) }), ev(event.id));
+    const tooBig = await uploadUrl(req(`/api/genie/events/${event.id}/upload-url`, { token, body: body(25 * 1024 * 1024 + 1) }), ev(event.id));
     expect(tooBig.status).toBe(400);
     const ok = await uploadUrl(req(`/api/genie/events/${event.id}/upload-url`, { token, body: body(812345) }), ev(event.id));
     expect(ok.status).toBe(200);

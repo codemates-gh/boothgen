@@ -2,8 +2,9 @@ import { z } from 'zod';
 
 // Zod mirrors of the Genie wire schemas (Genie repo: shared/schemas/*.json)
 
-// 15 MB per photo (full-size iPad shots ~2–4 MB, Canon 18 MP ~6–9 MB)
-export const GENIE_MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+// Hard ceiling per file. The real per-type limits (photos, boomerang MP4s) are set in Super Admin → Settings and
+// checked in the upload routes (src/lib/gallery/uploadRules.ts).
+export const GENIE_MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
 
 const uuid = z.string().uuid();
 const dateTime = z.string().datetime({ offset: true });

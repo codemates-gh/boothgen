@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, Image, Mail, MessageCircle, FileText } from 'lucide-react';
+import { Settings, Image, Mail, MessageCircle, FileText, Upload } from 'lucide-react';
 
 interface InitialSettings {
   message_retention_months: string;
@@ -12,7 +12,21 @@ interface InitialSettings {
   chatbot_enabled: boolean;
   terms_content: string;
   privacy_content: string;
+  upload_photo_max_mb: string;
+  upload_motion_max_mb: string;
+  gallery_max_files: string;
+  gallery_max_gb: string;
+  upload_opens_days_before: string;
 }
+
+// Gallery upload limits (src/lib/gallery/uploadLimits.ts): label, help, key, input bounds
+const UPLOAD_FIELDS: [string, string, keyof InitialSettings, number, number][] = [
+  ['Photo size limit (MB)', 'Per photo (JPG, PNG, HEIC, WebP).', 'upload_photo_max_mb', 1, 500],
+  ['GIF / boomerang / video size limit (MB)', 'Per GIF, boomerang or video file, website and Genie iPads.', 'upload_motion_max_mb', 1, 500],
+  ['Files per event gallery', 'Fair-use cap on the number of files in one gallery.', 'gallery_max_files', 1, 100000],
+  ['GB per event gallery', 'Fair-use cap on total size of one gallery.', 'gallery_max_gb', 1, 1000],
+  ['Website uploads open (days before event)', 'Genie iPads can upload any time.', 'upload_opens_days_before', 0, 3650],
+];
 
 export default function PlatformSettings({ initial }: { initial: InitialSettings }) {
   const [months, setMonths]               = useState(initial.message_retention_months);
@@ -22,6 +36,7 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
   const [chatbotEnabled, setChatbotEnabled] = useState(initial.chatbot_enabled);
   const [termsContent, setTermsContent]   = useState(initial.terms_content);
   const [privacyContent, setPrivacyContent] = useState(initial.privacy_content);
+  const [uploads, setUploads] = useState<Record<string, string>>(Object.fromEntries(UPLOAD_FIELDS.map(f => [f[2], String(initial[f[2]])])));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved]   = useState(false);
 
@@ -39,6 +54,7 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
         chatbot_enabled:          chatbotEnabled ? 'true' : 'false',
         terms_content:            termsContent,
         privacy_content:          privacyContent,
+        ...uploads,
       }),
     });
     setSaving(false);
@@ -114,6 +130,33 @@ export default function PlatformSettings({ initial }: { initial: InitialSettings
             <p className="font-medium text-gray-800 mb-1">Current schedule</p>
             <p>Galleries expire <strong>{expireDays} days</strong> after the event date.</p>
             <p>Photos are permanently deleted <strong>{parseInt(expireDays) + parseInt(deleteDays || '0')} days</strong> after the event date ({deleteDays} days after expiry).</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Upload className="w-4 h-4" /> Gallery Uploads
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <p className="text-sm text-gray-500">
+            Limits on what operators can upload to event galleries. Operators see these on their Gallery pages, and every
+            upload (website and Genie iPads) is checked against them. Changes apply right away.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-lg">
+            {UPLOAD_FIELDS.map(([label, help, key, min, max]) => (
+              <div key={key}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                <p className="text-xs text-gray-400 mb-2">{help}</p>
+                <input
+                  type="number" min={min} max={max} value={uploads[key]}
+                  onChange={e => setUploads(u => ({ ...u, [key]: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                />
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
