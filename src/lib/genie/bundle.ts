@@ -67,6 +67,12 @@ export function eventLocksAt(event: Pick<Event, 'eventDate' | 'startTime'>, time
   return event.startTime ?? startOfEventDay(event.eventDate, timeZone);
 }
 
+// When the event is over: its end time, else the end of the event day in its time zone
+export function eventEndsAt(event: Pick<Event, 'eventDate' | 'startTime' | 'endTime'>, timeZone: string): Date {
+  if (event.endTime && (!event.startTime || event.endTime > event.startTime)) return event.endTime;
+  return startOfEventDay(new Date(event.eventDate.getTime() + 86400_000), timeZone);
+}
+
 export function effectiveLockedAt(event: Pick<Event, 'eventDate' | 'startTime'>, settings: Pick<EventGenieSettings, 'lockedAt' | 'timeZone'>, now = new Date()): Date | null {
   if (settings.lockedAt) return settings.lockedAt;
   const at = eventLocksAt(event, settings.timeZone);

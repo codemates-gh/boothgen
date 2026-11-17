@@ -14,13 +14,14 @@ type Row = {
   id: string; title: string; eventDate: string; status: string; venueName: string | null; clientName: string | null; boothEvent: boolean; paysPerEvent: boolean; paid: boolean;
   genie: {
     enabled: boolean; templates: number; ipads: number; maxDevices: number; sessions: number;
-    lockedAt: string | null; locksAt: string; timeZone: string; followsDefaults: boolean; shares: { total: number; failed: number };
+    lockedAt: string | null; ended: boolean; locksAt: string; timeZone: string; followsDefaults: boolean; shares: { total: number; failed: number };
   } | null;
 };
 
 function GenieStatus({ g }: { g: Row['genie'] }) {
   if (!g) return <Badge variant="default">Not set up</Badge>;
   if (!g.enabled) return <Badge variant="default">Off</Badge>;
+  if (g.ended) return <Badge variant="default">Ended</Badge>;
   if (g.templates === 0) return <Badge variant="warning">No templates</Badge>;
   if (g.lockedAt) return <Badge variant="info"><Lock className="w-3 h-3 mr-1 inline"/>Running</Badge>;
   return <Badge variant="success">Ready</Badge>;

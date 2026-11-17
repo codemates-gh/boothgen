@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Calendar } from 'lucide-react';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,13 @@ export function BoothEventModal({ open, onClose, initial, eventId, lockedTimes, 
     onSaved(eventId ?? d.id);
   }
 
+  const dateRef = useRef<HTMLInputElement>(null);
+  function openDatePicker() {
+    const el = dateRef.current;
+    if (!el || el.disabled) return;
+    try { el.showPicker(); } catch { el.focus(); }
+  }
+
   return (
     <Modal open={open} onClose={onClose} title={eventId ? 'Event Details' : 'New Booth Event'}>
       <form onSubmit={e => { e.preventDefault(); submit(); }} className="space-y-4">
@@ -49,7 +57,15 @@ export function BoothEventModal({ open, onClose, initial, eventId, lockedTimes, 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-            <Input type="date" value={v.date} onChange={e => set('date', e.target.value)} disabled={lockedTimes}/>
+            {/* The browser's own calendar icon isn't shown everywhere (Safari), so the field has its own button */}
+            <div className="relative">
+              <Input ref={dateRef} type="date" value={v.date} onChange={e => set('date', e.target.value)} disabled={lockedTimes}
+                onClick={() => openDatePicker()} className="pr-10 [&::-webkit-calendar-picker-indicator]:hidden"/>
+              <button type="button" aria-label="Pick a date" disabled={lockedTimes} onClick={() => openDatePicker()}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-800 disabled:opacity-50">
+                <Calendar className="w-4 h-4"/>
+              </button>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>

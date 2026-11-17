@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.103.2] — 2026-11-17
+
+### Fixed
+- **Genie Events: finished events move to Past.** An event moves from Upcoming to Past once it's over: at its end time, or at the end of its day in the event's time zone when it has no end time. Before, events stayed under Upcoming for a week. A started event from an earlier day now shows **Ended** instead of Running.
+- **New Booth Event: date picker.** The Date field has its own calendar button (and clicking the field opens the calendar), since some browsers such as Safari show no calendar icon.
+
+---
+
 ## [2.103.1] — 2026-11-17
 
 ### Added

@@ -2,31 +2,38 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
-import { effectiveLockedAt, eventLocksAt } from '@/lib/genie/bundle';
+import { effectiveLockedAt, eventEndsAt, eventLocksAt } from '@/lib/genie/bundle';
+import { getDefaults } from '@/lib/genie/defaults';
 import { eventsBilling } from '@/lib/genie/payments';
 import { BoothEventInput, boothEventFields, boothEventsClient, isBoothClient, setUpGenie } from '@/lib/genie/boothEvents';
 
-// Events for the Genie → Events overview: upcoming (and the last 7 days) or all past ones with ?past=1
+// Events for the Genie → Events overview: upcoming (not over yet) or past ones with ?past=1. An event is over at its
+// end time, else at the end of its day in its time zone.
 export async function GET(req: NextRequest) {
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const past = req.nextUrl.searchParams.get('past') === '1';
-  const since = new Date(Date.now() - 7 * 86400_000);
-  const events = await prisma.event.findMany({
+  const now = new Date();
+  // Event dates are stored as UTC midnight; two days' margin covers every time zone and late end times
+  const edge = new Date(now.getTime() - 2 * 86400_000);
+  const found = await prisma.event.findMany({
     where: {
       tenantId: auth.tenantId,
       status: { notIn: ['CANCELLED', 'LOST'] },
-      ...(past ? { eventDate: { lt: since } } : { eventDate: { gte: since } }),
+      ...(past ? { eventDate: { lt: new Date(now.getTime() + 86400_000) } } : { eventDate: { gte: edge } }),
     },
     orderBy: { eventDate: past ? 'desc' : 'asc' },
-    take: 100,
+    take: 150,
     select: {
-      id: true, title: true, eventDate: true, startTime: true, status: true, venueName: true,
+      id: true, title: true, eventDate: true, startTime: true, endTime: true, status: true, venueName: true,
       client: { select: { firstName: true, lastName: true, email: true } },
       genieSettings: true,
       _count: { select: { genieTemplates: true, genieSessions: true } },
     },
   });
+  const defaultTz = (await getDefaults(auth.tenantId)).values.timeZone;
+  const isOver = (e: typeof found[number]) => eventEndsAt(e, e.genieSettings?.timeZone ?? defaultTz) <= now;
+  const events = found.filter(e => isOver(e) === past).slice(0, 100);
   const ids = events.map(e => e.id);
   const [slots, shares] = await Promise.all([
     prisma.genieEventDevice.groupBy({ by: ['eventId'], where: { eventId: { in: ids }, releasedAt: null }, _count: { _all: true } }),
@@ -53,6 +60,7 @@ export async function GET(req: NextRequest) {
           maxDevices: s.maxDevices,
           sessions: e._count.genieSessions,
           lockedAt: effectiveLockedAt(e, s),
+          ended: past,
           locksAt: eventLocksAt(e, s.timeZone),
           timeZone: s.timeZone,
           followsDefaults: !s.customCapture || !s.customSharing || !s.customPrinting || !s.customTimeZone || !s.customAttract,
