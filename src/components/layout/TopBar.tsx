@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import { NotificationBell } from './NotificationBell';
 import { SearchModal } from './SearchModal';
-import { Search, LogOut, Settings } from 'lucide-react';
+import { Search, LogOut, Settings, ClipboardList } from 'lucide-react';
 import Image from 'next/image';
 
 export function TopBar({ title }: { title: string }) {
@@ -12,6 +12,7 @@ export function TopBar({ title }: { title: string }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [reportsUnread, setReportsUnread] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
   const isTeamMember = session?.tenantRole === 'TEAM_MEMBER';
   // Search covers CRM records (clients, events, invoices), which Genie-only accounts don't have
@@ -44,6 +45,14 @@ export function TopBar({ title }: { title: string }) {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [noSearch]);
+
+  // Unread updates on the user's own bug reports / suggestions: a dot on the avatar and a count on Reports
+  useEffect(() => {
+    const load = () => fetch('/api/reports/unread').then(r => r.json()).then(d => setReportsUnread(d?.mine ?? 0)).catch(() => {});
+    load();
+    window.addEventListener('reports:changed', load);
+    return () => window.removeEventListener('reports:changed', load);
+  }, []);
 
   // Account menu under the avatar: close on outside click or Escape
   useEffect(() => {
@@ -85,7 +94,7 @@ export function TopBar({ title }: { title: string }) {
           )}
           <NotificationBell />
           <div className="relative" ref={menuRef}>
-            <button onClick={() => setMenuOpen(o => !o)} className="flex items-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#784BD1]/40" aria-label="Account menu" aria-expanded={menuOpen}>
+            <button onClick={() => setMenuOpen(o => !o)} className="relative flex items-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#784BD1]/40" aria-label="Account menu" aria-expanded={menuOpen}>
               {logoUrl ? (
                 <Image src={logoUrl} alt="Company logo" width={120} height={40} className="h-10 w-auto flex-shrink-0 ml-2 object-contain" unoptimized />
               ) : (
@@ -93,6 +102,7 @@ export function TopBar({ title }: { title: string }) {
                   {userInitials}
                 </span>
               )}
+              {reportsUnread > 0 && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#E2445C] ring-2 ring-white" aria-label="Report updates" />}
             </button>
             {menuOpen && (
               <div className="absolute right-0 top-full mt-2 w-60 rounded-xl border border-gray-200 bg-white shadow-card-md py-1.5 z-50">
@@ -102,6 +112,10 @@ export function TopBar({ title }: { title: string }) {
                     <p className="text-xs text-gray-400 truncate">{session.user.email}</p>
                   </div>
                 )}
+                <Link href="/reports" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                  <ClipboardList className="w-4 h-4 text-gray-400" />Bugs &amp; Suggestions
+                  {reportsUnread > 0 && <span className="ml-auto min-w-[18px] text-center text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#E2445C] text-white leading-none">{reportsUnread}</span>}
+                </Link>
                 {!isTeamMember && (
                   <Link href="/settings" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                     <Settings className="w-4 h-4 text-gray-400" />Settings

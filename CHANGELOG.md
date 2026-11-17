@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.98.10] — 2026-11-17
+
+### Changed
+- **Account menu (your avatar, top right):** now has **Bugs & Suggestions** (the reports list, where you can also report a bug or suggest something), Settings and Sign Out. A red dot on the avatar and a count on Bugs & Suggestions show when one of your reports has an update
+- **Sidebar:** Report a bug / Suggest, Reports, Settings, your name and email, and Sign Out moved out of the sidebar into that menu, so the sidebar is shorter
+
+---
+
 ## [2.98.9] — 2026-11-17
 
 ### Changed

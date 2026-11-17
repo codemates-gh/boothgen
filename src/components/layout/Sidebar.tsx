@@ -1,11 +1,10 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Users, FileText, Receipt, Settings, Camera, LogOut, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send, CalendarCheck, SlidersHorizontal, Bug, ClipboardList, Smile, Image as ImageIcon, Sparkles } from 'lucide-react';
-import { ReportDialog } from '@/components/reports/ReportDialog';
+import { LayoutDashboard, Calendar, Users, FileText, Receipt, Camera, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send, CalendarCheck, SlidersHorizontal, Smile, Image as ImageIcon, Sparkles } from 'lucide-react';
 import { BoothGenIcon } from '@/components/brand/BoothGenLogo';
 import { APP_VERSION } from '@/lib/version';
 
@@ -139,16 +138,7 @@ export function Sidebar({ isFoundingMember, genieEnabled, genieOnly }: { isFound
   const [isOpen, setIsOpen] = useState(false);
   const [teamMemberAccess, setTeamMemberAccess] = useState<string[]>(['events']);
   const close = () => setIsOpen(false);
-  const [reportOpen, setReportOpen] = useState(false);
-  const [reportsUnread, setReportsUnread] = useState(0);
 
-  // Unread updates on the user's own bug reports / suggestions
-  useEffect(() => {
-    const load = () => fetch('/api/reports/unread').then(r => r.json()).then(d => setReportsUnread(d?.mine ?? 0)).catch(() => {});
-    load();
-    window.addEventListener('reports:changed', load);
-    return () => window.removeEventListener('reports:changed', load);
-  }, [path]);
 
   useEffect(() => {
     fetch('/api/settings/branding')
@@ -223,57 +213,19 @@ export function Sidebar({ isFoundingMember, genieEnabled, genieOnly }: { isFound
           )}
         </nav>
         <div className="pr-3 pb-4 shrink-0">
-          <button
-            onClick={() => { setReportOpen(true); close(); }}
-            className="flex items-center gap-3 pl-[9px] pr-3 py-2.5 rounded-r-lg text-sm font-medium mb-0.5 text-sidebar-text hover:bg-white/[0.05] hover:text-white w-full transition-colors border-l-[3px] border-transparent"
-          >
-            <Bug className="w-4 h-4" />Report a bug / Suggest
-          </button>
-          <NavLink
-            href="/reports"
-            label="Reports"
-            Icon={ClipboardList}
-            active={path === '/reports' || path.startsWith('/reports/')}
-            close={close}
-            count={reportsUnread}
-          />
+          {/* Reports, Settings and Sign Out are in the account menu under the avatar (top right) */}
           {genieOnly && (
             <NavLink href="/upgrade" label="Get Genius CRM" Icon={Sparkles} active={path === '/upgrade'} close={close} />
           )}
-          {!isTeamMember && (
-            <>
-              <NavLink
-                href="/settings"
-                label="Settings"
-                Icon={Settings}
-                active={path === '/settings' || path.startsWith('/settings/')}
-                close={close}
-              />
-              <div className="border-t border-white/10 my-3 ml-3" />
-            </>
-          )}
-          {session?.user && (
-            <div className="px-3 py-2 mb-1">
-              <p className="text-white text-xs font-medium truncate">{session.user.name}</p>
-              <p className="text-sidebar-text text-[10px] truncate">{session.user.email}</p>
-              {isFoundingMember && (
-                <div className="flex items-center gap-1 mt-1.5">
-                  <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 shrink-0" />
-                  <span className="text-[10px] font-bold text-yellow-400 tracking-wide uppercase">Founding Member</span>
-                </div>
-              )}
+          {isFoundingMember && (
+            <div className="flex items-center gap-1 pl-3 pt-2">
+              <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 shrink-0" />
+              <span className="text-[10px] font-bold text-yellow-400 tracking-wide uppercase">Founding Member</span>
             </div>
           )}
-          <button
-            onClick={() => signOut({ callbackUrl: '/sign-in' })}
-            className="flex items-center gap-3 pl-[9px] pr-3 py-2 rounded-r-lg text-sm font-medium text-sidebar-text hover:bg-white/[0.05] hover:text-white w-full transition-colors border-l-[3px] border-transparent"
-          >
-            <LogOut className="w-4 h-4" />Sign Out
-          </button>
           <p className="text-sidebar-text text-[10px] pl-3 pt-2 opacity-30">v{APP_VERSION}</p>
         </div>
       </aside>
-      <ReportDialog open={reportOpen} onClose={() => setReportOpen(false)} />
     </>
   );
 }
