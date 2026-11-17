@@ -40,7 +40,7 @@ export default async function TenantLayout({ children }: { children: React.React
   return (
     <div className="min-h-screen bg-[#F5F6F8]">
       <Sidebar isFoundingMember={isFoundingMember} genieEnabled={session.tenantRole === 'HOST_ADMIN' && !!tenant?.genieEnabled} genieOnly={genieOnly} />
-      <main className="lg:pl-64 pt-14 lg:pt-16">
+      <main className="lg:pl-64 pt-14 lg:pt-16 print:p-0">
         {isCancelled && (
           <div className="bg-red-600 text-white px-4 py-3 text-sm flex flex-wrap items-center justify-between gap-2">
             <span>

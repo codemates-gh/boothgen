@@ -177,7 +177,7 @@ export function Sidebar({ isFoundingMember, genieEnabled, genieOnly }: { isFound
         />
       )}
       <aside className={cn(
-        'w-64 h-dvh bg-canvas flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 ease-in-out overflow-y-auto',
+        'w-64 h-dvh bg-canvas flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 ease-in-out overflow-y-auto print:hidden',
         isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       )}>
         <div className="px-4 py-4 border-b border-white/10 shrink-0">

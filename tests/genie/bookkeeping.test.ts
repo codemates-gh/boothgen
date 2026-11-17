@@ -245,6 +245,31 @@ describe('Bookkeeping: auto-categorize by payee', () => {
   });
 });
 
+describe('Bookkeeping: accountant exports and year-end summary', () => {
+  it('exports QuickBooks and Xero bank-statement CSVs and sums up a year', async () => {
+    const { client, event } = await setup();
+    await invoice(client.id, event.id, 120000, { status: 'PAID', paidAt: new Date('2026-03-10T12:00:00Z'), amountPaidCents: 120000, balanceDueCents: 0 });
+    await syncLedger(tenantId);
+    const mkt = (await prisma.ledgerCategory.findFirstOrThrow({ where: { tenantId, name: 'Marketing' } })).id;
+    await CREATE(req('/x', { method: 'POST', body: { type: 'EXPENSE', date: '2026-08-02', amountCents: 4500, description: 'Ads', payee: 'Meta', categoryId: mkt } }));
+
+    const qb = (await (await REPORTS(req('/x?report=transactions&format=csv&layout=quickbooks'))).text()).trim().split('\n');
+    expect(qb[0]).toBe('Date,Description,Amount');
+    expect(qb).toContain('08/02/2026,Meta - Ads - Marketing,-45.00');
+    const xero = (await (await REPORTS(req('/x?report=transactions&format=csv&layout=xero'))).text()).trim().split('\n');
+    expect(xero[0]).toBe('*Date,*Amount,Payee,Description,Reference');
+    expect(xero).toContain('08/02/2026,-45.00,Meta,Ads,Marketing');
+
+    const y = await (await REPORTS(req('/x?report=year&year=2026'))).json();
+    expect(y).toMatchObject({ year: 2026, grossIncome: 120000, refunds: 0, totalIncome: 120000, totalExpense: 4500, net: 115500, events: 1, avgPerEvent: 120000 });
+    expect(y.quarters.map((q: { net: number }) => q.net)).toEqual([120000, 0, -4500, 0]);
+    expect(y.topClients).toHaveLength(1);
+    expect(y.todo).toMatchObject({ uncategorized: 0, expensesWithoutReceipt: 1, unverified: 2 });
+    const yCsv = await (await REPORTS(req('/x?report=year&year=2026&format=csv'))).text();
+    expect(yCsv).toContain('Net profit,1155.00');
+  });
+});
+
 describe('Bookkeeping API', () => {
   it('adds an expense by hand, categorizes by kind, protects BoothGen payments and reports P&L', async () => {
     const { client, event } = await setup();

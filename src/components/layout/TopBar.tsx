@@ -69,7 +69,7 @@ export function TopBar({ title }: { title: string }) {
 
   return (
     <>
-      <header className="h-14 lg:h-14 bg-white border-b border-gray-100 flex items-center justify-between px-4 lg:px-6 fixed right-0 left-0 lg:left-64 top-0 z-30 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <header className="print:hidden h-14 lg:h-14 bg-white border-b border-gray-100 flex items-center justify-between px-4 lg:px-6 fixed right-0 left-0 lg:left-64 top-0 z-30 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <h1 className="text-[15px] lg:text-base font-semibold text-[#1F1F3D] pl-10 lg:pl-0 truncate tracking-[-0.01em]">{title}</h1>
         <div className="flex items-center gap-2">
           {!noSearch && (

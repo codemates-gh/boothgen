@@ -118,6 +118,8 @@ export default function BookkeepingPage() {
             <MoreMenu items={[
               { label: 'Categories', icon: Settings2, onClick: () => setCatsOpen(true) },
               { label: 'Export CSV', icon: Download, href: exportHref, external: true },
+              { label: 'Export for QuickBooks', icon: Download, href: exportHref + '&layout=quickbooks', external: true },
+              { label: 'Export for Xero', icon: Download, href: exportHref + '&layout=xero', external: true },
             ]} />
           </div>
         </div>

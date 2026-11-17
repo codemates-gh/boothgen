@@ -4,6 +4,22 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.101.5] — 2026-11-17
+
+### Added
+- **Bookkeeping → ⋯ → Export for QuickBooks / Export for Xero.** The filtered transactions as a CSV in each program's bank-statement import format:
+  - **QuickBooks Online:** Date, Description, Amount. Import it under Banking → Upload transactions.
+  - **Xero:** Date, Amount, Payee, Description, Reference. Import it under the bank account → Import a statement.
+  - Income is positive and expenses negative. Dates are month/day in the US and day/month elsewhere.
+- **Bookkeeping → Reports → Year-End Summary** for any year:
+  - Income after refunds, expenses, net profit and margin.
+  - Events and average income per event.
+  - Quarter by quarter, income and expenses by category, and top clients.
+  - A "before you send this to your accountant" checklist: uncategorized transactions, hand-entered expenses without a receipt, unverified transactions.
+  - Prints cleanly (no menus) and downloads as CSV.
+
+---
+
 ## [2.101.4] — 2026-11-17
 
 ### Added
