@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import { fmtCents } from '@/lib/utils';
 import { clientDisplayName } from '@/lib/clientName';
+import { splitLineItemDescription } from '@/lib/lineItems';
 
 const QC: Record<string, any> = { DRAFT: 'default', SENT: 'info', VIEWED: 'warning', ACCEPTED: 'success', DECLINED: 'danger', EXPIRED: 'default' };
 const EDITABLE = ['DRAFT', 'SENT', 'VIEWED', 'DECLINED', 'EXPIRED'];
@@ -354,7 +355,7 @@ export default function QuoteDetailPage() {
             <div className="sm:hidden divide-y">
               {quote.lineItems?.map((li: any) => (
                 <div key={li.id} className="px-5 py-4">
-                  <p className="text-sm text-gray-800 mb-2">{li.description}</p>
+                  {(() => { const { title, bullets } = splitLineItemDescription(li.description); return bullets.length === 0 ? <p className="text-sm text-gray-800 mb-2">{li.description}</p> : (<div className="text-sm text-gray-800 mb-2"><span className="font-medium">{title}</span><ul className="mt-1 space-y-0.5 text-gray-600 text-xs">{bullets.map((b: string, i: number) => (<li key={i} className="flex items-start gap-1.5"><span className="text-gray-400 flex-shrink-0 mt-px">·</span><span>{b}</span></li>))}</ul></div>); })()}
                   <div className="flex items-center gap-4 text-xs text-gray-500">
                     <span>Qty: <strong className="text-gray-700">{li.quantity}</strong></span>
                     <span>Unit: <strong className="text-gray-700">{fmt(li.unitCents)}</strong></span>
@@ -382,7 +383,7 @@ export default function QuoteDetailPage() {
                 <tbody>
                   {quote.lineItems?.map((li: any) => (
                     <tr key={li.id} className="border-b last:border-0">
-                      <td className="px-6 py-3 text-sm">{li.description}</td>
+                      <td className="px-6 py-3 text-sm">{(() => { const { title, bullets } = splitLineItemDescription(li.description); return bullets.length === 0 ? <p>{li.description}</p> : (<div><span className="font-medium">{title}</span><ul className="mt-1 space-y-0.5 text-gray-600 text-xs">{bullets.map((b: string, i: number) => (<li key={i} className="flex items-start gap-1.5"><span className="text-gray-400 flex-shrink-0 mt-px">·</span><span>{b}</span></li>))}</ul></div>); })()}</td>
                       <td className="px-6 py-3 text-sm text-right">{li.quantity}</td>
                       <td className="px-6 py-3 text-sm text-right">{fmt(li.unitCents)}</td>
                       <td className="px-6 py-3 text-sm text-right font-medium">{fmt(li.totalCents)}</td>

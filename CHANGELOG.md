@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.96.7] — 2026-11-16
+
+### Changed
+- **Package descriptions as bullet lists** (report #5): on quote and invoice pages and in the client portal, a line item now shows the package name as a title and each "*", "•" or "-" item (or each new line) as its own bullet, matching the PDFs. Settings → Packages keeps your line breaks as typed
+
+---
+
 ## [2.96.6] — 2026-11-16
 
 ### Added

@@ -114,7 +114,7 @@ export default function PackagesPage() {
                     {items.map(p => (
                       <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50">
                         <td className="px-6 py-3"><p className="font-medium text-sm">{p.name}</p><span className={'text-xs px-2 py-0.5 rounded-full font-medium ' + (CAT_COLOR[p.category] ?? 'bg-gray-100 text-gray-600')}>{CATS.find(c=>c[0]===p.category)?.[1] ?? p.category}</span></td>
-                        <td className="px-6 py-3 text-sm text-gray-500">{p.description ?? '—'}</td>
+                        <td className="px-6 py-3 text-sm text-gray-500 whitespace-pre-line">{p.description ?? '—'}</td>
                         <td className="px-6 py-3 text-right font-semibold text-sm whitespace-nowrap">{fmtCents(p.priceCents, currency)}</td>
                         <td className="px-6 py-3 text-right text-sm whitespace-nowrap">{p.corporatePriceCents != null ? <span className="font-semibold text-indigo-700">{fmtCents(p.corporatePriceCents, currency)}</span> : <span className="text-gray-300">—</span>}</td>
                         <td className="px-6 py-3">

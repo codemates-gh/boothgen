@@ -14,17 +14,18 @@ import DeleteButton from './DeleteButton';
 import { manualPaymentMethod, settleZeroInvoice } from '@/lib/invoices/payments';
 import { fmtCents } from '@/lib/utils';
 import { clientDisplayName } from '@/lib/clientName';
+import { splitLineItemDescription } from '@/lib/lineItems';
 
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
 
 function DescriptionCell({ text }: { text: string }) {
-  const parts = text.split(/\s*[—–]\s*|\s+-\s+/).map(p => p.trim()).filter(Boolean);
-  if (parts.length <= 1) return <span>{text}</span>;
+  const { title, bullets } = splitLineItemDescription(text);
+  if (bullets.length === 0) return <span>{text}</span>;
   return (
     <div>
-      <span className="font-medium">{parts[0]}</span>
+      <span className="font-medium">{title}</span>
       <ul className="mt-1 space-y-0.5 text-gray-600 text-xs">
-        {parts.slice(1).map((p, i) => (
+        {bullets.map((p, i) => (
           <li key={i} className="flex items-start gap-1.5">
             <span className="text-gray-400 flex-shrink-0 mt-px">·</span>
             <span>{p}</span>

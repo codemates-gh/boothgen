@@ -28,6 +28,7 @@ interface PortalData {
 }
 
 import { fmtCents } from '@/lib/utils';
+import { splitLineItemDescription } from '@/lib/lineItems';
 
 export default function ClientPortalPage() {
   const { portalToken } = useParams<{ portalToken: string }>();
@@ -458,9 +459,7 @@ export default function ClientPortalPage() {
                       </thead>
                       <tbody>
                         {data.quote.lineItems?.map((li: any) => {
-                          const parts = li.description?.split(/\s*[—–]\s*|\s+-\s+/).map((p: string) => p.trim()).filter(Boolean) ?? [];
-                          const title = parts[0] ?? li.description;
-                          const bullets = parts.slice(1);
+                          const { title, bullets } = splitLineItemDescription(li.description);
                           return (
                           <tr key={li.id} className="border-b last:border-0 align-top">
                             <td className="py-4 pr-4">
@@ -681,15 +680,14 @@ export default function ClientPortalPage() {
                     </thead>
                     <tbody>
                       {data.invoice.lineItems?.map((li: any) => {
-                        const parts = li.description?.split(/\s*[—–]\s*|\s+-\s+/).map((p: string) => p.trim()).filter(Boolean) ?? [];
-                        const title = parts[0] ?? li.description;
+                        const { title, bullets } = splitLineItemDescription(li.description);
                         return (
                           <tr key={li.id} className="border-b last:border-0">
                             <td className="py-3 align-top">
-                              <span className="font-medium">{title.replace(/\s*—$/, '')}</span>
-                              {parts.length > 1 && (
+                              <span className="font-medium">{title}</span>
+                              {bullets.length > 0 && (
                                 <ul className="mt-1 space-y-0.5 text-gray-500 text-xs">
-                                  {parts.slice(1).map((p: string, i: number) => (
+                                  {bullets.map((p: string, i: number) => (
                                     <li key={i} className="flex items-start gap-1.5">
                                       <span className="text-gray-400 flex-shrink-0 mt-px">·</span>
                                       <span>{p}</span>
