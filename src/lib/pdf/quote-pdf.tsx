@@ -1,6 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { fmtCents } from '@/lib/utils';
+import { clientDisplayName } from '@/lib/clientName';
 
 const S = StyleSheet.create({
   page:      { fontFamily: 'Helvetica', fontSize: 10, color: '#111827', padding: 48 },
@@ -49,7 +50,7 @@ export function QuotePDF({ quote, branding }: { quote: any; branding: any }) {
         <View style={S.metaRow}>
           <View style={S.metaItem}>
             <Text style={S.label}>Prepared For</Text>
-            <Text style={S.metaValue}>{quote.client?.firstName} {quote.client?.lastName}</Text>
+            <Text style={S.metaValue}>{clientDisplayName(quote.client)}</Text>
             <Text style={{ fontSize: 9, color: '#6b7280' }}>{quote.client?.email}</Text>
           </View>
           <View style={S.metaItem}>

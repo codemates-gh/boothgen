@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowRight, Info } from 'lucide-react';
 import { format } from 'date-fns';
+import { clientDisplayName } from '@/lib/clientName';
 
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
 const STATUSES = ['ALL', 'DRAFT', 'SENT', 'PARTIALLY_PAID', 'PAID', 'OVERDUE', 'CANCELLED'];
@@ -62,7 +63,7 @@ export default function InvoicesPage() {
                   {visible.map((inv: any) => (
                     <tr key={inv.id} className="border-b last:border-0 hover:bg-gray-50 cursor-pointer" onClick={() => window.location.href = '/invoices/' + inv.id}>
                       <td className="px-6 py-4"><p className="font-semibold text-sm">{inv.invoiceNumber}</p>{inv.event && <p className="text-xs text-gray-400">{inv.event.title}</p>}</td>
-                      <td className="px-6 py-4 text-sm">{inv.client?.firstName} {inv.client?.lastName}</td>
+                      <td className="px-6 py-4 text-sm">{clientDisplayName(inv.client)}</td>
                       <td className="px-6 py-4 text-sm font-medium">{fmtCents(inv.totalCents, inv.currency ?? 'usd')}</td>
                       <td className="px-6 py-4 text-sm">{fmtCents(inv.balanceDueCents, inv.currency ?? 'usd')}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">{(() => {

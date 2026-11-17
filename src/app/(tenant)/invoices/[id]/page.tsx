@@ -13,6 +13,7 @@ import MilestonesCard from './MilestonesCard';
 import DeleteButton from './DeleteButton';
 import { manualPaymentMethod, settleZeroInvoice } from '@/lib/invoices/payments';
 import { fmtCents } from '@/lib/utils';
+import { clientDisplayName } from '@/lib/clientName';
 
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
 
@@ -76,7 +77,7 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <Card><CardContent className="pt-6 text-sm"><p className="font-bold text-base mb-1">{tenant?.branding?.companyName ?? tenant?.name}</p>{tenant?.branding?.replyToEmail && <p className="text-gray-600">{tenant.branding.replyToEmail}</p>}</CardContent></Card>
-          <Card><CardContent className="pt-6 text-sm"><p className="font-semibold text-xs text-gray-400 uppercase mb-1">Bill To</p><p className="font-bold">{inv.client.firstName} {inv.client.lastName}</p><p className="text-gray-600">{inv.client.email}</p></CardContent></Card>
+          <Card><CardContent className="pt-6 text-sm"><p className="font-semibold text-xs text-gray-400 uppercase mb-1">Bill To</p><p className="font-bold">{clientDisplayName(inv.client)}</p><p className="text-gray-600">{inv.client.email}</p></CardContent></Card>
         </div>
         <Card>
           <CardHeader><CardTitle>Line Items</CardTitle></CardHeader>

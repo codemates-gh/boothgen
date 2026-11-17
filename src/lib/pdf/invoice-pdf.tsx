@@ -1,6 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { fmtCents } from '@/lib/utils';
+import { clientDisplayName } from '@/lib/clientName';
 
 const S = StyleSheet.create({
   page:       { fontFamily: 'Helvetica', fontSize: 10, color: '#111827', padding: 48 },
@@ -57,7 +58,7 @@ export function InvoicePDF({ inv, branding }: { inv: any; branding: any }) {
         <View style={S.metaRow}>
           <View style={S.metaItem}>
             <Text style={S.label}>Bill To</Text>
-            <Text style={S.metaValue}>{inv.client?.firstName} {inv.client?.lastName}</Text>
+            <Text style={S.metaValue}>{clientDisplayName(inv.client)}</Text>
             <Text style={{ fontSize: 9, color: '#6b7280' }}>{inv.client?.email}</Text>
             {inv.client?.phone && <Text style={{ fontSize: 9, color: '#6b7280' }}>{inv.client.phone}</Text>}
           </View>

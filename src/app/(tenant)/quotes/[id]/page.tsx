@@ -9,6 +9,7 @@ import { Send, Trash2, ArrowLeft, ExternalLink, Edit2, RotateCcw, FilePlus, Eye,
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { fmtCents } from '@/lib/utils';
+import { clientDisplayName } from '@/lib/clientName';
 
 const QC: Record<string, any> = { DRAFT: 'default', SENT: 'info', VIEWED: 'warning', ACCEPTED: 'success', DECLINED: 'danger', EXPIRED: 'default' };
 const EDITABLE = ['DRAFT', 'SENT', 'VIEWED', 'DECLINED', 'EXPIRED'];
@@ -250,7 +251,7 @@ export default function QuoteDetailPage() {
           <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-xs text-gray-400 uppercase font-medium mb-1">Client</p>
-              <p>{quote.client?.firstName} {quote.client?.lastName}</p>
+              <p>{clientDisplayName(quote.client)}</p>
               <p className="text-gray-500">{quote.client?.email}</p>
             </div>
             <div>

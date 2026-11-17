@@ -15,6 +15,7 @@ import {
   AlertTriangle, Clock, FileText, Camera, CheckCircle, Layers, Upload,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import { clientDisplayName } from '@/lib/clientName';
 
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger', LOST:'default' };
 
@@ -318,7 +319,7 @@ export default async function DashboardPage() {
                     <div>
                       <p className="font-semibold text-gray-900">{ev.title}</p>
                       <p className="text-sm text-gray-500">
-                        {ev.client.firstName} {ev.client.lastName}{ev.venueName ? ` · ${ev.venueName}` : ''}
+                        {clientDisplayName(ev.client)}{ev.venueName ? ` · ${ev.venueName}` : ''}
                         {ev.startTime && <span className="ml-1">· {format(ev.startTime, 'h:mm a')}{ev.endTime ? ` – ${format(ev.endTime, 'h:mm a')}` : ''}</span>}
                       </p>
                     </div>
@@ -392,7 +393,7 @@ export default async function DashboardPage() {
                     {upcomingEvents.map(ev => (
                       <tr key={ev.id} className="border-b last:border-0 hover:bg-gray-50">
                         <td className="px-6 py-4"><p className="font-medium">{ev.title}</p><p className="text-sm text-gray-500">{ev.venueName ?? 'Venue TBD'}</p></td>
-                        <td className="px-6 py-4 text-sm">{ev.client.firstName} {ev.client.lastName}</td>
+                        <td className="px-6 py-4 text-sm">{clientDisplayName(ev.client)}</td>
                         <td className="px-6 py-4 text-sm text-gray-700">{format(ev.eventDate, 'MMM d, yyyy')}</td>
                         <td className="px-6 py-4"><Badge variant={SC[ev.status]}>{ev.status}</Badge></td>
                         <td className="px-6 py-4 text-right"><Link href={'/events/' + ev.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>

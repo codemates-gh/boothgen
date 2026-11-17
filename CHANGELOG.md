@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.96.6] — 2026-11-16
+
+### Added
+- **Company name for corporate clients** (report #4): for clients with Corporate turned on and a company filled in, events, quotes, invoices, contracts and their PDFs now show "Company c/o Contact" (e.g. "Kawneer c/o Joy Talaga"). Other clients look the same as before
+
+---
+
 ## [2.96.5] — 2026-11-16
 
 ### Fixed

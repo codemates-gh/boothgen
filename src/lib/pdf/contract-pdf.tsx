@@ -1,5 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { clientDisplayName } from '@/lib/clientName';
 
 const S = StyleSheet.create({
   page:       { fontFamily: 'Helvetica', fontSize: 10, color: '#111827', padding: 48 },
@@ -91,7 +92,7 @@ export function ContractPDF({ contract, branding }: { contract: any; branding: a
           </View>
           <View style={S.party}>
             <Text style={S.partyLabel}>Client</Text>
-            <Text style={S.partyName}>{contract.client?.firstName} {contract.client?.lastName}</Text>
+            <Text style={S.partyName}>{clientDisplayName(contract.client)}</Text>
             <Text style={{ fontSize: 9, color: '#6b7280', marginTop: 2 }}>{contract.client?.email}</Text>
           </View>
         </View>

@@ -23,6 +23,7 @@ import EventMessagePanel from './EventMessagePanel';
 import EventProfitability from './EventProfitability';
 import EventInvoicePanel from './EventInvoicePanel';
 import { settleZeroInvoice } from '@/lib/invoices/payments';
+import { clientDisplayName } from '@/lib/clientName';
 
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger', LOST:'default' };
 const IC: Record<string,any> = { DRAFT:'default', SENT:'info', PARTIALLY_PAID:'warning', PAID:'success', OVERDUE:'danger', CANCELLED:'danger' };
@@ -103,7 +104,7 @@ export default async function EventDetailPage({ params, searchParams }: { params
               <h2 className="text-xl sm:text-2xl font-bold">{event.title}</h2>
               <Badge variant={SC[event.status]}>{event.status.replace('_',' ')}</Badge>
             </div>
-            <p className="text-gray-500 text-sm">{event.client.firstName} {event.client.lastName} &bull; {event.client.email}</p>
+            <p className="text-gray-500 text-sm">{clientDisplayName(event.client)} &bull; {event.client.email}</p>
           </div>
           {isAdmin && (
             <div className="space-y-2.5">
@@ -165,7 +166,7 @@ export default async function EventDetailPage({ params, searchParams }: { params
             <Card>
               <CardHeader><CardTitle>Client</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <p className="font-semibold">{event.client.firstName} {event.client.lastName}</p>
+                <p className="font-semibold">{clientDisplayName(event.client)}</p>
                 <p className="text-gray-600">{event.client.email}</p>
                 {event.client.phone && <p className="text-gray-600">{event.client.phone}</p>}
                 {isAdmin && (

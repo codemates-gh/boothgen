@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, FileText, Settings, PenLine, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { ClickableRow } from '@/components/ui/ClickableRow';
+import { clientDisplayName } from '@/lib/clientName';
 
 const CC: Record<string,any> = { DRAFT:'default', SENT_TO_CLIENT:'info', CLIENT_SIGNED:'warning', HOST_SIGNED:'warning', FULLY_EXECUTED:'success', VOIDED:'danger' };
 
@@ -78,7 +79,7 @@ export default async function ContractsPage() {
                         <p className="font-semibold text-sm">{c.title}</p>
                         {c.event && <p className="text-xs text-gray-400">{c.event.title}</p>}
                       </td>
-                      <td className="px-6 py-4 text-sm">{c.client.firstName} {c.client.lastName}</td>
+                      <td className="px-6 py-4 text-sm">{clientDisplayName(c.client)}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <Badge variant={CC[c.status]}>{c.status.replace(/_/g,' ')}</Badge>
