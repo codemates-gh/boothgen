@@ -8,13 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Mail } from 'lucide-react';
-import { settingsTabs } from '@/lib/product';
 import GuestMessagingSettings from '@/components/messaging/GuestMessagingSettings';
 
 export default function MessagingSettingsPage() {
   const { data: session } = useSession();
   const product = session?.tenant?.product;
-  const tabs = settingsTabs(product);
   const [form, setForm] = useState({ companyName: '', replyToEmail: '' });
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -40,11 +38,6 @@ export default function MessagingSettingsPage() {
     <>
       <TopBar title="Settings" />
       <div className="p-4 sm:p-8 max-w-3xl space-y-6">
-        <div className="flex flex-wrap border-b border-gray-200 mb-6">
-          {tabs.map(([href, label]) => (
-            <Link key={href} href={'/settings/' + href} className={'px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap -mb-px ' + (href === 'messaging' ? 'border-[#0085FF] text-[#1F1F3D]' : 'border-transparent text-[#676879] hover:text-[#1F1F3D]')}>{label}</Link>
-          ))}
-        </div>
 
         {product !== 'genie' && (
           <Card>

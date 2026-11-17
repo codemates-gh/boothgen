@@ -6,9 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Copy, Check, ExternalLink, Globe, Save, Plus, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
-import Link from 'next/link';
 
-const tabs = [['branding','Branding'],['messaging','Email & Texting'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
 
 type FieldType = 'TEXT' | 'TEXTAREA' | 'SELECT';
 interface CustomField { id: string; label: string; fieldType: FieldType; required: boolean; options: string[] | null; isActive: boolean; sortOrder: number }
@@ -174,9 +172,6 @@ export default function EmbedPage() {
     <>
       <TopBar title="Settings" />
       <div className="p-4 sm:p-8 max-w-3xl space-y-6">
-        <div className="flex flex-wrap border-b border-gray-200 mb-6">
-          {tabs.map(([href, label]) => <Link key={href} href={'/settings/' + href} className={'px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap -mb-px ' + (href === 'embed' ? 'border-[#0085FF] text-[#1F1F3D]' : 'border-transparent text-[#676879] hover:text-[#1F1F3D]')}>{label}</Link>)}
-        </div>
 
         <div className="bg-brand-surface border border-brand/20 rounded-xl p-4 flex items-start gap-3">
           <Globe className="w-5 h-5 text-brand mt-0.5 flex-shrink-0"/>

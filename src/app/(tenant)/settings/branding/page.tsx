@@ -6,16 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
-import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { isGenieOnly, settingsTabs } from '@/lib/product';
+import { isGenieOnly } from '@/lib/product';
 import Image from 'next/image';
 import { Camera, Upload } from 'lucide-react';
 
 
 export default function BrandingSettingsPage() {
   const product = useSession().data?.tenant?.product;
-  const tabs = settingsTabs(product);
   const crm = !isGenieOnly({ product }); // Currency, tax, address, signature and invoice footer are Genius (CRM) only
   const [form, setForm] = useState({ companyName:'', primaryColor:'#F97316', secondaryColor:'#EA6100', replyToEmail:'', supportPhone:'', websiteUrl:'', businessAddress:'', invoiceFooterText:'', emailHeaderHtml:'', currency:'usd', taxLabel:'Tax', country:'' });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -88,9 +86,6 @@ export default function BrandingSettingsPage() {
     <>
       <TopBar title="Settings" />
       <div className="p-4 sm:p-8 max-w-3xl space-y-6">
-        <div className="flex flex-wrap border-b border-gray-200 mb-6">
-          {tabs.map(([href, label]) => <Link key={href} href={'/settings/' + href} className={'px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap -mb-px ' + (href === 'branding' ? 'border-[#0085FF] text-[#1F1F3D]' : 'border-transparent text-[#676879] hover:text-[#1F1F3D]')}>{label}</Link>)}
-        </div>
 
         <Card>
           <CardHeader><CardTitle>Company Logo</CardTitle></CardHeader>

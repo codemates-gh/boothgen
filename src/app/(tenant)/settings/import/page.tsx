@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { SAMPLE_CSV } from '@/lib/import/parse';
 
-const TABS = [['branding','Branding'],['messaging','Email & Texting'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
@@ -172,15 +171,6 @@ export default function ImportPage() {
     <div>
       <TopBar title="Settings" />
       <div className="p-4 sm:p-6 lg:p-8">
-        {/* Settings tab bar */}
-        <div className="flex flex-wrap border-b border-gray-200 mb-6">
-          {TABS.map(([href, label]) => (
-            <Link key={href} href={'/settings/' + href}
-              className={'px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap -mb-px ' + (href === 'import' ? 'border-[#0085FF] text-[#1F1F3D]' : 'border-transparent text-[#676879] hover:text-[#1F1F3D]')}>
-              {label}
-            </Link>
-          ))}
-        </div>
 
         <div className="max-w-3xl space-y-6">
           <div>

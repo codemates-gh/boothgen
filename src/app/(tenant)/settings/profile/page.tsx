@@ -5,14 +5,11 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import Link from 'next/link';
-import { settingsTabs } from '@/lib/product';
 import { KeyRound } from 'lucide-react';
 
 
 export default function ProfileSettingsPage() {
   const { data: session, update } = useSession();
-  const tabs = settingsTabs(session?.tenant?.product);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [hasPassword, setHasPassword] = useState(false);
@@ -78,17 +75,6 @@ export default function ProfileSettingsPage() {
     <>
       <TopBar title="Settings" />
       <div className="p-4 sm:p-8 max-w-3xl space-y-6">
-        <div className="flex flex-wrap border-b border-gray-200 mb-6">
-          {tabs.map(([href, label]) => (
-            <Link
-              key={href}
-              href={'/settings/' + href}
-              className={'px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap -mb-px ' + (href === 'profile' ? 'border-[#0085FF] text-[#1F1F3D]' : 'border-transparent text-[#676879] hover:text-[#1F1F3D]')}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
 
         <Card>
           <CardHeader><CardTitle>Your Profile</CardTitle></CardHeader>

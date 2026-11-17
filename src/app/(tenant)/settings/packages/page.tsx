@@ -10,7 +10,6 @@ import { Modal } from '@/components/ui/modal';
 import Link from 'next/link';
 import { Plus, Edit2, Trash2, Package, Layers } from 'lucide-react';
 
-const TABS = [['branding','Branding'],['messaging','Email & Texting'],['packages','Packages'],['billing','Billing'],['team','Team'],['coupons','Coupons'],['embed','Lead Capture'],['checklists','Checklists'],['profile','Profile'],['import','Import'],['print-costs','Print Costs']];
 const CATS = [['package','Full Package'],['addon','Add-On / Extra'],['product','A La Carte Item'],['discount','Discount']];
 const CAT_COLOR: Record<string,string> = { package:'bg-brand-surface text-brand', addon:'bg-blue-50 text-blue-700', product:'bg-purple-50 text-purple-700', discount:'bg-green-50 text-green-700' };
 const CAT_DESC: Record<string,string> = {
@@ -77,9 +76,6 @@ export default function PackagesPage() {
     <>
       <TopBar title="Settings" />
       <div className="p-4 sm:p-8 max-w-3xl space-y-6">
-        <div className="flex flex-wrap border-b border-gray-200 mb-6">
-          {TABS.map(([href, label]) => <Link key={href} href={'/settings/' + href} className={'px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap -mb-px ' + (href === 'packages' ? 'border-[#0085FF] text-[#1F1F3D]' : 'border-transparent text-[#676879] hover:text-[#1F1F3D]')}>{label}</Link>)}
-        </div>
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <p className="text-sm text-gray-500">Define packages, add-ons, and a la carte items. These appear as quick-add options when building invoices.</p>
           <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2"/>Add Item</Button>

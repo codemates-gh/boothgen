@@ -61,3 +61,17 @@ const ALL_SETTINGS_TABS: [string, string][] = [
 export function settingsTabs(product: string | null | undefined): [string, string][] {
   return product === 'genie' ? ALL_SETTINGS_TABS.filter(([h]) => !genieOnlyBlock('/settings/' + h)) : ALL_SETTINGS_TABS;
 }
+
+// The Settings menu, grouped (src/app/(tenant)/settings/SettingsNav.tsx); items an account can't use are left out
+const SETTINGS_GROUPS: [string, string[]][] = [
+  ['Account', ['profile', 'billing', 'team']],
+  ['Business', ['branding', 'messaging', 'import']],
+  ['Sales', ['packages', 'coupons', 'embed']],
+  ['Events', ['checklists', 'print-costs']],
+];
+export function settingsGroups(product: string | null | undefined): { label: string; items: [string, string][] }[] {
+  const tabs = new Map(settingsTabs(product));
+  return SETTINGS_GROUPS
+    .map(([label, hrefs]) => ({ label, items: hrefs.filter(h => tabs.has(h)).map(h => [h, tabs.get(h)!] as [string, string]) }))
+    .filter(g => g.items.length > 0);
+}

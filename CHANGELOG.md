@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.100.2] — 2026-11-17
+
+### Changed
+- **Settings menu, grouped.** The long row of Settings tabs is now a menu in four groups:
+  - **Account:** Profile, Billing, Team
+  - **Business:** Branding, Email & Texting, Import
+  - **Sales:** Packages, Coupons, Lead Capture
+  - **Events:** Checklists, Print Costs
+- **Where it shows:** a side menu on wider screens, and one grouped dropdown on phones and tablets. Genie-only accounts see only the items they use.
+
+---
+
 ## [2.100.1] — 2026-11-17
 
 ### Fixed
