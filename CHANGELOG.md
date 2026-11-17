@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.103.1] — 2026-11-17
+
+### Added
+- **Genie: Remove sound.** A custom countdown sound now has a **Remove sound** button next to Replace sound. It switches the setting back to "Use the iPad's setting"; after you save, the file is deleted once no event uses it.
+
+### Changed
+- **Genie: countdown sound player.** The browser's Download and playback-speed options are hidden on the sound's player.
+
+---
+
 ## [2.103.0] — 2026-11-17
 
 ### Added

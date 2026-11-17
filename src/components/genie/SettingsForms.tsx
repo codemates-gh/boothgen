@@ -230,9 +230,10 @@ function CountdownSoundField({ value, onChange, disabled }: { value: CountdownSo
   const [pct, setPct] = useState(0);
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
+  const [removed, setRemoved] = useState(false);
 
   async function upload(file: File) {
-    setError(''); setNote('');
+    setError(''); setNote(''); setRemoved(false);
     // Some browsers report no type for .aiff/.m4a; go by the extension then
     const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
     const type = file.type || ({ mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', wav: 'audio/wav', aif: 'audio/aiff', aiff: 'audio/aiff' } as Record<string, string>)[ext] || '';
@@ -266,13 +267,14 @@ function CountdownSoundField({ value, onChange, disabled }: { value: CountdownSo
           {COUNTDOWN_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </Select>
       </Field>
+      {removed && value.style !== 'custom' && <p className="text-xs text-gray-500">Sound removed. Save to apply; the file is deleted once nothing uses it.</p>}
       {value.style === 'custom' && (
         <div className="ml-0 sm:ml-1 space-y-2">
           {c && (
             <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700">
               <span className="font-medium">{c.name}</span>
               <span className="text-gray-500">{(c.durationMs / 1000).toFixed(1)} s</span>
-              <audio src={c.url} controls preload="none" className="h-8" />
+              <audio src={c.url} controls controlsList="nodownload noplaybackrate" onContextMenu={e => e.preventDefault()} preload="none" className="h-8" />
             </div>
           )}
           <div className="flex flex-wrap gap-2">
@@ -280,6 +282,11 @@ function CountdownSoundField({ value, onChange, disabled }: { value: CountdownSo
             <Button type="button" variant="outline" size="sm" disabled={disabled || busy} onClick={() => fileRef.current?.click()}>
               {phase === 'uploading' ? `Uploading… ${pct}%` : phase === 'converting' ? 'Converting for the iPad…' : c ? 'Replace sound' : 'Upload sound'}
             </Button>
+            {c && (
+              <Button type="button" variant="outline" size="sm" disabled={disabled || busy} onClick={() => { setNote(''); setError(''); onChange({ style: 'ipad', custom: null }); setRemoved(true); }}>
+                Remove sound
+              </Button>
+            )}
           </div>
           <p className="text-xs text-gray-400">MP3, M4A, WAV or AIFF up to 20 MB. We convert it for the iPad and use at most the first 15 seconds (the iPad won&apos;t play anything longer).{!c && ' Upload a sound to save this choice.'}</p>
           {note && <p className="text-xs text-green-700">{note} Save to use it.</p>}
@@ -333,6 +340,7 @@ export function AttractFields({ value, onChange, disabled }: { value: Attract; o
   const [pct, setPct] = useState(0);
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
+  const [removed, setRemoved] = useState(false);
 
   async function upload(file: File) {
     setError(''); setNote('');
