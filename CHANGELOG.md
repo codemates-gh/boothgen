@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.102.1] — 2026-11-17
+
+### Changed
+- **Bookkeeping:** descriptions show in full instead of being cut off after two lines, so each mileage line's whole calculation is visible. Mileage lines now read "Mileage: home base → venue … = … mi × 76¢/mi (IRS business rate from …)", with the event's name on the line below. Existing lines update on the next Refresh.
+
+---
+
 ## [2.102.0] — 2026-11-17
 
 ### Added

@@ -122,6 +122,6 @@ export async function mileageRows(tenantId: string) {
   return list.flatMap(m => {
     const c = mileageCalc(m, m.event.eventDate, branding?.mileageRateCents, irs);
     if (!c || c.amountCents <= 0) return [];
-    return [{ eventId: m.eventId, clientId: m.event.clientId, date: m.event.eventDate, amountCents: c.amountCents, description: `Mileage for ${m.event.title}: ${c.text}` }];
+    return [{ eventId: m.eventId, clientId: m.event.clientId, date: m.event.eventDate, amountCents: c.amountCents, description: `Mileage: ${c.text}` }]; // the event's name shows beside it
   });
 }

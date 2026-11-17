@@ -202,7 +202,7 @@ export default function BookkeepingPage() {
               <span className="hidden md:block text-gray-600">{format(new Date(t.date), 'MMM d, yyyy')}</span>
               <span className="min-w-0">
                 <span className="flex items-center gap-1.5 min-w-0">
-                  <span className="line-clamp-2 text-[#1F1F3D]">{t.description}</span>
+                  <span className="break-words text-[#1F1F3D]">{t.description}</span>
                   {t.verified && <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 text-green-600" aria-label="Verified" />}
                 </span>
                 <span className="block text-xs text-gray-400 truncate">
