@@ -1,12 +1,12 @@
 'use client';
 import { useState } from 'react';
-import { DOC_GRID, DOC_ROW } from './docGrid';
+import { DOC_GRID, DOC_ROW, DOC_WIDE, DOC_NARROW } from './docGrid';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { fmtCents } from '@/lib/utils';
 import { format } from 'date-fns';
-import { ChevronDown, ChevronUp, Undo2 } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Undo2 } from 'lucide-react';
 
 const IC: Record<string, any> = { DRAFT: 'default', SENT: 'info', PARTIALLY_PAID: 'warning', PAID: 'success', OVERDUE: 'danger', CANCELLED: 'danger' };
 const MC: Record<string, any> = { PENDING: 'default', PAID: 'success', REFUNDED: 'default' };
@@ -90,9 +90,9 @@ function MilestoneRow({ milestone, invoiceId, currency, onUpdate, full = false, 
     <div className="border-t border-gray-100">
       {/* Same columns as the invoice row: label | amount | due/paid date | paid or Mark Paid */}
       <div className={DOC_GRID + ' py-2.5 text-sm'}>
-        <span className="flex items-center gap-2 min-w-0 pl-3"><span className={'w-2 h-2 rounded-full flex-shrink-0 ' + (isPaid ? 'bg-green-600' : 'bg-amber-600')} /><span className="truncate text-gray-700">{milestone.label}</span></span>
-        <span className="text-gray-500 tabular-nums">{fmt(milestone.amountCents)}</span>
-        <span className="text-xs text-gray-400">
+        <span className="flex items-center gap-2 min-w-0 pl-3"><span className={'w-2 h-2 rounded-full flex-shrink-0 ' + (isPaid ? 'bg-green-600' : 'bg-amber-600')} /><span className="min-w-0"><span className="block truncate text-gray-700">{milestone.label}</span><span className={DOC_NARROW}>{fmt(milestone.amountCents)} · {isPaid && milestone.paidAt ? `Paid ${format(new Date(milestone.paidAt), 'MMM d')}` : `Due ${format(new Date(milestone.dueDate), 'MMM d, yyyy')}`}</span></span></span>
+        <span className={DOC_WIDE + ' text-gray-500 tabular-nums'}>{fmt(milestone.amountCents)}</span>
+        <span className={DOC_WIDE + ' text-xs text-gray-400'}>
           {isPaid && milestone.paidAt
             ? `Paid ${format(new Date(milestone.paidAt), 'MMM d')}`
             : `Due ${format(new Date(milestone.dueDate), 'MMM d, yyyy')}`}
@@ -169,13 +169,16 @@ export default function EventInvoicePanel({ invoices }: Props) {
         const hasMilestones = inv.milestones.length > 0;
         return (
           <div key={inv.id} className="border-b border-gray-100 last:border-0">
-            <div className={DOC_ROW}>
-              <span className="font-medium truncate">{inv.invoiceNumber}</span>
-              <span>{fmt(inv.totalCents)}</span>
-              <span className="text-gray-600">{fmt(inv.balanceDueCents)} due</span>
-              <span><Badge variant={IC[inv.status]}>{inv.status}</Badge></span>
-              <span className="text-right"><Link href={'/invoices/' + inv.id}><Button variant="ghost" size="sm">View</Button></Link></span>
-            </div>
+            <Link href={'/invoices/' + inv.id} className={DOC_ROW}>
+              <span className="font-medium min-w-0">
+                <span className="block truncate">{inv.invoiceNumber}</span>
+                <span className={DOC_NARROW}>{fmt(inv.totalCents)} · {fmt(inv.balanceDueCents)} due</span>
+              </span>
+              <span className={DOC_WIDE}>{fmt(inv.totalCents)}</span>
+              <span className={DOC_WIDE + ' text-gray-600'}>{fmt(inv.balanceDueCents)} due</span>
+              <span><Badge variant={IC[inv.status]}>{inv.status.replace(/_/g, ' ')}</Badge></span>
+              <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-brand transition-colors" />
+            </Link>
             {hasMilestones && inv.milestones.map(m => (
               <MilestoneRow
                 key={m.id}

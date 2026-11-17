@@ -1,15 +1,18 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { signOut, useSession } from 'next-auth/react';
 import { NotificationBell } from './NotificationBell';
 import { SearchModal } from './SearchModal';
-import { Search } from 'lucide-react';
+import { Search, LogOut, Settings } from 'lucide-react';
 import Image from 'next/image';
 
 export function TopBar({ title }: { title: string }) {
   const { data: session } = useSession();
   const [searchOpen, setSearchOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string>('');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const isTeamMember = session?.tenantRole === 'TEAM_MEMBER';
   // Search covers CRM records (clients, events, invoices), which Genie-only accounts don't have
   const noSearch = isTeamMember || session?.tenant?.product === 'genie';
@@ -42,6 +45,16 @@ export function TopBar({ title }: { title: string }) {
     return () => window.removeEventListener('keydown', handler);
   }, [noSearch]);
 
+  // Account menu under the avatar: close on outside click or Escape
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: MouseEvent) => { if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); window.removeEventListener('keydown', onKey); };
+  }, [menuOpen]);
+
   const userName = session?.user?.name ?? '';
   const userInitials = userName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || 'U';
 
@@ -71,13 +84,35 @@ export function TopBar({ title }: { title: string }) {
             </>
           )}
           <NotificationBell />
-          {logoUrl ? (
-            <Image src={logoUrl} alt="Company logo" width={120} height={40} className="h-10 w-auto flex-shrink-0 ml-2 object-contain" unoptimized />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-[#784BD1] flex items-center justify-center text-white text-[11px] font-semibold flex-shrink-0 ml-1">
-              {userInitials}
-            </div>
-          )}
+          <div className="relative" ref={menuRef}>
+            <button onClick={() => setMenuOpen(o => !o)} className="flex items-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#784BD1]/40" aria-label="Account menu" aria-expanded={menuOpen}>
+              {logoUrl ? (
+                <Image src={logoUrl} alt="Company logo" width={120} height={40} className="h-10 w-auto flex-shrink-0 ml-2 object-contain" unoptimized />
+              ) : (
+                <span className="w-8 h-8 rounded-full bg-[#784BD1] flex items-center justify-center text-white text-[11px] font-semibold flex-shrink-0 ml-1">
+                  {userInitials}
+                </span>
+              )}
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-60 rounded-xl border border-gray-200 bg-white shadow-card-md py-1.5 z-50">
+                {session?.user && (
+                  <div className="px-4 py-2 border-b border-gray-100 mb-1">
+                    <p className="text-sm font-medium text-[#1F1F3D] truncate">{session.user.name}</p>
+                    <p className="text-xs text-gray-400 truncate">{session.user.email}</p>
+                  </div>
+                )}
+                {!isTeamMember && (
+                  <Link href="/settings" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    <Settings className="w-4 h-4 text-gray-400" />Settings
+                  </Link>
+                )}
+                <button onClick={() => signOut({ callbackUrl: '/sign-in' })} className="flex w-full items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                  <LogOut className="w-4 h-4 text-gray-400" />Sign Out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}

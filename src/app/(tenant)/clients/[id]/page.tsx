@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { ClickableRow } from '@/components/ui/ClickableRow';
 import { ArrowLeft, Save, Trash2, Calendar, ArrowRight, Plus, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -118,12 +119,12 @@ export default function ClientDetailPage() {
                 <thead><tr className="border-b bg-gray-50"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Event</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Date</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="px-6 py-3"></th></tr></thead>
                 <tbody>
                   {events.map((ev: any) => (
-                    <tr key={ev.id} className="border-b last:border-0 hover:bg-gray-50">
+                    <ClickableRow key={ev.id} href={'/events/' + ev.id} className="group border-b last:border-0">
                       <td className="px-6 py-3 font-medium text-sm">{ev.title}</td>
                       <td className="px-6 py-3 text-sm text-gray-600">{fmtEventDate(ev.eventDate)}</td>
                       <td className="px-6 py-3"><Badge variant={SC[ev.status]}>{ev.status.replace('_',' ')}</Badge></td>
-                      <td className="px-6 py-3 text-right"><Link href={'/events/' + ev.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
-                    </tr>
+                      <td className="px-6 py-3 text-right"><ArrowRight className="w-4 h-4 inline text-gray-300 group-hover:text-brand transition-colors"/></td>
+                    </ClickableRow>
                   ))}
                 </tbody>
               </table>

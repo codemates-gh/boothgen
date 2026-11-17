@@ -191,13 +191,15 @@ export function Sidebar({ isFoundingMember, genieEnabled, genieOnly }: { isFound
         />
       )}
       <aside className={cn(
-        'w-64 h-screen bg-canvas flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 ease-in-out overflow-y-auto',
+        'w-64 h-dvh bg-canvas flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 ease-in-out overflow-y-auto',
         isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       )}>
         <div className="px-4 py-4 border-b border-white/10 shrink-0">
           <div className="flex items-center gap-3">
-            <BoothGenIcon size={32} />
-            <p className="text-white font-semibold text-sm leading-tight truncate flex-1">Booth<span className="text-[#F7B731]">Gen</span></p>
+            <Link href={isTeamMember ? '/events' : '/dashboard'} onClick={close} className="flex items-center gap-3 flex-1 min-w-0" aria-label="Home">
+              <BoothGenIcon size={32} />
+              <p className="text-white font-semibold text-sm leading-tight truncate">Booth<span className="text-[#F7B731]">Gen</span></p>
+            </Link>
             <button onClick={close} className="lg:hidden text-white/50 hover:text-white" aria-label="Close menu">
               <X className="w-4 h-4" />
             </button>

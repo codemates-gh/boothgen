@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma/client';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ClickableRow } from '@/components/ui/ClickableRow';
 import { Button } from '@/components/ui/button';
 import WeatherWidget from '@/components/dashboard/WeatherWidget';
 import DismissableSection, { type DismissRow } from '@/components/dashboard/DismissableSection';
@@ -392,13 +393,13 @@ export default async function DashboardPage() {
                   <thead><tr className="border-b"><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Event</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Client</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Date</th><th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th><th className="px-6 py-3"></th></tr></thead>
                   <tbody>
                     {upcomingEvents.map(ev => (
-                      <tr key={ev.id} className="border-b last:border-0 hover:bg-gray-50">
+                      <ClickableRow key={ev.id} href={'/events/' + ev.id} className="group border-b last:border-0">
                         <td className="px-6 py-4"><p className="font-medium">{ev.title}</p><p className="text-sm text-gray-500">{ev.venueName ?? 'Venue TBD'}</p></td>
                         <td className="px-6 py-4 text-sm">{clientDisplayName(ev.client)}</td>
                         <td className="px-6 py-4 text-sm text-gray-700">{format(ev.eventDate, 'MMM d, yyyy')}</td>
                         <td className="px-6 py-4"><Badge variant={SC[ev.status]}>{ev.status}</Badge></td>
-                        <td className="px-6 py-4 text-right"><Link href={'/events/' + ev.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
-                      </tr>
+                        <td className="px-6 py-4 text-right"><ArrowRight className="w-4 h-4 inline text-gray-300 group-hover:text-brand transition-colors"/></td>
+                      </ClickableRow>
                     ))}
                   </tbody>
                 </table>
@@ -430,13 +431,13 @@ export default async function DashboardPage() {
                       {recentLeads.map((lead: any) => {
                         const statusCls: Record<string,string> = { NEW:'bg-blue-50 text-blue-700', CONTACTED:'bg-yellow-50 text-yellow-700', QUOTED:'bg-purple-50 text-purple-700', CONVERTED:'bg-green-50 text-green-700', CLOSED_LOST:'bg-gray-100 text-gray-500' };
                         return (
-                          <tr key={lead.id} className="border-b last:border-0 hover:bg-gray-50">
+                          <ClickableRow key={lead.id} href={'/leads/' + lead.id} className="group border-b last:border-0">
                             <td className="px-6 py-4"><p className="font-medium">{lead.firstName} {lead.lastName}</p><p className="text-xs text-gray-400">{lead.email}</p></td>
                             <td className="px-6 py-4 text-sm text-gray-700">{lead.eventDate ? format(new Date(lead.eventDate), 'MMM d, yyyy') : '—'}</td>
                             <td className="px-6 py-4 text-sm text-gray-500">{lead.eventType ?? '—'}</td>
                             <td className="px-6 py-4"><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusCls[lead.status] ?? 'bg-gray-100 text-gray-500'}`}>{lead.status.replace('_', ' ')}</span></td>
-                            <td className="px-6 py-4 text-right"><Link href={'/leads/' + lead.id}><Button variant="ghost" size="sm"><ArrowRight className="w-4 h-4"/></Button></Link></td>
-                          </tr>
+                            <td className="px-6 py-4 text-right"><ArrowRight className="w-4 h-4 inline text-gray-300 group-hover:text-brand transition-colors"/></td>
+                          </ClickableRow>
                         );
                       })}
                     </tbody>

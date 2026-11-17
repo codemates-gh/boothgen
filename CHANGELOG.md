@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.98.2] — 2026-11-17
+
+### Changed
+- **Event page, Financials & Documents:** tap anywhere on a quote, contract or invoice row to open it. An arrow replaces the View / View Quote buttons. On a phone, the amount and date show under the name instead of in extra columns, so nothing scrolls sideways
+- **Dashboard and client page:** tap anywhere on an Upcoming Events or Recent Leads row (or an event on a client's page) to open it, with no need to scroll to the arrow
+- **Account menu:** tap your avatar (or logo) at the top right for Settings and Sign Out
+- **Sidebar:** the BoothGen logo at the top goes to the dashboard. On phones the menu fits the visible screen, so you can scroll down to Sign Out
+
+---
+
 ## [2.98.1] — 2026-11-17
 
 ### Changed

@@ -8,7 +8,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Package, ArrowLeft, ExternalLink, FileText, Receipt, Edit2, ClipboardList, Layers, PenLine, Send, Sparkles, Mail, Phone, Plus } from 'lucide-react';
+import { Calendar, MapPin, Users, Package, ArrowLeft, ExternalLink, FileText, Receipt, Edit2, ClipboardList, Layers, PenLine, Send, Sparkles, Mail, Phone, Plus, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import AssignEventButton from './AssignEventButton';
 import CopyLinkButton from './CopyLinkButton';
@@ -18,7 +18,7 @@ import EventChecklist from './EventChecklist';
 import EventMessagePanel from './EventMessagePanel';
 import EventProfitability from './EventProfitability';
 import EventInvoicePanel from './EventInvoicePanel';
-import { DOC_HEAD, DOC_ROW } from './docGrid';
+import { DOC_HEAD, DOC_ROW, DOC_WIDE, DOC_NARROW } from './docGrid';
 import EventAutomations, { type EventAutomationRow } from './EventAutomations';
 import { settleZeroInvoice } from '@/lib/invoices/payments';
 import { clientDisplayName } from '@/lib/clientName';
@@ -251,42 +251,43 @@ export default async function EventDetailPage(
               {event.Quote.length > 0 && (
                 <div className={box}>
                   <div className={boxHead}><ClipboardList className="w-4 h-4 text-gray-400"/>Quotes{count(event.Quote.length)}</div>
-                  <div className="overflow-x-auto"><div className="min-w-[560px]">
-                    <div className={DOC_HEAD}><span>Quote</span><span>Total</span><span>Sent</span><span>Status</span><span/></div>
-                    {event.Quote.map(q => (
-                      <div key={q.id} className={DOC_ROW + ' border-b border-gray-100 last:border-0'}>
-                        <span className="font-medium truncate">{q.quoteNumber}</span>
-                        <span>{fmt(q.totalCents)}</span>
-                        <span className="text-gray-500">{q.sentAt ? format(q.sentAt, 'MMM d, yyyy') : <span className="text-gray-400">Not sent</span>}</span>
-                        <span><Badge variant={QC[q.status]}>{q.status}</Badge></span>
-                        <span className="text-right"><Link href={'/quotes/' + q.id}><Button variant="ghost" size="sm">View Quote</Button></Link></span>
-                      </div>
-                    ))}
-                  </div></div>
+                  <div className={DOC_HEAD}><span>Quote</span><span className={DOC_WIDE}>Total</span><span className={DOC_WIDE}>Sent</span><span>Status</span><span/></div>
+                  {event.Quote.map(q => (
+                    <Link key={q.id} href={'/quotes/' + q.id} className={DOC_ROW + ' border-b border-gray-100 last:border-0'}>
+                      <span className="font-medium min-w-0">
+                        <span className="block truncate">{q.quoteNumber}</span>
+                        <span className={DOC_NARROW}>{fmt(q.totalCents)} · {q.sentAt ? 'Sent ' + format(q.sentAt, 'MMM d, yyyy') : 'Not sent'}</span>
+                      </span>
+                      <span className={DOC_WIDE}>{fmt(q.totalCents)}</span>
+                      <span className={DOC_WIDE + ' text-gray-500'}>{q.sentAt ? format(q.sentAt, 'MMM d, yyyy') : <span className="text-gray-400">Not sent</span>}</span>
+                      <span><Badge variant={QC[q.status]}>{q.status}</Badge></span>
+                      <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-brand transition-colors"/>
+                    </Link>
+                  ))}
                 </div>
               )}
 
               {event.contracts.length > 0 && (
                 <div className={box}>
                   <div className={boxHead}><FileText className="w-4 h-4 text-gray-400"/>Contracts{count(event.contracts.length)}</div>
-                  <div className="overflow-x-auto"><div className="min-w-[560px]">
-                    <div className={DOC_HEAD}><span className="col-span-3">Title</span><span>Status</span><span/></div>
-                    {event.contracts.map(c => (
-                      <div key={c.id} className={DOC_ROW + ' border-b border-gray-100 last:border-0' + (c.status === 'CLIENT_SIGNED' ? ' bg-amber-50/60' : '')}>
-                        <span className="col-span-3 font-medium flex items-center gap-2 min-w-0"><FileText className="w-4 h-4 text-gray-400 flex-shrink-0"/><span className="truncate">{c.title}</span></span>
-                        <span className="flex items-center gap-2"><Badge variant={CC[c.status]}>{c.status.replace(/_/g,' ')}</Badge>{c.status === 'CLIENT_SIGNED' && <PenLine className="w-3.5 h-3.5 text-amber-500" />}</span>
-                        <span className="text-right"><Link href={'/contracts/' + c.id}><Button variant={c.status === 'CLIENT_SIGNED' ? 'default' : 'ghost'} size="sm">{c.status === 'CLIENT_SIGNED' ? 'Sign Now' : 'View'}</Button></Link></span>
-                      </div>
-                    ))}
-                  </div></div>
+                  <div className={DOC_HEAD}><span className="sm:col-span-3">Title</span><span>Status</span><span/></div>
+                  {event.contracts.map(c => (
+                    <Link key={c.id} href={'/contracts/' + c.id} className={DOC_ROW + ' border-b border-gray-100 last:border-0' + (c.status === 'CLIENT_SIGNED' ? ' bg-amber-50/60' : '')}>
+                      <span className="sm:col-span-3 font-medium flex items-center gap-2 min-w-0"><FileText className="w-4 h-4 text-gray-400 flex-shrink-0"/><span className="truncate">{c.title}</span></span>
+                      <span className="flex items-center gap-2">
+                        <Badge variant={CC[c.status]}>{c.status.replace(/_/g,' ')}</Badge>
+                        {c.status === 'CLIENT_SIGNED' && <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700"><PenLine className="w-3.5 h-3.5"/>Sign now</span>}
+                      </span>
+                      <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-brand transition-colors"/>
+                    </Link>
+                  ))}
                 </div>
               )}
 
               {event.invoices.length > 0 && (
                 <div className={box}>
                   <div className={boxHead}><Receipt className="w-4 h-4 text-gray-400"/>Invoices{count(event.invoices.length)}</div>
-                  <div className="overflow-x-auto"><div className="min-w-[560px]">
-                  <div className={DOC_HEAD}><span>Invoice</span><span>Total</span><span>Balance</span><span>Status</span><span/></div>
+                  <div className={DOC_HEAD}><span>Invoice</span><span className={DOC_WIDE}>Total</span><span className={DOC_WIDE}>Balance</span><span>Status</span><span/></div>
                   <EventInvoicePanel
                     invoices={event.invoices.map(inv => ({
                       id: inv.id,
@@ -312,7 +313,6 @@ export default async function EventDetailPage(
                       })),
                     }))}
                   />
-                  </div></div>
                 </div>
               )}
             </CardContent>
