@@ -94,7 +94,7 @@ export default function MessagesPage() {
       <TopBar title="Messages" />
       <div className="p-4 sm:p-8 space-y-4">
         <MessagesTabs />
-        <p className="text-sm text-gray-500">{loading ? 'Loading…' : `${threads.length} conversation${threads.length !== 1 ? 's' : ''}`}</p>
+        <p className="text-sm text-gray-500">Emails you sent to clients from an event or lead. Client replies go to your own email inbox. {loading ? '' : `${threads.length} client${threads.length !== 1 ? 's' : ''}.`}</p>
 
         <Card><CardContent className="p-0">
           {loading ? (

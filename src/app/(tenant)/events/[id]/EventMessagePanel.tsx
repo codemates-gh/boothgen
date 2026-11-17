@@ -247,8 +247,8 @@ export default function EventMessagePanel({
             ) : (
               <p className="text-xs text-gray-400">No messages yet. Send the first message to {clientEmail}.</p>
             )}
-            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-              Attachments sent as replies are not captured in this thread. The outgoing email instructs clients to CC your contact email if they need to share a file.
+            <p className="text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
+              Sent from BoothGen as {branding.companyName || 'your business'}. Replies go to {branding.replyToEmail ? <strong>{branding.replyToEmail}</strong> : 'your account email'}, so keep the conversation in your inbox. This list shows what you sent from here.{!branding.replyToEmail && <> <a href="/settings/messaging" className="text-[#0085FF] hover:underline">Set a reply-to email</a></>}
             </p>
 
             {/* Template picker */}

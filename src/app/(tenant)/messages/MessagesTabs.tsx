@@ -1,10 +1,10 @@
 'use client';
-// Messages: Inbox (client conversations), Automations (when emails go out) and Templates (what they say)
+// Messages: Sent (emails sent to clients from events and leads; replies go to the operator's own inbox), Automations (when emails go out) and Templates (what they say)
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const TABS: [string, string][] = [
-  ['/messages', 'Inbox'],
+  ['/messages', 'Sent'],
   ['/messages/automations', 'Automations'],
   ['/messages/templates', 'Templates'],
 ];

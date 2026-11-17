@@ -1,5 +1,6 @@
 import { inngest } from './client';
 import { prisma } from '@/lib/prisma/client';
+import { clientReplyTo } from '@/lib/email/replyTo';
 import { sendEmail } from '@/lib/email/send';
 import { parseMergeTags, buildCtx } from '@/lib/contracts/merge-tags';
 
@@ -87,7 +88,7 @@ export async function executeAutomation(executionId: string) {
   const body = parseMergeTags(execution.rule.emailTemplate.bodyHtml, ctx);
   const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
   const fromAddress = branding?.companyName ? `${branding.companyName} <${emailFrom}>` : emailFrom;
-  const replyTo = branding?.replyToEmail ?? undefined;
+  const replyTo = (await clientReplyTo(ev.tenantId, branding?.replyToEmail)) ?? undefined;
   // Pre-save recipient + subject so the log is useful even if the send fails mid-retry
   await prisma.automationExecution.update({
     where: { id: executionId },

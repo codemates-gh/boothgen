@@ -579,8 +579,7 @@ export function LeadDetail({ lead: initial, portalUrl }: { lead: Lead; portalUrl
                 mergeTags={LEAD_MERGE_TAGS}
               />
             </div>
-            <p className="text-xs text-gray-400">Replies from the client will go directly to your email address on file. Merge tags are resolved when sent.</p>
-            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">Attachments sent as replies are not captured in this thread. The outgoing email instructs clients to CC your contact email if they need to share a file.</p>
+            <p className="text-xs text-gray-400">Replies go to {branding.replyToEmail ? <strong>{branding.replyToEmail}</strong> : 'your account email'}, so keep the conversation in your inbox. The Thread tab shows what you sent from here. Merge tags are filled in when sent.</p>
             {draftError && (
               <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{draftError}</p>
             )}

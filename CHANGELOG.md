@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.99.0] — 2026-11-17
+
+### Changed
+- **Client replies go to your own inbox.** Messages sent from an event or a lead, and automated emails, now set the reply-to to your email: the reply-to in Settings → Email & Texting, or your account email if that's empty. Client replies land in your normal inbox, the same as replies to quotes and invoices, instead of being split between BoothGen and your inbox. BoothGen keeps a log of what you sent from each event and lead
+- **Messages → Sent** (was Inbox) lists the emails you sent to clients. The event and lead message boxes say where replies go, and link to set a reply-to if there isn't one
+- Removed the "CC your contact email to share a file" line from client emails; clients reply to you directly now, attachments included
+- Replies to older emails sent with the previous per-event reply addresses still arrive in BoothGen as before
+
+---
+
 ## [2.98.11] — 2026-11-17
 
 ### Fixed

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
+import { clientReplyTo } from '@/lib/email/replyTo';
 import { sendEmail } from '@/lib/email/send';
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -61,16 +62,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   ]);
 
   const companyName = tenant?.branding?.companyName || tenant?.name || 'Your Photo Booth Company';
-  const contactEmail = tenant?.branding?.replyToEmail || null;
-  const attachmentNote = contactEmail
-    ? `<p style="color:#9ca3af;font-size:11px;margin:8px 0 0">To share a file, CC <a href="mailto:${contactEmail}" style="color:#9ca3af">${contactEmail}</a> in your reply.</p>`
-    : '';
-
-  const inboundDomain = process.env.RESEND_INBOUND_DOMAIN ?? 'boothgen.com';
+  // Client replies go straight to the operator's own inbox (BoothGen keeps a log of what it sent)
   const leadId = (event as any).leadSubmission?.id ?? null;
-  const replyTo = leadId
-    ? `lead-${leadId}@${inboundDomain}`
-    : `event-${event.id}@${inboundDomain}`;
+  const replyTo = await clientReplyTo(session.tenantId, tenant?.branding?.replyToEmail);
+  if (!replyTo) return NextResponse.json({ error: 'Set a reply-to email in Settings → Email & Texting first' }, { status: 400 });
 
   const fromAddress = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
   const fromDisplay = `${companyName} <${fromAddress}>`;
@@ -102,7 +97,6 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
 ${bodyContent}
 <p style="color:#6b7280;font-size:13px;border-top:1px solid #e5e7eb;padding-top:16px;margin-top:24px">${companyName}</p>
-${attachmentNote}
 ${quotedHtml}
 </div>`;
 
