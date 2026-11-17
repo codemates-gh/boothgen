@@ -25,7 +25,11 @@ export const AUTO_SOURCES: Source[] = ['payment', 'fee', 'genie', 'refund', 'pri
 export async function syncLedger(tenantId: string): Promise<{ added: number; removed: number }> {
   await ensureCategories(tenantId);
   const invoices = await prisma.invoice.findMany({
-    where: { tenantId, OR: [{ status: { in: ['PAID', 'PARTIALLY_PAID'] } }, { PaymentMilestone: { some: { status: { in: ['PAID', 'REFUNDED'] } } } }] },
+    where: { tenantId, OR: [
+      { status: { in: ['PAID', 'PARTIALLY_PAID'] } },
+      { PaymentMilestone: { some: { status: { in: ['PAID', 'REFUNDED'] } } } },
+      { status: 'CANCELLED', payments: { some: { amountCents: { lt: 0 } } } }, // paid in full, then refunded by Cancel Event
+    ] },
     select: {
       id: true, invoiceNumber: true, status: true, totalCents: true, amountPaidCents: true, paidAt: true, updatedAt: true,
       stripePaymentIntentId: true, eventId: true, clientId: true,
@@ -54,14 +58,20 @@ export async function syncLedger(tenantId: string): Promise<{ added: number; rem
         }
         if (m.stripePaymentIntentId) paymentIntents.set(m.stripePaymentIntentId, { date: m.paidAt ?? inv.updatedAt, invoiceId: inv.id, eventId: inv.eventId, clientId: inv.clientId, number: inv.invoiceNumber, payee });
       }
-    } else if (inv.status === 'PAID' && inv.totalCents > 0) {
-      if (inv.payments.length > 0) {
-        for (const p of inv.payments) {
-          if (p.amountCents <= 0) continue;
+    } else if ((inv.status === 'PAID' || inv.status === 'CANCELLED') && inv.totalCents > 0) {
+      const paid = inv.payments.filter(p => p.amountCents > 0);
+      if (paid.length > 0) {
+        for (const p of paid) {
           rows.push({ ...base, sourceKey: 'payment:' + p.id, source: 'payment', type: 'INCOME', date: p.paidAt, amountCents: p.amountCents, description: `Payment for invoice ${inv.invoiceNumber} - ${payee}` + (p.paymentMethod ? ` (${p.paymentMethod})` : '') });
         }
-      } else {
+      } else if (inv.amountPaidCents > 0 || inv.status === 'PAID') {
         rows.push({ ...base, sourceKey: 'invoice:' + inv.id, source: 'payment', type: 'INCOME', date: inv.paidAt ?? inv.updatedAt, amountCents: inv.amountPaidCents || inv.totalCents, description: `Payment for invoice ${inv.invoiceNumber} - ${payee}` });
+      }
+      // Refunds recorded on the invoice by Cancel Event (negative payments). A Stripe refund already recorded from
+      // Stripe's notification (src/lib/bookkeeping/refunds.ts) isn't added again.
+      for (const p of inv.payments.filter(p => p.amountCents < 0)) {
+        if (p.stripePaymentIntentId && stripeRefunded.has(p.stripePaymentIntentId)) continue;
+        rows.push({ ...base, sourceKey: 'refund:payment:' + p.id, source: 'refund', type: 'INCOME', date: p.paidAt, amountCents: p.amountCents, description: `Refund for invoice ${inv.invoiceNumber} - ${payee}` + (p.stripePaymentIntentId ? ' (Stripe)' : '') });
       }
     }
     if (inv.stripePaymentIntentId && inv.status === 'PAID') {

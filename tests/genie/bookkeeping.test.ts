@@ -35,7 +35,7 @@ async function invoice(clientId: string, eventId: string, totalCents: number, ex
   });
 }
 
-beforeEach(async () => { await resetDb(); vi.mocked(stripe.paymentIntents.retrieve).mockClear(); });
+beforeEach(async () => { await resetDb(); vi.mocked(stripe.paymentIntents.retrieve).mockClear(); vi.mocked(stripe.refunds.create).mockClear(); });
 afterAll(async () => { await resetDb(); await prisma.$disconnect(); });
 
 describe('Bookkeeping sync', () => {
@@ -171,6 +171,42 @@ describe('Bookkeeping: Stripe and manual refunds', () => {
     const res = await CANCEL(req('/x', { method: 'POST', body: { refundOption: 'all' } }), p(event.id));
     expect(res.status).toBe(200);
     expect(stripe.refunds.create).toHaveBeenCalledWith({ payment_intent: 'pi_dep', reverse_transfer: true });
+  });
+});
+
+describe('Cancel Event: refunding invoices paid in full', () => {
+  it('refunds a Stripe and a non-Stripe full payment, cancels both invoices, and Bookkeeping shows each refund once', async () => {
+    const { client, event } = await setup();
+    const card = await invoice(client.id, event.id, 80000, { status: 'PAID', paidAt: new Date(), amountPaidCents: 80000, balanceDueCents: 0, stripePaymentIntentId: 'pi_card' });
+    const cash = await invoice(client.id, event.id, 20000, { status: 'PAID', paidAt: new Date(), amountPaidCents: 20000, balanceDueCents: 0 });
+    await prisma.payment.create({ data: { tenantId, invoiceId: cash.id, amountCents: 20000, paymentMethod: 'Cash' } });
+    await syncLedger(tenantId);
+
+    const res = await CANCEL(req('/x', { method: 'POST', body: { refundOption: 'all' } }), p(event.id));
+    expect(res.status).toBe(200);
+    expect(stripe.refunds.create).toHaveBeenCalledWith({ payment_intent: 'pi_card', reverse_transfer: true });
+    expect(stripe.refunds.create).toHaveBeenCalledTimes(1); // the cash payment is refunded by the operator
+    for (const inv of [card, cash]) {
+      expect(await prisma.invoice.findUniqueOrThrow({ where: { id: inv.id } })).toMatchObject({ status: 'CANCELLED', balanceDueCents: 0 });
+    }
+    expect(await prisma.payment.findMany({ where: { invoiceId: { in: [card.id, cash.id] }, amountCents: { lt: 0 } }, select: { amountCents: true } }))
+      .toEqual(expect.arrayContaining([{ amountCents: -80000 }, { amountCents: -20000 }]));
+
+    await syncLedger(tenantId);
+    // Stripe's own notification for the card refund arrives afterwards: same line, not a second one
+    await recordStripeRefund('pi_card', 80000);
+    const lines = await prisma.ledgerTransaction.findMany({ where: { tenantId }, select: { source: true, amountCents: true } });
+    expect(lines.map(l => l.amountCents).sort((a, b) => a - b)).toEqual([-80000, -20000, 20000, 80000]);
+    const list = await (await LIST(req('/api/bookkeeping/transactions'))).json();
+    expect(list.income).toBe(0);
+  });
+
+  it('leaves full payments alone for "Refund deposit"', async () => {
+    const { client, event } = await setup();
+    await invoice(client.id, event.id, 80000, { status: 'PAID', paidAt: new Date(), amountPaidCents: 80000, balanceDueCents: 0, stripePaymentIntentId: 'pi_x' });
+    vi.mocked(stripe.refunds.create).mockClear();
+    expect((await CANCEL(req('/x', { method: 'POST', body: { refundOption: 'deposit' } }), p(event.id))).status).toBe(200);
+    expect(stripe.refunds.create).not.toHaveBeenCalled();
   });
 });
 

@@ -108,7 +108,9 @@ export default async function EventDetailPage(
   const allMilestones = event.invoices.flatMap(inv => (inv as any).PaymentMilestone ?? []);
   const paidMilestones = allMilestones.filter((m: any) => m.status === 'PAID');
   const depositPaidCents = paidMilestones[0]?.amountCents ?? 0;
-  const totalPaidCents = paidMilestones.reduce((sum: number, m: any) => sum + m.amountCents, 0);
+  // "Refund all" also covers invoices paid in full with no payment schedule
+  const fullPaidCents = event.invoices.filter(inv => ((inv as any).PaymentMilestone ?? []).length === 0 && inv.status === 'PAID').reduce((sum, inv) => sum + inv.amountPaidCents, 0);
+  const totalPaidCents = paidMilestones.reduce((sum: number, m: any) => sum + m.amountCents, 0) + fullPaidCents;
 
   // Follow-up context
   const firstQuote = event.Quote[0];

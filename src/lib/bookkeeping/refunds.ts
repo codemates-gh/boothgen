@@ -31,6 +31,15 @@ export async function recordStripeRefund(paymentIntentId: string | null | undefi
       return true;
     }
   }
+  if (!milestone) {
+    // A full-payment invoice refunded by Cancel Event: its refund line already exists
+    const refundPayment = await prisma.payment.findFirst({ where: { invoiceId: invoice.id, stripePaymentIntentId: paymentIntentId, amountCents: { lt: 0 } }, select: { id: true } });
+    const viaCancel = refundPayment && await prisma.ledgerTransaction.findUnique({ where: { tenantId_sourceKey: { tenantId, sourceKey: 'refund:payment:' + refundPayment.id } } });
+    if (viaCancel) {
+      await prisma.ledgerTransaction.update({ where: { id: viaCancel.id }, data: { amountCents: -amountRefunded } });
+      return true;
+    }
+  }
   const payee = clientDisplayName(invoice.client);
   const sourceKey = STRIPE_REFUND + ':' + paymentIntentId;
   await prisma.ledgerTransaction.upsert({

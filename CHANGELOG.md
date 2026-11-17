@@ -4,6 +4,21 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.101.3] — 2026-11-17
+
+### Added
+- **Cancel Event → "Refund all payments" now includes invoices paid in full** (no payment schedule), not just scheduled payments:
+  - Card payments are refunded through Stripe (from BoothGen's account, pulled back from yours).
+  - Payments made another way (cash, check, Zelle…) are marked refunded for you to return yourself.
+  - The invoice moves to Cancelled and keeps a record of the refund.
+  - The amount shown next to "Refund all payments" includes these invoices.
+- **Bookkeeping** shows the original payment and the refund for these invoices, and counts a card refund once even when Stripe's own notification comes in later.
+
+### Changed
+- The event's Profitability card now counts full-payment invoices in revenue too (it only counted scheduled payments before).
+
+---
+
 ## [2.101.2] — 2026-11-17
 
 ### Added

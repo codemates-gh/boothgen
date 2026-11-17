@@ -6,6 +6,18 @@ import { prisma } from '@/lib/prisma/client';
 import { stripe } from '@/lib/stripe';
 import { z } from 'zod';
 
+// Invoice payments are taken on BoothGen's Stripe account and forwarded to the operator (transfer_data), so the refund
+// is made there and reverse_transfer pulls the amount back from the operator's account. Payments made directly on the
+// operator's account (older setup) are refunded there instead.
+async function refundStripe(paymentIntentId: string, connectedAccountId: string | null | undefined) {
+  try {
+    await stripe.refunds.create({ payment_intent: paymentIntentId, reverse_transfer: true });
+  } catch (err: any) {
+    if (err?.code !== 'resource_missing' || !connectedAccountId) throw err;
+    await stripe.refunds.create({ payment_intent: paymentIntentId }, { stripeAccount: connectedAccountId });
+  }
+}
+
 const Schema = z.object({
   refundOption: z.enum(['none', 'deposit', 'all']),
 });
@@ -26,7 +38,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     include: {
       invoices: {
         include: {
-          PaymentMilestone: { where: { status: 'PAID' }, orderBy: { dueDate: 'asc' } },
+          PaymentMilestone: { orderBy: { dueDate: 'asc' } },
         },
       },
     },
@@ -38,11 +50,15 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const errors: string[] = [];
 
   if (refundOption !== 'none') {
-    // Gather milestones to refund
-    const allPaid = event.invoices.flatMap(inv => inv.PaymentMilestone);
+    // Payment-schedule payments to refund ("Refund deposit" = the first one paid)
+    const allPaid = event.invoices.flatMap(inv => inv.PaymentMilestone.filter(m => m.status === 'PAID'));
     const toRefund = refundOption === 'deposit' ? allPaid.slice(0, 1) : allPaid;
+    // "Refund all payments" also covers invoices paid in full with no payment schedule
+    const fullPaid = refundOption === 'all'
+      ? event.invoices.filter(inv => inv.PaymentMilestone.length === 0 && inv.status === 'PAID' && inv.amountPaidCents > 0)
+      : [];
 
-    if (toRefund.length > 0) {
+    if (toRefund.length > 0 || fullPaid.length > 0) {
       // Fetch the tenant's Stripe Connect account
       const connectAccount = await prisma.stripeConnectAccount.findUnique({
         where: { tenantId: session.tenantId },
@@ -60,15 +76,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
         }
 
         try {
-          // Invoice payments are taken on BoothGen's Stripe account and forwarded to the operator (transfer_data), so
-          // the refund is made there and reverse_transfer pulls the amount back from the operator's account.
-          // Payments made directly on the operator's account (older setup) are refunded there instead.
-          try {
-            await stripe.refunds.create({ payment_intent: milestone.stripePaymentIntentId, reverse_transfer: true });
-          } catch (err: any) {
-            if (err?.code !== 'resource_missing' || !connectAccount?.stripeAccountId) throw err;
-            await stripe.refunds.create({ payment_intent: milestone.stripePaymentIntentId }, { stripeAccount: connectAccount.stripeAccountId });
-          }
+          await refundStripe(milestone.stripePaymentIntentId, connectAccount?.stripeAccountId);
           await prisma.paymentMilestone.update({
             where: { id: milestone.id },
             data: { status: 'REFUNDED' },
@@ -77,6 +85,28 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
         } catch (err: any) {
           console.error('[cancel/refund] Stripe refund error:', err.message);
           errors.push(milestone.label + ': ' + (err.message ?? 'Unknown error'));
+        }
+      }
+
+      // Full-payment invoices: refund the Stripe payment (or note a refund given outside Stripe), record it as a
+      // negative payment so the invoice keeps its history and Bookkeeping shows the payment and the refund, and cancel it
+      for (const inv of fullPaid) {
+        try {
+          if (inv.stripePaymentIntentId) await refundStripe(inv.stripePaymentIntentId, connectAccount?.stripeAccountId);
+          await prisma.$transaction([
+            prisma.payment.create({
+              data: {
+                tenantId: inv.tenantId, invoiceId: inv.id, amountCents: -inv.amountPaidCents, currency: inv.currency,
+                stripePaymentIntentId: inv.stripePaymentIntentId, paymentMethod: 'Refund',
+                notes: inv.stripePaymentIntentId ? 'Refunded through Stripe when the event was cancelled' : 'Refunded outside Stripe when the event was cancelled',
+              },
+            }),
+            prisma.invoice.update({ where: { id: inv.id }, data: { status: 'CANCELLED', balanceDueCents: 0 } }),
+          ]);
+          refunded.push(inv.id);
+        } catch (err: any) {
+          console.error('[cancel/refund] Stripe refund error:', err.message);
+          errors.push(inv.invoiceNumber + ': ' + (err.message ?? 'Unknown error'));
         }
       }
 
