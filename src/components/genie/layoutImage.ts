@@ -73,16 +73,20 @@ export async function downloadLayoutPng(layout: Layout, name: string): Promise<b
   return true;
 }
 
-// A background image at any shape, made to fill the layout with no gaps: scaled up or down to cover it, centred,
-// with the edges that don't fit trimmed off. Images already the layout's shape come back unchanged.
-export async function coverBackground(file: File, canvas: { widthPx: number; heightPx: number }): Promise<{ blob: Blob; contentType: string; notice?: string }> {
+// Where a background sits when it's a different shape: 0–1 along each overflowing side (0.5 = centred)
+export type BackgroundFocus = { x: number; y: number };
+
+// A background image at any shape, made to fill the layout with no gaps: scaled up or down to cover it, placed at
+// `focus` (centred by default), with the edges that don't fit trimmed off. Images already the layout's shape come
+// back unchanged.
+export async function coverBackground(file: File, canvas: { widthPx: number; heightPx: number }, focus: BackgroundFocus = { x: 0.5, y: 0.5 }): Promise<{ blob: Blob; contentType: string; notice?: string }> {
   const url = URL.createObjectURL(file);
   try {
     const img = await loadImage(url);
     const W = canvas.widthPx, H = canvas.heightPx, w = img.naturalWidth, h = img.naturalHeight;
-    if (Math.abs((w / h) / (W / H) - 1) <= 0.02) return { blob: file, contentType: file.type };
+    if (sameShape({ width: w, height: h }, canvas)) return { blob: file, contentType: file.type };
     const k = Math.max(W / w, H / h); // cover
-    const sw = W / k, sh = H / k, sx = (w - sw) / 2, sy = (h - sh) / 2;
+    const sw = W / k, sh = H / k, sx = (w - sw) * focus.x, sy = (h - sh) * focus.y;
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const g = c.getContext('2d')!;
     g.imageSmoothingQuality = 'high';
@@ -91,6 +95,17 @@ export async function coverBackground(file: File, canvas: { widthPx: number; hei
     const blob = await new Promise<Blob | null>(r => c.toBlob(r, contentType, 0.92));
     if (!blob) throw new Error('That image could not be resized. Try a PNG or JPG.');
     const trimmed = w / h > W / H ? 'left and right' : 'top and bottom';
-    return { blob, contentType, notice: `The image was ${w}×${h}, so it was ${k > 1 ? 'enlarged' : 'resized'} to cover the ${W}×${H} layout and centred; a little of the ${trimmed} edges was trimmed.${k > 1.05 ? ' It was smaller than the print size, so it may print soft.' : ''}` };
+    return { blob, contentType, notice: `The image was ${w}×${h}, so it was ${k > 1 ? 'enlarged' : 'resized'} to cover the ${W}×${H} layout; the ${trimmed} edges that don't fit were trimmed.${k > 1.05 ? ' It was smaller than the print size, so it may print soft.' : ''}` };
   } finally { URL.revokeObjectURL(url); }
+}
+
+export const sameShape = (img: { width: number; height: number }, canvas: { widthPx: number; heightPx: number }) =>
+  Math.abs((img.width / img.height) / (canvas.widthPx / canvas.heightPx) - 1) <= 0.02;
+
+// An image file's pixel size (to decide whether it needs positioning)
+export async function imageSize(file: File): Promise<{ width: number; height: number }> {
+  const url = URL.createObjectURL(file);
+  try { const img = await loadImage(url); return { width: img.naturalWidth, height: img.naturalHeight }; }
+  catch { throw new Error('That image could not be read. Try a PNG or JPG.'); }
+  finally { URL.revokeObjectURL(url); }
 }

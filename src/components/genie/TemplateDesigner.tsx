@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Plus, Copy, Trash2, AlignCenterHorizontal, AlignCenterVertical, AlignHorizontalSpaceAround, AlignVerticalSpaceAround, Upload, X, Eye, Pencil, AlertTriangle, RotateCw, Download } from 'lucide-react';
+import { ArrowLeft, Plus, Copy, Trash2, AlignCenterHorizontal, AlignCenterVertical, AlignHorizontalSpaceAround, AlignVerticalSpaceAround, Upload, X, Eye, Pencil, AlertTriangle, RotateCw, Download, Move } from 'lucide-react';
 import { Field, Layout, RemoteAsset, Slot, artUrl } from '@/components/genie/parts';
-import { SAFE_INCH, coverBackground, downloadLayoutPng, makeSample, renderThumbnail } from './layoutImage';
+import { SAFE_INCH, coverBackground, downloadLayoutPng, imageSize, makeSample, renderThumbnail, sameShape, type BackgroundFocus } from './layoutImage';
+import { BackgroundPositioner } from './BackgroundPositioner';
 import { ClientOptionsCard, EMPTY_CLIENT_OPTS, clientOptsProblem, type ClientOpts } from '@/components/genie/ClientOptionsCard';
 
 const PRESETS = [
@@ -141,6 +142,8 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notices, setNotices] = useState<string[]>([]);
+  // A background of another shape being positioned (and, after it's placed, kept this session so it can be moved again)
+  const [bgPick, setBgPick] = useState<{ file: File; url: string; size: { width: number; height: number }; focus?: BackgroundFocus; open: boolean; uploaded?: string } | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   // Frames set to "Free" that happen to match a shape (this session only)
   const [freeIds, setFreeIds] = useState<string[]>([]);
@@ -351,14 +354,37 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
       if (!['image/png', 'image/jpeg'].includes(file.type)) throw new Error('Use a PNG or JPG image.');
       if (kind === 'overlay' && file.type !== 'image/png') throw new Error('The overlay must be a PNG with transparent windows over the photos.');
       const canvas = { widthPx: layout.widthPx, heightPx: layout.heightPx };
-      // A background of another shape is scaled to cover the layout (centred, edges trimmed). The overlay must match
-      // exactly, since its transparent windows have to line up with the photo frames.
-      const fitted = kind === 'background' ? await coverBackground(file, canvas) : { blob: file as Blob, contentType: file.type };
-      const asset = await uploadFile(fitted.blob, fitted.contentType, canvas, kind);
-      if ('notice' in fitted && fitted.notice) setNotices(n => [...n, fitted.notice!]);
+      // A background of another shape covers the layout: the operator drags it to choose what shows (edges trimmed).
+      // The overlay must match exactly, since its transparent windows have to line up with the photo frames.
+      if (kind === 'background') {
+        const size = await imageSize(file);
+        if (!sameShape(size, canvas)) {
+          if (bgPick) URL.revokeObjectURL(bgPick.url);
+          setBgPick({ file, url: URL.createObjectURL(file), size, open: true });
+          return;
+        }
+      }
+      const asset = await uploadFile(file, file.type, canvas, kind);
       setLayout(l => ({ ...l, [kind]: asset }));
     } catch (e: any) {
       setError(e.message || 'Upload failed');
+    } finally { setUploading(null); }
+  }
+
+  // Crops the picked background where the operator dragged it and uploads it
+  async function placeBackground(focus: BackgroundFocus) {
+    if (!bgPick) return;
+    setError(''); setUploading('background');
+    try {
+      const canvas = { widthPx: layout.widthPx, heightPx: layout.heightPx };
+      const fitted = await coverBackground(bgPick.file, canvas, focus);
+      const asset = await uploadFile(fitted.blob, fitted.contentType, canvas, 'background');
+      if (fitted.notice) setNotices(n => [...n.filter(x => !x.startsWith('The image was ')), fitted.notice!]);
+      setLayout(l => ({ ...l, background: asset }));
+      setBgPick(p => p && { ...p, focus, open: false, uploaded: asset.url });
+    } catch (e: any) {
+      setError(e.message || 'Upload failed');
+      setBgPick(p => p && { ...p, open: false });
     } finally { setUploading(null); }
   }
 
@@ -574,10 +600,13 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
                   </div>
                 </Field>
                 {(['background', 'overlay'] as const).map(kind => (
-                  <Field key={kind} label={kind === 'background' ? 'Background image' : 'Overlay'} hint={kind === 'background' ? 'PNG or JPG behind the photos. Any shape: it is enlarged or shrunk to cover the layout, centred.' : 'PNG with transparent windows, drawn over the photos.'}>
+                  <Field key={kind} label={kind === 'background' ? 'Background image' : 'Overlay'} hint={kind === 'background' ? 'PNG or JPG behind the photos. Any shape: it covers the layout, and you drag it to choose what shows.' : 'PNG with transparent windows, drawn over the photos.'}>
                     {layout[kind] ? (
                       <div className="flex items-center gap-2 text-sm">
                         <span className="flex-1 truncate text-gray-600">{layout[kind]!.contentType === 'image/png' ? 'PNG' : 'JPG'} · {(layout[kind]!.bytes / 1024 / 1024).toFixed(1)} MB</span>
+                        {!readOnly && kind === 'background' && bgPick?.uploaded === layout.background?.url && bgPick?.size && !sameShape(bgPick.size, layout) && (
+                          <Button variant="ghost" size="sm" disabled={!!uploading} onClick={() => setBgPick(p => p && { ...p, open: true })} title="Drag the image to choose what shows"><Move className="w-3.5 h-3.5 mr-1"/>Reposition</Button>
+                        )}
                         {!readOnly && <Button variant="ghost" size="sm" onClick={() => setLayout(l => { const n = { ...l }; delete n[kind]; return n; })}><X className="w-3.5 h-3.5 mr-1"/>Remove</Button>}
                       </div>
                     ) : !readOnly && (
@@ -596,11 +625,19 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
         </div>
       </div>
 
+      <BackgroundPositioner open={!!bgPick?.open} src={bgPick?.url ?? null} size={bgPick?.size ?? null} layout={layout} initial={bgPick?.focus}
+        busy={uploading === 'background'} onApply={placeBackground} onClose={() => setBgPick(p => p && { ...p, open: false })}/>
+
       {!readOnly && (
         <div className={'fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pl-4 sm:pl-8 pr-20 sm:pr-24 py-3 flex items-center justify-end gap-3 z-30' + (chrome === 'tenant' ? ' lg:left-64' : '')}>
           <div className="mr-auto text-sm min-w-0">
             {error ? <p className="text-red-600">{error}</p>
-              : notices.length ? <p className="text-amber-600 truncate" title={notices.join(' ')}>{notices[notices.length - 1]}</p>
+              : notices.length ? (
+                <p className="text-amber-600 leading-snug flex items-start gap-2">
+                  <span>{notices[notices.length - 1]}</span>
+                  <button type="button" onClick={() => setNotices([])} className="flex-shrink-0 mt-0.5 text-amber-700/70 hover:text-amber-800" aria-label="Dismiss"><X className="w-3.5 h-3.5"/></button>
+                </p>
+              )
               : <p className="text-gray-500">{dirty ? 'Unsaved changes' : isNew ? 'New template' : !thumbnail ? 'No picture yet. Save to create the picture clients see.' : 'Saved'}</p>}
           </div>
           <Button onClick={save} disabled={saving || !!uploading || !name.trim() || layouts.main.slots.length === 0 || (!!layouts.alt && layouts.alt.slots.length === 0) || (!dirty && !isNew && !!thumbnail)}>{saving ? 'Saving…' : 'Save Template'}</Button>

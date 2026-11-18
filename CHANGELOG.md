@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.106.4] — 2026-11-18
+
+### Changed
+- **Template designer: drag the background into place.** When a background image isn't the layout's shape (e.g. a landscape photo on a portrait 4×6), a Position the Background window shows it covering the layout behind the photo frames; drag it to choose which part shows, then Use Background (Centre puts it back in the middle). **Reposition** next to the background opens it again while the page is open.
+
+### Fixed
+- **Template designer notes are no longer cut off by the Save button.** Long notes in the bottom bar wrap onto more lines, with an × to dismiss them.
+
+---
+
 ## [2.106.3] — 2026-11-18
 
 ### Changed
