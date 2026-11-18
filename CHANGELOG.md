@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.106.3] — 2026-11-18
+
+### Changed
+- **Template designer: a background image of any shape fills the layout.** Uploading a background that isn't the layout's shape (e.g. a 1920×1080 photo on a 4×6) no longer fails. It's enlarged or shrunk to cover the whole layout with no gaps, centred, and the edges that don't fit are trimmed, with a note saying so (and a warning if it was smaller than the print size). The overlay still has to match the layout's shape, because its clear windows must line up with the photo frames.
+
+---
+
 ## [2.106.2] — 2026-11-18
 
 ### Fixed

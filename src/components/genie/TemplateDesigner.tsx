@@ -10,7 +10,7 @@ import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Plus, Copy, Trash2, AlignCenterHorizontal, AlignCenterVertical, AlignHorizontalSpaceAround, AlignVerticalSpaceAround, Upload, X, Eye, Pencil, AlertTriangle, RotateCw, Download } from 'lucide-react';
 import { Field, Layout, RemoteAsset, Slot, artUrl } from '@/components/genie/parts';
-import { SAFE_INCH, downloadLayoutPng, makeSample, renderThumbnail } from './layoutImage';
+import { SAFE_INCH, coverBackground, downloadLayoutPng, makeSample, renderThumbnail } from './layoutImage';
 import { ClientOptionsCard, EMPTY_CLIENT_OPTS, clientOptsProblem, type ClientOpts } from '@/components/genie/ClientOptionsCard';
 
 const PRESETS = [
@@ -350,7 +350,12 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
     try {
       if (!['image/png', 'image/jpeg'].includes(file.type)) throw new Error('Use a PNG or JPG image.');
       if (kind === 'overlay' && file.type !== 'image/png') throw new Error('The overlay must be a PNG with transparent windows over the photos.');
-      const asset = await uploadFile(file, file.type, { widthPx: layout.widthPx, heightPx: layout.heightPx }, kind);
+      const canvas = { widthPx: layout.widthPx, heightPx: layout.heightPx };
+      // A background of another shape is scaled to cover the layout (centred, edges trimmed). The overlay must match
+      // exactly, since its transparent windows have to line up with the photo frames.
+      const fitted = kind === 'background' ? await coverBackground(file, canvas) : { blob: file as Blob, contentType: file.type };
+      const asset = await uploadFile(fitted.blob, fitted.contentType, canvas, kind);
+      if ('notice' in fitted && fitted.notice) setNotices(n => [...n, fitted.notice!]);
       setLayout(l => ({ ...l, [kind]: asset }));
     } catch (e: any) {
       setError(e.message || 'Upload failed');
@@ -569,7 +574,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
                   </div>
                 </Field>
                 {(['background', 'overlay'] as const).map(kind => (
-                  <Field key={kind} label={kind === 'background' ? 'Background image' : 'Overlay'} hint={kind === 'background' ? 'PNG or JPG behind the photos.' : 'PNG with transparent windows, drawn over the photos.'}>
+                  <Field key={kind} label={kind === 'background' ? 'Background image' : 'Overlay'} hint={kind === 'background' ? 'PNG or JPG behind the photos. Any shape: it is enlarged or shrunk to cover the layout, centred.' : 'PNG with transparent windows, drawn over the photos.'}>
                     {layout[kind] ? (
                       <div className="flex items-center gap-2 text-sm">
                         <span className="flex-1 truncate text-gray-600">{layout[kind]!.contentType === 'image/png' ? 'PNG' : 'JPG'} · {(layout[kind]!.bytes / 1024 / 1024).toFixed(1)} MB</span>

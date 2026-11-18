@@ -72,3 +72,25 @@ export async function downloadLayoutPng(layout: Layout, name: string): Promise<b
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   return true;
 }
+
+// A background image at any shape, made to fill the layout with no gaps: scaled up or down to cover it, centred,
+// with the edges that don't fit trimmed off. Images already the layout's shape come back unchanged.
+export async function coverBackground(file: File, canvas: { widthPx: number; heightPx: number }): Promise<{ blob: Blob; contentType: string; notice?: string }> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImage(url);
+    const W = canvas.widthPx, H = canvas.heightPx, w = img.naturalWidth, h = img.naturalHeight;
+    if (Math.abs((w / h) / (W / H) - 1) <= 0.02) return { blob: file, contentType: file.type };
+    const k = Math.max(W / w, H / h); // cover
+    const sw = W / k, sh = H / k, sx = (w - sw) / 2, sy = (h - sh) / 2;
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d')!;
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+    const contentType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+    const blob = await new Promise<Blob | null>(r => c.toBlob(r, contentType, 0.92));
+    if (!blob) throw new Error('That image could not be resized. Try a PNG or JPG.');
+    const trimmed = w / h > W / H ? 'left and right' : 'top and bottom';
+    return { blob, contentType, notice: `The image was ${w}×${h}, so it was ${k > 1 ? 'enlarged' : 'resized'} to cover the ${W}×${H} layout and centred; a little of the ${trimmed} edges was trimmed.${k > 1.05 ? ' It was smaller than the print size, so it may print soft.' : ''}` };
+  } finally { URL.revokeObjectURL(url); }
+}
