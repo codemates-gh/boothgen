@@ -4,6 +4,26 @@ Ideas agreed on but not scheduled yet. Newest first. When one is picked up, move
 
 ---
 
+## Templates: draw the client's text on the layout
+
+**Status:** not started. **Added:** 2026-11-18.
+
+**Goal:** a template's Text fields, Color palettes and Font pairings (Client Options) show on the template itself, not only as questions in the client's design brief. Today they draw nothing: the designer places only photo frames, a background colour, a background image and an overlay PNG, so the operator makes the artwork elsewhere from the client's answers and uploads it as a proof.
+
+### What it would do
+- **Designer:** each Text field gets a box on the canvas (position, size, rotation, alignment), like a photo frame. The box takes its font from the chosen Font pairing and its colour from the chosen palette's Text or Accent colour. The palette's Background colour fills the layout background. Preview shows the sample values ("Geoffrey & Ronnette", "July 10, 2027").
+- **Client brief:** when the client fills in the text and picks a palette and fonts, the portal shows the layout with their words in place, live.
+- **Genie:** the event's template carries the finished look with no hand-made artwork needed: names, date and colours drawn on every print, Boomerang and (later) GIF.
+- Works for every size, including Boomerang & GIF only templates (Square, 9:16, 16:9).
+
+### How (to decide when picked up)
+- **Simplest:** BoothGen renders the text layer to a transparent PNG at the layout's full size (server side, with the same fonts) once the brief is answered, and uses it as the template's overlay, combined with any overlay art. No Genie change; the iPad just gets an overlay.
+- **Later option:** send text boxes in the bundle and have Genie draw them, so per-guest text (e.g. a guest's name) is possible. Needs a Genie schema change.
+- Fonts: the font pairings already list font families; they need font files BoothGen and the portal can both render (web fonts, licensed for print).
+- Open questions: text that's too long for its box (shrink to fit vs. cut at max characters); one palette per event or per template; what happens when the client hasn't answered yet (show the sample values or leave the text out).
+
+---
+
 ## Bookkeeping (under Insights, beside Analytics)
 
 **Status:** first version shipped in 2.101.0 (ledger filled from BoothGen payments and fees, manual income and expenses with receipts, categories, bulk actions, P&L and Client Sales with CSV). 2.101.1 added refunds (from cancelling with a refund), print costs and event expenses. 2.101.2 added Stripe refunds (dashboard or API) and Record Refund for cash/check/Zelle. 2.101.3 added full-payment invoice refunds to Cancel Event. 2.101.4 added auto-categorize by payee. 2.101.5 added QuickBooks/Xero exports and a Year-End Summary. Still to do: the "Later" list below.
