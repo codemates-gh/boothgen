@@ -131,11 +131,15 @@ export default function GuestSessionPage() {
 
             {boomerang && (
               <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+                {/* At the clip's own shape (square, 4x6, 3:4, 9:16, 16:9…): the width/height attributes hold its
+                    shape while it loads, and it shrinks to fit the page width and 75% of the screen height */}
                 <video
                   src={boomerang.url}
                   poster={boomerang.posterUrl ?? undefined}
+                  width={boomerang.width ?? undefined}
+                  height={boomerang.height ?? undefined}
                   autoPlay muted loop playsInline
-                  className="w-full max-h-[75vh] object-contain rounded-lg bg-black"
+                  className="block mx-auto w-auto h-auto max-w-full max-h-[75vh] rounded-lg bg-black"
                 />
                 <button
                   onClick={() => downloadFile(boomerang.url, fileName(boomerang, 0))}

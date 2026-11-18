@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.104.3] — 2026-11-18
+
+### Changed
+- **Guest page: Boomerangs play at their own shape.** The clip on a guest's session page is now shown at its real shape (square, 4x6, and the new 3:4, 4:3, 9:16 and 16:9 sizes coming with Boomerang designs) instead of in a full-width black box: a 9:16 clip fills a phone screen, a 16:9 clip spans a desktop page.
+
+---
+
 ## [2.104.2] — 2026-11-17
 
 ### Fixed
