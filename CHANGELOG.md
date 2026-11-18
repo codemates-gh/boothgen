@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.105.2] — 2026-11-18
+
+### Added
+- **Genie: Standard square Boomerang designs.** Three Standard designs at Square 1:1 that match the single-photo Design Templates: **Full Bleed Square**, **Classic Single Square** (white border) and **Instant Camera Square** (square photo with a deeper bottom border). They're switched on for operators and can be edited, turned off or deleted in Super Admin → Boomerang Designs. Added with `docs/genie/standard-boomerang-designs-square.sql` (data only).
+
+---
+
 ## [2.105.1] — 2026-11-18
 
 ### Changed
