@@ -6,6 +6,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Edit2, Trash2, Mail, Zap } from 'lucide-react';
+import { closeEditorAfterSave } from '@/lib/template-editor';
 import TemplateEditorModal, { type EmailTemplateRow } from '@/components/email/TemplateEditorModal';
 import MessagesTabs from '../MessagesTabs';
 
@@ -76,7 +77,7 @@ export default function EmailTemplatesPage() {
         )}
       </div>
 
-      <TemplateEditorModal open={open} template={editing} onClose={() => setOpen(false)} onSaved={async () => { setOpen(false); await load(); }} />
+      <TemplateEditorModal open={open} template={editing} onClose={() => setOpen(false)} onSaved={async () => { if (closeEditorAfterSave(!!editing)) setOpen(false); await load(); }} />
     </>
   );
 }

@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { editorNeedsRefill } from '@/lib/template-editor';
 import {
   Bold, Italic, Underline, Link, Image, List,
   ChevronDown, Eye, Code, AlignLeft, AlignCenter, Wand2
@@ -72,11 +73,12 @@ export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeT
   const editorRef = useRef<HTMLDivElement>(null);
   const varsRef = useRef<HTMLDivElement>(null);
 
+  // Refill the visual editor when it comes back on screen (from HTML mode or from Preview)
   useEffect(() => {
-    if (mode === 'visual' && editorRef.current && editorRef.current.innerHTML !== value) {
+    if (editorRef.current && editorNeedsRefill({ mode, showPreview, currentHtml: editorRef.current.innerHTML, value })) {
       editorRef.current.innerHTML = value;
     }
-  }, [mode]);
+  }, [mode, showPreview]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {

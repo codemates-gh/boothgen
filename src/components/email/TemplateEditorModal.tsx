@@ -24,12 +24,13 @@ export default function TemplateEditorModal({ open, template, onClose, onSaved }
   const [saving, setSaving] = useState(false);
   const [improving, setImproving] = useState(false);
   const [error, setError] = useState('');
-  const set = (k: keyof typeof NEW_TEMPLATE, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const [saved, setSaved] = useState(false);
+  const set = (k: keyof typeof NEW_TEMPLATE, v: string) => { setSaved(false); setForm(f => ({ ...f, [k]: v })); };
 
   useEffect(() => {
     if (!open) return;
     setForm(template ? { name: template.name, subject: template.subject, bodyHtml: template.bodyHtml } : NEW_TEMPLATE);
-    setError('');
+    setError(''); setSaved(false);
   }, [open, template]);
 
   async function aiImprove(currentHtml: string) {
@@ -59,6 +60,7 @@ export default function TemplateEditorModal({ open, template, onClose, onSaved }
     const d = await res.json().catch(() => ({}));
     setSaving(false);
     if (!res.ok) { setError(d.error ?? 'Could not save the template'); return; }
+    if (template) setSaved(true);
     onSaved(d);
   }
 
@@ -79,8 +81,9 @@ export default function TemplateEditorModal({ open, template, onClose, onSaved }
           <EmailTemplateEditor value={form.bodyHtml} onChange={v => set('bodyHtml', v)} onAiImprove={template ? aiImprove : undefined} aiImproving={improving} />
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <div className="flex items-center justify-end gap-3">
+          {saved && <span className="text-sm text-green-600">Saved</span>}
+          <Button variant="outline" onClick={onClose}>{saved ? 'Close' : 'Cancel'}</Button>
           <Button onClick={save} disabled={saving || !ready}>{saving ? 'Saving...' : template ? 'Update' : 'Create Template'}</Button>
         </div>
       </div>

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { Zap, Mail, Plus, Trash2, ToggleLeft, ToggleRight, Pencil } from 'lucide-react';
+import { closeEditorAfterSave } from '@/lib/template-editor';
 import TemplateEditorModal, { type EmailTemplateRow } from '@/components/email/TemplateEditorModal';
 import MessagesTabs from '../MessagesTabs';
 
@@ -177,7 +178,7 @@ export default function AutomationsPage() {
         template={tplEditing}
         onClose={() => setTplOpen(false)}
         onSaved={async t => {
-          setTplOpen(false);
+          if (closeEditorAfterSave(!!tplEditing)) setTplOpen(false);
           if (showModal) set('emailTemplateId', t.id); // a template made from the automation form is picked for it
           await load();
         }}

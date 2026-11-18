@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { Plus, Edit2, Star, FileText, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { closeEditorAfterSave } from '@/lib/template-editor';
 import EmailTemplateEditor from '@/components/email/EmailTemplateEditor';
 
 const CONTRACT_TAGS = [
@@ -86,6 +87,7 @@ export default function ContractTemplatesPage() {
   const [name, setName] = useState('');
   const [body, setBody] = useState('');
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => { load(); }, []);
   async function load() {
@@ -97,6 +99,7 @@ export default function ContractTemplatesPage() {
     setEditing(null);
     setName('Standard Event Agreement');
     setBody(DEFAULT_CONTRACT);
+    setSaved(false);
     setShowModal(true);
   }
 
@@ -104,6 +107,7 @@ export default function ContractTemplatesPage() {
     setEditing(t);
     setName(t.name);
     setBody(t.bodyHtml);
+    setSaved(false);
     setShowModal(true);
   }
 
@@ -113,7 +117,11 @@ export default function ContractTemplatesPage() {
     const method = editing ? 'PATCH' : 'POST';
     const url = editing ? '/api/contracts/templates/' + editing.id : '/api/contracts/templates';
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, bodyHtml: body }) });
-    if (res.ok) { await load(); setShowModal(false); }
+    if (res.ok) {
+      await load();
+      // Update keeps the editor open where the user was working; a new template closes it
+      if (closeEditorAfterSave(!!editing)) setShowModal(false); else setSaved(true);
+    }
     setSaving(false);
   }
 
@@ -176,15 +184,16 @@ export default function ContractTemplatesPage() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Template Name *</label>
-            <Input value={name} onChange={e => setName(e.target.value)} placeholder="Standard Event Agreement"/>
+            <Input value={name} onChange={e => { setSaved(false); setName(e.target.value); }} placeholder="Standard Event Agreement"/>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Contract Body *</label>
-            <EmailTemplateEditor value={body} onChange={setBody} mergeTags={CONTRACT_TAGS} initialBoxes/>
+            <EmailTemplateEditor value={body} onChange={v => { setSaved(false); setBody(v); }} mergeTags={CONTRACT_TAGS} initialBoxes/>
             <p className="text-xs text-gray-400 mt-1">Use the "Insert Variable" dropdown to add merge tags. Add "+ Initial Here" beside key sections (payment terms, cancellation, overtime): the client initials each one before they can sign. Switch to HTML mode for advanced formatting.</p>
           </div>
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
+          <div className="flex items-center justify-end gap-3">
+            {saved && <span className="text-sm text-green-600">Saved</span>}
+            <Button variant="outline" onClick={() => setShowModal(false)}>{saved ? 'Close' : 'Cancel'}</Button>
             <Button onClick={save} disabled={saving || !name.trim() || !body.trim()}>
               {saving ? 'Saving...' : editing ? 'Update Template' : 'Save Template'}
             </Button>

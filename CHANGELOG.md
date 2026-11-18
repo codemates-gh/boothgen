@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.104.1] — 2026-11-17
+
+### Fixed
+- **Email and contract template editors: text stays after Preview (report #11).** Clicking Preview and then going back no longer shows an empty text box. **Update** on an existing email or contract template now saves and keeps the window open where you were, with a green Saved (the Cancel button then reads Close). Creating a new template still closes the window.
+
+---
+
 ## [2.104.0] — 2026-11-17
 
 ### Added
