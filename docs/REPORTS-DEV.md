@@ -44,3 +44,27 @@ change. They only ever see short, plain updates signed **BoothGen**.
 
 Notes from the Dev API appear as "BoothGen" to users and "Dev" in Super Admin. The API never returns
 people's email addresses.
+
+## Roadmap (for the orchestrator session)
+
+The product roadmap lives beside reports (Super Admin → Reports → **Roadmap**) but in its own table
+(`roadmap_items`). It is never a report: the scheduled Dev run reads `/api/dev/reports`, which can't return
+roadmap items, and suggestions linked to an item (status **On the roadmap**) are taken off Dev and never listed.
+
+Each item: id (short, e.g. `pose-library`), title, one-line summary, status (`planned` | `in_progress` |
+`testing` | `shipped`), area (`genie_ipad` | `boothgen` | `print_box` | `guest_pages`), group (`next_up` |
+`essential` | `later`; order applies within a group), optional target date and Genie plan reference, shipped
+date/version, and **Show to operators** (off by default; nothing is published to operators yet).
+
+`scripts/dev-roadmap.mjs` uses the same `REPORTS_DEV_TOKEN`:
+
+```
+node --env-file=.env scripts/dev-roadmap.mjs list [--status in_progress]
+node --env-file=.env scripts/dev-roadmap.mjs show pose-library
+node --env-file=.env scripts/dev-roadmap.mjs add "Animated GIF" --summary "One line" --area genie_ipad --group next_up [--id gif] [--plan "docs/plan.md P12"] [--after pose-library]
+node --env-file=.env scripts/dev-roadmap.mjs update pose-library --status testing
+node --env-file=.env scripts/dev-roadmap.mjs update pose-library --status shipped --version "Genie 0.6.0"   # stamps today unless --shipped YYYY-MM-DD
+node --env-file=.env scripts/dev-roadmap.mjs move animated-gif --top | --before <id> | --after <id> | --bottom
+```
+
+Linking suggestions to items is done by G in Super Admin (a suggestion's panel → **Add to roadmap**).

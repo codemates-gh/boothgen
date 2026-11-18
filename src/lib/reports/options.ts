@@ -38,6 +38,8 @@ export const REPORT_STATUSES = [
   { value: 'wont_fix', label: "Won't fix", badge: 'default' },
   { value: 'duplicate', label: 'Duplicate', badge: 'default' },
   { value: 'exists', label: 'Already exists', badge: 'success' },
+  // Suggestions folded into a roadmap item (Super Admin → Roadmap); closed, and never assigned to Dev
+  { value: 'on_roadmap', label: 'On the roadmap', badge: 'info' },
 ] as const;
 
 // Still being worked on; the Reports board shows these by default

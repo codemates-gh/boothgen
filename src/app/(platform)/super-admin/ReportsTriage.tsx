@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { AttachmentList, ReportThread, type ThreadNote } from '@/components/reports/ReportThread';
 import { HowToFind } from '@/components/reports/HowToFind';
 import { AttachmentPicker, useAttachments } from '@/components/reports/AttachmentPicker';
+import RoadmapBoard, { type RoadmapItem } from './RoadmapBoard';
 import {
   REPORT_AREAS, REPORT_PRIORITIES, REPORT_STATUSES, REPORT_TYPES, areaLabel, severityLabel, statusBadge, statusLabel, typeLabel,
 } from '@/lib/reports/options';
@@ -23,6 +24,7 @@ type Detail = {
   status: string; priority: string | null; fixedInVersion: string | null; createdAt: string;
   howToFind: string | null; howToFindUrl: string | null; duplicateOf: { id: string; number: number; title: string } | null;
   followers: { name: string; email: string; voted: boolean; following: boolean }[]; voteCount: number; assignedToDev: boolean;
+  roadmapItem: { id: string; title: string; status: string } | null;
   reporter: { id: string; name: string; email: string }; tenant: { id: string; name: string; slug: string } | null;
   pageUrl: string | null; userAgent: string | null; appVersion: string | null;
   attachments: { index: number; name: string; contentType: string; bytes: number; url: string }[]; notes: ThreadNote[];
@@ -30,7 +32,9 @@ type Detail = {
 
 const SEV_VARIANT: Record<string, any> = { blocker: 'danger', major: 'warning', minor: 'default', cosmetic: 'default' };
 
-export default function ReportsTriage({ initialReportId }: { initialReportId?: string }) {
+export default function ReportsTriage({ initialReportId, initialView }: { initialReportId?: string; initialView?: string }) {
+  const [view, setView] = useState<'reports' | 'roadmap'>(initialView === 'roadmap' && !initialReportId ? 'roadmap' : 'reports');
+  const [roadmap, setRoadmap] = useState<RoadmapItem[]>([]);
   const [filters, setFilters] = useState({ status: '', type: '', area: '', tenantId: '', q: '', unread: '', sort: '', dev: '' });
   const [rows, setRows] = useState<Row[] | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -56,6 +60,18 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
   }, [filters]);
 
   useEffect(() => { const t = setTimeout(loadList, filters.q ? 250 : 0); return () => clearTimeout(t); }, [loadList, filters.q]);
+
+  // Roadmap items a suggestion can be added to (not shipped ones)
+  useEffect(() => {
+    if (view !== 'reports') return;
+    fetch('/api/roadmap/admin').then(r => r.json()).then(d => setRoadmap((d.items ?? []).filter((i: RoadmapItem) => i.status !== 'shipped'))).catch(() => {});
+  }, [view]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (view === 'roadmap') { url.searchParams.set('view', 'roadmap'); url.searchParams.delete('report'); } else url.searchParams.delete('view');
+    window.history.replaceState(null, '', url);
+  }, [view]);
 
   useEffect(() => {
     if (!selected) { setDetail(null); return; }
@@ -107,8 +123,29 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
   const setF = (k: keyof typeof filters, v: string) => setFilters(f => ({ ...f, [k]: v }));
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
+  const switcher = (
+    <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5">
+      {(['reports', 'roadmap'] as const).map(v => (
+        <button key={v} onClick={() => setView(v)}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${view === v ? 'bg-brand text-white' : 'text-gray-600 hover:text-gray-900'}`}>
+          {v === 'reports' ? 'Reports' : 'Roadmap'}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (view === 'roadmap') {
+    return (
+      <div className="space-y-4">
+        {switcher}
+        <RoadmapBoard onOpenReport={id => { setSelected(id); setView('reports'); }} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+      {switcher}
       {/* Counts per status (click to filter) */}
       <div className="flex flex-wrap gap-2">
         {[{ value: '', label: 'All' }, ...REPORT_STATUSES].map(s => (
@@ -199,7 +236,7 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
                   <Select value={pending ?? detail.status} disabled={busy} onChange={e => pickStatus(e.target.value)}>
-                    {REPORT_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                    {REPORT_STATUSES.filter(s => s.value !== 'on_roadmap' || detail.status === 'on_roadmap').map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </Select>
                 </div>
                 <div>
@@ -216,6 +253,22 @@ export default function ReportsTriage({ initialReportId }: { initialReportId?: s
                     onBlur={() => { if (fixedIn.trim() !== (detail.fixedInVersion ?? '')) triage({ fixedInVersion: fixedIn.trim() || null }); }} />
                 </div>
               </div>
+
+              {detail.type === 'suggestion' && (detail.roadmapItem ? (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 flex flex-wrap items-center gap-3">
+                  <p className="text-sm text-[#0073E6] flex-1 min-w-[200px]">On the roadmap: <button className="font-medium hover:underline" onClick={() => setView('roadmap')}>{detail.roadmapItem.title}</button></p>
+                  <Button size="sm" variant="ghost" disabled={busy} onClick={() => triage({ roadmapItemId: null })}>Take off the roadmap</Button>
+                </div>
+              ) : roadmap.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="text-xs font-medium text-gray-500">Add to roadmap</label>
+                  <Select className="w-72" value="" disabled={busy} onChange={e => { if (e.target.value) triage({ roadmapItemId: e.target.value }); }}>
+                    <option value="">Pick an item…</option>
+                    {roadmap.map(i => <option key={i.id} value={i.id}>{i.title}</option>)}
+                  </Select>
+                  <span className="text-xs text-gray-400">Closes it as On the roadmap, takes it off Dev, and tells the reporter</span>
+                </div>
+              ))}
 
               {!pending && detail.status === 'dev_review' && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 space-y-2">

@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.108.0] — 2026-11-18
+
+### Added
+- **Roadmap in Reports.** Super Admin → Reports has a **Reports | Roadmap** switch. The roadmap lists items in three groups (Next up, Essential, Later) plus Shipped, each with a one-line description, status (Planned, In progress, Testing, Shipped), area (Genie iPad, BoothGen, Print box, Guest pages), optional target date and Genie plan, and the shipped date and version. Add and edit items, change their status from the list, and reorder with the arrows (order is within a group). Only Super Admins see it for now; a **Show to operators** switch (off by default) marks items to publish later.
+- **Suggestions on the roadmap.** A suggestion's panel has **Add to roadmap**: it closes the suggestion as **On the roadmap**, takes it off Dev, and emails the reporter and followers. Each roadmap item shows how many suggestions are linked (click to see them). Taking it off the roadmap, or deleting the item, puts the suggestion back to Confirmed.
+- **Roadmap updates from a Claude Code session:** `scripts/dev-roadmap.mjs` (list, show, add, update, move) with the same key as the reports script. Roadmap items are separate from reports, so the scheduled Dev run never picks them up (covered by a test).
+
+Needs `docs/genie/apply-production-roadmap.sql` (one new table, one new column) run in production before this deploys; then `docs/genie/roadmap-seed.sql` adds the starting list.
+
+---
+
 ## [2.107.0] — 2026-11-18
 
 ### Changed

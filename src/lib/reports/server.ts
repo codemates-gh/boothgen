@@ -27,6 +27,7 @@ export const reportInclude = {
   notes: { orderBy: { createdAt: 'asc' as const }, include: { author: { select: { name: true } } } },
   followers: { select: { userId: true, voted: true, following: true, unread: true, user: { select: { name: true, email: true } } } },
   duplicateOf: { select: { id: true, number: true, title: true } },
+  roadmapItem: { select: { id: true, title: true, status: true } },
 };
 
 export type FullReport = NonNullable<Awaited<ReturnType<typeof loadReport>>>;
@@ -68,7 +69,7 @@ export function reportView(r: FullReport, viewerId: string, asAdmin: boolean) {
   };
   if (!asAdmin) return { ...base, unread: isMine ? r.reporterUnread : !!(follow?.following && follow.unread) };
   return {
-    ...base, unread: r.adminUnread, assignedToDev: r.assignedToDev,
+    ...base, unread: r.adminUnread, assignedToDev: r.assignedToDev, roadmapItem: r.roadmapItem,
     reporter: r.user, tenant: r.tenant, pageUrl: r.pageUrl, userAgent: r.userAgent, appVersion: r.appVersion,
     followers: r.followers.map(f => ({ ...f.user, voted: f.voted, following: f.following })),
   };

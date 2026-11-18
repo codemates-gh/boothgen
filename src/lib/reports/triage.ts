@@ -15,6 +15,8 @@ export const Triage = z.object({
   howToFindUrl: z.union([Link, z.literal('')]).nullable().optional(),
   duplicateOf: z.coerce.number().int().positive().optional(),       // report number; required with status "duplicate"
   assignedToDev: z.boolean().optional(),
+  // Suggestions only: fold into a roadmap item (status "On the roadmap", taken off Dev); null takes it off again
+  roadmapItemId: z.string().trim().min(1).max(80).nullable().optional(),
 }).strict();
 export type TriageInput = z.infer<typeof Triage>;
 
@@ -23,7 +25,23 @@ export type TriageInput = z.infer<typeof Triage>;
 // actorId: the Super Admin making the change (null for the Dev API; its notes show as BoothGen).
 export async function applyTriage(r: FullReport, actorId: string | null, d: TriageInput): Promise<{ error: string } | { ok: true }> {
   const viewer = { userId: actorId };
-  const newStatus = d.status ?? r.status;
+  let newStatus = d.status ?? r.status;
+
+  // On the roadmap: linking sets the status; unlinking (or another status) clears the link
+  let roadmapItemId = r.roadmapItemId;
+  if (d.roadmapItemId) {
+    if (r.type !== 'suggestion') return { error: 'Only suggestions can go on the roadmap' };
+    const item = await prisma.roadmapItem.findUnique({ where: { id: d.roadmapItemId }, select: { id: true } });
+    if (!item) return { error: 'That roadmap item wasn\'t found' };
+    roadmapItemId = item.id;
+    newStatus = 'on_roadmap';
+  } else if (d.roadmapItemId === null) {
+    roadmapItemId = null;
+    if (newStatus === 'on_roadmap') newStatus = 'confirmed';
+  }
+  if (newStatus === 'on_roadmap' && !roadmapItemId) return { error: 'Pick the roadmap item' };
+  if (newStatus !== 'on_roadmap') roadmapItemId = null;
+  const onRoadmap = newStatus === 'on_roadmap';
   const statusChanged = newStatus !== r.status;
 
   const howToFind = d.howToFind === undefined ? r.howToFind : (d.howToFind || null);
@@ -46,6 +64,7 @@ export async function applyTriage(r: FullReport, actorId: string | null, d: Tria
   const logInternally = statusChanged && !tellWatchers;
 
   const noteBody = newStatus === 'duplicate' && original ? `Marked as a duplicate of #${original.number}`
+    : statusChanged && onRoadmap ? 'Added to the BoothGen roadmap'
     : statusChanged && newStatus === 'fix_ready' ? `Fix is live${fixedIn ? ` in version ${fixedIn}` : ''}, being checked`
     : publicChanged ? `Status changed to ${statusLabel(publicStatus(newStatus))}${newStatus === 'fixed' && fixedIn ? ` (version ${fixedIn})` : ''}`
     : howChanged ? 'Updated how to find it'
@@ -65,6 +84,9 @@ export async function applyTriage(r: FullReport, actorId: string | null, d: Tria
         status: newStatus,
         ...(d.priority !== undefined ? { priority: d.priority } : {}),
         ...(d.assignedToDev !== undefined ? { assignedToDev: d.assignedToDev, assignedAt: d.assignedToDev ? (r.assignedToDev ? r.assignedAt : new Date()) : null } : {}),
+        // A suggestion on the roadmap is planned work, not a Dev task
+        ...(onRoadmap ? { assignedToDev: false, assignedAt: null } : {}),
+        roadmapItemId,
         fixedInVersion: fixedIn, howToFind, howToFindUrl,
         duplicateOfId: newStatus === 'duplicate' ? (original?.id ?? r.duplicateOfId) : null,
         ...(tellWatchers ? { reporterUnread: true } : {}),

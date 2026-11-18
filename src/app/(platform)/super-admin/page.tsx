@@ -33,7 +33,7 @@ const TENANT_BADGE: Record<string, 'warning' | 'success' | 'danger' | 'default'>
   TRIAL: 'warning', ACTIVE: 'success', SUSPENDED: 'danger', CANCELLED: 'default',
 };
 
-export default async function SuperAdminPage(props: { searchParams: Promise<{ tab?: string; report?: string }> }) {
+export default async function SuperAdminPage(props: { searchParams: Promise<{ tab?: string; report?: string; view?: string }> }) {
   const searchParams = await props.searchParams;
   await requireSuperAdminSession();
   const tab: Tab = (VALID_TABS as readonly string[]).includes(searchParams?.tab ?? '')
@@ -201,9 +201,9 @@ export default async function SuperAdminPage(props: { searchParams: Promise<{ ta
           <>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-              <p className="text-sm text-gray-500 mt-1">Bugs and suggestions from signed-in users. Everyone signed in sees reports (names only); notes reach the reporter and followers by email unless marked internal.</p>
+              <p className="text-sm text-gray-500 mt-1">Bugs and suggestions from signed-in users, and the product roadmap. Everyone signed in sees reports (names only); notes reach the reporter and followers by email unless marked internal.</p>
             </div>
-            <ReportsTriage initialReportId={searchParams?.report} />
+            <ReportsTriage initialReportId={searchParams?.report} initialView={searchParams?.view} />
           </>
         )}
 

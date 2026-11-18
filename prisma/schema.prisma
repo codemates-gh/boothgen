@@ -1698,6 +1698,8 @@ model FeedbackReport {
   howToFindUrl   String?
   // "Duplicate": the original report (its followers moved there)
   duplicateOfId  String?
+  // "On the roadmap": the roadmap item this suggestion was folded into (src/lib/roadmap)
+  roadmapItemId  String?
   // "Assign to Dev": queued for a Claude Code session to fix (src/app/api/dev/reports, docs/REPORTS-DEV.md)
   assignedToDev  Boolean   @default(false)
   assignedAt     DateTime?
@@ -1712,11 +1714,37 @@ model FeedbackReport {
   followers   FeedbackFollower[]
   duplicateOf FeedbackReport?    @relation("FeedbackDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
   duplicates  FeedbackReport[]   @relation("FeedbackDuplicates")
+  roadmapItem RoadmapItem?       @relation(fields: [roadmapItemId], references: [id], onDelete: SetNull)
 
   @@index([status])
+  @@index([roadmapItemId])
   @@index([userId])
   @@index([assignedToDev])
   @@map("feedback_reports")
+}
+
+// Product roadmap, kept beside bug reports and suggestions (Super Admin → Reports → Roadmap; src/lib/roadmap).
+// Its own records, never reports: the scheduled Dev job (src/app/api/dev/reports) can't pick these up.
+model RoadmapItem {
+  id                 String    @id // short readable id, e.g. "pose-library"
+  title              String
+  summary            String // one line
+  status             String    @default("planned") // planned | in_progress | testing | shipped
+  area               String // genie_ipad | boothgen | print_box | guest_pages
+  group              String    @default("later") // next_up | essential | later
+  sortOrder          Int       @default(0) // within the group, lowest first
+  targetDate         DateTime? @db.Date
+  planRef            String? // e.g. "docs/plan.md P11"
+  shippedAt          DateTime? @db.Date
+  shippedVersion     String?
+  visibleToOperators Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  suggestions FeedbackReport[]
+
+  @@index([status])
+  @@map("roadmap_items")
 }
 
 model FeedbackNote {
