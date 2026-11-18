@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { requireTemplateEditor } from '@/lib/genie/admin';
-import { ClipDesignBody, clipDesignData, clipDesignView, designLibrary, prepareClipDesign } from '@/lib/genie/clipDesigns';
+import { ClipDesignBody, clipDesignData, clipDesignView, designLibrary, prepareClipDesign, standardPrintDesigns } from '@/lib/genie/clipDesigns';
 import { allowedPrefixes } from '@/lib/genie/templateAssets';
 
 // Boomerang designs: what the event's Frame picker offers (switched-on Standard, My Boomerang designs, and the
@@ -10,7 +10,7 @@ import { allowedPrefixes } from '@/lib/genie/templateAssets';
 export async function GET() {
   const auth = await requireTemplateEditor();
   if (auth instanceof NextResponse) return auth;
-  const lib = auth.tenantId ? await designLibrary(auth.tenantId) : { standard: [], mine: [], print: [] };
+  const lib = auth.tenantId ? await designLibrary(auth.tenantId) : { standard: [], mine: [], print: [], standardPrint: await standardPrintDesigns() };
   const standard = auth.superAdmin
     ? (await prisma.genieClipDesign.findMany({ where: { tenantId: null }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] })).map(clipDesignView)
     : lib.standard;

@@ -77,9 +77,10 @@ const valid = (b: unknown) => { if (validate) expect(validate(b)).toBeNull(); };
 beforeEach(async () => {
   await resetDb(); files.clear();
   await prisma.genieClipDesign.deleteMany({ where: { tenantId: null, name: { startsWith: 'Test ' } } });
+  await prisma.boothDesignTemplate.deleteMany({ where: { tenantId: null, name: { startsWith: 'Test ' } } });
   validate ??= await bundleValidator();
 });
-afterAll(async () => { await resetDb(); await prisma.genieClipDesign.deleteMany({ where: { tenantId: null, name: { startsWith: 'Test ' } } }); await prisma.$disconnect(); });
+afterAll(async () => { await resetDb(); await prisma.boothDesignTemplate.deleteMany({ where: { tenantId: null, name: { startsWith: 'Test ' } } }); await prisma.genieClipDesign.deleteMany({ where: { tenantId: null, name: { startsWith: 'Test ' } } }); await prisma.$disconnect(); });
 
 describe('Boomerang shapes', () => {
   it.each(BOOMERANG_FORMATS)('sends the %s shape as a plain clip (no design)', async format => {
@@ -200,6 +201,37 @@ describe('Boomerang designs in the bundle', () => {
       slot: { id: 's1', shotIndex: 0, x: 90, y: 180, width: 900, height: 1080, rotationDegrees: 0, fit: 'fill' },
     });
     expect(b.capture.boomerang.design.version).toBeGreaterThan(1);
+    valid(b);
+  });
+
+  it('offers published Standard single-photo Design Templates at their 4x6 shape, and keeps one unpublished later', async () => {
+    const { bundle, patch } = await setup();
+    const overlay = stored('standard', png(1800, 1200), 'png');
+    const thumb = stored('standard', jpeg(600, 400), 'jpg');
+    const layout = (orientation: 'portrait' | 'landscape', w: number, h: number) => ({ format: '4x6', orientation, widthPx: w, heightPx: h, dpi: 300, backgroundColor: '#ffffff', overlay, slots: [{ id: 's1', shotIndex: 0, x: 60, y: 60, width: w - 120, height: h - 360, rotationDegrees: 0, fit: 'fill' }] });
+    const t = await prisma.boothDesignTemplate.create({
+      data: { tenantId: null, name: 'Test Classic Single', format: '4x6', orientation: 'landscape', photoCount: 1, isPublished: true, genieThumbnail: thumb, layout: layout('landscape', 1800, 1200), alternateLayout: layout('portrait', 1200, 1800) },
+    });
+    const draft = await prisma.boothDesignTemplate.create({
+      data: { tenantId: null, name: 'Test Draft', format: '4x6', orientation: 'landscape', photoCount: 1, isPublished: false, layout: layout('landscape', 1800, 1200) },
+    });
+    const lib = await (await LIST()).json();
+    const rows = lib.standardPrint.filter((r: { id: string }) => r.id === t.id);
+    expect(rows.map((r: { format: string }) => r.format).sort()).toEqual(['landscape6x4', 'portrait4x6']);
+    // The thumbnail shows the main (landscape) layout only
+    expect(rows.find((r: { format: string }) => r.format === 'portrait4x6').thumbnail).toBeNull();
+    expect(lib.standardPrint.some((r: { id: string }) => r.id === draft.id)).toBe(false);
+    expect((await patch({ format: 'landscape6x4', design: { source: 'print', id: draft.id } })).status).toBe(400);
+
+    expect((await patch({ format: 'landscape6x4', design: { source: 'print', id: t.id } })).status).toBe(200);
+    let b = await bundle();
+    expect(b.capture.boomerang.design).toMatchObject({ id: t.id, format: 'landscape6x4', overlay, thumbnail: thumb, slot: { x: 54, y: 54, width: 1512, height: 756 } });
+    valid(b);
+
+    // Unpublished after the event chose it: the event keeps it, like a switched-off Standard design
+    await prisma.boothDesignTemplate.update({ where: { id: t.id }, data: { isPublished: false } });
+    b = await bundle();
+    expect(b.capture.boomerang.design.id).toBe(t.id);
     valid(b);
   });
 

@@ -10,10 +10,10 @@ import { makeSample, renderThumbnail } from '@/components/genie/layoutImage';
 import { CLIP_CANVAS, type BoomerangFormat } from '@/lib/genie/schemas';
 
 // Event → Genie → Boomerang → Frame: None, a design at the Boomerang's shape (Standard, My Boomerang designs and, at
-// 4x6, the account's single-photo print designs), Design one (designer in a new tab) or Upload a frame (PNG).
+// 4x6, Standard and the account's single-photo Design Templates), Design one (designer in a new tab) or Upload a frame (PNG).
 
 export type DesignChoice = { source: 'clip' | 'print'; id: string };
-type Library = { standard: ClipDesignRow[]; mine: (ClipDesignRow & { source?: string })[]; print: ClipDesignRow[] };
+type Library = { standard: ClipDesignRow[]; mine: (ClipDesignRow & { source?: string })[]; print: ClipDesignRow[]; standardPrint?: ClipDesignRow[] };
 
 // The Frame picker's designs; refreshed when the operator comes back from the designer tab
 export function useClipDesigns() {
@@ -33,7 +33,7 @@ export function useClipDesigns() {
 // The design (or print design) behind a choice, if the library still has it
 export function findDesign(lib: Library | null, c: DesignChoice | null) {
   if (!lib || !c) return null;
-  return c.source === 'print' ? lib.print.find(d => d.id === c.id) ?? null : [...lib.standard, ...lib.mine].find(d => d.id === c.id) ?? null;
+  return c.source === 'print' ? [...(lib.standardPrint ?? []), ...lib.print].find(d => d.id === c.id) ?? null : [...lib.standard, ...lib.mine].find(d => d.id === c.id) ?? null;
 }
 
 // Uploads a PNG to the account's template storage and checks it (type, transparency, the shape's proportions)
@@ -231,8 +231,9 @@ export function BoomerangFramePicker({ eventId, format, design, designProblem, o
 
   const groups: { title: string; source: DesignChoice['source']; items: ClipDesignRow[]; mine?: boolean }[] = [
     { title: 'Standard designs', source: 'clip', items: at(lib?.standard) },
+    { title: 'Standard designs', source: 'print', items: at(lib?.standardPrint) },
     { title: 'My Boomerang designs', source: 'clip', items: at(lib?.mine), mine: true },
-    ...(format === 'portrait4x6' || format === 'landscape6x4' ? [{ title: 'My single-photo print designs', source: 'print' as const, items: at(lib?.print) }] : []),
+    { title: 'My print designs', source: 'print', items: at(lib?.print) },
   ];
 
   return (

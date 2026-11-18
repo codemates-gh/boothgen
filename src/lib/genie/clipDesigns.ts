@@ -104,12 +104,12 @@ export const PRINT_FORMAT: Partial<Record<BoomerangFormat, { format: '4x6'; orie
 };
 
 // The one-photo layout of a print design at this 4x6 shape (its main layout, else its alternate), or null
-function printLayout(t: Pick<BoothDesignTemplate, 'layout' | 'alternateLayout'>, format: BoomerangFormat): StoredLayout | null {
+function printLayout(t: Pick<BoothDesignTemplate, 'layout' | 'alternateLayout'>, format: BoomerangFormat): { layout: StoredLayout; main: boolean } | null {
   const want = PRINT_FORMAT[format];
   if (!want) return null;
-  for (const raw of [t.layout, t.alternateLayout]) {
+  for (const [i, raw] of [t.layout, t.alternateLayout].entries()) {
     const l = raw ? StoredLayout.safeParse(raw) : null;
-    if (l?.success && l.data.format === want.format && l.data.orientation === want.orientation && l.data.slots.length === 1) return l.data;
+    if (l?.success && l.data.format === want.format && l.data.orientation === want.orientation && l.data.slots.length === 1) return { layout: l.data, main: i === 0 };
   }
   return null;
 }
@@ -119,8 +119,9 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 // A single-photo print design sent as a ClipDesign: same images, its one slot scaled from the print size to the clip
 // canvas. Its version follows the template's last edit (seconds), so any change raises it.
 export function printClipDesign(t: Pick<BoothDesignTemplate, 'id' | 'name' | 'layout' | 'alternateLayout' | 'genieThumbnail' | 'updatedAt'>, format: BoomerangFormat) {
-  const l = printLayout(t, format);
-  if (!l) return null;
+  const found = printLayout(t, format);
+  if (!found) return null;
+  const l = found.layout;
   const c = CLIP_CANVAS[format], sx = c.widthPx / l.widthPx, sy = c.heightPx / l.heightPx, s = l.slots[0];
   const slot = { id: s.id, shotIndex: 0, x: r2(s.x * sx), y: r2(s.y * sy), width: r2(s.width * sx), height: r2(s.height * sy), rotationDegrees: s.rotationDegrees, fit: s.fit };
   if (slotProblem(slot, format)) return null;
@@ -129,7 +130,8 @@ export function printClipDesign(t: Pick<BoothDesignTemplate, 'id' | 'name' | 'la
     backgroundColor: l.backgroundColor.toUpperCase(),
     ...(l.background ? { background: l.background } : {}),
     ...(l.overlay ? { overlay: l.overlay } : {}),
-    ...(t.genieThumbnail ? { thumbnail: t.genieThumbnail as unknown as RemoteAsset } : {}),
+    // The designer's thumbnail shows the main layout only
+    ...(t.genieThumbnail && found.main ? { thumbnail: t.genieThumbnail as unknown as RemoteAsset } : {}),
     slot,
   };
 }
@@ -164,7 +166,8 @@ export async function resolveDesign(choice: DesignChoice, tenantId: string, form
     if (d.format !== format || slotProblem(d.slot as unknown as PhotoSlot, format)) return { problem: 'shape' };
     return { design: clipDesignJson(d) };
   }
-  const t = await prisma.boothDesignTemplate.findFirst({ where: { id: choice.id, tenantId, isActive: true } });
+  // The account's own print design or a Standard one (one unpublished after the event chose it stays, like props)
+  const t = await prisma.boothDesignTemplate.findFirst({ where: { id: choice.id, OR: [{ tenantId }, { tenantId: null }], isActive: true } });
   if (!t) return { problem: 'deleted' };
   const d = printClipDesign(t, format);
   return d ? { design: d } : { problem: 'shape' };
@@ -178,21 +181,37 @@ export async function designChoiceError(choice: DesignChoice, tenantId: string, 
     if (d.format !== format) return `That design is ${CLIP_CANVAS[d.format as BoomerangFormat]?.label ?? d.format}, but the Boomerang is ${CLIP_CANVAS[format].label}. Choose a design at that shape.`;
     return null;
   }
+  const t = await prisma.boothDesignTemplate.findFirst({ where: { id: choice.id, isActive: true, OR: [{ tenantId }, { tenantId: null, isPublished: true }] }, select: { id: true } });
+  if (!t) return 'That print design is no longer available. Choose another.';
   const r = await resolveDesign(choice, tenantId, format);
   if ('problem' in r) return r.problem === 'deleted' ? 'That print design is no longer available. Choose another.' : 'That print design has no single photo at this shape. Choose another.';
   return null;
 }
 
-// Everything the Frame picker offers: Standard, My Boomerang designs, and the account's single-photo print designs
-export async function designLibrary(tenantId: string) {
-  const [clips, prints] = await Promise.all([
-    prisma.genieClipDesign.findMany({ where: choosableWhere(tenantId), orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] }),
-    prisma.boothDesignTemplate.findMany({ where: { tenantId, isActive: true, format: '4x6', layout: { not: Prisma.AnyNull } }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
-  ]);
-  const views = clips.map(clipDesignView);
-  const print = prints.flatMap(t => (['portrait4x6', 'landscape6x4'] as const).flatMap(format => {
+// Single-photo 4x6 print designs as Frame picker rows, at each 4x6 shape they have one photo for
+function printRows(templates: BoothDesignTemplate[]) {
+  return templates.flatMap(t => (['portrait4x6', 'landscape6x4'] as const).flatMap(format => {
     const d = printClipDesign(t, format);
     return d ? [{ id: t.id, name: t.name, format, backgroundColor: d.backgroundColor, background: d.background ?? null, overlay: d.overlay ?? null, thumbnail: d.thumbnail ?? null, slot: d.slot }] : [];
   }));
-  return { standard: views.filter(v => v.scope === 'standard'), mine: views.filter(v => v.scope === 'mine'), print };
+}
+const printWhere = { isActive: true, format: '4x6', layout: { not: Prisma.AnyNull } } satisfies Prisma.BoothDesignTemplateWhereInput;
+const printOrder = [{ sortOrder: 'asc' as const }, { name: 'asc' as const }];
+
+// Published Standard Design Templates with a single photo: offered as Standard Boomerang designs at Portrait 4x6 and
+// Landscape 6x4 (managed in Super Admin → Design Templates)
+export async function standardPrintDesigns() {
+  return printRows(await prisma.boothDesignTemplate.findMany({ where: { ...printWhere, tenantId: null, isPublished: true }, orderBy: printOrder }));
+}
+
+// Everything the Frame picker offers: Standard designs (Boomerang designs and single-photo Design Templates), My
+// Boomerang designs, and the account's single-photo print designs
+export async function designLibrary(tenantId: string) {
+  const [clips, prints, standardPrint] = await Promise.all([
+    prisma.genieClipDesign.findMany({ where: choosableWhere(tenantId), orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] }),
+    prisma.boothDesignTemplate.findMany({ where: { ...printWhere, tenantId }, orderBy: printOrder }),
+    standardPrintDesigns(),
+  ]);
+  const views = clips.map(clipDesignView);
+  return { standard: views.filter(v => v.scope === 'standard'), mine: views.filter(v => v.scope === 'mine'), print: printRows(prints), standardPrint };
 }

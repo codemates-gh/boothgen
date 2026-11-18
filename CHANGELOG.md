@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.105.1] — 2026-11-18
+
+### Changed
+- **Genie: Standard single-photo Design Templates work as Boomerang frames.** At Portrait 4x6 and Landscape 6x4, the Frame picker now also lists every published single-photo Design Template (Full Bleed, Classic Single, Instant Camera and the rest), with the Boomerang playing in the template's photo area. The account's own single-photo print designs are still listed (now as My print designs), and Design one and Upload a frame stay for any shape. Super Admin → Boomerang Designs shows these templates under From Design Templates; they're edited or unpublished in Design Templates, and an event that already chose one keeps it if it's unpublished later.
+
+---
+
 ## [2.105.0] — 2026-11-18
 
 ### Added
