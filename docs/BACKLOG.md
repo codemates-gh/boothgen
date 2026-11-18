@@ -19,12 +19,10 @@ Ideas agreed on but not scheduled yet. Newest first. When one is picked up, move
 ### How (to decide when picked up)
 - **Simplest:** BoothGen renders the text layer to a transparent PNG at the layout's full size (server side, with the same fonts) once the brief is answered, and uses it as the template's overlay, combined with any overlay art. No Genie change; the iPad just gets an overlay.
 - **Later option:** send text boxes in the bundle and have Genie draw them, so per-guest text (e.g. a guest's name) is possible. Needs a Genie schema change.
-- **Fonts (suggested):** keep to the curated list the font pairings already use (Playfair Display, Cormorant Garamond, Cinzel, Montserrat, Raleway, Josefin Sans, Lato, Bebas Neue, Great Vibes, Dancing Script, Pacifico, Sacramento). All are Google Fonts under the SIL Open Font License: free for commercial use, printing and embedding. Host the font files with BoothGen (not loaded from Google at render time) so the designer, the portal and the server draw identical text. Grow the list over time; operator-uploaded fonts maybe later, with a checkbox that they hold the licence.
+- **Fonts (decided):** keep to the curated list the font pairings already use (Playfair Display, Cormorant Garamond, Cinzel, Montserrat, Raleway, Josefin Sans, Lato, Bebas Neue, Great Vibes, Dancing Script, Pacifico, Sacramento). All are Google Fonts under the SIL Open Font License: free for commercial use, printing and embedding. Host the font files with BoothGen (not loaded from Google at render time) so the designer, the portal and the server draw identical text. Grow the list over time; no uploaded fonts at first (most store-bought fonts don't allow this use); maybe later, with a checkbox that the operator holds the licence.
 
-### Decided
+### Decided (2026-11-18)
 - **Text too long for its box:** shrink to fit. The client can make it bigger or smaller in the brief if the result is too small.
-
-### Suggested (to confirm)
 - **One set of answers per event:** names and date are the same on every layout, so the client fills them in once. Each layout takes the palette and fonts the client chose for their brief layout when it has the same choices, else its own first palette and pairing. The operator can change them per template on the event.
 - **Before the client answers:** samples show in the designer and portal previews only. On the iPad, text is left out until answered (never print "Geoffrey & Ronnette" at a real event), and the event's Genie tab warns that the text isn't filled in yet. The operator can type the text there themselves, for events without a client brief.
 
