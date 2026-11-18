@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.106.1] — 2026-11-18
+
+### Added
+- **Four Standard 9:16 and 16:9 templates (Boomerang & GIF only):** 9:16 Full Frame, 9:16 with Border, 16:9 Full Frame and 16:9 with Border, next to the Square ones in the Boomerang template picker. Added with `docs/genie/standard-9x16-templates.sql` (data only).
+
+---
+
 ## [2.106.0] — 2026-11-18
 
 ### Changed
