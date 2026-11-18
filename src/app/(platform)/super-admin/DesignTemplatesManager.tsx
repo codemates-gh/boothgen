@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { Plus, Pencil, Trash2, LayoutTemplate, Eye, EyeOff } from 'lucide-react';
 import { Layout, LayoutPreview } from '@/components/genie/parts';
+import { isClipOnlyFormat, templateSizeLabel } from '@/lib/genie/schemas';
 
 type Row = {
   id: string; name: string; description: string | null; isPublished: boolean; layout: Layout | null; thumbnail: { url: string } | null; thumbnailUrl: string | null;
@@ -14,7 +15,6 @@ type Row = {
 };
 
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
-const SIZE: Record<string, string> = { '4x6-landscape': '4×6 landscape', '4x6-portrait': '4×6 portrait', '2x6-portrait': '2×6 strip' };
 
 // Standard layouts: designed here, shown in every operator's Standard templates and their clients' design picker
 export default function DesignTemplatesManager() {
@@ -70,7 +70,7 @@ export default function DesignTemplatesManager() {
                   {t.isPublished ? <Badge variant="success">Published</Badge> : <Badge variant="default">Draft</Badge>}
                 </div>
                 <p className="text-xs text-gray-500">
-                  {t.layout ? `${SIZE[`${t.layout.format}-${t.layout.orientation}`] ?? t.layout.format} · ${plural(new Set(t.layout.slots.map(s => s.shotIndex)).size, 'photo')}` : 'No photo frames yet'}
+                  {t.layout ? `${templateSizeLabel(t.layout)}${isClipOnlyFormat(t.layout.format) ? ' · Boomerang & GIF' : ''} · ${plural(new Set(t.layout.slots.map(s => s.shotIndex)).size, 'photo')}` : 'No photo frames yet'}
                   {' · '}{plural(t.textZones.length, 'text field')} · {plural(t.colorVariants.length, 'palette')} · {plural(t.fontPairings.length, 'font pairing')}
                 </p>
                 {t.description && <p className="text-xs text-gray-400 line-clamp-2">{t.description}</p>}

@@ -1,6 +1,6 @@
 import { Prisma, type BoothDesignTemplate } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
-import { StoredLayout } from './schemas';
+import { PRINT_FORMATS, StoredLayout } from './schemas';
 
 // Genie template library: Standard (BoothGen-managed, tenantId null, published) and My templates (the tenant's own).
 // A BoothDesignTemplate shows in the library once it has a Genie layout.
@@ -12,8 +12,9 @@ export function libraryWhere(tenantId: string): Prisma.BoothDesignTemplateWhereI
   };
 }
 
+// A library template for photos (print sizes only: Square, 9:16 and 16:9 are Boomerang & GIF only)
 export async function findLibraryTemplate(tenantId: string, id: string) {
-  return prisma.boothDesignTemplate.findFirst({ where: { id, ...libraryWhere(tenantId) } });
+  return prisma.boothDesignTemplate.findFirst({ where: { id, ...libraryWhere(tenantId), format: { in: [...PRINT_FORMATS] } } });
 }
 
 export function libraryView(t: BoothDesignTemplate) {
@@ -52,6 +53,7 @@ export function canEditTemplate(auth: { tenantId: string | null; superAdmin: boo
 export async function copyToEvent(tenantId: string, eventId: string, lib: BoothDesignTemplate, withAlternate: boolean) {
   const layout = StoredLayout.safeParse(lib.layout);
   if (!layout.success) return { error: "This template's layout is incomplete. Open it in the designer and save it again." };
+  if (!(PRINT_FORMATS as readonly string[]).includes(layout.data.format)) return { error: 'This template is for Boomerang and GIF only. Choose it in the Boomerang section.' };
   const alternate = withAlternate && lib.alternateLayout ? StoredLayout.safeParse(lib.alternateLayout) : null;
   if (alternate && !alternate.success) return { error: "This template's alternate layout is incomplete." };
   const last = await prisma.eventGenieTemplate.findFirst({ where: { eventId }, orderBy: { sortOrder: 'desc' }, select: { sortOrder: true } });

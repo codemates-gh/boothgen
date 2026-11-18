@@ -49,8 +49,8 @@ export async function renderThumbnail(l: Layout, samples: HTMLCanvasElement[], f
     g.restore();
   }
   if (fullSize) {
-    // dpi 0: not printed (Boomerang designs), so no safe line
-    if (l.dpi) {
+    // Boomerang & GIF sizes aren't printed, so no safe line
+    if (l.format !== 'square' && l.format !== '9x16') {
       const safe = SAFE_INCH * l.dpi;
       g.strokeStyle = '#E2445C'; g.lineWidth = 3; g.setLineDash([18, 12]);
       g.strokeRect(safe, safe, l.widthPx - 2 * safe, l.heightPx - 2 * safe);

@@ -21,15 +21,17 @@ vi.mock('@/lib/storage/r2', async orig => ({
 import { prisma } from '@/lib/prisma/client';
 import { GET as deviceBundle } from '@/app/api/genie/events/[eventId]/bundle/route';
 import { GET as DASH, PATCH } from '@/app/api/events/[id]/genie/route';
-import { GET as LIST, POST as CREATE } from '@/app/api/genie-clip-designs/route';
-import { DELETE as REMOVE, PATCH as SWITCH, PUT as SAVE } from '@/app/api/genie-clip-designs/[designId]/route';
+import { POST as ADD_TO_EVENT } from '@/app/api/events/[id]/genie/templates/route';
+import { GET as LIBRARY, POST as CREATE_TEMPLATE } from '@/app/api/genie-templates/route';
 import { BOOMERANG_FORMATS } from '@/lib/genie/schemas';
-import { CLIP_CANVAS } from '@/lib/genie/clipDesigns';
+import { clientTemplates } from '@/lib/templates/clientLibrary';
 import { bundleValidator, req, resetDb, seedDevice, seedEvent, seedTenant } from './helpers';
+
+// Boomerang uses single-photo templates from the same library as photos. Square, 9:16 and 16:9 templates are
+// Boomerang & GIF only; 4x6 single-photo templates work for both.
 
 const ev = (eventId: string) => ({ params: Promise.resolve({ eventId }) });
 const p = (id: string) => ({ params: Promise.resolve({ id }) });
-const d = (designId: string) => ({ params: Promise.resolve({ designId }) });
 
 // Minimal PNG (header only: signature + IHDR; colour type 6 = RGBA, 2 = RGB) and JPEG (SOF0) files
 function png(width: number, height: number, alpha = true): Buffer {
@@ -52,10 +54,9 @@ function stored(folder: string, buf: Buffer, ext: 'png' | 'jpg') {
 }
 
 const BOOMERANG = { enabled: true, format: 'square', frameCount: 12, playbackSpeed: 'fast', reverse: true, superSpeedCapture: false, showOverlayOnLiveView: true, mirrorLiveView: true };
-const slotIn = (format: keyof typeof CLIP_CANVAS) => {
-  const c = CLIP_CANVAS[format];
-  return { id: 'clip', shotIndex: 0, x: 60, y: 80, width: c.widthPx - 120, height: c.heightPx - 300, rotationDegrees: 0, fit: 'fill' };
-};
+const slot = (x: number, y: number, width: number, height: number, extra: Record<string, unknown> = {}) => ({ id: 's1', shotIndex: 0, x, y, width, height, rotationDegrees: 0, fit: 'fill', ...extra });
+const layout = (format: string, orientation: string, widthPx: number, heightPx: number, slots: unknown[], extra: Record<string, unknown> = {}) =>
+  ({ format, orientation, widthPx, heightPx, dpi: 300, backgroundColor: '#FFFFFF', slots, ...extra });
 
 async function setup() {
   const { tenant, client } = await seedTenant();
@@ -64,11 +65,8 @@ async function setup() {
   const { token } = await seedDevice(tenant.id);
   const bundle = async () => (await deviceBundle(req('/x', { token }), ev(event.id))).json();
   const patch = (b: Record<string, unknown>) => PATCH(req('/x', { method: 'PATCH', body: { boomerang: { ...BOOMERANG, ...b } } }), p(event.id));
-  return { tenant, event, bundle, patch };
-}
-
-async function create(body: Record<string, unknown>) {
-  return CREATE(req('/x', { body }));
+  const template = (data: Record<string, unknown>) => prisma.boothDesignTemplate.create({ data: { tenantId: tenant.id, photoCount: 1, ...data } as any });
+  return { tenant, event, bundle, patch, template };
 }
 
 let validate: Awaited<ReturnType<typeof bundleValidator>>;
@@ -76,11 +74,10 @@ const valid = (b: unknown) => { if (validate) expect(validate(b)).toBeNull(); };
 
 beforeEach(async () => {
   await resetDb(); files.clear();
-  await prisma.genieClipDesign.deleteMany({ where: { tenantId: null, name: { startsWith: 'Test ' } } });
   await prisma.boothDesignTemplate.deleteMany({ where: { tenantId: null, name: { startsWith: 'Test ' } } });
   validate ??= await bundleValidator();
 });
-afterAll(async () => { await resetDb(); await prisma.boothDesignTemplate.deleteMany({ where: { tenantId: null, name: { startsWith: 'Test ' } } }); await prisma.genieClipDesign.deleteMany({ where: { tenantId: null, name: { startsWith: 'Test ' } } }); await prisma.$disconnect(); });
+afterAll(async () => { await resetDb(); await prisma.boothDesignTemplate.deleteMany({ where: { tenantId: null, name: { startsWith: 'Test ' } } }); await prisma.$disconnect(); });
 
 describe('Boomerang shapes', () => {
   it.each(BOOMERANG_FORMATS)('sends the %s shape as a plain clip (no design)', async format => {
@@ -93,8 +90,8 @@ describe('Boomerang shapes', () => {
   });
 });
 
-describe('Boomerang designs in the bundle', () => {
-  it('sends no design for a plain clip, and keeps an overlay from before designs', async () => {
+describe('Boomerang templates in the bundle', () => {
+  it('sends no design for a plain clip, and keeps an overlay from before templates', async () => {
     const { tenant, bundle, patch } = await setup();
     const overlay = stored(tenant.id, png(1080, 1080), 'png');
     expect((await patch({ overlayUrl: overlay.url })).status).toBe(200);
@@ -104,153 +101,95 @@ describe('Boomerang designs in the bundle', () => {
     valid(b);
   });
 
-  it('sends a Standard design with its images (sha256 and bytes), and a new version after every edit', async () => {
-    const { tenant, event, bundle, patch } = await setup();
-    session = { tenantId: tenant.id, tenantRole: 'HOST_ADMIN', globalRole: 'SUPER_ADMIN' };
-    const background = stored('standard', jpeg(1080, 1920), 'jpg');
-    const overlay = stored('standard', png(1080, 1920), 'png');
-    const r = await create({ name: 'Test Stories', scope: 'standard', isActive: true, format: 'portrait9x16', backgroundColor: '#112233', background, overlay, slot: slotIn('portrait9x16') });
-    expect(r.status).toBe(201);
-    const design = await r.json();
-    expect(design).toMatchObject({ scope: 'standard', version: 1, isActive: true });
-    expect(design.overlay.sha256).toMatch(/^[0-9a-f]{64}$/);
-    expect(design.overlay.bytes).toBe(33);
+  it('sends a Standard square template (border and full frame) as the design, and a new version after an edit', async () => {
+    const { bundle, patch } = await setup();
+    const thumb = stored('standard', jpeg(540, 540), 'jpg');
+    const border = await prisma.boothDesignTemplate.create({ data: { tenantId: null, name: 'Test Square with Border', format: 'square', orientation: 'portrait', photoCount: 1, isPublished: true, genieThumbnail: thumb, layout: layout('square', 'portrait', 1080, 1080, [slot(54, 54, 972, 972)]) } });
+    const full = await prisma.boothDesignTemplate.create({ data: { tenantId: null, name: 'Test Square Full Frame', format: 'square', orientation: 'portrait', photoCount: 1, isPublished: true, layout: layout('square', 'portrait', 1080, 1080, [slot(0, 0, 1080, 1080)]) } });
+    const lib = await (await LIBRARY()).json();
+    expect(lib.standard.map((t: { id: string }) => t.id)).toEqual(expect.arrayContaining([border.id, full.id]));
 
-    // Operators see it at its shape
-    session = { tenantId: tenant.id, tenantRole: 'HOST_ADMIN' };
-    expect((await (await LIST()).json()).standard.map((x: any) => x.id)).toContain(design.id);
-
-    expect((await patch({ format: 'portrait9x16', design: { source: 'clip', id: design.id } })).status).toBe(200);
+    expect((await patch({ format: 'square', design: { source: 'print', id: border.id } })).status).toBe(200);
     const b = await bundle();
     expect(b.capture.boomerang.design).toEqual({
-      id: design.id, name: 'Test Stories', version: 1, format: 'portrait9x16', backgroundColor: '#112233',
-      background: design.background, overlay: design.overlay, slot: slotIn('portrait9x16'),
+      id: border.id, name: 'Test Square with Border', version: Math.floor(border.updatedAt.getTime() / 1000), format: 'square', backgroundColor: '#FFFFFF',
+      thumbnail: thumb, slot: slot(54, 54, 972, 972),
     });
     valid(b);
 
-    session = { tenantId: tenant.id, tenantRole: 'HOST_ADMIN', globalRole: 'SUPER_ADMIN' };
-    const saved = await (await SAVE(req('/x', { method: 'PUT', body: { name: 'Test Stories', format: 'portrait9x16', backgroundColor: '#000000', background, overlay, slot: slotIn('portrait9x16') } }), d(design.id))).json();
-    expect(saved.version).toBe(2);
+    await new Promise(r => setTimeout(r, 1100));
+    await prisma.boothDesignTemplate.update({ where: { id: border.id }, data: { layout: layout('square', 'portrait', 1080, 1080, [slot(54, 54, 972, 972)], { backgroundColor: '#000000' }) } });
     const b2 = await bundle();
-    expect(b2.capture.boomerang.design).toMatchObject({ version: 2, backgroundColor: '#000000' });
+    expect(b2.capture.boomerang.design.version).toBeGreaterThan(b.capture.boomerang.design.version);
+    expect(b2.capture.boomerang.design.backgroundColor).toBe('#000000');
     expect(b2.bundleVersion).toBe(b.bundleVersion + 1);
 
-    // Switched off: no longer offered, but an event that chose it keeps it
-    expect((await SWITCH(req('/x', { method: 'PATCH', body: { isActive: false } }), d(design.id))).status).toBe(200);
-    session = { tenantId: tenant.id, tenantRole: 'HOST_ADMIN' };
-    expect((await (await LIST()).json()).standard.map((x: any) => x.id)).not.toContain(design.id);
-    expect((await bundle()).capture.boomerang.design.id).toBe(design.id);
-    void event;
+    expect((await patch({ format: 'square', design: { source: 'print', id: full.id } })).status).toBe(200);
+    expect((await bundle()).capture.boomerang.design.slot).toMatchObject({ x: 0, y: 0, width: 1080, height: 1080 });
   });
 
-  it('sends a My design made in the designer', async () => {
-    const { tenant, bundle, patch } = await setup();
-    const background = stored(tenant.id, jpeg(1440, 1080), 'jpg');
-    const r = await create({ name: 'Gold frame', format: 'landscape4x3', backgroundColor: '#ffffff', background, slot: { ...slotIn('landscape4x3'), fit: 'fit', rotationDegrees: -4 } });
-    expect(r.status).toBe(201);
-    const design = await r.json();
-    expect(design).toMatchObject({ scope: 'mine', source: 'designer', backgroundColor: '#FFFFFF' });
-    expect((await (await LIST()).json()).mine.map((x: any) => x.id)).toEqual([design.id]);
-
-    expect((await patch({ format: 'landscape4x3', design: { source: 'clip', id: design.id } })).status).toBe(200);
-    const b = await bundle();
-    expect(b.capture.boomerang.design).toMatchObject({ id: design.id, format: 'landscape4x3', background: design.background, slot: { fit: 'fit', rotationDegrees: -4, shotIndex: 0 } });
-    expect(b.capture.boomerang.design).not.toHaveProperty('overlay');
-    expect(b.capture.boomerang.design).not.toHaveProperty('thumbnail');
-    valid(b);
-  });
-
-  it('sends an uploaded PNG frame as a design: the PNG as overlay, its window as the slot', async () => {
-    const { tenant, event, bundle, patch } = await setup();
-    // Chosen before: a plain overlay. Choosing the frame replaces it.
-    await patch({ format: 'portrait3x4', overlayUrl: stored(tenant.id, png(1080, 1440), 'png').url });
-    const overlay = stored(tenant.id, png(2160, 2880), 'png');
-    const window = { id: 'window', shotIndex: 0, x: 90, y: 120, width: 900, height: 1000, rotationDegrees: 0, fit: 'fill' };
-    const r = await create({ name: 'Uploaded frame', source: 'upload', format: 'portrait3x4', backgroundColor: '#FFFFFF', overlay, slot: window });
-    expect(r.status).toBe(201);
-    const design = await r.json();
-    expect(design.source).toBe('upload');
-
-    expect((await patch({ format: 'portrait3x4', design: { source: 'clip', id: design.id } })).status).toBe(200);
-    const b = await bundle();
-    expect(b.capture.boomerang).not.toHaveProperty('overlay');
-    expect(b.capture.boomerang.design).toMatchObject({ overlay: { url: overlay.url, contentType: 'image/png' }, slot: window, format: 'portrait3x4' });
-    valid(b);
-    const dash = await (await DASH(req('/x'), p(event.id))).json();
-    expect(dash.settings.boomerang).toMatchObject({ design: { source: 'clip', id: design.id }, designProblem: null, overlay: null });
-  });
-
-  it('sends a single-photo 4x6 print design with its slot scaled to the clip', async () => {
-    const { tenant, bundle, patch } = await setup();
-    const overlay = stored(tenant.id, png(1200, 1800), 'png');
-    const t = await prisma.boothDesignTemplate.create({
-      data: {
-        tenantId: tenant.id, name: 'Single photo', format: '4x6', orientation: 'portrait', photoCount: 1,
-        layout: { format: '4x6', orientation: 'portrait', widthPx: 1200, heightPx: 1800, dpi: 300, backgroundColor: '#ffeedd', overlay, slots: [{ id: 's1', shotIndex: 0, x: 100, y: 200, width: 1000, height: 1200, rotationDegrees: 0, fit: 'fill' }] },
-      },
+  it('sends My 9:16 template with its art, and its 16:9 alternate at the landscape shape', async () => {
+    const { tenant, bundle, patch, template } = await setup();
+    const background = stored(tenant.id, jpeg(1080, 1920), 'jpg');
+    const overlay = stored(tenant.id, png(1920, 1080), 'png');
+    const t = await template({
+      name: 'Stories', format: '9x16', orientation: 'portrait',
+      layout: layout('9x16', 'portrait', 1080, 1920, [slot(60, 200, 960, 1280, { fit: 'fit', rotationDegrees: -4 })], { background }),
+      alternateLayout: layout('9x16', 'landscape', 1920, 1080, [slot(100, 60, 1200, 900)], { overlay }),
     });
-    const lib = await (await LIST()).json();
-    expect(lib.print).toEqual([expect.objectContaining({ id: t.id, format: 'portrait4x6' })]);
+    expect((await patch({ format: 'portrait9x16', design: { source: 'print', id: t.id } })).status).toBe(200);
+    let b = await bundle();
+    expect(b.capture.boomerang.design).toMatchObject({ id: t.id, format: 'portrait9x16', background, slot: { x: 60, y: 200, width: 960, height: 1280, fit: 'fit', rotationDegrees: -4 } });
+    expect(b.capture.boomerang.design).not.toHaveProperty('overlay');
+    valid(b);
 
-    // Only at its 4x6 shape
+    expect((await patch({ format: 'landscape16x9', design: { source: 'print', id: t.id } })).status).toBe(200);
+    b = await bundle();
+    expect(b.capture.boomerang.design).toMatchObject({ format: 'landscape16x9', overlay, slot: { x: 100, y: 60, width: 1200, height: 900 } });
+    valid(b);
+  });
+
+  it('sends a single-photo 4x6 template with its slot scaled to the clip', async () => {
+    const { tenant, bundle, patch, template } = await setup();
+    const overlay = stored(tenant.id, png(1200, 1800), 'png');
+    const t = await template({ name: 'Single photo', format: '4x6', orientation: 'portrait', layout: layout('4x6', 'portrait', 1200, 1800, [slot(100, 200, 1000, 1200)], { backgroundColor: '#ffeedd', overlay }) });
+
+    // Only at its own shape
     expect((await patch({ format: 'landscape6x4', design: { source: 'print', id: t.id } })).status).toBe(400);
     expect((await patch({ format: 'portrait4x6', design: { source: 'print', id: t.id } })).status).toBe(200);
     const b = await bundle();
-    expect(b.capture.boomerang.design).toMatchObject({
-      id: t.id, format: 'portrait4x6', backgroundColor: '#FFEEDD', overlay,
-      slot: { id: 's1', shotIndex: 0, x: 90, y: 180, width: 900, height: 1080, rotationDegrees: 0, fit: 'fill' },
-    });
-    expect(b.capture.boomerang.design.version).toBeGreaterThan(1);
+    expect(b.capture.boomerang.design).toMatchObject({ id: t.id, format: 'portrait4x6', backgroundColor: '#FFEEDD', overlay, slot: slot(90, 180, 900, 1080) });
     valid(b);
   });
 
-  it('offers published Standard single-photo Design Templates at their 4x6 shape, and keeps one unpublished later', async () => {
-    const { bundle, patch } = await setup();
-    const overlay = stored('standard', png(1800, 1200), 'png');
-    const thumb = stored('standard', jpeg(600, 400), 'jpg');
-    const layout = (orientation: 'portrait' | 'landscape', w: number, h: number) => ({ format: '4x6', orientation, widthPx: w, heightPx: h, dpi: 300, backgroundColor: '#ffffff', overlay, slots: [{ id: 's1', shotIndex: 0, x: 60, y: 60, width: w - 120, height: h - 360, rotationDegrees: 0, fit: 'fill' }] });
-    const t = await prisma.boothDesignTemplate.create({
-      data: { tenantId: null, name: 'Test Classic Single', format: '4x6', orientation: 'landscape', photoCount: 1, isPublished: true, genieThumbnail: thumb, layout: layout('landscape', 1800, 1200), alternateLayout: layout('portrait', 1200, 1800) },
-    });
-    const draft = await prisma.boothDesignTemplate.create({
-      data: { tenantId: null, name: 'Test Draft', format: '4x6', orientation: 'landscape', photoCount: 1, isPublished: false, layout: layout('landscape', 1800, 1200) },
-    });
-    const lib = await (await LIST()).json();
-    const rows = lib.standardPrint.filter((r: { id: string }) => r.id === t.id);
-    expect(rows.map((r: { format: string }) => r.format).sort()).toEqual(['landscape6x4', 'portrait4x6']);
-    // The thumbnail shows the main (landscape) layout only
-    expect(rows.find((r: { format: string }) => r.format === 'portrait4x6').thumbnail).toBeNull();
-    expect(lib.standardPrint.some((r: { id: string }) => r.id === draft.id)).toBe(false);
-    expect((await patch({ format: 'landscape6x4', design: { source: 'print', id: draft.id } })).status).toBe(400);
+  it('keeps a Standard template the event chose after it is unpublished; drafts and multi-photo layouts cannot be chosen', async () => {
+    const { bundle, patch, template } = await setup();
+    const t = await prisma.boothDesignTemplate.create({ data: { tenantId: null, name: 'Test Wide', format: '9x16', orientation: 'landscape', photoCount: 1, isPublished: true, layout: layout('9x16', 'landscape', 1920, 1080, [slot(0, 0, 1920, 1080)]) } });
+    const draft = await prisma.boothDesignTemplate.create({ data: { tenantId: null, name: 'Test Draft', format: 'square', orientation: 'portrait', photoCount: 1, isPublished: false, layout: layout('square', 'portrait', 1080, 1080, [slot(0, 0, 1080, 1080)]) } });
+    const trio = await template({ name: 'Trio', format: '4x6', orientation: 'landscape', photoCount: 3, layout: layout('4x6', 'landscape', 1800, 1200, [slot(60, 60, 520, 693), { ...slot(640, 60, 520, 693), id: 's2', shotIndex: 1 }]) });
+    expect((await patch({ format: 'square', design: { source: 'print', id: draft.id } })).status).toBe(400);
+    expect((await patch({ format: 'landscape6x4', design: { source: 'print', id: trio.id } })).status).toBe(400);
 
-    expect((await patch({ format: 'landscape6x4', design: { source: 'print', id: t.id } })).status).toBe(200);
-    let b = await bundle();
-    expect(b.capture.boomerang.design).toMatchObject({ id: t.id, format: 'landscape6x4', overlay, thumbnail: thumb, slot: { x: 54, y: 54, width: 1512, height: 756 } });
-    valid(b);
-
-    // Unpublished after the event chose it: the event keeps it, like a switched-off Standard design
+    expect((await patch({ format: 'landscape16x9', design: { source: 'print', id: t.id } })).status).toBe(200);
     await prisma.boothDesignTemplate.update({ where: { id: t.id }, data: { isPublished: false } });
-    b = await bundle();
+    const b = await bundle();
     expect(b.capture.boomerang.design.id).toBe(t.id);
     valid(b);
   });
 
-  it('drops the design when its shape no longer matches or it was deleted, and tells the editor', async () => {
-    const { tenant, event, bundle, patch } = await setup();
-    const design = await (await create({ name: 'Square frame', format: 'square', backgroundColor: '#FFFFFF', slot: slotIn('square') })).json();
-    expect((await patch({ design: { source: 'clip', id: design.id } })).status).toBe(200);
-    expect((await bundle()).capture.boomerang.design.id).toBe(design.id);
+  it('drops the design when the template loses that shape or is deleted, and tells the editor', async () => {
+    const { event, bundle, patch, template } = await setup();
+    const t = await template({ name: 'Square frame', format: 'square', orientation: 'portrait', layout: layout('square', 'portrait', 1080, 1080, [slot(54, 54, 972, 972)]) });
+    expect((await patch({ design: { source: 'print', id: t.id } })).status).toBe(200);
+    expect((await bundle()).capture.boomerang.design.id).toBe(t.id);
 
-    // The event's shape can't change under a chosen design
+    // The event's shape can't change under a chosen template
     const wrong = await patch({ format: 'portrait9x16' });
     expect(wrong.status).toBe(400);
     expect((await wrong.json()).path).toBe('boomerang.design');
-    // A design at another shape can't be chosen
-    const other = await (await create({ name: 'Tall', format: 'portrait9x16', backgroundColor: '#FFFFFF', slot: slotIn('portrait9x16') })).json();
-    expect((await patch({ design: { source: 'clip', id: other.id } })).status).toBe(400);
 
-    // The design itself changes shape: dropped from the bundle, notice in the editor
-    await SAVE(req('/x', { method: 'PUT', body: { name: 'Square frame', format: 'portrait3x4', backgroundColor: '#FFFFFF', slot: slotIn('portrait3x4') } }), d(design.id));
+    // The template is changed to another size: dropped from the bundle, notice in the editor
+    await prisma.boothDesignTemplate.update({ where: { id: t.id }, data: { format: '9x16', layout: layout('9x16', 'portrait', 1080, 1920, [slot(0, 0, 1080, 1920)]) } });
     let b = await bundle();
     expect(b.capture.boomerang).not.toHaveProperty('design');
     expect(b.capture.boomerang.format).toBe('square');
@@ -258,38 +197,46 @@ describe('Boomerang designs in the bundle', () => {
     expect((await (await DASH(req('/x'), p(event.id))).json()).settings.boomerang.designProblem).toBe('shape');
 
     // Deleted: dropped too
-    await SAVE(req('/x', { method: 'PUT', body: { name: 'Square frame', format: 'square', backgroundColor: '#FFFFFF', slot: slotIn('square') } }), d(design.id));
-    expect((await bundle()).capture.boomerang.design.version).toBe(3);
-    expect((await REMOVE(req('/x', { method: 'DELETE' }), d(design.id))).status).toBe(200);
+    await prisma.boothDesignTemplate.update({ where: { id: t.id }, data: { isActive: false } });
     b = await bundle();
     expect(b.capture.boomerang).not.toHaveProperty('design');
     expect((await (await DASH(req('/x'), p(event.id))).json()).settings.boomerang.designProblem).toBe('deleted');
 
-    // Clearing the choice
     expect((await patch({ design: null })).status).toBe(200);
     expect((await (await DASH(req('/x'), p(event.id))).json()).settings.boomerang).toMatchObject({ design: null, designProblem: null });
-    void tenant;
+  });
+
+  it('keeps a Boomerang design chosen before templates', async () => {
+    const { tenant, bundle } = await setup();
+    const d = await prisma.genieClipDesign.create({ data: { tenantId: tenant.id, name: 'Old frame', format: 'portrait3x4', slot: slot(60, 80, 960, 1140) } });
+    const s = await prisma.eventGenieSettings.findFirstOrThrow({ where: { tenantId: tenant.id } });
+    await prisma.eventGenieSettings.update({ where: { id: s.id }, data: { boomerang: { ...BOOMERANG, format: 'portrait3x4', design: { source: 'clip', id: d.id } } } });
+    const b = await bundle();
+    expect(b.capture.boomerang.design).toMatchObject({ id: d.id, format: 'portrait3x4', version: 1 });
+    valid(b);
   });
 });
 
-describe('Boomerang design checks', () => {
-  it('refuses images in the wrong shape, an overlay without transparency, a slot past the edge, and other accounts\' designs', async () => {
-    const { tenant, patch } = await setup();
-    const base = { name: 'X', format: 'square', backgroundColor: '#FFFFFF', slot: slotIn('square') };
-    expect((await create({ ...base, overlay: stored(tenant.id, png(1080, 1920), 'png') })).status).toBe(422);
-    expect((await create({ ...base, overlay: stored(tenant.id, png(1080, 1080, false), 'png') })).status).toBe(422);
-    expect((await create({ ...base, overlay: stored(tenant.id, jpeg(1080, 1080), 'jpg') })).status).toBe(422);
-    expect((await create({ ...base, background: stored('someone-else', jpeg(1080, 1080), 'jpg') })).status).toBe(422);
-    expect((await create({ ...base, slot: { ...slotIn('square'), x: 600, width: 600 } })).status).toBe(400);
-    expect((await create({ ...base, slot: { ...slotIn('square'), width: 10 } })).status).toBe(400);
-    expect((await create({ ...base, source: 'upload' })).status).toBe(400);
-    expect((await create({ ...base, scope: 'standard' })).status).toBe(403);
+describe('Boomerang & GIF only sizes', () => {
+  it('are made in the template designer with one photo, and never used for photos or offered to clients', async () => {
+    const { tenant, event, template } = await setup();
+    const base = { name: 'Square', layout: layout('square', 'portrait', 1080, 1080, [slot(54, 54, 972, 972)]) };
+    const r = await CREATE_TEMPLATE(req('/x', { body: { ...base, offerToClients: true } }));
+    expect(r.status).toBe(201);
+    const made = await r.json();
+    expect(await prisma.boothDesignTemplate.findUniqueOrThrow({ where: { id: made.id } })).toMatchObject({ format: 'square', orientation: 'portrait' });
 
-    const { tenant: t2 } = await seedTenant();
-    session = { tenantId: t2.id, tenantRole: 'HOST_ADMIN' };
-    const theirs = await (await create(base)).json();
-    session = { tenantId: tenant.id, tenantRole: 'HOST_ADMIN' };
-    expect((await patch({ design: { source: 'clip', id: theirs.id } })).status).toBe(400);
-    expect((await REMOVE(req('/x', { method: 'DELETE' }), d(theirs.id))).status).toBe(404);
+    // One photo only
+    const two = await CREATE_TEMPLATE(req('/x', { body: { ...base, layout: layout('square', 'portrait', 1080, 1080, [slot(0, 0, 500, 500), { ...slot(540, 0, 500, 500), id: 's2', shotIndex: 1 }]) } }));
+    expect(two.status).toBe(400);
+    expect((await two.json()).error).toMatch(/one photo/);
+
+    // Not added as a photo template, not in the client's design brief
+    expect((await ADD_TO_EVENT(req('/x', { body: { libraryTemplateId: made.id } }), p(event.id))).status).toBe(404);
+    expect((await clientTemplates(tenant.id)).map(t => t.id)).not.toContain(made.id);
+    // A single-photo 4x6 template still works for photos
+    const single = await template({ name: 'Single', format: '4x6', orientation: 'portrait', offerToClients: true, layout: layout('4x6', 'portrait', 1200, 1800, [slot(60, 60, 1080, 1440)]) });
+    expect((await ADD_TO_EVENT(req('/x', { body: { libraryTemplateId: single.id } }), p(event.id))).status).toBe(201);
+    expect((await clientTemplates(tenant.id)).map(t => t.id)).toContain(single.id);
   });
 });

@@ -158,9 +158,32 @@ export const BOOMERANG_DEFAULT: BoomerangSettings = {
   superSpeedCapture: false, showOverlayOnLiveView: true, mirrorLiveView: true,
 };
 
+// Template sizes. Print sizes (4x6, 2x6) are offered for photos; Square and 9:16 (portrait 9:16 / landscape 16:9)
+// are Boomerang & GIF only: never printed or offered for photos, sent to iPads only as a Boomerang's design.
+export const TEMPLATE_FORMATS = ['4x6', '2x6', 'square', '9x16'] as const;
+export const PRINT_FORMATS = ['4x6', '2x6'] as const;
+export const isClipOnlyFormat = (f: string | null | undefined) => f === 'square' || f === '9x16';
+// The Boomerang shape each single-photo template size plays at
+export const TEMPLATE_CLIP_FORMAT: { format: string; orientation: string; clip: BoomerangFormat }[] = [
+  { format: 'square', orientation: 'portrait', clip: 'square' },
+  { format: '9x16', orientation: 'portrait', clip: 'portrait9x16' },
+  { format: '9x16', orientation: 'landscape', clip: 'landscape16x9' },
+  { format: '4x6', orientation: 'portrait', clip: 'portrait4x6' },
+  { format: '4x6', orientation: 'landscape', clip: 'landscape6x4' },
+];
+// "4×6 landscape", "2×6 strip", "Square", "9:16 portrait", "16:9 landscape"
+export function templateSizeLabel(l: { format: string; orientation: string }): string {
+  if (l.format === '2x6') return '2×6 strip';
+  if (l.format === 'square') return 'Square';
+  if (l.format === '9x16') return l.orientation === 'landscape' ? '16:9 landscape' : '9:16 portrait';
+  return `${l.format.replace('x', '×')} ${l.orientation}`;
+}
+export const clipFormatOf = (l: { format: string; orientation: string }): BoomerangFormat | null =>
+  TEMPLATE_CLIP_FORMAT.find(t => t.format === l.format && t.orientation === l.orientation)?.clip ?? null;
+
 // LayoutTemplate minus id/version, as stored on EventGenieTemplate / BoothDesignTemplate
 export const StoredLayout = z.object({
-  format: z.enum(['4x6', '2x6']),
+  format: z.enum(TEMPLATE_FORMATS),
   orientation: z.enum(['portrait', 'landscape']),
   widthPx: z.number().int().min(1),
   heightPx: z.number().int().min(1),

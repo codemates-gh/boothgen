@@ -17,7 +17,6 @@ import SuperAdminTabs from './SuperAdminTabs';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import FoundingMembersCard from './FoundingMembersCard';
 import DesignTemplatesManager from './DesignTemplatesManager';
-import BoomerangDesignsManager from './BoomerangDesignsManager';
 import PropsManager from './PropsManager';
 import BackdropsManager from './BackdropsManager';
 import GenieUsage from './GenieUsage';
@@ -27,7 +26,7 @@ import StorageUsage from './StorageUsage';
 import { DEFAULT_UPLOAD_LIMITS, getUploadLimits } from '@/lib/gallery/uploadRules';
 
 
-const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'boomerang-designs', 'props', 'backdrops', 'genie-usage', 'storage', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
+const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'props', 'backdrops', 'genie-usage', 'storage', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
 type Tab = typeof VALID_TABS[number];
 
 const TENANT_BADGE: Record<string, 'warning' | 'success' | 'danger' | 'default'> = {
@@ -283,17 +282,6 @@ export default async function SuperAdminPage(props: { searchParams: Promise<{ ta
               <p className="text-sm text-gray-500 mt-1">Design the Standard layouts. Published ones show in every operator's Standard templates (they can hide any) and in their clients' design picker. Approved designs go straight into Genie.</p>
             </div>
             <DesignTemplatesManager />
-          </>
-        )}
-
-        {/* BOOMERANG DESIGNS */}
-        {tab === 'boomerang-designs' && (
-          <>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Boomerang Designs</h1>
-              <p className="text-sm text-gray-500 mt-1">Standard designs that frame a Boomerang, one set per shape. Operators choose from the ones that are on, at their event&apos;s Boomerang shape. Events that already chose a design keep it when it&apos;s switched off.</p>
-            </div>
-            <BoomerangDesignsManager />
           </>
         )}
 

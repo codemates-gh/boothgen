@@ -1,10 +1,9 @@
 'use client';
-import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Field, Toggle } from '@/components/genie/parts';
-import { CLIP_CANVAS, type BoomerangFormat } from '@/lib/genie/schemas';
-import { BoomerangFramePicker, findDesign, useClipDesigns, type DesignChoice } from './BoomerangFrame';
+import type { BoomerangFormat } from '@/lib/genie/schemas';
+import { BoomerangTemplateField, type DesignChoice } from './BoomerangTemplate';
 
 // Event → Genie: "Look at the camera" prompt and Boomerang (per event; no account defaults)
 
@@ -14,22 +13,12 @@ export type { BoomerangFormat };
 export type Boomerang = {
   enabled: boolean; format: BoomerangFormat; frameCount: number; playbackSpeed: 'slow' | 'medium' | 'fast' | 'superFast';
   reverse: boolean; superSpeedCapture: boolean; showOverlayOnLiveView: boolean; mirrorLiveView: boolean;
-  // A plain overlay saved before Boomerang designs (kept until another frame is chosen)
+  // A plain overlay saved before Boomerang templates (kept until a template is chosen)
   overlay: { url: string; width: number | null; height: number | null } | null;
   design: DesignChoice | null;
   designProblem: 'deleted' | 'shape' | null;
 };
 
-// Shape choices in order, each with a small icon at its proportions
-const SHAPES: { value: BoomerangFormat; icon: string }[] = [
-  { value: 'square', icon: 'w-6 h-6' },
-  { value: 'portrait3x4', icon: 'w-[18px] h-6' },
-  { value: 'landscape4x3', icon: 'w-6 h-[18px]' },
-  { value: 'portrait9x16', icon: 'w-[13.5px] h-6' },
-  { value: 'landscape16x9', icon: 'w-6 h-[13.5px]' },
-  { value: 'portrait4x6', icon: 'w-4 h-6' },
-  { value: 'landscape6x4', icon: 'w-6 h-4' },
-];
 const SPEEDS = [
   { value: 'slow', label: 'Slow' }, { value: 'medium', label: 'Medium' }, { value: 'fast', label: 'Fast' }, { value: 'superFast', label: 'Super fast' },
 ] as const;
@@ -56,49 +45,17 @@ export function LookAtCameraFields({ value, onChange, disabled }: { value: LookA
   );
 }
 
-export function BoomerangFields({ eventId, value, onChange, disabled }: { eventId: string; value: Boomerang; onChange: (p: Partial<Boomerang>) => void; disabled?: boolean }) {
-  const { lib, reload } = useClipDesigns();
-  const [notice, setNotice] = useState('');
-
-  // A design (or old overlay) that doesn't fit the new shape is taken off, with a notice
-  function changeShape(format: BoomerangFormat) {
-    if (format === value.format) return;
-    const p: Partial<Boomerang> = { format };
-    const chosen = findDesign(lib, value.design);
-    const c = CLIP_CANVAS[format];
-    setNotice('');
-    if (value.design && (!chosen || chosen.format !== format)) {
-      p.design = null; p.designProblem = null;
-      setNotice(`${chosen ? `"${chosen.name}" is ${CLIP_CANVAS[chosen.format].label}, so it` : 'The chosen design'} was taken off. Choose a frame at ${c.label}.`);
-    }
-    if (value.overlay?.width && value.overlay.height && Math.abs((value.overlay.width / value.overlay.height) / (c.widthPx / c.heightPx) - 1) > 0.02) {
-      p.overlay = null;
-      setNotice(`The overlay uploaded earlier doesn't fit ${c.label}, so it was taken off. Choose a frame at the new shape.`);
-    }
-    onChange(p);
-  }
-
+// The Boomerang's shape comes from its template's layout (Square, 9:16, 16:9, 4x6, 6x4); none = a plain square clip
+export function BoomerangFields({ value, onChange, disabled }: { eventId?: string; value: Boomerang; onChange: (p: Partial<Boomerang>) => void; disabled?: boolean }) {
   return (
     <>
       <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Offer Boomerang"
         hint="Adds a Boomerang tile next to the photo designs on the iPad's start screen: a short looping clip, shared by text, email and QR. Boomerangs are never printed."/>
       {value.enabled && (
         <div className="ml-[52px] space-y-4">
-          <Field label="Shape" hint="The chosen shape is used whichever way the iPad is turned.">
-            <div className="flex flex-wrap gap-2">
-              {SHAPES.map(sh => (
-                <button key={sh.value} type="button" disabled={disabled} onClick={() => changeShape(sh.value)}
-                  className={'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm disabled:opacity-50 disabled:cursor-not-allowed ' + (value.format === sh.value ? 'border-brand bg-brand/5 font-medium' : 'border-gray-200 hover:bg-gray-50')}>
-                  <span className="w-6 h-6 flex items-center justify-center"><span className={'block rounded-[3px] border-2 ' + (value.format === sh.value ? 'border-brand' : 'border-gray-400') + ' ' + sh.icon}/></span>
-                  {CLIP_CANVAS[sh.value].label}
-                </button>
-              ))}
-            </div>
-          </Field>
-          <Field label="Frame" hint="The Boomerang plays inside the design's photo area, with its background and text around it. Guests see the design while they pose (with 'Show the frame on the live view' on). Boomerangs are shared, never printed.">
-            <BoomerangFramePicker eventId={eventId} format={value.format} design={value.design} designProblem={value.designProblem} overlay={value.overlay}
-              lib={lib} reload={reload} disabled={disabled} onChange={p => { setNotice(''); onChange(p); }}/>
-            {notice && <p className="text-sm text-amber-700 mt-2">{notice}</p>}
+          <Field label="Template" hint="Any single-photo layout from Templates. The Boomerang is filmed at the photo frame's shape and plays in it, with the layout's background and artwork around it. Guests see it while they pose (with 'Show the frame on the live view' on).">
+            <BoomerangTemplateField format={value.format} design={value.design} designProblem={value.designProblem} overlay={value.overlay}
+              disabled={disabled} onChange={onChange}/>
           </Field>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Frames" hint="10–16">

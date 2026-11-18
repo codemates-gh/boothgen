@@ -1,6 +1,6 @@
 import { Prisma, type BoothDesignTemplate } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
-import type { StoredLayout } from '@/lib/genie/schemas';
+import { PRINT_FORMATS, type StoredLayout } from '@/lib/genie/schemas';
 
 // Layouts a client can pick in their design brief (portal → Design): BoothGen's published Standard layouts the
 // operator hasn't hidden, plus the operator's own templates they offer to clients. Only layouts with photo frames,
@@ -15,6 +15,7 @@ export async function clientTemplatesWhere(tenantId: string): Promise<Prisma.Boo
   return {
     isActive: true,
     layout: { not: Prisma.AnyNull },
+    format: { in: [...PRINT_FORMATS] }, // Boomerang & GIF only sizes aren't print designs
     OR: [
       { tenantId: null, isPublished: true, ...(hidden.length ? { id: { notIn: hidden } } : {}) },
       { tenantId, offerToClients: true },
@@ -58,7 +59,7 @@ export async function setStandardHidden(tenantId: string, templateId: string, hi
 export async function operatorClientLibrary(tenantId: string) {
   const hidden = new Set(await hiddenStandardIds(tenantId));
   const rows = await prisma.boothDesignTemplate.findMany({
-    where: { isActive: true, layout: { not: Prisma.AnyNull }, OR: [{ tenantId: null, isPublished: true }, { tenantId, offerToClients: true }] },
+    where: { isActive: true, layout: { not: Prisma.AnyNull }, format: { in: [...PRINT_FORMATS] }, OR: [{ tenantId: null, isPublished: true }, { tenantId, offerToClients: true }] },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   });
   return [...rows.filter(r => r.tenantId), ...rows.filter(r => !r.tenantId)].map(r => ({ ...clientTemplateView(r), hidden: hidden.has(r.id) }));

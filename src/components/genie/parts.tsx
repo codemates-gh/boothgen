@@ -1,11 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { CLIP_CANVAS, type BoomerangFormat } from '@/lib/genie/schemas';
 
 export type Slot = { id: string; shotIndex: number; x: number; y: number; width: number; height: number; rotationDegrees: number; fit: 'fill' | 'fit' };
 export type RemoteAsset = { url: string; sha256: string; contentType: string; bytes: number };
 export type Layout = {
-  format: '4x6' | '2x6'; orientation: 'portrait' | 'landscape'; widthPx: number; heightPx: number; dpi: number;
+  format: '4x6' | '2x6' | 'square' | '9x16'; orientation: 'portrait' | 'landscape'; widthPx: number; heightPx: number; dpi: number;
   backgroundColor: string; background?: RemoteAsset; overlay?: RemoteAsset; slots: Slot[];
 };
 
@@ -63,23 +62,6 @@ export function LayoutPreview({ layout, width = 120 }: { layout: Layout; width?:
       ))}
       {layout.overlay && <ArtImg url={layout.overlay.url} className="absolute inset-0 w-full h-full"/>}
     </div>
-  );
-}
-
-export type ClipDesignRow = {
-  id: string; name: string; format: BoomerangFormat; backgroundColor: string; isActive?: boolean;
-  background: RemoteAsset | null; overlay: RemoteAsset | null; thumbnail: RemoteAsset | null; slot: Slot;
-};
-
-// A Boomerang design's picture: its saved thumbnail, else a drawing of the canvas and photo area
-export function ClipDesignPicture({ d, width }: { d: Omit<ClipDesignRow, 'id' | 'name'>; width: number }) {
-  const c = CLIP_CANVAS[d.format];
-  if (d.thumbnail) return <ArtImg url={d.thumbnail.url} className="max-w-full max-h-full rounded border border-gray-200"/>;
-  return (
-    <LayoutPreview width={Math.round(Math.min(width, width * c.widthPx / c.heightPx))} layout={{
-      format: '4x6', orientation: c.widthPx > c.heightPx ? 'landscape' : 'portrait', widthPx: c.widthPx, heightPx: c.heightPx, dpi: 0,
-      backgroundColor: d.backgroundColor, ...(d.background ? { background: d.background } : {}), ...(d.overlay ? { overlay: d.overlay } : {}), slots: [d.slot],
-    }}/>
   );
 }
 

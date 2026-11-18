@@ -11,6 +11,7 @@ export default function TemplateDesignerPage() {
       initialScope={search.get('scope') === 'standard' ? 'standard' : 'mine'}
       backHref="/templates" backLabel="Back to Templates"
       editHref={id => '/templates/' + id}
+      initialSize={search.get('size')}
     />
   );
 }

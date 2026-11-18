@@ -4,10 +4,25 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.106.0] — 2026-11-18
+
+### Changed
+- **Genie: Boomerang uses the same Templates as photos.** In an event's Genie tab, the Boomerang section has a **Template** instead of Shape and Frame. **Choose Template** lists every single-photo layout in Templates (Standard and your own), filtered by shape. The Boomerang is filmed at the photo frame's shape and plays in it, with the layout's background and artwork around it. With no template it's a plain square clip. Events that already chose a design or uploaded an overlay keep it until another template is chosen.
+- **Templates: Square, 9:16 portrait and 16:9 landscape sizes (Boomerang & GIF only).** The template designer has these sizes under "Boomerang & GIF only". They have one photo frame and no print safe line, and they're never offered for photos, prints or clients' design briefs. Single-photo 4×6 templates work for both photos and Boomerang. **Make a custom one** in the Boomerang section opens the designer at the Boomerang's size.
+- **Two Standard Square templates:** Square Full Frame and Square with Border (added with `docs/genie/standard-square-templates.sql`, data only).
+
+### Removed
+- The separate Boomerang designer, Upload a frame, and Super Admin → Boomerang Designs (from 2.105). Make Boomerang frames as single-photo templates instead.
+
+### Fixed
+- The Add Template picker no longer breaks for super admins when a Standard template has no layout yet.
+
+---
+
 ## [2.105.2] — 2026-11-18
 
 ### Added
-- **Genie: Standard square Boomerang designs.** Three Standard designs at Square 1:1 that match the single-photo Design Templates: **Full Bleed Square**, **Classic Single Square** (white border) and **Instant Camera Square** (square photo with a deeper bottom border). They're switched on for operators and can be edited, turned off or deleted in Super Admin → Boomerang Designs. Added with `docs/genie/standard-boomerang-designs-square.sql` (data only).
+- **Genie: Standard square Boomerang designs** (data SQL, never run; replaced in 2.106.0 by Standard Square templates).
 
 ---
 

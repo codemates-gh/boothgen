@@ -9,16 +9,16 @@ import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { Sparkles, Plus, Pencil, Copy, Trash2, LayoutTemplate, Eye, EyeOff } from 'lucide-react';
 import { Layout, LayoutPreview, artUrl } from '@/components/genie/parts';
+import { isClipOnlyFormat, templateSizeLabel } from '@/lib/genie/schemas';
 
 type Template = {
   id: string; name: string; description: string | null; scope: 'standard' | 'mine'; isPublished: boolean; offerToClients: boolean; hidden?: boolean;
   thumbnail: { url: string } | null; layout: Layout | null; alternateLayout: Layout | null;
 };
-const FORMAT_LABEL: Record<string, string> = { '4x6': '4×6', '2x6': '2×6 strip' };
 
 function Thumb({ t }: { t: Template }) {
   if (t.thumbnail) return <img src={artUrl(t.thumbnail.url)} alt="" className="max-h-40 max-w-full rounded border border-gray-200 object-contain"/>;
-  if (t.layout) return <LayoutPreview layout={t.layout} width={t.layout.widthPx >= t.layout.heightPx ? 200 : t.layout.format === '2x6' ? 54 : 108}/>;
+  if (t.layout) return <LayoutPreview layout={t.layout} width={t.layout.format === 'square' ? 150 : t.layout.widthPx >= t.layout.heightPx ? 200 : t.layout.format === '2x6' ? 54 : 108}/>;
   return <div className="h-40 w-28 rounded border border-dashed border-gray-300 flex items-center justify-center text-xs text-gray-400 text-center px-2">No photo frames yet</div>;
 }
 
@@ -123,7 +123,7 @@ export default function TemplatesPage() {
                         </p>
                         {t.layout && (
                           <p className="text-xs text-gray-500 mt-0.5">
-                            {FORMAT_LABEL[t.layout.format]} {t.layout.orientation} · {new Set(t.layout.slots.map(s => s.shotIndex)).size} photo{new Set(t.layout.slots.map(s => s.shotIndex)).size === 1 ? "" : "s"}{t.alternateLayout ? ' · + ' + t.alternateLayout.orientation : ''}
+                            {templateSizeLabel(t.layout)}{isClipOnlyFormat(t.layout.format) ? ' · Boomerang & GIF' : ''} · {new Set(t.layout.slots.map(s => s.shotIndex)).size} photo{new Set(t.layout.slots.map(s => s.shotIndex)).size === 1 ? "" : "s"}{t.alternateLayout ? ' · + ' + t.alternateLayout.orientation : ''}
                           </p>
                         )}
                         <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-gray-100">

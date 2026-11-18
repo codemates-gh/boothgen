@@ -1,15 +1,19 @@
 import { z } from 'zod';
 import type { BoothDesignTemplate } from '@prisma/client';
-import { StoredLayout } from './schemas';
+import { StoredLayout, isClipOnlyFormat } from './schemas';
 import { artworkFit } from './image';
 import { verifyAsset, type RemoteAsset } from './templateAssets';
 import { ClientOptions, syncPairings } from '@/lib/templates/clientOptions';
 
-// Frame sizes the designer offers (300 dpi). Square waits for GIF mode.
+// Frame sizes the designer offers (300 dpi). Square, 9:16 and 16:9 are Boomerang & GIF only (one photo, at the
+// iPad clip's size).
 export const SIZE_PRESETS = [
   { id: '4x6-landscape', label: '4×6 landscape', format: '4x6', orientation: 'landscape', widthPx: 1800, heightPx: 1200 },
   { id: '4x6-portrait', label: '4×6 portrait', format: '4x6', orientation: 'portrait', widthPx: 1200, heightPx: 1800 },
   { id: '2x6-portrait', label: '2×6 strip', format: '2x6', orientation: 'portrait', widthPx: 600, heightPx: 1800 },
+  { id: 'square', label: 'Square', format: 'square', orientation: 'portrait', widthPx: 1080, heightPx: 1080 },
+  { id: '9x16-portrait', label: '9:16 portrait', format: '9x16', orientation: 'portrait', widthPx: 1080, heightPx: 1920 },
+  { id: '9x16-landscape', label: '16:9 landscape', format: '9x16', orientation: 'landscape', widthPx: 1920, heightPx: 1080 },
 ] as const;
 export const DESIGN_DPI = 300;
 
@@ -21,7 +25,8 @@ const AssetRef = z.object({ url: z.string().url(), sha256: z.string(), contentTy
 
 export const DesignLayout = StoredLayout.extend({ background: AssetRef.optional(), overlay: AssetRef.optional() })
   .superRefine((l, ctx) => {
-    if (!presetFor(l)) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Choose one of the frame sizes: 4×6 landscape, 4×6 portrait or 2×6 strip', path: ['format'] });
+    if (!presetFor(l)) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Choose one of the frame sizes: 4×6 landscape, 4×6 portrait, 2×6 strip, square, 9:16 or 16:9', path: ['format'] });
+    if (isClipOnlyFormat(l.format) && l.slots.length !== 1) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Square, 9:16 and 16:9 templates are for Boomerang and GIF, so they have one photo frame', path: ['slots'] });
     if (l.dpi !== DESIGN_DPI) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Layouts are 300 dpi', path: ['dpi'] });
     const ids = new Set<string>();
     l.slots.forEach((s, i) => {
