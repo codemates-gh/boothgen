@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.107.0] — 2026-11-18
+
+### Changed
+- **Template designer: Reposition works any time.** The original of a background that was dragged into place is now kept with the template (shrunk to at most twice the layout's size), so **Reposition** works after reloading the page or coming back to the template later, not just while the page stays open. Originals are only for the designer; events and iPads get the trimmed background as before.
+- **Originals are cleaned up:** replacing or removing the background, or uploading one that already fits the layout, deletes the old original when the template is saved; deleting the template deletes its originals. (Templates are only hidden when deleted, so events that use them keep their artwork.)
+
+Needs `docs/genie/apply-production-background-sources.sql` (one new column) run in production before this deploys.
+
+---
+
 ## [2.106.4] — 2026-11-18
 
 ### Changed

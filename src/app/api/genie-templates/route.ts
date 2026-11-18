@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   if (parsed.data.copyFrom && !source) return NextResponse.json({ error: 'Template to copy not found' }, { status: 404 });
   const prepared = await prepareTemplate(parsed.data, null, allowedPrefixes(scope, auth.tenantId), source);
   if ('error' in prepared) return NextResponse.json({ error: prepared.error }, { status: 422 });
-  const { layout, alternateLayout, thumbnail, warnings } = prepared;
+  const { layout, alternateLayout, thumbnail, backgroundSources, warnings } = prepared;
   const t = await prisma.boothDesignTemplate.create({
     data: {
       tenantId: scope === 'standard' ? null : auth.tenantId,
@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
       photoCount: new Set(layout.slots.map(s => s.shotIndex)).size,
       layout, ...(alternateLayout ? { alternateLayout } : {}),
       ...(thumbnail ? { genieThumbnail: thumbnail, thumbnailUrl: thumbnail.url } : {}),
+      ...(backgroundSources ? { backgroundSources } : {}),
       // My templates never publish: they'd otherwise surface as Standard if the tenant were deleted (relation is SetNull)
       isPublished: scope === 'standard' ? (parsed.data.isPublished ?? false) : false,
       offerToClients: scope === 'mine' ? (parsed.data.offerToClients ?? false) : false,

@@ -1252,6 +1252,9 @@ model BoothDesignTemplate {
   layout          Json?
   alternateLayout Json?
   genieThumbnail  Json? // RemoteAsset rendered by the designer on save
+  // Original background images kept so the designer can reposition them: { main?, alt? } each { source: RemoteAsset,
+  // focus: {x,y}, croppedUrl } (designer only; never sent to iPads)
+  backgroundSources Json?
   isPublished     Boolean  @default(false) // Standard: shown to operators and their clients
   // An operator's own template offered in their clients' design brief picker
   offerToClients  Boolean  @default(false)

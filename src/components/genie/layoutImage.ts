@@ -109,3 +109,27 @@ export async function imageSize(file: File): Promise<{ width: number; height: nu
   catch { throw new Error('That image could not be read. Try a PNG or JPG.'); }
   finally { URL.revokeObjectURL(url); }
 }
+
+// An image's pixel size from a URL (same-origin or proxied, e.g. through artUrl)
+export async function imageSizeOfUrl(url: string): Promise<{ width: number; height: number }> {
+  const img = await loadImage(url).catch(() => { throw new Error('The original background could not be loaded.'); });
+  return { width: img.naturalWidth, height: img.naturalHeight };
+}
+
+// The original kept for repositioning, shrunk to at most twice the layout's long side (plenty to crop from) so it
+// doesn't take more storage than it needs. Smaller images come back unchanged.
+export async function shrinkOriginal(file: File, canvas: { widthPx: number; heightPx: number }): Promise<File> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImage(url);
+    const max = 2 * Math.max(canvas.widthPx, canvas.heightPx), long = Math.max(img.naturalWidth, img.naturalHeight);
+    if (long <= max) return file;
+    const k = max / long, c = document.createElement('canvas');
+    c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+    const g = c.getContext('2d')!; g.imageSmoothingQuality = 'high';
+    g.drawImage(img, 0, 0, c.width, c.height);
+    const type = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+    const blob = await new Promise<Blob | null>(r => c.toBlob(r, type, 0.9));
+    return blob ? new File([blob], file.name, { type }) : file;
+  } finally { URL.revokeObjectURL(url); }
+}

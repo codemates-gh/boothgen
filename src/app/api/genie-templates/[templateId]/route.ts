@@ -32,7 +32,7 @@ export async function PUT(req: NextRequest, props: P) {
 
   const prepared = await prepareTemplate(parsed.data, t, allowedPrefixes(scope, auth.tenantId));
   if ('error' in prepared) return NextResponse.json({ error: prepared.error }, { status: 422 });
-  const { layout, alternateLayout, thumbnail, warnings } = prepared;
+  const { layout, alternateLayout, thumbnail, backgroundSources, warnings } = prepared;
   const saved = await prisma.boothDesignTemplate.update({
     where: { id: t.id },
     data: {
@@ -40,6 +40,7 @@ export async function PUT(req: NextRequest, props: P) {
       photoCount: new Set(layout.slots.map(s => s.shotIndex)).size,
       layout, alternateLayout: alternateLayout ?? Prisma.DbNull,
       genieThumbnail: thumbnail ?? Prisma.DbNull, ...(thumbnail ? { thumbnailUrl: thumbnail.url } : {}),
+      backgroundSources: (backgroundSources ?? Prisma.DbNull) as Prisma.InputJsonValue,
       ...(scope === 'standard' && parsed.data.isPublished !== undefined ? { isPublished: parsed.data.isPublished } : {}),
       ...(scope === 'mine' && parsed.data.offerToClients !== undefined ? { offerToClients: parsed.data.offerToClients } : {}),
       ...clientOptionsData(parsed.data),
@@ -74,6 +75,9 @@ export async function DELETE(_req: NextRequest, props: P) {
   const t = await findDesignerTemplate(auth, params.templateId);
   if (!t) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!canEditTemplate(auth, t)) return NextResponse.json({ error: 'Only your own templates can be deleted here' }, { status: 403 });
-  await prisma.boothDesignTemplate.update({ where: { id: t.id }, data: { isActive: false } });
+  // Hidden, not removed: events that use it keep their copy (which shares its background and overlay files). The
+  // originals kept for repositioning are only the designer's, so they're deleted.
+  await prisma.boothDesignTemplate.update({ where: { id: t.id }, data: { isActive: false, backgroundSources: Prisma.DbNull } });
+  await deleteUnusedTemplateAssets(Object.values((t.backgroundSources as Record<string, { source?: { url?: string } }> | null) ?? {}).map(s => s?.source?.url).filter((u): u is string => !!u));
   return NextResponse.json({ ok: true });
 }

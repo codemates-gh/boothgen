@@ -10,7 +10,7 @@ import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Plus, Copy, Trash2, AlignCenterHorizontal, AlignCenterVertical, AlignHorizontalSpaceAround, AlignVerticalSpaceAround, Upload, X, Eye, Pencil, AlertTriangle, RotateCw, Download, Move } from 'lucide-react';
 import { Field, Layout, RemoteAsset, Slot, artUrl } from '@/components/genie/parts';
-import { SAFE_INCH, coverBackground, downloadLayoutPng, imageSize, makeSample, renderThumbnail, sameShape, type BackgroundFocus } from './layoutImage';
+import { SAFE_INCH, coverBackground, downloadLayoutPng, imageSize, imageSizeOfUrl, makeSample, renderThumbnail, sameShape, shrinkOriginal, type BackgroundFocus } from './layoutImage';
 import { BackgroundPositioner } from './BackgroundPositioner';
 import { ClientOptionsCard, EMPTY_CLIENT_OPTS, clientOptsProblem, type ClientOpts } from '@/components/genie/ClientOptionsCard';
 
@@ -142,8 +142,11 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notices, setNotices] = useState<string[]>([]);
-  // A background of another shape being positioned (and, after it's placed, kept this session so it can be moved again)
-  const [bgPick, setBgPick] = useState<{ file: File; url: string; size: { width: number; height: number }; focus?: BackgroundFocus; open: boolean; uploaded?: string } | null>(null);
+  // Backgrounds of another shape: the original kept with the template (per layout) so it can be repositioned any time
+  type BgSource = { source: RemoteAsset; focus: BackgroundFocus; croppedUrl: string };
+  const [bgSources, setBgSources] = useState<{ main?: BgSource; alt?: BgSource }>({});
+  // The background being positioned: a new file, or a saved original being repositioned
+  const [bgPick, setBgPick] = useState<{ key: 'main' | 'alt'; src: string; local: boolean; size: { width: number; height: number }; focus?: BackgroundFocus; file?: File; sourceAsset?: RemoteAsset; open: boolean } | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   // Frames set to "Free" that happen to match a shape (this session only)
   const [freeIds, setFreeIds] = useState<string[]>([]);
@@ -175,7 +178,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
         visible: t.scope === 'standard' ? t.isPublished : t.offerToClients,
       };
       setName(t.name); setScope(t.scope); setClientOpts(opts); setCanEdit(t.canEdit);
-      setLayouts({ main, alt: t.alternateLayout }); setThumbnail(t.thumbnail);
+      setLayouts({ main, alt: t.alternateLayout }); setThumbnail(t.thumbnail); setBgSources(t.backgroundSources ?? {});
       setSavedSnapshot(JSON.stringify({ name: t.name, layouts: { main, alt: t.alternateLayout }, clientOpts: opts }));
       setLoaded(true);
     })();
@@ -359,8 +362,8 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
       if (kind === 'background') {
         const size = await imageSize(file);
         if (!sameShape(size, canvas)) {
-          if (bgPick) URL.revokeObjectURL(bgPick.url);
-          setBgPick({ file, url: URL.createObjectURL(file), size, open: true });
+          if (bgPick?.local) URL.revokeObjectURL(bgPick.src);
+          setBgPick({ key: active, src: URL.createObjectURL(file), local: true, size, file, open: true });
           return;
         }
       }
@@ -371,21 +374,42 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
     } finally { setUploading(null); }
   }
 
-  // Crops the picked background where the operator dragged it and uploads it
+  // Crops the background where the operator dragged it and uploads it, keeping the original (shrunk) with the template
   async function placeBackground(focus: BackgroundFocus) {
     if (!bgPick) return;
     setError(''); setUploading('background');
     try {
       const canvas = { widthPx: layout.widthPx, heightPx: layout.heightPx };
-      const fitted = await coverBackground(bgPick.file, canvas, focus);
+      let original = bgPick.file;
+      if (!original) {
+        const blob = await (await fetch(bgPick.src)).blob();
+        original = new File([blob], 'background', { type: blob.type === 'image/png' ? 'image/png' : 'image/jpeg' });
+      }
+      original = await shrinkOriginal(original, canvas);
+      const source = bgPick.sourceAsset ?? await uploadFile(original, original.type);
+      const fitted = await coverBackground(original, canvas, focus);
       const asset = await uploadFile(fitted.blob, fitted.contentType, canvas, 'background');
       if (fitted.notice) setNotices(n => [...n.filter(x => !x.startsWith('The image was ')), fitted.notice!]);
       setLayout(l => ({ ...l, background: asset }));
-      setBgPick(p => p && { ...p, focus, open: false, uploaded: asset.url });
+      setBgSources(s => ({ ...s, [bgPick.key]: { source, focus, croppedUrl: asset.url } }));
+      setBgPick(p => p && { ...p, focus, sourceAsset: source, open: false });
     } catch (e: any) {
       setError(e.message || 'Upload failed');
       setBgPick(p => p && { ...p, open: false });
     } finally { setUploading(null); }
+  }
+
+  // Opens the saved original of this layout's background to move it again
+  async function reposition() {
+    const entry = bgSources[active];
+    if (!entry) return;
+    setError('');
+    try {
+      const src = artUrl(entry.source.url);
+      const size = await imageSizeOfUrl(src);
+      if (bgPick?.local) URL.revokeObjectURL(bgPick.src);
+      setBgPick({ key: active, src, local: false, size, focus: entry.focus, sourceAsset: entry.source, open: true });
+    } catch (e: any) { setError(e.message || 'Could not open the original background'); }
   }
 
   async function uploadFile(body: Blob, contentType: string, canvas?: { widthPx: number; heightPx: number }, kind?: 'background' | 'overlay'): Promise<RemoteAsset> {
@@ -416,7 +440,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
     const body = {
       name, ...(isNew ? { scope } : {}), ...(scope === 'standard' ? { isPublished: visible } : { offerToClients: visible }),
       description: description.trim() || null, ...options,
-      layout: layouts.main, alternateLayout: layouts.alt, thumbnail: thumb,
+      layout: layouts.main, alternateLayout: layouts.alt, thumbnail: thumb, backgroundSources: bgSources,
     };
     const r = await fetch(isNew ? '/api/genie-templates' : '/api/genie-templates/' + templateId, { method: isNew ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const d = await r.json().catch(() => ({}));
@@ -604,8 +628,8 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
                     {layout[kind] ? (
                       <div className="flex items-center gap-2 text-sm">
                         <span className="flex-1 truncate text-gray-600">{layout[kind]!.contentType === 'image/png' ? 'PNG' : 'JPG'} · {(layout[kind]!.bytes / 1024 / 1024).toFixed(1)} MB</span>
-                        {!readOnly && kind === 'background' && bgPick?.uploaded === layout.background?.url && bgPick?.size && !sameShape(bgPick.size, layout) && (
-                          <Button variant="ghost" size="sm" disabled={!!uploading} onClick={() => setBgPick(p => p && { ...p, open: true })} title="Drag the image to choose what shows"><Move className="w-3.5 h-3.5 mr-1"/>Reposition</Button>
+                        {!readOnly && kind === 'background' && bgSources[active] && bgSources[active]!.croppedUrl === layout.background?.url && (
+                          <Button variant="ghost" size="sm" disabled={!!uploading} onClick={reposition} title="Drag the image to choose what shows"><Move className="w-3.5 h-3.5 mr-1"/>Reposition</Button>
                         )}
                         {!readOnly && <Button variant="ghost" size="sm" onClick={() => setLayout(l => { const n = { ...l }; delete n[kind]; return n; })}><X className="w-3.5 h-3.5 mr-1"/>Remove</Button>}
                       </div>
@@ -625,7 +649,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
         </div>
       </div>
 
-      <BackgroundPositioner open={!!bgPick?.open} src={bgPick?.url ?? null} size={bgPick?.size ?? null} layout={layout} initial={bgPick?.focus}
+      <BackgroundPositioner open={!!bgPick?.open} src={bgPick?.src ?? null} size={bgPick?.size ?? null} layout={layout} initial={bgPick?.focus}
         busy={uploading === 'background'} onApply={placeBackground} onClose={() => setBgPick(p => p && { ...p, open: false })}/>
 
       {!readOnly && (

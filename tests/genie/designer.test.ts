@@ -327,6 +327,35 @@ describe('Template image cleanup', () => {
     expect(vi.mocked(deleteFromR2).mock.calls.map(c => c[0])).toEqual([`genie-templates/${tenant.id}/v2.png`]);
   });
 
+  it('keeps the original of a repositioned background with the template, and removes it when it is replaced or the template deleted', async () => {
+    const { tenant } = await asTenant();
+    const original = put(`genie-templates/${tenant.id}/orig.jpg`, jpeg(1920, 1080));
+    const cropped = put(`genie-templates/${tenant.id}/crop.jpg`, jpeg(1800, 1200));
+    const sources = (bg: { url: string }) => ({ main: { source: original, focus: { x: 0.2, y: 0.5 }, croppedUrl: bg.url } });
+    const r = await CREATE(json({ name: 'Designer Original', layout: LANDSCAPE({ background: cropped }), backgroundSources: sources(cropped) }));
+    expect(r.status).toBe(201);
+    const t = await r.json();
+    const got = await (await GET_T(req('/x'), tp(t.id))).json();
+    expect(got.backgroundSources.main).toMatchObject({ focus: { x: 0.2, y: 0.5 }, croppedUrl: cropped.url, source: { url: original.url, contentType: 'image/jpeg' } });
+    expect(got.backgroundSources.main.source.sha256).toMatch(/^[0-9a-f]{64}$/);
+    // The original never reaches events or iPads
+    expect(got.layout).not.toHaveProperty('backgroundSources');
+
+    // A source for a background the layout no longer uses is dropped, and its file deleted
+    const other = put(`genie-templates/${tenant.id}/other.jpg`, jpeg(1800, 1200));
+    expect((await UPDATE(json({ name: 'Designer Original', layout: LANDSCAPE({ background: other }), backgroundSources: sources(cropped) }, 'PUT'), tp(t.id))).status).toBe(200);
+    expect((await prisma.boothDesignTemplate.findUniqueOrThrow({ where: { id: t.id } })).backgroundSources).toBeNull();
+    expect(vi.mocked(deleteFromR2).mock.calls.map(c => c[0]).sort()).toEqual([`genie-templates/${tenant.id}/crop.jpg`, `genie-templates/${tenant.id}/orig.jpg`]);
+
+    // Deleting the template deletes its original (the cropped background stays for events that use it)
+    vi.mocked(deleteFromR2).mockClear();
+    const original2 = put(`genie-templates/${tenant.id}/orig2.jpg`, jpeg(1080, 1920));
+    await UPDATE(json({ name: 'Designer Original', layout: LANDSCAPE({ background: other }), backgroundSources: { main: { source: original2, focus: { x: 0.5, y: 0.1 }, croppedUrl: other.url } } }, 'PUT'), tp(t.id));
+    expect(vi.mocked(deleteFromR2)).not.toHaveBeenCalled();
+    expect((await REMOVE(req('/x', { method: 'DELETE' }), tp(t.id))).status).toBe(200);
+    expect(vi.mocked(deleteFromR2).mock.calls.map(c => c[0])).toEqual([`genie-templates/${tenant.id}/orig2.jpg`]);
+  });
+
   it('never deletes client design files', async () => {
     const { tenant, client } = await asTenant();
     const event = await seedEvent(tenant.id, client.id);

@@ -40,6 +40,14 @@ export const DesignLayout = StoredLayout.extend({ background: AssetRef.optional(
   });
 export type DesignLayout = z.infer<typeof DesignLayout>;
 
+// The original of a background that was cropped to fit, kept so the designer can reposition it
+const BackgroundSource = z.object({
+  source: AssetRef,
+  focus: z.object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1) }).strict(),
+  croppedUrl: z.string().url(),
+}).strict();
+export type BackgroundSources = { main?: { source: RemoteAsset; focus: { x: number; y: number }; croppedUrl: string }; alt?: { source: RemoteAsset; focus: { x: number; y: number }; croppedUrl: string } };
+
 export const TemplateBody = z.object({
   name: z.string().trim().min(1, 'Give the template a name').max(80),
   scope: z.enum(['mine', 'standard']).optional(),
@@ -47,6 +55,7 @@ export const TemplateBody = z.object({
   layout: DesignLayout,
   alternateLayout: DesignLayout.nullable().optional(),
   thumbnail: AssetRef.nullable().optional(),
+  backgroundSources: z.object({ main: BackgroundSource.nullable().optional(), alt: BackgroundSource.nullable().optional() }).strict().nullable().optional(),
   copyFrom: z.string().optional(), // duplicating: the source template's images are reused as they are
   offerToClients: z.boolean().optional(), // My templates: shown in this account's clients' design brief picker
 }).merge(ClientOptions).strict().superRefine((b, ctx) => {
@@ -74,7 +83,7 @@ async function checkAsset(ref: { url: string; sha256: string } | undefined, prev
   return { asset: v.asset, hasAlpha: v.info.hasAlpha };
 }
 
-function previousAssets(t: Pick<BoothDesignTemplate, 'layout' | 'alternateLayout' | 'genieThumbnail'> | null): RemoteAsset[] {
+function previousAssets(t: Pick<BoothDesignTemplate, 'layout' | 'alternateLayout' | 'genieThumbnail'> & { backgroundSources?: unknown } | null): RemoteAsset[] {
   if (!t) return [];
   const out: RemoteAsset[] = [];
   for (const l of [t.layout, t.alternateLayout] as any[]) {
@@ -82,10 +91,11 @@ function previousAssets(t: Pick<BoothDesignTemplate, 'layout' | 'alternateLayout
     if (l?.overlay) out.push(l.overlay);
   }
   if (t.genieThumbnail) out.push(t.genieThumbnail as any);
+  for (const s of Object.values((t.backgroundSources as Record<string, any>) ?? {})) if (s?.source) out.push(s.source);
   return out;
 }
 
-type AssetSource = Pick<BoothDesignTemplate, 'layout' | 'alternateLayout' | 'genieThumbnail'> | null;
+type AssetSource = (Pick<BoothDesignTemplate, 'layout' | 'alternateLayout' | 'genieThumbnail'> & { backgroundSources?: unknown }) | null;
 
 export async function prepareTemplate(body: TemplateBody, existing: AssetSource, prefixes: string[], source: AssetSource = null) {
   const previous = [...previousAssets(existing), ...previousAssets(source)];
@@ -106,7 +116,16 @@ export async function prepareTemplate(body: TemplateBody, existing: AssetSource,
   }
   const thumb = await checkAsset(body.thumbnail ?? undefined, previous, prefixes);
   if ('error' in thumb) return { error: 'Thumbnail: ' + thumb.error };
-  return { layout: layouts[0]!, alternateLayout: layouts[1], thumbnail: thumb.asset ?? null, warnings };
+  // Originals kept only while the layout still uses the background cropped from them
+  const backgroundSources: BackgroundSources = {};
+  for (const [key, l] of [['main', layouts[0]], ['alt', layouts[1]]] as const) {
+    const s = body.backgroundSources?.[key];
+    if (!s || !l?.background || l.background.url !== s.croppedUrl) continue;
+    const r = await checkAsset(s.source, previous, prefixes);
+    if ('error' in r) return { error: 'Background original: ' + r.error };
+    if (r.asset) backgroundSources[key] = { source: r.asset, focus: s.focus, croppedUrl: s.croppedUrl };
+  }
+  return { layout: layouts[0]!, alternateLayout: layouts[1], thumbnail: thumb.asset ?? null, backgroundSources: Object.keys(backgroundSources).length ? backgroundSources : null, warnings };
 }
 
 // Client options to save: what the client may customize in their design brief. Omitted fields stay as they are.

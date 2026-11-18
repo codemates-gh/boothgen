@@ -34,6 +34,7 @@ export function libraryView(t: BoothDesignTemplate) {
     fontPairings: (t.fontPairings as unknown[]) ?? [],
     layout: layout.success ? layout.data : null,
     alternateLayout: alternate?.success ? alternate.data : null,
+    backgroundSources: (t as { backgroundSources?: unknown }).backgroundSources ?? null, // designer: originals to reposition
   };
 }
 
