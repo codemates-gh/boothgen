@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.104.2] — 2026-11-17
+
+### Fixed
+- **Email and contract templates open with your saved text after a page refresh (report #12).** Right after the Templates page loaded, the first Edit could show the starter text instead of your saved template until you closed and reopened it. The editor now fills in your saved text as soon as it arrives, so clicking Update can no longer overwrite a template with the starter text.
+
+---
+
 ## [2.104.1] — 2026-11-17
 
 ### Fixed

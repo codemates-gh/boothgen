@@ -73,12 +73,14 @@ export default function EmailTemplateEditor({ value, onChange, mergeTags: mergeT
   const editorRef = useRef<HTMLDivElement>(null);
   const varsRef = useRef<HTMLDivElement>(null);
 
-  // Refill the visual editor when it comes back on screen (from HTML mode or from Preview)
+  // Refill the visual editor when it comes back on screen (from HTML mode or from Preview), and when the
+  // text is replaced from outside, e.g. the saved template arriving just after the editor opened (report #12).
+  // While typing the box already matches the value, so it is left alone (no cursor jump).
   useEffect(() => {
     if (editorRef.current && editorNeedsRefill({ mode, showPreview, currentHtml: editorRef.current.innerHTML, value })) {
       editorRef.current.innerHTML = value;
     }
-  }, [mode, showPreview]);
+  }, [mode, showPreview, value]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {

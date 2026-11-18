@@ -13,6 +13,10 @@ describe('template editor (report #11)', () => {
   it('leaves the editor alone when it already shows the text (no cursor jump while typing)', () => {
     expect(editorNeedsRefill({ mode: 'visual', showPreview: false, currentHtml: '<p>Terms</p>', value: '<p>Terms</p>' })).toBe(false);
   });
+  it('shows the saved template when it arrives after the editor opened (report #12)', () => {
+    // The box first showed the starter text; the saved template then replaces the value
+    expect(editorNeedsRefill({ mode: 'visual', showPreview: false, currentHtml: '<p>Thank you for reaching out</p>', value: '<p>Saved edits</p>' })).toBe(true);
+  });
   it('keeps the editor open after Update, closes it after creating', () => {
     expect(closeEditorAfterSave(true)).toBe(false);
     expect(closeEditorAfterSave(false)).toBe(true);
