@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.106.2] — 2026-11-18
+
+### Fixed
+- **Template pickers: wide layouts fit their tiles.** In Add Template and Choose a Boomerang Template, landscape 4×6 and 16:9 previews were wider than their tiles and cut off at the edges; they're now drawn a little smaller so the whole layout shows.
+
+---
+
 ## [2.106.1] — 2026-11-18
 
 ### Added

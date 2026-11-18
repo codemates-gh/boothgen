@@ -30,7 +30,7 @@ function entries(list: PickerTemplate[], mode: 'photo' | 'clip'): Entry[] {
 const photos = (l: Layout) => new Set(l.slots.map(s => s.shotIndex)).size;
 
 // Same height for every tile so shapes compare at a glance; landscape capped by width
-const THUMB_H = 120, THUMB_MAX_W = 160;
+const THUMB_H = 120, THUMB_MAX_W = 128; // fits a 4-across tile in the picker
 export const thumbWidth = (l: Layout, h = THUMB_H, maxW = THUMB_MAX_W) => Math.round(Math.min(maxW, h * l.widthPx / l.heightPx));
 
 export function TemplatePicker({ open, onClose, library, isAdded, allowAddAgain, onAdd, busyId, error, alternateOption, highlightId, highlightLabel, mode = 'photo' }: {
