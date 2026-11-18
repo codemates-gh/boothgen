@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma/client';
 import { THANK_YOU_DEFAULT, type StoredLayout } from './schemas';
 import { galleryUrl, sessionUrl } from './urls';
 import { messagingRoutes } from './messaging';
-import { bundleBoomerang } from './boomerang';
+import { boomerangDesign, bundleBoomerang } from './boomerang';
 import { bundleAttract } from './attract';
 import { bundleCountdownSound } from './countdownSound';
 import { bundleProps, eventProps } from './props';
@@ -113,7 +113,7 @@ export type BundleResult =
   | { ok: true; bundle: Record<string, unknown>; bundleVersion: number }
   | { ok: false; status: 404 | 409; code: string; error: string };
 
-function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number, props: GenieProp[], backdrops: GenieBackdrop[], watermark: boolean) {
+function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number, props: GenieProp[], backdrops: GenieBackdrop[], watermark: boolean, design?: Awaited<ReturnType<typeof boomerangDesign>>) {
   const props_ = bundleProps(settings.propsEnabled, props);
   const backdrops_ = bundleBackdrops(settings, backdrops);
   const photos = galleryRetentionDates(event.eventDate, retention);
@@ -152,7 +152,8 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
       // Optional; left out until the operator sets them, so existing bundles (and their version) don't change
       ...(settings.lookAtCamera ? { lookAtCamera: settings.lookAtCamera } : {}),
       ...(thankYouChanged(settings) ? { thankYou: { seconds: settings.thankYouSeconds, title: settings.thankYouTitle, subtitle: settings.thankYouSubtitle } } : {}),
-      ...(settings.boomerang ? { boomerang: bundleBoomerang(settings.boomerang, settings.boomerangEdgeLight) } : {}),
+      // design: the chosen ClipDesign, left out when none, deleted, or at another shape
+      ...(settings.boomerang ? { boomerang: bundleBoomerang(settings.boomerang, settings.boomerangEdgeLight, design) } : {}),
       // Left out for "Use the iPad's setting", so the attendant picks on the iPad
       ...(bundleCountdownSound(settings.countdownSound) ? { countdownSound: bundleCountdownSound(settings.countdownSound) } : {}),
     },
@@ -216,14 +217,15 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
   if (event.genieTemplates.length === 0) return { ok: false, status: 409, code: 'no_templates', error: 'The event has no Genie templates yet' };
 
   const gallery = await ensureGallery(event);
-  const [messaging, retention, props, backdrops, billing] = await Promise.all([
+  const [messaging, retention, props, backdrops, billing, design] = await Promise.all([
     prisma.genieMessagingConfig.findUnique({ where: { tenantId } }),
     getGalleryRetention(),
     settings.propsEnabled ? eventProps(settings.propIds, tenantId) : Promise.resolve([]),
     settings.backdropsEnabled ? eventBackdrops(settings.backdropIds, tenantId) : Promise.resolve([]),
     eventBilling(event.tenant, event.id),
+    boomerangDesign(settings.boomerang, tenantId),
   ]);
-  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props, backdrops, billing.watermark);
+  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props, backdrops, billing.watermark, design);
   const hash = contentHash(bundle);
 
   for (let attempt = 0; settings.bundleHash !== hash && attempt < 3; attempt++) {

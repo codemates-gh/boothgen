@@ -49,7 +49,7 @@ export async function verifyAsset(url: string, prefixes: string[]): Promise<Veri
 
 // Designer images a template stopped using (replaced background/overlay, old thumbnail) are deleted from R2, but only
 // when no library template and no event template still points at them: copies onto events and duplicates share the
-// same files. Only designer uploads (genie-templates/...) are ever deleted, never client design files.
+// same files (Boomerang designs and events' Boomerang overlays count too). Only designer uploads (genie-templates/...) are ever deleted, never client design files.
 export function templateAssetUrls(t: { layout?: unknown; alternateLayout?: unknown; genieThumbnail?: unknown } | null): string[] {
   if (!t) return [];
   const urls: string[] = [];
@@ -73,6 +73,8 @@ export async function deleteUnusedTemplateAssets(urls: string[]): Promise<number
       SELECT (
         (SELECT count(*) FROM booth_design_templates WHERE layout::text LIKE ${pattern} OR "alternateLayout"::text LIKE ${pattern} OR "genieThumbnail"::text LIKE ${pattern})
         + (SELECT count(*) FROM event_genie_templates WHERE layout::text LIKE ${pattern} OR "alternateLayout"::text LIKE ${pattern} OR thumbnail::text LIKE ${pattern})
+        + (SELECT count(*) FROM genie_clip_designs WHERE background::text LIKE ${pattern} OR overlay::text LIKE ${pattern} OR thumbnail::text LIKE ${pattern})
+        + (SELECT count(*) FROM event_genie_settings WHERE boomerang::text LIKE ${pattern})
       ) AS n`;
     if (Number(n) > 0) continue;
     try { await deleteFromR2(key); deleted++; } catch (err) { console.error('[genie] template asset cleanup failed', key, err); }

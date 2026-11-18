@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.105.0] — 2026-11-18
+
+### Added
+- **Genie: Boomerang shapes and designs.** In an event's Genie tab, the Boomerang section now has a **Shape** (Square 1:1, Portrait 3:4, Landscape 4:3, Portrait 9:16 for stories, Landscape 16:9, Portrait 4x6, Landscape 6x4, each with a small shape icon) and a **Frame**: None (plain clip), a design at that shape, **Design one** (opens the template designer at the shape in a new tab, saved to My Boomerang designs) or **Upload a frame** (a PNG at the shape: its transparent window is found for you as the photo area, shown on a preview to adjust, and saved to My Boomerang designs). The Boomerang plays inside the design's photo area, with its background and artwork around it. Only designs at the chosen shape are listed: Standard designs first, then My Boomerang designs, then (4x6 only) the account's single-photo print designs. Changing the shape takes off a design that no longer fits, with a notice. Upload a frame replaces the old overlay upload; events that already have an overlay keep it until another frame is chosen.
+- **Super Admin → Boomerang Designs.** Standard Boomerang designs, made in the designer per shape and turned on or off for operators (events that already chose one keep it when it's turned off).
+- **iPads get the design.** The event bundle sends the new shapes and the chosen design (`capture.boomerang.design`, with its images' sha256 and size). A design that was deleted, or no longer has the Boomerang's shape, is left out (iPads play the plain Boomerang) and the Genie tab shows a notice. Every edit to a design raises its version.
+
+---
+
 ## [2.104.3] — 2026-11-18
 
 ### Changed

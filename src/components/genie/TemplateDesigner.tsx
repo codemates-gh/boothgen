@@ -12,6 +12,7 @@ import { ArrowLeft, Plus, Copy, Trash2, AlignCenterHorizontal, AlignCenterVertic
 import { Field, Layout, RemoteAsset, Slot, artUrl } from '@/components/genie/parts';
 import { SAFE_INCH, downloadLayoutPng, makeSample, renderThumbnail } from './layoutImage';
 import { ClientOptionsCard, EMPTY_CLIENT_OPTS, clientOptsProblem, type ClientOpts } from '@/components/genie/ClientOptionsCard';
+import { BOOMERANG_FORMATS, CLIP_CANVAS, type BoomerangFormat } from '@/lib/genie/schemas';
 
 const PRESETS = [
   { id: '4x6-landscape', label: '4×6 landscape', format: '4x6', orientation: 'landscape', widthPx: 1800, heightPx: 1200 },
@@ -74,6 +75,18 @@ function blankLayout(p: Preset): Layout {
   return { format: p.format, orientation: p.orientation, widthPx: p.widthPx, heightPx: p.heightPx, dpi: 300, backgroundColor: '#FFFFFF', slots: defaultSlots(p) };
 }
 
+// Boomerang designs (kind "clip"): the clip's canvas at a shape, with one photo area where the Boomerang plays.
+// Not printed, so dpi 0 (no safe line).
+export const isClipFormat = (f: string | null | undefined): f is BoomerangFormat => !!f && (BOOMERANG_FORMATS as readonly string[]).includes(f);
+function clipSlot(format: BoomerangFormat): Slot {
+  const c = CLIP_CANVAS[format], m = round(Math.min(c.widthPx, c.heightPx) * 0.08);
+  return { id: 'clip', shotIndex: 0, x: m, y: m, width: c.widthPx - 2 * m, height: c.heightPx - 2 * m, rotationDegrees: 0, fit: 'fill' };
+}
+function clipLayout(format: BoomerangFormat, l: Partial<Layout> = {}): Layout {
+  const c = CLIP_CANVAS[format];
+  return { format: '4x6', orientation: c.widthPx > c.heightPx ? 'landscape' : 'portrait', widthPx: c.widthPx, heightPx: c.heightPx, dpi: 0, backgroundColor: '#FFFFFF', slots: [clipSlot(format)], ...l };
+}
+
 // The starting layout, still untouched (ids aside)
 const strip = (slots: Slot[]) => JSON.stringify(slots.map(({ id: _i, ...rest }) => rest));
 const isStartingLayout = (l: Layout) => strip(l.slots) === strip(defaultSlots(presetOf(l)));
@@ -103,10 +116,14 @@ type Drag =
   | { kind: 'rotate'; id: string; cx: number; cy: number };
 
 // Template Designer: Templates (operators, chrome "tenant") and Super Admin → Design Templates (BoothGen,
-// chrome "platform": no sidebar or tenant top bar)
-export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, backLabel, editHref, chrome = 'tenant' }: {
+// chrome "platform": no sidebar or tenant top bar). kind "clip": a Boomerang design (one photo area at a Boomerang
+// shape, saved to /api/genie-clip-designs) instead of a print template.
+export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, backLabel, editHref, chrome = 'tenant', kind = 'print', initialFormat }: {
   templateId: string; initialScope?: 'mine' | 'standard'; backHref: string; backLabel: string; editHref: (id: string) => string; chrome?: 'tenant' | 'platform';
+  kind?: 'print' | 'clip'; initialFormat?: string | null;
 }) {
+  const clip = kind === 'clip';
+  const startFormat: BoomerangFormat = isClipFormat(initialFormat) ? initialFormat : 'square';
   const router = useRouter();
   const Top = ({ title }: { title: string }) => chrome === 'tenant' ? <TopBar title={title}/> : null;
   const isNew = templateId === 'new';
@@ -118,7 +135,8 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
   const [scope, setScope] = useState<'mine' | 'standard'>(initialScope);
   const [clientOpts, setClientOpts] = useState<ClientOpts>(EMPTY_CLIENT_OPTS);
   const [name, setName] = useState('');
-  const [layouts, setLayouts] = useState<{ main: Layout; alt: Layout | null }>({ main: blankLayout(PRESETS[0]), alt: null });
+  const [layouts, setLayouts] = useState<{ main: Layout; alt: Layout | null }>({ main: clip ? clipLayout(startFormat) : blankLayout(PRESETS[0]), alt: null });
+  const [clipFormat, setClipFormat] = useState<BoomerangFormat>(startFormat);
   const [savedSnapshot, setSavedSnapshot] = useState('');
   const [thumbnail, setThumbnail] = useState<RemoteAsset | null>(null);
   const [active, setActive] = useState<'main' | 'alt'>('main');
@@ -146,6 +164,25 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
   useEffect(() => { setSamples([0, 1, 2, 3].map(makeSample)); }, []);
 
   useEffect(() => {
+    if (!clip) return;
+    (async () => {
+      const lib = await fetch('/api/genie-clip-designs');
+      if (lib.ok) setSuperAdmin((await lib.json()).superAdmin);
+      if (isNew) { setSavedSnapshot(JSON.stringify({ name: '', layouts: { main: layouts.main, alt: null }, clientOpts: EMPTY_CLIENT_OPTS })); return; }
+      const r = await fetch('/api/genie-clip-designs/' + templateId);
+      if (!r.ok) { setNotFound(true); return; }
+      const t = await r.json();
+      const main = clipLayout(t.format, { backgroundColor: t.backgroundColor, ...(t.background ? { background: t.background } : {}), ...(t.overlay ? { overlay: t.overlay } : {}), slots: [t.slot] });
+      setName(t.name); setScope(t.scope); setCanEdit(t.canEdit); setClipFormat(t.format);
+      setLayouts({ main, alt: null }); setThumbnail(t.thumbnail);
+      setSavedSnapshot(JSON.stringify({ name: t.name, layouts: { main, alt: null }, clientOpts: EMPTY_CLIENT_OPTS }));
+      setLoaded(true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateId, isNew, clip]);
+
+  useEffect(() => {
+    if (clip) return;
     (async () => {
       const lib = await fetch('/api/genie-templates');
       if (lib.ok) setSuperAdmin((await lib.json()).superAdmin);
@@ -185,7 +222,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
 
   const frameCount = new Set(layout.slots.map(s => s.shotIndex)).size;
   const safe = Math.round(SAFE_INCH * layout.dpi);
-  const pastSafe = (s: Slot) => s.x < safe || s.y < safe || s.x + s.width > layout.widthPx - safe || s.y + s.height > layout.heightPx - safe;
+  const pastSafe = (s: Slot) => !clip && (s.x < safe || s.y < safe || s.x + s.width > layout.widthPx - safe || s.y + s.height > layout.heightPx - safe);
 
   // ── pointer interactions ─────────────────────────────────────────────────
   useEffect(() => {
@@ -329,12 +366,21 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
     setSelected([]);
   }
 
+  // A Boomerang design at another shape: artwork no longer fits, the photo area starts over
+  function changeClipFormat(f: BoomerangFormat) {
+    if (f === clipFormat) return;
+    if (layout.background || layout.overlay) setNotices(n => [...n, 'Artwork was removed because it no longer fits the new shape. Upload artwork for this shape.']);
+    setClipFormat(f);
+    setLayouts({ main: clipLayout(f, { backgroundColor: layout.backgroundColor }), alt: null });
+    setSelected([]);
+  }
+
   // ── artwork upload ──────────────────────────────────────────────────────
   async function uploadArt(kind: 'background' | 'overlay', file: File) {
     setError(''); setUploading(kind);
     try {
       if (!['image/png', 'image/jpeg'].includes(file.type)) throw new Error('Use a PNG or JPG image.');
-      if (kind === 'overlay' && file.type !== 'image/png') throw new Error('The overlay must be a PNG with transparent windows over the photos.');
+      if (kind === 'overlay' && file.type !== 'image/png') throw new Error(clip ? 'The overlay must be a PNG with a transparent window where the Boomerang plays.' : 'The overlay must be a PNG with transparent windows over the photos.');
       const asset = await uploadFile(file, file.type, { widthPx: layout.widthPx, heightPx: layout.heightPx }, kind);
       setLayout(l => ({ ...l, [kind]: asset }));
     } catch (e: any) {
@@ -352,12 +398,34 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
     const vd = await v.json().catch(() => ({}));
     if (!v.ok) throw new Error(vd.error || 'That image could not be used');
     if (kind === 'overlay' && !vd.hasAlpha) throw new Error('This PNG has no transparent areas, so it would cover the photos. Use it as the background instead.');
-    if (vd.warning) setNotices(n => [...n, vd.warning]);
+    // "May print soft" doesn't apply to Boomerangs
+    if (vd.warning && !clip) setNotices(n => [...n, vd.warning]);
     return vd.asset;
   }
 
   // ── save ────────────────────────────────────────────────────────────────
+  async function saveClip() {
+    setSaving(true); setError('');
+    let thumb: RemoteAsset | null = null;
+    try {
+      const blob = await renderThumbnail(layout, samples).catch(() => null);
+      thumb = blob ? await uploadFile(blob, 'image/png') : null;
+    } catch { thumb = null; }
+    const body = {
+      name, ...(isNew ? { scope } : {}), format: clipFormat, backgroundColor: layout.backgroundColor,
+      background: layout.background ?? null, overlay: layout.overlay ?? null, thumbnail: thumb, slot: layout.slots[0],
+    };
+    const r = await fetch(isNew ? '/api/genie-clip-designs' : '/api/genie-clip-designs/' + templateId, { method: isNew ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    setSaving(false);
+    if (!r.ok) { setError(d.error || 'Could not save'); return; }
+    setThumbnail(d.thumbnail ?? null); setNotices([]);
+    setSavedSnapshot(snapshot);
+    if (isNew) router.replace(editHref(d.id));
+  }
+
   async function save() {
+    if (clip) return saveClip();
     const problem = clientOptsProblem(clientOpts);
     if (problem) { setError(problem); return; }
     setSaving(true); setError('');
@@ -396,7 +464,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
   const preset = presetOf(layout);
   const altPreset = otherOrientation(presetOf(layouts.main));
 
-  if (notFound) return (<><Top title="Template Designer"/><div className="p-8 text-sm text-gray-500">Template not found. <Link href={backHref} className="text-brand hover:underline">{backLabel}</Link></div></>);
+  if (notFound) return (<><Top title="Template Designer"/><div className="p-8 text-sm text-gray-500">{clip ? 'Design' : 'Template'} not found. <Link href={backHref} className="text-brand hover:underline">{backLabel}</Link></div></>);
   if (!loaded) return (<><Top title="Template Designer"/><div className="p-8 text-sm text-gray-400">Loading…</div></>);
 
   return (
@@ -407,12 +475,13 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
 
         <div className="flex flex-col lg:flex-row lg:items-end gap-3">
           <div className="flex-1 max-w-md">
-            <Field label="Template name"><Input value={name} disabled={readOnly} maxLength={80} onChange={e => setName(e.target.value)} placeholder="Gold Wedding Strip"/></Field>
+            <Field label={clip ? 'Boomerang design name' : 'Template name'}><Input value={name} disabled={readOnly} maxLength={80} onChange={e => setName(e.target.value)} placeholder={clip ? 'Gold Stories Frame' : 'Gold Wedding Strip'}/></Field>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {clip && <Badge variant="default">Boomerang</Badge>}
             {scope === 'standard' && <Badge variant="info">Standard</Badge>}
             {readOnly && <Badge variant="default">View only</Badge>}
-            <Button variant="outline" onClick={downloadGuide} disabled={samples.length === 0} title="Full-size PNG with sample photos and the safe line, to design an overlay or background on"><Download className="w-4 h-4 mr-1.5"/>Download</Button>
+            <Button variant="outline" onClick={downloadGuide} disabled={samples.length === 0} title={clip ? 'Full-size PNG with a sample photo in the photo area, to design an overlay or background on' : 'Full-size PNG with sample photos and the safe line, to design an overlay or background on'}><Download className="w-4 h-4 mr-1.5"/>Download</Button>
             <Button variant={preview ? 'default' : 'outline'} onClick={() => { setPreview(p => !p); setSelected([]); }}>{preview ? <><Pencil className="w-4 h-4 mr-1.5"/>Edit frames</> : <><Eye className="w-4 h-4 mr-1.5"/>Preview</>}</Button>
           </div>
         </div>
@@ -425,6 +494,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
           <Card>
             <CardContent className="p-4">
               <div className="flex flex-wrap items-center gap-2 mb-3">
+                {clip ? <span className="text-sm font-semibold">{CLIP_CANVAS[clipFormat].label}</span> : <>
                 <div className="flex border border-gray-200 rounded-lg overflow-hidden text-[13px]">
                   <button className={'px-3 py-1.5 ' + (active === 'main' ? 'bg-[#F5F6F8] font-semibold' : 'text-[#676879]')} onClick={() => { setActive('main'); setSelected([]); }}>{presetOf(layouts.main).label}</button>
                   {layouts.alt && <button className={'px-3 py-1.5 border-l border-gray-200 ' + (active === 'alt' ? 'bg-[#F5F6F8] font-semibold' : 'text-[#676879]')} onClick={() => { setActive('alt'); setSelected([]); }}>Alternate: {presetOf(layouts.alt).label}</button>}
@@ -435,7 +505,8 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
                 {!readOnly && layouts.alt && active === 'alt' && (
                   <Button variant="ghost" size="sm" className="text-[#E2445C] hover:bg-red-50" onClick={() => { setLayouts(ls => ({ ...ls, alt: null })); setActive('main'); setSelected([]); }}><X className="w-3.5 h-3.5 mr-1"/>Remove alternate</Button>
                 )}
-                <span className="text-xs text-gray-400 ml-auto">{layout.widthPx}×{layout.heightPx} px · 300 dpi · {frameCount} photo{frameCount === 1 ? '' : 's'}</span>
+                </>}
+                <span className="text-xs text-gray-400 ml-auto">{clip ? `${layout.widthPx}×${layout.heightPx} px · the Boomerang plays in the photo area` : `${layout.widthPx}×${layout.heightPx} px · 300 dpi · ${frameCount} photo${frameCount === 1 ? '' : 's'}`}</span>
               </div>
 
               <div className="w-full flex justify-center bg-[#F5F6F8] rounded-lg p-4 pt-8 select-none" onPointerDown={() => setSelected([])}>
@@ -450,7 +521,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
                     </div>
                   ))}
                   {layout.overlay && <img src={artUrl(layout.overlay.url)} alt="" draggable={false} className={'absolute inset-0 w-full h-full pointer-events-none ' + (preview ? '' : 'opacity-60')}/>}
-                  {!preview && <div className="absolute border border-dashed border-[#E2445C]/70 pointer-events-none" style={{ inset: safe * scale }} title="Safe area"/>}
+                  {!preview && !clip && <div className="absolute border border-dashed border-[#E2445C]/70 pointer-events-none" style={{ inset: safe * scale }} title="Safe area"/>}
                   </div>
                   {!preview && layout.slots.map(s => {
                     const on = selected.includes(s.id);
@@ -458,7 +529,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
                       <div key={s.id} onPointerDown={e => startMove(e, s)}
                         className={'absolute border-2 ' + (on ? 'border-[#0085FF]' : 'border-dashed border-gray-600/70') + (readOnly ? '' : ' cursor-move')}
                         style={{ left: s.x * scale, top: s.y * scale, width: s.width * scale, height: s.height * scale, transform: `rotate(${s.rotationDegrees}deg)` }}>
-                        <span className="absolute left-1 top-1 bg-[#1F1F3D] text-white text-[11px] font-semibold rounded px-1.5 py-0.5">{s.shotIndex + 1}</span>
+                        <span className="absolute left-1 top-1 bg-[#1F1F3D] text-white text-[11px] font-semibold rounded px-1.5 py-0.5">{clip ? 'Boomerang' : s.shotIndex + 1}</span>
                         {on && one?.id === s.id && !readOnly && (
                           <>
                             {(['nw', 'ne', 'sw', 'se'] as const).map(c => handle(c, s))}
@@ -473,8 +544,8 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
                   })}
                 </div>
               </div>
-              {!readOnly && !preview && <p className="text-xs text-gray-400 mt-2">Drag frames to move, corners to resize, the round handle to rotate. Shift-click to select several. Arrow keys nudge.</p>}
-              {!preview && <p className="text-xs text-gray-400 mt-1"><span className="inline-block w-4 border-t border-dashed border-[#E2445C] align-middle mr-1.5"/>Safe area: printers can trim up to 1/8 inch at the edges, so keep faces, logos and text inside the dashed line.</p>}
+              {!readOnly && !preview && <p className="text-xs text-gray-400 mt-2">{clip ? 'Drag the photo area to move it, corners to resize, the round handle to rotate. Arrow keys nudge.' : 'Drag frames to move, corners to resize, the round handle to rotate. Shift-click to select several. Arrow keys nudge.'}</p>}
+              {!preview && !clip && <p className="text-xs text-gray-400 mt-1"><span className="inline-block w-4 border-t border-dashed border-[#E2445C] align-middle mr-1.5"/>Safe area: printers can trim up to 1/8 inch at the edges, so keep faces, logos and text inside the dashed line.</p>}
             </CardContent>
           </Card>
 
@@ -484,31 +555,31 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle>Photo Frames</CardTitle>
-                    <Button variant="outline" size="sm" onClick={addFrame} disabled={layout.slots.length >= 10}><Plus className="w-3.5 h-3.5 mr-1"/>Add</Button>
+                    <CardTitle>{clip ? 'Photo Area' : 'Photo Frames'}</CardTitle>
+                    {!clip && <Button variant="outline" size="sm" onClick={addFrame} disabled={layout.slots.length >= 10}><Plus className="w-3.5 h-3.5 mr-1"/>Add</Button>}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {sel.length === 0 ? <p className="text-sm text-gray-500">Select a frame to edit it.</p> : (
+                  {sel.length === 0 ? <p className="text-sm text-gray-500">{clip ? 'Select the photo area to edit it. The Boomerang plays there.' : 'Select a frame to edit it.'}</p> : (
                     <>
                       <div className="flex flex-wrap gap-1">
                         <Button variant="outline" size="sm" onClick={() => center('h')} title="Center horizontally"><AlignCenterVertical className="w-3.5 h-3.5"/></Button>
                         <Button variant="outline" size="sm" onClick={() => center('v')} title="Center vertically"><AlignCenterHorizontal className="w-3.5 h-3.5"/></Button>
                         <Button variant="outline" size="sm" disabled={sel.length < 3} onClick={() => distribute('h')} title="Distribute horizontally"><AlignHorizontalSpaceAround className="w-3.5 h-3.5"/></Button>
                         <Button variant="outline" size="sm" disabled={sel.length < 3} onClick={() => distribute('v')} title="Distribute vertically"><AlignVerticalSpaceAround className="w-3.5 h-3.5"/></Button>
-                        <Button variant="outline" size="sm" onClick={duplicateSelected} disabled={layout.slots.length + sel.length > 10} title="Duplicate"><Copy className="w-3.5 h-3.5"/></Button>
-                        <Button variant="outline" size="sm" className="text-[#E2445C]" onClick={removeSelected} disabled={layout.slots.length <= sel.length} title="Delete"><Trash2 className="w-3.5 h-3.5"/></Button>
+                        {!clip && <Button variant="outline" size="sm" onClick={duplicateSelected} disabled={layout.slots.length + sel.length > 10} title="Duplicate"><Copy className="w-3.5 h-3.5"/></Button>}
+                        {!clip && <Button variant="outline" size="sm" className="text-[#E2445C]" onClick={removeSelected} disabled={layout.slots.length <= sel.length} title="Delete"><Trash2 className="w-3.5 h-3.5"/></Button>}
                       </div>
                       {sel.some(pastSafe) && <p className="text-xs text-amber-700 flex items-start gap-1.5"><AlertTriangle className="w-3.5 h-3.5 mt-px flex-shrink-0"/>{sel.length > 1 ? 'Some of these frames go' : 'This frame goes'} past the safe area. The edge of the photo may be trimmed when printed.</p>}
                       {sel.length > 1 && <p className="text-xs text-gray-500">{sel.length} frames selected.{sel.length < 3 ? ' Select 3 or more to distribute.' : ''}</p>}
                       {one && (
                         <div className="grid grid-cols-2 gap-3">
-                          <Field label="Photo number">
+                          {!clip && <Field label="Photo number">
                             <Select value={one.shotIndex} onChange={e => updateOne({ shotIndex: Number(e.target.value) })}>
                               {Array.from({ length: 10 }, (_, i) => <option key={i} value={i}>Photo {i + 1}</option>)}
                             </Select>
-                          </Field>
-                          <Field label="Photo fit">
+                          </Field>}
+                          <Field label={clip ? 'Boomerang fit' : 'Photo fit'}>
                             <Select value={one.fit} onChange={e => updateOne({ fit: e.target.value as 'fill' | 'fit' })}>
                               <option value="fill">Fill (crop)</option>
                               <option value="fit">Fit (no crop)</option>
@@ -538,11 +609,19 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
             <Card>
               <CardHeader className="pb-3"><CardTitle>Canvas</CardTitle></CardHeader>
               <CardContent className="space-y-3">
+                {clip ? (
+                  <Field label="Shape" hint="Same shape as the Boomerang it frames.">
+                    <Select value={clipFormat} disabled={readOnly} onChange={e => changeClipFormat(e.target.value as BoomerangFormat)}>
+                      {BOOMERANG_FORMATS.map(f => <option key={f} value={f}>{CLIP_CANVAS[f].label} ({CLIP_CANVAS[f].widthPx}×{CLIP_CANVAS[f].heightPx})</option>)}
+                    </Select>
+                  </Field>
+                ) : (
                 <Field label="Size">
                   <Select value={preset.id} disabled={readOnly} onChange={e => changePreset(e.target.value)}>
                     {PRESETS.filter(p => active === 'main' || (p.format === layouts.main.format && p.orientation !== layouts.main.orientation)).map(p => <option key={p.id} value={p.id}>{p.label} ({p.widthPx}×{p.heightPx})</option>)}
                   </Select>
                 </Field>
+                )}
                 <Field label="Background colour">
                   <div className="flex gap-2">
                     <input type="color" value={layout.backgroundColor} disabled={readOnly} onChange={e => setLayout(l => ({ ...l, backgroundColor: e.target.value.toUpperCase() }))} className="h-10 w-12 rounded border border-gray-300 cursor-pointer"/>
@@ -551,7 +630,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
                   </div>
                 </Field>
                 {(['background', 'overlay'] as const).map(kind => (
-                  <Field key={kind} label={kind === 'background' ? 'Background image' : 'Overlay'} hint={kind === 'background' ? 'PNG or JPG behind the photos.' : 'PNG with transparent windows, drawn over the photos.'}>
+                  <Field key={kind} label={kind === 'background' ? 'Background image' : 'Overlay'} hint={kind === 'background' ? (clip ? 'PNG or JPG behind the Boomerang, at this shape.' : 'PNG or JPG behind the photos.') : (clip ? 'PNG with a transparent window where the Boomerang plays, at this shape.' : 'PNG with transparent windows, drawn over the photos.')}>
                     {layout[kind] ? (
                       <div className="flex items-center gap-2 text-sm">
                         <span className="flex-1 truncate text-gray-600">{layout[kind]!.contentType === 'image/png' ? 'PNG' : 'JPG'} · {(layout[kind]!.bytes / 1024 / 1024).toFixed(1)} MB</span>
@@ -568,7 +647,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
               </CardContent>
             </Card>
 
-            {!readOnly && <ClientOptionsCard value={clientOpts} onChange={setClientOpts} scope={scope}/>}
+            {!readOnly && !clip && <ClientOptionsCard value={clientOpts} onChange={setClientOpts} scope={scope}/>}
           </div>
         </div>
       </div>
@@ -578,9 +657,9 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
           <div className="mr-auto text-sm min-w-0">
             {error ? <p className="text-red-600">{error}</p>
               : notices.length ? <p className="text-amber-600 truncate" title={notices.join(' ')}>{notices[notices.length - 1]}</p>
-              : <p className="text-gray-500">{dirty ? 'Unsaved changes' : isNew ? 'New template' : !thumbnail ? 'No picture yet. Save to create the picture clients see.' : 'Saved'}</p>}
+              : <p className="text-gray-500">{dirty ? 'Unsaved changes' : isNew ? (clip ? 'New Boomerang design' : 'New template') : !thumbnail ? (clip ? 'No picture yet. Save to create its thumbnail.' : 'No picture yet. Save to create the picture clients see.') : 'Saved'}</p>}
           </div>
-          <Button onClick={save} disabled={saving || !!uploading || !name.trim() || layouts.main.slots.length === 0 || (!!layouts.alt && layouts.alt.slots.length === 0) || (!dirty && !isNew && !!thumbnail)}>{saving ? 'Saving…' : 'Save Template'}</Button>
+          <Button onClick={save} disabled={saving || !!uploading || !name.trim() || layouts.main.slots.length === 0 || (!!layouts.alt && layouts.alt.slots.length === 0) || (!dirty && !isNew && !!thumbnail)}>{saving ? 'Saving…' : clip ? 'Save Design' : 'Save Template'}</Button>
         </div>
       )}
     </>

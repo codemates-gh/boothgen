@@ -63,7 +63,7 @@ function toForm(s: Settings): Form {
 function patchBody(form: Form, saved: Settings) {
   const { lookAtCamera, boomerang, attract, props, backgroundRemoval, ...rest } = form;
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-  const { overlay, ...b } = boomerang;
+  const { overlay, designProblem: _p, ...b } = boomerang;
   return {
     ...rest,
     attract: attractBody(attract),
@@ -325,7 +325,7 @@ export default function EventGeniePage() {
                 </Section>
 
                 <Section icon={Repeat} title="Boomerang" description="A short looping clip guests can choose instead of photos. This event only.">
-                  <BoomerangFields value={form.boomerang} disabled={locked} onChange={p => set('boomerang', p)}/>
+                  <BoomerangFields eventId={eventId} value={form.boomerang} disabled={locked} onChange={p => set('boomerang', p)}/>
                 </Section>
 
                 <GenieTemplates eventId={eventId} templates={data.templates} shotCount={form.capture.shotCount} locked={locked} onChange={() => { setBundle(null); load(false); }} approvedDesign={data.approvedDesign} briefTemplate={data.briefTemplate}/>

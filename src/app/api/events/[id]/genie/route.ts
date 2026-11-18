@@ -11,7 +11,7 @@ import { CUSTOM_FLAG, SECTION_NAMES, customFlags, getDefaults, sectionValues } f
 import { latestApprovedDesign } from '@/lib/genie/approvedDesign';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { designApprovalPending, effectiveLockedAt, eventLocksAt, isValidTimeZone } from '@/lib/genie/bundle';
-import { SettingsPatch, boomerangData, findAdminEvent, lockedError, providerWarnings, settingsUpdateData, settingsView, templateView } from '@/lib/genie/eventAdmin';
+import { SettingsPatch, boomerangData, findAdminEvent, lockedError, providerWarnings, settingsUpdateData, settingsView, templateView, withBoomerangDesignProblem } from '@/lib/genie/eventAdmin';
 import { galleryRetentionDates, getGalleryRetention } from '@/lib/gallery/retention';
 import { attractData, deleteUnusedAttractMedia, storedAttract } from '@/lib/genie/attract';
 import { countdownSoundData, deleteUnusedCountdownSounds, storedCountdownSound } from '@/lib/genie/countdownSound';
@@ -55,7 +55,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     : { paysPerEvent: false };
   return NextResponse.json({
     event: { id: event.id, title: event.title, eventDate: event.eventDate, startTime: event.startTime, endTime: event.endTime, venueName: event.venueName, boothEvent: isBoothClient(event.client) },
-    settings: s ? settingsView(s) : null,
+    settings: s ? await withBoomerangDesignProblem(settingsView(s), s) : null,
     billing,
     lockedAt: s ? effectiveLockedAt(event, s) : null,
     locksAt: eventLocksAt(event, s?.timeZone ?? 'America/New_York'),
@@ -114,7 +114,7 @@ export async function PATCH(req: NextRequest, props0: { params: Promise<{ id: st
   if ('error' in result) return NextResponse.json({ error: result.error }, { status: 400 });
   if (parsed.data.boomerang) {
     const b = await boomerangData(parsed.data.boomerang, s.boomerang, auth.tenantId);
-    if ('error' in b) return NextResponse.json({ error: b.error, path: 'boomerang.overlayUrl' }, { status: 400 });
+    if ('error' in b) return NextResponse.json({ error: b.error, path: b.path ?? 'boomerang.overlayUrl' }, { status: 400 });
     result.data.boomerang = b.value;
   }
   if (parsed.data.capture?.countdownSound) {
@@ -150,5 +150,5 @@ export async function PATCH(req: NextRequest, props0: { params: Promise<{ id: st
   const customUrl = (v: unknown) => { const c = storedCountdownSound(v); return c?.style === 'custom' ? c.custom.url : null; };
   const oldSound = customUrl(s.countdownSound);
   if (oldSound && oldSound !== customUrl(saved.countdownSound)) await deleteUnusedCountdownSounds([oldSound]);
-  return NextResponse.json(settingsView(saved));
+  return NextResponse.json(await withBoomerangDesignProblem(settingsView(saved), saved));
 }

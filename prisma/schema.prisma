@@ -246,6 +246,7 @@ model Tenant {
   genieDefaults        GenieDefaults?
   genieProps           GenieProp[]
   genieBackdrops       GenieBackdrop[]
+  genieClipDesigns     GenieClipDesign[]
   geniePayments        GenieEventPayment[]
   feedbackReports      FeedbackReport[]
 
@@ -1812,6 +1813,34 @@ model GenieBackdrop {
 
   @@index([tenantId])
   @@map("genie_backdrops")
+}
+
+// Boomerang designs (Genie ClipDesign): Standard (tenantId null, BoothGen-managed, switched on/off with isActive) and
+// an account's own My Boomerang designs, made in the template designer or from an uploaded PNG frame. The canvas is
+// the format's clip size (square 1080×1080 … landscape16x9 1920×1080); the one photo slot is in those pixels.
+model GenieClipDesign {
+  id              String    @id @default(cuid())
+  tenantId        String?
+  name            String
+  format          String // BoomerangFormat: square | portrait4x6 | landscape6x4 | portrait3x4 | landscape4x3 | portrait9x16 | landscape16x9
+  backgroundColor String    @default("#FFFFFF")
+  // RemoteAssets (url, sha256, contentType, bytes)
+  background      Json?
+  overlay         Json?
+  thumbnail       Json?
+  // PhotoSlot {id, shotIndex: 0, x, y, width, height, rotationDegrees, fit}
+  slot            Json
+  source          String    @default("designer") // designer | upload
+  version         Int       @default(1) // raised on every edit (ClipDesign.version)
+  isActive        Boolean   @default(true) // Standard: shown to operators
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("genie_clip_designs")
 }
 
 // ─── Bookkeeping (Insights → Bookkeeping) ────────────────────────────────────

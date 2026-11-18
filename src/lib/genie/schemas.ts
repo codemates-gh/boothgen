@@ -105,6 +105,7 @@ export const PhotoSlot = z.object({
   rotationDegrees: z.number().min(-180).max(180),
   fit: z.enum(['fill', 'fit']),
 }).strict();
+export type PhotoSlot = z.infer<typeof PhotoSlot>;
 
 // CaptureConfig.lookAtCamera: absent = on, "LOOK AT CAMERA", every photo
 export const LookAtCamera = z.object({
@@ -119,12 +120,28 @@ export const LOOK_AT_CAMERA_DEFAULT: LookAtCamera = { enabled: true, text: 'LOOK
 export const THANK_YOU_DEFAULT = { thankYouSeconds: 5, thankYouTitle: 'Thank you!', thankYouSubtitle: 'Your photos are on their way.' };
 
 // CaptureConfig.boomerang: absent = off
-export const BOOMERANG_FORMATS = ['square', 'portrait4x6', 'landscape6x4'] as const;
-export const BOOMERANG_ASPECT: Record<(typeof BOOMERANG_FORMATS)[number], { w: number; h: number; example: string }> = {
-  square: { w: 1, h: 1, example: '1080×1080' },
-  portrait4x6: { w: 2, h: 3, example: '1080×1620' },
-  landscape6x4: { w: 3, h: 2, example: '1620×1080' },
+export const BOOMERANG_FORMATS = ['square', 'portrait4x6', 'landscape6x4', 'portrait3x4', 'landscape4x3', 'portrait9x16', 'landscape16x9'] as const;
+export type BoomerangFormat = (typeof BOOMERANG_FORMATS)[number];
+export const BOOMERANG_ASPECT: Record<BoomerangFormat, { w: number; h: number; example: string; label: string }> = {
+  square: { w: 1, h: 1, example: '1080×1080', label: 'square (1:1)' },
+  portrait4x6: { w: 2, h: 3, example: '1080×1620', label: '4x6 portrait (2:3)' },
+  landscape6x4: { w: 3, h: 2, example: '1620×1080', label: '6x4 landscape (3:2)' },
+  portrait3x4: { w: 3, h: 4, example: '1080×1440', label: '3:4 portrait' },
+  landscape4x3: { w: 4, h: 3, example: '1440×1080', label: '4:3 landscape' },
+  portrait9x16: { w: 9, h: 16, example: '1080×1920', label: '9:16 portrait' },
+  landscape16x9: { w: 16, h: 9, example: '1920×1080', label: '16:9 landscape' },
 };
+// The canvas of each shape (ClipDesign): the clip's size on the iPad (1080 px on the short side). Safe to import in the browser.
+export const CLIP_CANVAS: Record<BoomerangFormat, { widthPx: number; heightPx: number; label: string }> = {
+  square: { widthPx: 1080, heightPx: 1080, label: 'Square 1:1' },
+  portrait3x4: { widthPx: 1080, heightPx: 1440, label: 'Portrait 3:4' },
+  landscape4x3: { widthPx: 1440, heightPx: 1080, label: 'Landscape 4:3' },
+  portrait9x16: { widthPx: 1080, heightPx: 1920, label: 'Portrait 9:16' },
+  landscape16x9: { widthPx: 1920, heightPx: 1080, label: 'Landscape 16:9' },
+  portrait4x6: { widthPx: 1080, heightPx: 1620, label: 'Portrait 4x6' },
+  landscape6x4: { widthPx: 1620, heightPx: 1080, label: 'Landscape 6x4' },
+};
+
 export const BoomerangSettings = z.object({
   enabled: z.boolean(),
   format: z.enum(BOOMERANG_FORMATS),

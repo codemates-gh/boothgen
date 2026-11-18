@@ -6,7 +6,8 @@ import { emailConfigured, platformDomainError, smsConfigured, type MessagingRout
 import { effectiveLockedAt, isValidTimeZone } from './bundle';
 import { BOOMERANG_ASPECT, BOOMERANG_DEFAULT, BoomerangSettings, LOOK_AT_CAMERA_DEFAULT, LookAtCamera, StoredLayout } from './schemas';
 import { verifyAsset } from './templateAssets';
-import { storedBoomerang, type StoredBoomerang } from './boomerang';
+import { boomerangDesignProblem, storedBoomerang, type StoredBoomerang } from './boomerang';
+import { DesignChoice, designChoiceError } from './clipDesigns';
 import { AttractPatch, attractView } from './attract';
 import { CountdownSoundPatch, countdownSoundView } from './countdownSound';
 import { PropsPatch, storedPropIds } from './props';
@@ -121,8 +122,9 @@ export const SettingsPatch = z.object({
   lookAtCamera: LookAtCamera,
   // Photo sessions' live view (per event only)
   liveView: z.object({ mirrorLiveView: z.boolean(), showDesignWhilePosing: z.boolean() }).strict(),
-  // overlayUrl: a PNG uploaded through /api/genie-templates/assets; null removes the overlay, absent keeps it
-  boomerang: BoomerangSettings.extend({ overlayUrl: z.string().url().nullable().optional() }).strict(),
+  // overlayUrl: a PNG uploaded through /api/genie-templates/assets (before Boomerang designs; new frames are designs);
+  // null removes the overlay, absent keeps it. design: the chosen Boomerang design; null = none, absent keeps it.
+  boomerang: BoomerangSettings.extend({ overlayUrl: z.string().url().nullable().optional(), design: DesignChoice.nullable().optional() }).strict(),
   // Attract screen (account default with per-event override); saved by attractData
   attract: AttractPatch,
   // Virtual props (per event only); saved by propsData
@@ -167,14 +169,13 @@ function overlayShapeError(size: { width: number; height: number }, format: Boom
   const a = BOOMERANG_ASPECT[format];
   const ratio = (size.width / size.height) / (a.w / a.h);
   if (Math.abs(ratio - 1) <= 0.02) return null;
-  const shape = format === 'square' ? 'square (1:1)' : format === 'portrait4x6' ? '4x6 portrait (2:3)' : '6x4 landscape (3:2)';
-  return `The overlay is ${size.width}×${size.height}, but a ${shape} boomerang needs that shape, e.g. ${a.example}.`;
+  return `The overlay is ${size.width}×${size.height}, but a ${a.label} boomerang needs that shape, e.g. ${a.example}.`;
 }
 
 // The boomerang settings to save: checks a new overlay (a PNG with transparency, in the format's shape) and that a
 // kept overlay still fits when the format changes
-export async function boomerangData(patch: NonNullable<SettingsPatch['boomerang']>, current: unknown, tenantId: string): Promise<{ value: StoredBoomerang } | { error: string }> {
-  const { overlayUrl, ...settings } = patch;
+export async function boomerangData(patch: NonNullable<SettingsPatch['boomerang']>, current: unknown, tenantId: string): Promise<{ value: StoredBoomerang } | { error: string; path?: string }> {
+  const { overlayUrl, design: designPatch, ...settings } = patch;
   const prev = storedBoomerang(current);
   let overlay = prev?.overlay, overlaySize = prev?.overlaySize;
   if (overlayUrl === null) { overlay = undefined; overlaySize = undefined; }
@@ -185,11 +186,25 @@ export async function boomerangData(patch: NonNullable<SettingsPatch['boomerang'
     if (!v.info.hasAlpha) return { error: 'The overlay has no transparent area, so it would cover the whole clip. Use a PNG that is transparent where the clip shows through.' };
     overlay = v.asset; overlaySize = { width: v.info.width, height: v.info.height };
   }
+  // A design and a plain overlay don't go together: choosing a design replaces the overlay
+  const design = designPatch === undefined ? prev?.design : designPatch ?? undefined;
+  if (designPatch) { overlay = undefined; overlaySize = undefined; }
+  // A new choice (or a kept one when the shape changes) must be available and at the Boomerang's shape
+  if (design && (designPatch || settings.format !== prev?.format)) {
+    const err = await designChoiceError(design, tenantId, settings.format);
+    if (err) return { error: err, path: 'boomerang.design' };
+  }
   if (overlaySize) {
     const err = overlayShapeError(overlaySize, settings.format);
     if (err) return { error: err };
   }
-  return { value: { ...settings, ...(overlay ? { overlay, overlaySize } : {}) } };
+  return { value: { ...settings, ...(overlay ? { overlay, overlaySize } : {}), ...(design ? { design } : {}) } };
+}
+
+// The chosen Boomerang design is checked when the editor loads: deleted, or no longer at the Boomerang's shape
+export async function withBoomerangDesignProblem<T extends { boomerang: object }>(view: T, s: EventGenieSettings): Promise<T> {
+  const problem = await boomerangDesignProblem(s.boomerang, s.tenantId);
+  return { ...view, boomerang: { ...view.boomerang, designProblem: problem } };
 }
 
 // ── Views ───────────────────────────────────────────────────────────────────
@@ -217,8 +232,12 @@ export function settingsView(s: EventGenieSettings) {
     liveView: { mirrorLiveView: s.mirrorLiveView, showDesignWhilePosing: s.showDesignWhilePosing },
     boomerang: (() => {
       const b = storedBoomerang(s.boomerang);
-      const { overlay, overlaySize, ...settings }: StoredBoomerang = b ?? BOOMERANG_DEFAULT;
-      return { ...BOOMERANG_DEFAULT, ...settings, overlay: overlay ? { url: overlay.url, width: overlaySize?.width ?? null, height: overlaySize?.height ?? null } : null };
+      const { overlay, overlaySize, design, ...settings }: StoredBoomerang = b ?? BOOMERANG_DEFAULT;
+      return {
+        ...BOOMERANG_DEFAULT, ...settings,
+        overlay: overlay ? { url: overlay.url, width: overlaySize?.width ?? null, height: overlaySize?.height ?? null } : null,
+        design: design ?? null, designProblem: null as 'deleted' | 'shape' | null,
+      };
     })(),
     filters: {
       guestFiltersEnabled: s.guestFiltersEnabled,

@@ -2,7 +2,7 @@
 // Super Admin menu, grouped: a side menu on wide screens, a grouped dropdown on phones and tablets
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LayoutDashboard, Users, CreditCard, Mail, FileText, Settings, BookOpen, BarChart2, Star, Layout, Bug, Smile, Image as ImageIcon, Activity, HardDrive } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, Mail, FileText, Settings, BookOpen, BarChart2, Star, Layout, Bug, Smile, Image as ImageIcon, Activity, HardDrive, Repeat } from 'lucide-react';
 
 const GROUPS = [
   { label: 'Platform', items: [
@@ -18,6 +18,7 @@ const GROUPS = [
   ] },
   { label: 'Genie library', items: [
     { id: 'design-templates', label: 'Design Templates', icon: Layout },
+    { id: 'boomerang-designs', label: 'Boomerang Designs', icon: Repeat },
     { id: 'props',            label: 'Props',            icon: Smile },
     { id: 'backdrops',        label: 'Backdrops',        icon: ImageIcon },
   ] },

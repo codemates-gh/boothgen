@@ -49,9 +49,12 @@ export async function renderThumbnail(l: Layout, samples: HTMLCanvasElement[], f
     g.restore();
   }
   if (fullSize) {
-    const safe = SAFE_INCH * l.dpi;
-    g.strokeStyle = '#E2445C'; g.lineWidth = 3; g.setLineDash([18, 12]);
-    g.strokeRect(safe, safe, l.widthPx - 2 * safe, l.heightPx - 2 * safe);
+    // dpi 0: not printed (Boomerang designs), so no safe line
+    if (l.dpi) {
+      const safe = SAFE_INCH * l.dpi;
+      g.strokeStyle = '#E2445C'; g.lineWidth = 3; g.setLineDash([18, 12]);
+      g.strokeRect(safe, safe, l.widthPx - 2 * safe, l.heightPx - 2 * safe);
+    }
   } else if (l.overlay) g.drawImage(await loadImage(artUrl(l.overlay.url)), 0, 0, l.widthPx, l.heightPx);
   return new Promise(resolve => { try { c.toBlob(b => resolve(b), 'image/png'); } catch { resolve(null); } });
 }
