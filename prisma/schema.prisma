@@ -256,6 +256,8 @@ model Tenant {
   // Genie paid add-on entitlement (super admin toggle until billing exists)
   // Super Admin "Keep Genius free": keeps the CRM without Genius Pro (own company, partners, beta testers). See src/lib/genius.ts
   geniusFree            Boolean   @default(false)
+  // Super Admin can switch the Sharing station add-on (Genie P12) off for an account; on for everyone by default
+  sharingStationOff     Boolean   @default(false)
   genieEnabled          Boolean   @default(false)
   genieEnabledAt        DateTime?
   // Genie attendant PIN, PBKDF2-SHA256 (see src/lib/genie/pin.ts)
@@ -749,7 +751,14 @@ model GalleryAsset {
   // Genie uploads: device-generated id (idempotency key) and the guest session
   clientId       String?
   genieSessionId String?
-  genieKind      String? // "gallery" | "shot" | "print" (printer sheet, archive only) | "boomerang" (MP4) | "boomerangPoster" (its first frame; thumbnail only)
+  genieKind      String? // "gallery" | "shot" | "print" (printer sheet, archive only) | "boomerang" (MP4) | "boomerangPoster" (its first frame; thumbnail only) | "gif" | "video" (PC booth MP4) | "videoPoster"
+  // Genie Sharing station (P12): photos from PC booth software. source "genie" (null) | "pcBooth", the print box
+  // (boothId, boothName) and the original file's SHA-256 and name (sourceSha256 is unique per gallery and kind)
+  source         String?
+  boothId        String?
+  boothName      String?
+  sourceSha256   String?
+  sourceFileName String?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
 
@@ -757,6 +766,7 @@ model GalleryAsset {
   genieSession GenieSession? @relation(fields: [genieSessionId], references: [id], onDelete: SetNull)
 
   @@unique([galleryId, clientId])
+  @@unique([galleryId, sourceSha256, genieKind])
   @@index([genieSessionId])
   @@map("gallery_assets")
 }
@@ -1403,6 +1413,13 @@ model EventGenieSettings {
   backdropsEnabled             Boolean @default(false)
   backdropIds                  Json    @default("[]")
   backdropDefaultId            String?
+  // Sharing station for PC booth software (SharingStationConfig, Genie P12): paid add-on, $12 per PC per event.
+  // sharingStationPcs = PCs planned (each needs paying); recentMinutes null = every photo of the event on the grid
+  sharingStationEnabled        Boolean @default(false)
+  sharingStationPcs            Int     @default(1)
+  sharingRecentMinutes         Int?
+  sharingBlurGrid              Boolean @default(false)
+  sharingUploadAll             Boolean @default(false)
   // Pose ideas (PosesConfig): account Event defaults + per-event override; poseIds = GeniePose ids in the guests' order
   posesEnabled                 Boolean @default(false)
   poseIds                      Json    @default("[]")
@@ -1481,7 +1498,8 @@ model GenieEventPayment {
   stripeCheckoutSessionId String    @unique
   amountCents             Int
   currency                String    @default("usd")
-  ipads                   Int       @default(2) // iPads this payment covers
+  ipads                   Int       @default(2) // iPads this payment covers (0: a Sharing station-only payment)
+  sharingPcs              Int       @default(0) // Sharing station PCs this payment covers ($12 each)
   status                  String    @default("pending") // pending | paid
   paidAt                  DateTime?
   createdAt               DateTime  @default(now())

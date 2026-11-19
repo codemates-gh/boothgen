@@ -13,8 +13,8 @@ export function sessionUrl(gallery: Pick<Gallery, 'clientToken'>, publicToken: s
 }
 
 // Guest- and client-facing photo lists leave out Genie printer sheets (archive copies of the gallery image) and
-// boomerang posters (shown as the clip's thumbnail instead)
-export const NOT_PRINT_SHEET = { OR: [{ genieKind: null }, { genieKind: { notIn: ['print', 'boomerangPoster'] } }] };
+// boomerang / PC video posters (shown as the clip's thumbnail instead)
+export const NOT_PRINT_SHEET = { OR: [{ genieKind: null }, { genieKind: { notIn: ['print', 'boomerangPoster', 'videoPoster'] } }] };
 
-// The operator's own gallery view keeps printer sheets but shows a boomerang's poster only as its thumbnail
-export const NOT_BOOMERANG_POSTER = { OR: [{ genieKind: null }, { genieKind: { not: 'boomerangPoster' } }] };
+// The operator's own gallery view keeps printer sheets but shows a boomerang's (or video's) poster only as its thumbnail
+export const NOT_BOOMERANG_POSTER = { OR: [{ genieKind: null }, { genieKind: { notIn: ['boomerangPoster', 'videoPoster'] } }] };

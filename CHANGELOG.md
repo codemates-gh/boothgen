@@ -4,6 +4,19 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.112.0] — 2026-11-18
+
+### Added
+- **Genie Sharing station (PC booth), first release.** For operators running PC booth software (DSLR Remote Pro or anything that saves to a folder): the Genie print box on the PC sends each new photo to an iPad, where guests find theirs and get it by text, email or QR.
+  - **On each event's Genie page:** a "Sharing station (PC booth)" section: on/off (one PC per event for now, with up to 2 iPads), "Show only recent photos" (5–60 minutes; off = every photo of the event), "Blur photos until tapped" and "Upload every photo to the gallery". The iPad uses one of the event's iPad spots.
+  - **$12 per PC per event** on top of the Genie event price ($15 Genie-only, $10 Genius), paid in the same checkout, e.g. $27 or $22. Genius accounts that don't pay per Genie event (the "Genius pays per event" switch off, or "Keep Genius free") pay only the $12 per PC. Until it's paid, shared photos show a watermark. The payment line shows what it covered.
+  - **PC booth photos, GIFs and videos** (videos up to 50 MB, played like a Boomerang) arrive like Genie photos, each as its own guest session; the same PC file is stored once per event even when two iPads share it. The event's gallery and its guest texts and emails show **"PC booth"** with the booth's name, with a filter by source.
+  - **Super Admin → Operators:** a "Sharing station" switch per account (on for everyone by default).
+
+Needs `docs/genie/apply-production-sharing-station.sql` (new columns, all off, and one index) run in production before this deploys.
+
+---
+
 ## [2.111.0] — 2026-11-18
 
 ### Added

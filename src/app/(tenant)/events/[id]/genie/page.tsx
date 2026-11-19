@@ -7,7 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon, PersonStanding, Copy } from 'lucide-react';
+import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon, PersonStanding, Copy, MonitorSmartphone } from 'lucide-react';
 import { Field, Toggle, fmtDate, fmtDateTime } from '@/components/genie/parts';
 import { Attract, AttractFields, Capture, CaptureFields, DefaultState, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
 import { Modal } from '@/components/ui/modal';
@@ -23,6 +23,7 @@ import { EventBackdropsFields, type EventBackdropsValue } from './EventBackdrops
 import type { Backdrop } from '@/components/genie/Backdrops';
 import { PoseIdeasFields, type PoseIdeasValue } from '@/components/genie/PoseIdeas';
 import type { Pose } from '@/components/genie/Poses';
+import { SharingStationFields, type SharingStationValue } from './SharingStation';
 
 type Settings = {
   enabled: boolean; timeZone: string; bundleVersion: number; maxDevices: number; capture: Capture;
@@ -36,11 +37,18 @@ type Settings = {
   props: EventPropsValue;
   backgroundRemoval: EventBackdropsValue;
   poses: PoseIdeasValue;
+  sharingStation: SharingStationValue;
   custom: { timeZone: boolean; capture: boolean; sharing: boolean; printing: boolean; attract: boolean; poses: boolean };
 };
 type Dashboard = {
   event: { id: string; title: string; eventDate: string; startTime: string | null; endTime: string | null; venueName: string | null; boothEvent: boolean };
-  billing: { paysPerEvent: false } | { paysPerEvent: true; paid: boolean; payments: number; ipadsCovered: number; ipadsPerPayment: number; priceCents: number; history: { amountCents: number; status: string; paidAt: string | null; comp: boolean }[] };
+  billing: (
+    { paysPerEvent: false } | { paysPerEvent: true; paid: boolean; payments: number; ipadsCovered: number; ipadsPerPayment: number; priceCents: number }
+  ) & {
+    history: { amountCents: number; status: string; paidAt: string | null; comp: boolean; sharingPcs: number; ipads: number }[];
+    // Sharing station (PC booth) add-on
+    sharingAvailable: boolean; sharingStation: boolean; sharingPcs: number; sharingPcsPaid: number; sharingPcsDue: number; sharingPcCents: number; amountDueCents: number;
+  };
   settings: Settings | null; lockedAt: string | null; locksAt: string; expired: boolean; templates: EventTemplate[];
   providerWarnings: { channel: 'sms' | 'email'; message: string }[]; photosHiddenAt: string; photosDeletedAt: string; designApprovalPending: boolean;
   approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
@@ -49,7 +57,7 @@ type Dashboard = {
   chosenBackdrops: Backdrop[];
   chosenPoses: Pose[];
 };
-type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'liveView' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval' | 'poses'> & { filters: Omit<Settings['filters'], 'available'> };
+type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'liveView' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval' | 'poses' | 'sharingStation'> & { filters: Omit<Settings['filters'], 'available'> };
 
 
 function toForm(s: Settings): Form {
@@ -60,13 +68,14 @@ function toForm(s: Settings): Form {
     props: { enabled: s.props.enabled, propIds: [...s.props.propIds] },
     backgroundRemoval: { ...s.backgroundRemoval, backdropIds: [...s.backgroundRemoval.backdropIds] },
     poses: { enabled: s.poses.enabled, poseIds: [...s.poses.poseIds] },
+    sharingStation: { ...s.sharingStation },
   };
 }
 
 // The save body: "look at the camera" and Boomerang go only when changed, so saving other sections leaves them out
 // of the bundle (Genie's own defaults apply until the operator sets them)
 function patchBody(form: Form, saved: Settings) {
-  const { lookAtCamera, boomerang, attract, props, backgroundRemoval, poses, ...rest } = form;
+  const { lookAtCamera, boomerang, attract, props, backgroundRemoval, poses, sharingStation, ...rest } = form;
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const { overlay, designProblem: _p, ...b } = boomerang;
   return {
@@ -79,6 +88,7 @@ function patchBody(form: Form, saved: Settings) {
     ...(same(backgroundRemoval, saved.backgroundRemoval) ? {} : { backgroundRemoval }),
     // Pose ideas only when changed, so saving other sections keeps the event following the Event defaults
     ...(same(poses, saved.poses) ? {} : { poses }),
+    ...(same(sharingStation, saved.sharingStation) ? {} : { sharingStation }),
   };
 }
 
@@ -125,9 +135,9 @@ export default function EventGeniePage() {
       .finally(() => load(false));
   }, [eventId, load]);
 
-  async function pay() {
+  async function pay(moreIpads = false) {
     setPayBusy(true); setPayError('');
-    const r = await fetch(`/api/genie-events/${eventId}/pay`, { method: 'POST' });
+    const r = await fetch(`/api/genie-events/${eventId}/pay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(moreIpads ? { moreIpads: true } : {}) });
     const d = await r.json().catch(() => ({}));
     if (r.ok && d.url) { window.location.href = d.url; return; }
     setPayBusy(false);
@@ -259,23 +269,34 @@ export default function EventGeniePage() {
               </div>
             )}
 
-            {data.billing.paysPerEvent && data.settings && !data.expired && (data.billing.paid ? (
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                <span className="flex items-start gap-2 flex-1"><CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0"/>Paid. Covers up to {data.billing.ipadsCovered} iPads, with texts and email.</span>
-                <Button variant="outline" size="sm" onClick={pay} disabled={payBusy}>{payBusy ? 'Opening…' : `Add ${data.billing.ipadsPerPayment} iPads (${fmtCents(data.billing.priceCents)})`}</Button>
-              </div>
-            ) : (
+            {data.settings && !data.expired && (data.billing.amountDueCents > 0 ? (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                <span className="flex items-start gap-2 flex-1"><AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>Not paid yet: the booth screen and the photos show a watermark. {fmtCents(data.billing.priceCents)} covers this event on up to {data.billing.ipadsPerPayment} iPads, with texts and email. Pay before the event; photos taken before paying keep the watermark. Refundable until the event starts and before any photos are taken.</span>
-                <Button size="sm" onClick={pay} disabled={payBusy}><CreditCard className="w-3.5 h-3.5 mr-1"/>{payBusy ? 'Opening…' : `Pay ${fmtCents(data.billing.priceCents)}`}</Button>
+                <span className="flex items-start gap-2 flex-1"><AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
+                  <span>
+                    Not paid yet: {data.billing.paysPerEvent && !data.billing.paid ? 'the booth screen and the photos show a watermark' : 'photos shared from the PC booth show a watermark'}.{' '}
+                    {data.billing.paysPerEvent && !data.billing.paid && <>{fmtCents(data.billing.priceCents)} covers this event on up to {data.billing.ipadsPerPayment} iPads, with texts and email. </>}
+                    {data.billing.sharingPcsDue > 0 && <>The Sharing station is {fmtCents(data.billing.sharingPcCents)} per PC{data.billing.sharingPcsDue > 1 ? ` (${data.billing.sharingPcsDue} PCs)` : ''}. </>}
+                    Pay before the event; photos taken before paying keep the watermark. Refundable until the event starts and before any photos are taken.
+                  </span>
+                </span>
+                <Button size="sm" onClick={() => pay()} disabled={payBusy}><CreditCard className="w-3.5 h-3.5 mr-1"/>{payBusy ? 'Opening…' : `Pay ${fmtCents(data.billing.amountDueCents)}`}</Button>
               </div>
-            ))}
+            ) : data.billing.paysPerEvent ? (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                <span className="flex items-start gap-2 flex-1"><CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0"/>Paid. Covers up to {data.billing.ipadsCovered} iPads, with texts and email{data.billing.sharingStation ? `, and the Sharing station (${data.billing.sharingPcsPaid} PC${data.billing.sharingPcsPaid > 1 ? 's' : ''})` : ''}.</span>
+                <Button variant="outline" size="sm" onClick={() => pay(true)} disabled={payBusy}>{payBusy ? 'Opening…' : `Add ${data.billing.ipadsPerPayment} iPads (${fmtCents(data.billing.priceCents)})`}</Button>
+              </div>
+            ) : data.billing.sharingStation ? (
+              <div className="flex items-start gap-2 text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0"/>Sharing station paid ({data.billing.sharingPcsPaid} PC{data.billing.sharingPcsPaid > 1 ? 's' : ''}).
+              </div>
+            ) : null)}
             {payError && <p className="text-sm text-red-600">{payError}</p>}
-            {data.billing.paysPerEvent && data.billing.history.length > 0 && (
+            {data.billing.history.length > 0 && (
               <ul className="text-xs text-gray-500 space-y-0.5 -mt-3">
                 {data.billing.history.map((h, i) => (
                   <li key={i} className={h.status !== 'paid' ? 'line-through text-gray-400' : ''}>
-                    {h.comp ? 'Covered by BoothGen' : `Paid ${fmtCents(h.amountCents)}`}{h.paidAt ? ' on ' + fmtDate(h.paidAt) : ''}{h.status === 'refunded' ? (h.comp ? ' (removed)' : ' (refunded)') : h.status === 'disputed' ? ' (disputed)' : ''}
+                    {h.comp ? 'Covered by BoothGen' : `Paid ${fmtCents(h.amountCents)}`}{h.sharingPcs ? (h.ipads ? ` (event + Sharing station, ${h.sharingPcs} PC${h.sharingPcs > 1 ? 's' : ''})` : ` (Sharing station, ${h.sharingPcs} PC${h.sharingPcs > 1 ? 's' : ''})`) : ''}{h.paidAt ? ' on ' + fmtDate(h.paidAt) : ''}{h.status === 'refunded' ? (h.comp ? ' (removed)' : ' (refunded)') : h.status === 'disputed' ? ' (disputed)' : ''}
                   </li>
                 ))}
               </ul>
@@ -350,6 +371,12 @@ export default function EventGeniePage() {
                   right={<DefaultState custom={data.settings.custom.attract} disabled={locked} onReset={() => resetSection('attract', 'the attract screen')}/>}>
                   <AttractFields value={form.attract} disabled={locked} onChange={p => set('attract', p)}/>
                 </Section>
+
+                {data.billing.sharingAvailable && (
+                  <Section icon={MonitorSmartphone} title="Sharing station (PC booth)" description="Paid add-on: an iPad shares photos made by PC booth software. This event only.">
+                    <SharingStationFields value={form.sharingStation} disabled={locked} pcPriceCents={data.billing.sharingPcCents} pcsPaid={data.billing.sharingPcsPaid} onChange={p => set('sharingStation', p)}/>
+                  </Section>
+                )}
 
                 <Section icon={Repeat} title="Boomerang" description="A short looping clip guests can choose instead of photos. This event only.">
                   <BoomerangFields eventId={eventId} value={form.boomerang} disabled={locked} onChange={p => set('boomerang', p)}/>

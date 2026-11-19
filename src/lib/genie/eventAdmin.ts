@@ -13,6 +13,7 @@ import { CountdownSoundPatch, countdownSoundView } from './countdownSound';
 import { PropsPatch, storedPropIds } from './props';
 import { BackdropsPatch, backdropsView } from './backdrops';
 import { PosesPatch, posesView } from './poses';
+import { SharingStationPatch, sharingStationData, sharingStationView } from './sharingStation';
 
 // ── Lock ────────────────────────────────────────────────────────────────────
 // Locks when the event starts (see effectiveLockedAt in bundle.ts); iPads ignore newer bundle versions after that,
@@ -134,6 +135,8 @@ export const SettingsPatch = z.object({
   backgroundRemoval: BackdropsPatch,
   // Pose ideas (account default with per-event override); saved by posesData
   poses: PosesPatch,
+  // Sharing station for PC booth software (paid add-on, per event only)
+  sharingStation: SharingStationPatch,
   // Sections to put back on the account defaults (they follow default changes again)
   reset: z.array(z.enum(['timeZone', 'capture', 'sharing', 'printing', 'attract', 'poses'])).min(1),
 }).partial().strict();
@@ -159,6 +162,7 @@ export function settingsUpdateData(patch: SettingsPatch, current: EventGenieSett
   if (patch.sharing) Object.assign(data, patch.sharing);
   if (patch.lookAtCamera) data.lookAtCamera = patch.lookAtCamera;
   if (patch.liveView) Object.assign(data, patch.liveView);
+  if (patch.sharingStation) Object.assign(data, sharingStationData(patch.sharingStation));
   if (patch.printing) {
     data.printingEnabled = patch.printing.enabled;
     data.printMaxCopies = patch.printing.maxCopies;
@@ -264,6 +268,7 @@ export function settingsView(s: EventGenieSettings) {
     props: { enabled: s.propsEnabled, propIds: storedPropIds(s.propIds) },
     backgroundRemoval: backdropsView(s),
     poses: posesView(s),
+    sharingStation: sharingStationView(s),
     // Which sections were customized for this event (false = follows the account's Genie defaults)
     custom: { timeZone: s.customTimeZone, capture: s.customCapture, sharing: s.customSharing, printing: s.customPrinting, attract: s.customAttract, poses: s.customPoses },
   };

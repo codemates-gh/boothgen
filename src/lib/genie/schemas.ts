@@ -2,9 +2,8 @@ import { z } from 'zod';
 
 // Zod mirrors of the Genie wire schemas (Genie repo: shared/schemas/*.json)
 
-// Hard ceiling per file. The real per-type limits (photos, boomerang MP4s) are set in Super Admin → Settings and
-// checked in the upload routes (src/lib/gallery/uploadRules.ts).
-export const GENIE_MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
+// Per-file caps come from the Genie schemas (below); the site-wide per-type limits (Super Admin → Settings) are
+// checked in the upload routes too (src/lib/gallery/uploadRules.ts).
 
 const uuid = z.string().uuid();
 const dateTime = z.string().datetime({ offset: true });
@@ -23,33 +22,47 @@ export const GuestSession = z.object({
   startedAt: dateTime,
 }).strict();
 
-const UploadContentType = z.enum(['image/jpeg', 'video/mp4']);
+const UploadContentType = z.enum(['image/jpeg', 'video/mp4', 'image/gif']);
+// Genie's per-file caps (UploadURLRequest / GalleryUpload): 15 MB, except PC booth videos (kind video) up to 50 MB
+const MB = 1024 * 1024;
+export const GENIE_FILE_MAX_BYTES = 15 * MB;
+export const GENIE_VIDEO_MAX_BYTES = 50 * MB;
 
 export const UploadUrlRequest = z.object({
   clientId: uuid,
   fileName: z.string().min(1).max(200),
   contentType: UploadContentType,
-  bytes: z.number().int().min(1).max(GENIE_MAX_UPLOAD_BYTES),
-}).strict();
+  bytes: z.number().int().min(1).max(GENIE_VIDEO_MAX_BYTES),
+}).strict()
+  // Only an MP4 (a PC booth video) may be over 15 MB
+  .refine(u => u.bytes <= GENIE_FILE_MAX_BYTES || u.contentType === 'video/mp4', { message: 'Files are at most 15 MB (videos 50 MB)', path: ['bytes'] });
 
 export const GalleryUpload = z.object({
   clientId: uuid,
   session: GuestSession,
-  kind: z.enum(['gallery', 'print', 'shot', 'boomerang', 'boomerangPoster']),
+  kind: z.enum(['gallery', 'print', 'shot', 'boomerang', 'boomerangPoster', 'gif', 'video', 'videoPoster']),
   shotIndex: z.number().int().min(0).optional(),
   storageKey: z.string().min(1),
   fileName: z.string(),
   contentType: UploadContentType,
-  bytes: z.number().int().min(1).max(GENIE_MAX_UPLOAD_BYTES),
+  bytes: z.number().int().min(1).max(GENIE_VIDEO_MAX_BYTES),
   width: z.number().int().min(1),
   height: z.number().int().min(1),
   sha256,
   capturedAt: dateTime,
   durationMs: z.number().int().min(1).optional(),
+  // Sharing station (P12): photos from PC booth software, the print box that sent them, and the original file
+  source: z.enum(['genie', 'pcBooth']).optional(),
+  boothId: z.string().min(1).max(100).optional(),
+  boothName: z.string().max(80).optional(),
+  sourceSha256: sha256.optional(),
+  sourceFileName: z.string().max(255).optional(),
 }).strict()
-  // The clip is the only video; photos (and its poster) are JPEGs
-  .refine(u => (u.contentType === 'video/mp4') === (u.kind === 'boomerang'), { message: 'video/mp4 is only for kind boomerang, and a boomerang must be video/mp4', path: ['contentType'] })
-  .refine(u => u.durationMs === undefined || u.kind === 'boomerang', { message: 'durationMs is only for kind boomerang', path: ['durationMs'] });
+  // MP4 for a boomerang or a PC booth video, GIF for kind gif; everything else (posters too) is a JPEG
+  .refine(u => (u.contentType === 'video/mp4') === (u.kind === 'boomerang' || u.kind === 'video'), { message: 'video/mp4 is only for kinds boomerang and video, and they must be video/mp4', path: ['contentType'] })
+  .refine(u => (u.contentType === 'image/gif') === (u.kind === 'gif'), { message: 'image/gif is only for kind gif, and a gif must be image/gif', path: ['contentType'] })
+  .refine(u => u.durationMs === undefined || u.kind === 'boomerang' || u.kind === 'video', { message: 'durationMs is only for kinds boomerang and video', path: ['durationMs'] })
+  .refine(u => u.bytes <= GENIE_FILE_MAX_BYTES || u.kind === 'video', { message: 'Files are at most 15 MB (videos 50 MB)', path: ['bytes'] });
 
 export const ShareJob = z.object({
   id: uuid,

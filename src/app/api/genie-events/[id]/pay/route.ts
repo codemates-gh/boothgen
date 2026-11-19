@@ -4,29 +4,37 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma/client';
 import { stripe } from '@/lib/stripe';
 import { requireGenieAdmin } from '@/lib/genie/admin';
-import { PAYMENT_KIND, eventPriceFor, recordCheckout, startCheckout } from '@/lib/genie/payments';
+import { PAYMENT_KIND, eventBilling, recordCheckout, startCheckout } from '@/lib/genie/payments';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
 
 async function load(tenantId: string, eventId: string) {
   const [tenant, event] = await Promise.all([
-    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { id: true, name: true, product: true, geniusFree: true } }),
+    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { id: true, name: true, product: true, geniusFree: true, sharingStationOff: true } }),
     prisma.event.findFirst({ where: { id: eventId, tenantId }, select: { id: true, title: true, genieSettings: { select: { id: true } } } }),
   ]);
   return { tenant, event };
 }
 
-// Starts Stripe Checkout for one event payment (another payment adds 2 more iPads)
-export async function POST(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+const Body = z.object({ moreIpads: z.boolean().optional() }).strict();
+
+// Starts Stripe Checkout for what the event needs: the event (if it pays per event and isn't paid, or moreIpads: 2 more
+// iPads) plus Sharing station PCs not paid yet
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
   const { tenant, event } = await load(auth.tenantId, params.id);
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if ((await eventPriceFor(tenant)) === null) return NextResponse.json({ error: 'Your plan doesn\'t pay per event', code: 'not_needed' }, { status: 409 });
   if (!event.genieSettings) return NextResponse.json({ error: 'Set up Genie for this event first', code: 'not_configured' }, { status: 409 });
+  const body = Body.safeParse(await req.json().catch(() => ({})));
+  const moreIpads = body.success ? !!body.data.moreIpads : false;
+  const b = await eventBilling(tenant, event.id);
+  if (!(b.paysPerEvent && (!b.paid || moreIpads)) && b.sharingPcsDue === 0) {
+    return NextResponse.json({ error: b.paysPerEvent ? 'Nothing to pay for this event' : 'Your plan doesn\'t pay per event', code: 'not_needed' }, { status: 409 });
+  }
   const user = await prisma.user.findUnique({ where: { id: auth.userId }, select: { email: true } });
-  const url = await startCheckout(tenant, event, APP_URL, user?.email);
+  const url = await startCheckout(tenant, event, APP_URL, user?.email, { moreIpads });
   return NextResponse.json({ url });
 }
 

@@ -9,13 +9,13 @@ export async function generateMetadata(props: { params: Promise<{ token: string;
     where: { publicToken: params.sessionToken },
     select: {
       gallery: { select: { clientToken: true, isExpired: true, event: { select: { title: true } } } },
-      assets: { where: { approvalStatus: 'APPROVED', genieKind: { in: ['boomerangPoster', 'gallery'] } }, select: { url: true, genieKind: true, width: true, height: true } },
+      assets: { where: { approvalStatus: 'APPROVED', genieKind: { in: ['boomerangPoster', 'videoPoster', 'gallery', 'gif'] } }, select: { url: true, genieKind: true, width: true, height: true } },
     },
   }).catch(() => null);
   if (!session || session.gallery.clientToken !== params.token) return {};
   const title = session.gallery.event.title ? `Your photos from ${session.gallery.event.title}` : 'Your photos';
   const image = session.gallery.isExpired ? undefined
-    : session.assets.find(a => a.genieKind === 'boomerangPoster') ?? session.assets.find(a => a.genieKind === 'gallery');
+    : session.assets.find(a => a.genieKind === 'boomerangPoster' || a.genieKind === 'videoPoster') ?? session.assets.find(a => a.genieKind === 'gallery' || a.genieKind === 'gif');
   return {
     title,
     openGraph: { title, ...(image ? { images: [{ url: image.url, ...(image.width ? { width: image.width } : {}), ...(image.height ? { height: image.height } : {}) }] } : {}) },

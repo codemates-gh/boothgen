@@ -14,6 +14,8 @@ export default function GalleryDetailPage(props: { params: Promise<{ id: string 
   const params = use(props.params);
   const [gallery, setGallery] = useState<any>(null);
   const [assets, setAssets] = useState<any[]>([]);
+  // Filter by where photos came from: the Genie booth, PC booth software (Sharing station) or uploaded here
+  const [source, setSource] = useState<'' | 'genie' | 'pcBooth' | 'upload'>('');
   const [uploading, setUploading] = useState(false);
   const [uploadCount, setUploadCount] = useState({ done: 0, total: 0, failed: 0 });
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -304,10 +306,25 @@ export default function GalleryDetailPage(props: { params: Promise<{ id: string 
                 {deletingAll ? 'Deleting…' : `Delete All ${assets.length} Photos`}
               </Button>
             </div>
+            {assets.some(a => a.source === 'pcBooth') && (
+              <div className="flex flex-wrap gap-2">
+                {([['', 'All'], ['genie', 'Genie booth'], ['pcBooth', 'PC booth'], ['upload', 'Uploaded']] as const).map(([v, label]) => (
+                  <button key={v} onClick={() => setSource(v)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${source === v ? 'bg-brand text-white border-brand' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+                    {label} <span className="opacity-70">{assets.filter(a => sourceOf(a) === v || !v).length}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {assets.map(a => (
+              {assets.filter(a => !source || sourceOf(a) === source).map(a => (
                 <div key={a.id} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100">
                   <AssetThumb asset={a} alt={a.filename} className="w-full h-full object-cover"/>
+                  {a.source === 'pcBooth' && (
+                    <span className="absolute left-2 bottom-2 max-w-[85%] truncate rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                      PC booth{a.boothName ? ` · ${a.boothName}` : ''}
+                    </span>
+                  )}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <button onClick={() => deleteAsset(a.id)} className="p-2 bg-red-500 rounded-lg text-white hover:bg-red-600">
                       <Trash2 className="w-4 h-4"/>
@@ -325,4 +342,9 @@ export default function GalleryDetailPage(props: { params: Promise<{ id: string 
       </div>
     </>
   );
+}
+
+// Where a photo came from: PC booth software (Sharing station), the Genie booth, or uploaded on the website
+function sourceOf(a: { source?: string | null; genieSessionId?: string | null }): 'pcBooth' | 'genie' | 'upload' {
+  return a.source === 'pcBooth' ? 'pcBooth' : a.genieSessionId ? 'genie' : 'upload';
 }

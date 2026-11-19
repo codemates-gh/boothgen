@@ -41,6 +41,12 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     return NextResponse.json(tenant);
   }
 
+  // Sharing station (PC booth) add-on: on for every account unless switched off here
+  if (typeof body.sharingStationOff === 'boolean') {
+    const tenant = await prisma.tenant.update({ where: { id: params.id }, data: { sharingStationOff: body.sharingStationOff }, select: { id: true, sharingStationOff: true } });
+    return NextResponse.json(tenant);
+  }
+
   if (typeof body.genieEnabled === 'boolean') {
     if (!body.genieEnabled) {
       const t = await prisma.tenant.findUnique({ where: { id: params.id }, select: { product: true } });

@@ -10,6 +10,7 @@ import { bundleCountdownSound } from './countdownSound';
 import { bundleProps, eventProps } from './props';
 import { bundleBackdrops, eventBackdrops } from './backdrops';
 import { bundlePoses, chosenPoses } from './poses';
+import { bundleSharingStation } from './sharingStation';
 import { isBoothClient } from './boothClient';
 import { eventBilling } from './payments';
 import { galleryRetentionDates, getGalleryRetention, type GalleryRetention } from '@/lib/gallery/retention';
@@ -115,10 +116,11 @@ export type BundleResult =
   | { ok: true; bundle: Record<string, unknown>; bundleVersion: number }
   | { ok: false; status: 404 | 409; code: string; error: string };
 
-function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number, props: GenieProp[], backdrops: GenieBackdrop[], watermark: boolean, design?: Awaited<ReturnType<typeof boomerangDesign>>, poses: GeniePose[] = []) {
+function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number, props: GenieProp[], backdrops: GenieBackdrop[], watermark: boolean, design?: Awaited<ReturnType<typeof boomerangDesign>>, poses: GeniePose[] = [], sharingAllowed = false) {
   const props_ = bundleProps(settings.propsEnabled, props);
   const backdrops_ = bundleBackdrops(settings, backdrops);
   const poses_ = bundlePoses(settings, poses);
+  const sharing_ = bundleSharingStation(settings, sharingAllowed);
   const photos = galleryRetentionDates(event.eventDate, retention);
   return {
     schemaVersion: BUNDLE_SCHEMA_VERSION,
@@ -196,6 +198,8 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
     ...(backdrops_ ? { backgroundRemoval: backdrops_ } : {}),
     // Optional; only when pose ideas are on (Event defaults or the event's own) and some poses are chosen
     ...(poses_ ? { poses: poses_ } : {}),
+    // Optional; the Sharing station (PC booth) add-on when it's on for the event
+    ...(sharing_ ? { sharingStation: sharing_ } : {}),
   };
 }
 
@@ -231,7 +235,7 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
     boomerangDesign(settings.boomerang, tenantId),
     settings.posesEnabled ? chosenPoses(settings.poseIds, tenantId) : Promise.resolve([]),
   ]);
-  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props, backdrops, billing.watermark, design, poses);
+  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props, backdrops, billing.watermark, design, poses, billing.sharingStation);
   const hash = contentHash(bundle);
 
   for (let attempt = 0; settings.bundleHash !== hash && attempt < 3; attempt++) {

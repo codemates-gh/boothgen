@@ -34,6 +34,17 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
   };
   const existing = await repeat();
   if (existing) return existing;
+  // Sharing station: the same PC file (and kind) is stored once per event, e.g. when two iPads share the same photo
+  const sameSource = async () => {
+    if (!body.sourceSha256) return null;
+    const asset = await prisma.galleryAsset.findFirst({
+      where: { galleryId: gallery.id, sourceSha256: body.sourceSha256, genieKind: body.kind },
+      include: { genieSession: { select: { publicToken: true } } },
+    });
+    return asset ? registered(asset, gallery, asset.genieSession ?? body.session, 200) : null;
+  };
+  const duplicate = await sameSource();
+  if (duplicate) return duplicate;
 
   if (!body.storageKey.startsWith('galleries/' + auth.tenant.id + '/' + gallery.id + '/')) {
     return genieError(422, 'invalid_storage_key', 'storageKey was not issued for this event');
@@ -45,10 +56,12 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
   const session = await ensureGenieSession(event, gallery, auth.device.id, body.session);
   if (!session) return genieError(422, 'session_conflict', 'This session id or token belongs to another event');
 
-  // A boomerang's poster is its thumbnail (gallery grid, link previews); either may arrive first
-  const poster = body.kind === 'boomerang'
-    ? await prisma.galleryAsset.findFirst({ where: { genieSessionId: session.id, genieKind: 'boomerangPoster' }, select: { url: true } })
+  // A boomerang's (or PC video's) poster is its thumbnail (gallery grid, link previews); either may arrive first
+  const posterKind = body.kind === 'boomerang' ? 'boomerangPoster' : body.kind === 'video' ? 'videoPoster' : null;
+  const poster = posterKind
+    ? await prisma.galleryAsset.findFirst({ where: { genieSessionId: session.id, genieKind: posterKind }, select: { url: true } })
     : null;
+  const pc = body.source === 'pcBooth';
 
   let asset: GalleryAsset;
   try {
@@ -57,7 +70,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
         galleryId: gallery.id,
         clientId: body.clientId,
         genieSessionId: session.id,
-        assetType: body.kind === 'boomerang' ? 'VIDEO' : 'PHOTO',
+        assetType: body.kind === 'boomerang' || body.kind === 'video' ? 'VIDEO' : body.kind === 'gif' ? 'GIF' : 'PHOTO',
         url: r2PublicUrl(body.storageKey),
         ...(poster ? { thumbnailUrl: poster.url } : {}),
         ...(body.durationMs ? { durationMs: body.durationMs } : {}),
@@ -67,21 +80,24 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
         width: body.width,
         height: body.height,
         genieKind: body.kind,
+        ...(pc ? { source: 'pcBooth', boothId: body.boothId ?? null, boothName: body.boothName?.trim() || null } : {}),
+        ...(body.sourceSha256 ? { sourceSha256: body.sourceSha256 } : {}),
+        ...(body.sourceFileName ? { sourceFileName: body.sourceFileName } : {}),
         // Boomerang clip / gallery copy first, then shots in order; the printer sheet (archive only) and the
         // boomerang poster (thumbnail only) last
-        sortOrder: body.kind === 'gallery' || body.kind === 'boomerang' ? 0 : body.kind === 'shot' ? (body.shotIndex ?? 0) + 1 : body.kind === 'print' ? 1000 : 1001,
+        sortOrder: ['gallery', 'boomerang', 'video', 'gif'].includes(body.kind) ? 0 : body.kind === 'shot' ? (body.shotIndex ?? 0) + 1 : body.kind === 'print' ? 1000 : 1001,
         approvalStatus: 'APPROVED',
       },
     });
   } catch (err) {
     if (!isUniqueViolation(err)) throw err;
-    const raced = await repeat();
+    const raced = (await repeat()) ?? (await sameSource());
     if (raced) return raced;
     throw err;
   }
 
-  if (body.kind === 'boomerangPoster') {
-    await prisma.galleryAsset.updateMany({ where: { genieSessionId: session.id, genieKind: 'boomerang' }, data: { thumbnailUrl: asset.url } });
+  if (body.kind === 'boomerangPoster' || body.kind === 'videoPoster') {
+    await prisma.galleryAsset.updateMany({ where: { genieSessionId: session.id, genieKind: body.kind === 'boomerangPoster' ? 'boomerang' : 'video' }, data: { thumbnailUrl: asset.url } });
   }
 
   // Same as manual uploads: advance approval status off PENDING_UPLOAD once photos arrive

@@ -45,16 +45,20 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   })).map(t => t.id));
   const s = event.genieSettings;
   const photos = galleryRetentionDates(event.eventDate, retention);
-  const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: auth.tenantId }, select: { id: true, product: true } });
+  const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: auth.tenantId }, select: { id: true, product: true, sharingStationOff: true } });
   const b = await eventBilling(tenant, event.id);
+  // Receipt lines: completed payments, comps and refunds (event and Sharing station payments)
+  const history = b.paysPerEvent || b.sharingStation || b.sharingPcsPaid > 0
+    ? (await prisma.genieEventPayment.findMany({ where: { eventId: event.id, status: { in: ['paid', 'refunded', 'disputed'] } }, orderBy: { createdAt: 'asc' } }))
+      .map(p => ({ amountCents: p.amountCents, status: p.status, paidAt: p.paidAt, comp: isComp(p), sharingPcs: p.sharingPcs, ipads: p.ipads }))
+    : [];
+  const sharing = {
+    sharingAvailable: !tenant.sharingStationOff, sharingStation: b.sharingStation, sharingPcs: b.sharingPcs, sharingPcsPaid: b.sharingPcsPaid,
+    sharingPcsDue: b.sharingPcsDue, sharingPcCents: b.sharingPcCents, amountDueCents: b.amountDueCents,
+  };
   const billing = b.paysPerEvent
-    ? {
-      paysPerEvent: true, paid: b.paid, payments: b.payments, ipadsCovered: b.ipadsCovered, ipadsPerPayment: IPADS_PER_PAYMENT, priceCents: b.priceCents!,
-      // Receipt lines: completed payments, comps and refunds
-      history: (await prisma.genieEventPayment.findMany({ where: { eventId: event.id, status: { in: ['paid', 'refunded', 'disputed'] } }, orderBy: { createdAt: 'asc' } }))
-        .map(p => ({ amountCents: p.amountCents, status: p.status, paidAt: p.paidAt, comp: isComp(p) })),
-    }
-    : { paysPerEvent: false };
+    ? { paysPerEvent: true, paid: b.paid, payments: b.payments, ipadsCovered: b.ipadsCovered, ipadsPerPayment: IPADS_PER_PAYMENT, priceCents: b.priceCents!, history, ...sharing }
+    : { paysPerEvent: false, history, ...sharing };
   return NextResponse.json({
     event: { id: event.id, title: event.title, eventDate: event.eventDate, startTime: event.startTime, endTime: event.endTime, venueName: event.venueName, boothEvent: isBoothClient(event.client) },
     settings: s ? await withBoomerangDesignProblem(settingsView(s), s) : null,
@@ -116,6 +120,11 @@ export async function PATCH(req: NextRequest, props0: { params: Promise<{ id: st
   if (!s) return NextResponse.json({ error: 'Set up Genie for this event first', code: 'not_configured' }, { status: 409 });
   if (effectiveLockedAt(event, s)) return lockedError();
 
+  // The Sharing station add-on can be switched off for an account by Super Admin
+  if (parsed.data.sharingStation?.enabled && !s.sharingStationEnabled) {
+    const t = await prisma.tenant.findUnique({ where: { id: auth.tenantId }, select: { sharingStationOff: true } });
+    if (t?.sharingStationOff) return NextResponse.json({ error: "The Sharing station isn't available for your account. Contact support.", path: 'sharingStation' }, { status: 400 });
+  }
   const result = settingsUpdateData(parsed.data, s);
   if ('error' in result) return NextResponse.json({ error: result.error }, { status: 400 });
   if (parsed.data.boomerang) {
