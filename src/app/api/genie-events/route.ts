@@ -50,9 +50,9 @@ export async function GET(req: NextRequest) {
         id: e.id, title: e.title, eventDate: e.eventDate, status: e.status, venueName: e.venueName,
         clientName: isBoothClient(e.client) ? null : `${e.client.firstName} ${e.client.lastName}`.trim(),
         boothEvent: isBoothClient(e.client),
-        // Pay per event (Genie only): unpaid events run with a watermark
-        paysPerEvent: billing.get(e.id)!.paysPerEvent,
-        paid: billing.get(e.id)!.paid,
+        // Pay per event, or an add-on (e.g. Glamour Style) not paid yet: unpaid events run with a watermark
+        paysPerEvent: billing.get(e.id)!.paysPerEvent || billing.get(e.id)!.addOns.length > 0,
+        paid: !billing.get(e.id)!.watermark,
         genie: s ? {
           enabled: s.enabled,
           templates: e._count.genieTemplates,

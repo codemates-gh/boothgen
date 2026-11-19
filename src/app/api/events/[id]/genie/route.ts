@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+import { addOnName, addOnPrices } from '@/lib/genie/addOns';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
@@ -48,13 +49,13 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: auth.tenantId }, select: { id: true, product: true } });
   const b = await eventBilling(tenant, event.id);
   // Receipt lines: completed payments, comps and refunds (2.112.0 payments may include Sharing station PCs)
-  const history = b.paysPerEvent
+  const history = b.paysPerEvent || b.addOns.length
     ? (await prisma.genieEventPayment.findMany({ where: { eventId: event.id, status: { in: ['paid', 'refunded', 'disputed'] } }, orderBy: { createdAt: 'asc' } }))
-      .map(p => ({ amountCents: p.amountCents, status: p.status, paidAt: p.paidAt, comp: isComp(p), sharingPcs: p.sharingPcs, ipads: p.ipads }))
+      .map(p => ({ amountCents: p.amountCents, status: p.status, paidAt: p.paidAt, comp: isComp(p), sharingPcs: p.sharingPcs, ipads: p.ipads, addOns: p.addOns.map(addOnName) }))
     : [];
   const billing = b.paysPerEvent
-    ? { paysPerEvent: true, paid: b.paid, payments: b.payments, ipadsCovered: b.ipadsCovered, ipadsPerPayment: IPADS_PER_PAYMENT, priceCents: b.priceCents!, history }
-    : { paysPerEvent: false };
+    ? { paysPerEvent: true, paid: b.paid, payments: b.payments, ipadsCovered: b.ipadsCovered, ipadsPerPayment: IPADS_PER_PAYMENT, priceCents: b.priceCents!, history, addOnsDue: b.addOnsDue, amountDueCents: b.amountDueCents, watermark: b.watermark, addOnPrices: await addOnPrices() }
+    : { paysPerEvent: false, history, addOnsDue: b.addOnsDue, amountDueCents: b.amountDueCents, watermark: b.watermark, addOnPrices: await addOnPrices() };
   return NextResponse.json({
     event: { id: event.id, title: event.title, eventDate: event.eventDate, startTime: event.startTime, endTime: event.endTime, venueName: event.venueName, boothEvent: isBoothClient(event.client) },
     settings: s ? await withBoomerangDesignProblem(settingsView(s), s) : null,

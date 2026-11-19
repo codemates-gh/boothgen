@@ -4,6 +4,19 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.114.0] — 2026-11-19
+
+### Added
+- **Glamour Style, a paid Genie add-on.** The Glamour Style Photo Booth's in-house filter: face-only skin retouching that keeps what makes each person recognizable. It was the free "Beautify (Glamour)" filter, now renamed **Glamour Style**.
+  - **$15 per event**, editable in **Super Admin → Genie Usage**, under the event prices. It applies to every account, including Genius accounts that don't pay per Genie event.
+  - **Offering it adds it to the bill:** turning on the Glamour Style filter on an event's Genie page (as the default filter or as a guest choice) adds $15 to that event's checkout, which shows the add-on's price. It works right away; until it's paid, the photos show a watermark. An event that's already paid gets a checkout for the add-on alone.
+  - **Events already using the free filter keep it free.** Duplicate doesn't copy that, so a copy pays for it. A Super Admin comp covers the event and the add-ons it uses.
+  - The add-on mechanism is built so later add-ons can reuse it. Payments list the add-ons they covered.
+
+Needs `docs/genie/apply-production-glamour-style.sql` (two new columns, and Glamour Style marked free on events already using it) run in production before this deploys.
+
+---
+
 ## [2.113.0] — 2026-11-19
 
 ### Changed

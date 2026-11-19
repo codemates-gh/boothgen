@@ -42,8 +42,14 @@ type Settings = {
 };
 type Dashboard = {
   event: { id: string; title: string; eventDate: string; startTime: string | null; endTime: string | null; venueName: string | null; boothEvent: boolean };
-  // history: sharingPcs > 0 only on 2.112.0 payments, when the Sharing station was a paid add-on
-  billing: { paysPerEvent: false } | { paysPerEvent: true; paid: boolean; payments: number; ipadsCovered: number; ipadsPerPayment: number; priceCents: number; history: { amountCents: number; status: string; paidAt: string | null; comp: boolean; sharingPcs: number; ipads: number }[] };
+  billing: (
+    { paysPerEvent: false } | { paysPerEvent: true; paid: boolean; payments: number; ipadsCovered: number; ipadsPerPayment: number; priceCents: number }
+  ) & {
+    // sharingPcs > 0 only on 2.112.0 payments, when the Sharing station was a paid add-on; addOns: add-on names
+    history: { amountCents: number; status: string; paidAt: string | null; comp: boolean; sharingPcs: number; ipads: number; addOns: string[] }[];
+    // Paid add-ons (Glamour Style) in use and not paid, what a checkout charges now, and add-on prices by id
+    addOnsDue: { id: string; name: string; cents: number }[]; amountDueCents: number; watermark: boolean; addOnPrices: Record<string, number>;
+  };
   settings: Settings | null; lockedAt: string | null; locksAt: string; expired: boolean; templates: EventTemplate[];
   providerWarnings: { channel: 'sms' | 'email'; message: string }[]; photosHiddenAt: string; photosDeletedAt: string; designApprovalPending: boolean;
   approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
@@ -264,23 +270,30 @@ export default function EventGeniePage() {
               </div>
             )}
 
-            {data.billing.paysPerEvent && data.settings && !data.expired && (data.billing.paid ? (
+            {data.settings && !data.expired && (data.billing.amountDueCents > 0 ? (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <span className="flex items-start gap-2 flex-1"><AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
+                  <span>
+                    Not paid yet: the booth screen and the photos show a watermark.{' '}
+                    {data.billing.paysPerEvent && !data.billing.paid && <>{fmtCents(data.billing.priceCents)} covers this event on up to {data.billing.ipadsPerPayment} iPads, with texts and email. </>}
+                    {data.billing.addOnsDue.map(a => <span key={a.id}>{a.name}: {fmtCents(a.cents)} for this event. </span>)}
+                    Pay before the event; photos taken before paying keep the watermark. Refundable until the event starts and before any photos are taken.
+                  </span>
+                </span>
+                <Button size="sm" onClick={() => pay()} disabled={payBusy}><CreditCard className="w-3.5 h-3.5 mr-1"/>{payBusy ? 'Opening…' : `Pay ${fmtCents(data.billing.amountDueCents)}`}</Button>
+              </div>
+            ) : data.billing.paysPerEvent ? (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                 <span className="flex items-start gap-2 flex-1"><CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0"/>Paid. Covers up to {data.billing.ipadsCovered} iPads, with texts and email.</span>
                 <Button variant="outline" size="sm" onClick={() => pay(true)} disabled={payBusy}>{payBusy ? 'Opening…' : `Add ${data.billing.ipadsPerPayment} iPads (${fmtCents(data.billing.priceCents)})`}</Button>
               </div>
-            ) : (
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                <span className="flex items-start gap-2 flex-1"><AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>Not paid yet: the booth screen and the photos show a watermark. {fmtCents(data.billing.priceCents)} covers this event on up to {data.billing.ipadsPerPayment} iPads, with texts and email. Pay before the event; photos taken before paying keep the watermark. Refundable until the event starts and before any photos are taken.</span>
-                <Button size="sm" onClick={() => pay()} disabled={payBusy}><CreditCard className="w-3.5 h-3.5 mr-1"/>{payBusy ? 'Opening…' : `Pay ${fmtCents(data.billing.priceCents)}`}</Button>
-              </div>
-            ))}
+            ) : null)}
             {payError && <p className="text-sm text-red-600">{payError}</p>}
-            {data.billing.paysPerEvent && data.billing.history.length > 0 && (
+            {data.billing.history.length > 0 && (
               <ul className="text-xs text-gray-500 space-y-0.5 -mt-3">
                 {data.billing.history.map((h, i) => (
                   <li key={i} className={h.status !== 'paid' ? 'line-through text-gray-400' : ''}>
-                    {h.comp ? 'Covered by BoothGen' : `Paid ${fmtCents(h.amountCents)}`}{h.sharingPcs ? (h.ipads ? ` (event + Sharing station, ${h.sharingPcs} PC${h.sharingPcs > 1 ? 's' : ''})` : ` (Sharing station, ${h.sharingPcs} PC${h.sharingPcs > 1 ? 's' : ''})`) : ''}{h.paidAt ? ' on ' + fmtDate(h.paidAt) : ''}{h.status === 'refunded' ? (h.comp ? ' (removed)' : ' (refunded)') : h.status === 'disputed' ? ' (disputed)' : ''}
+                    {h.comp ? 'Covered by BoothGen' : `Paid ${fmtCents(h.amountCents)}`}{h.addOns.length ? (h.ipads ? ` (event + ${h.addOns.join(', ')})` : ` (${h.addOns.join(', ')})`) : ''}{h.sharingPcs ? (h.ipads ? ` (event + Sharing station, ${h.sharingPcs} PC${h.sharingPcs > 1 ? 's' : ''})` : ` (Sharing station, ${h.sharingPcs} PC${h.sharingPcs > 1 ? 's' : ''})`) : ''}{h.paidAt ? ' on ' + fmtDate(h.paidAt) : ''}{h.status === 'refunded' ? (h.comp ? ' (removed)' : ' (refunded)') : h.status === 'disputed' ? ' (disputed)' : ''}
                   </li>
                 ))}
               </ul>
@@ -387,7 +400,12 @@ export default function EventGeniePage() {
                               const ids = e.target.checked ? data.settings!.filters.available.map(a => a.id).filter(id => id === f.id || form.filters.filterIds.includes(id)) : form.filters.filterIds.filter(id => id !== f.id);
                               set('filters', { filterIds: ids, defaultFilterId: ids.includes(form.filters.defaultFilterId) ? form.filters.defaultFilterId : ids[0] });
                             }}/>
-                          <span className="text-sm flex-1">{f.name}</span>
+                          <span className="text-sm flex-1">
+                            {f.name}
+                            {f.id === 'glamour' && data.billing.addOnPrices.glamourStyle !== undefined && (
+                              <span className="block text-xs text-gray-500">Our in-house skin retouching, faces only. Add-on: {fmtCents(data.billing.addOnPrices.glamourStyle)} for this event, paid with the event.</span>
+                            )}
+                          </span>
                           {f.id === 'glamour' && on && (
                             <label className="flex items-center gap-2 text-xs text-gray-600" title="How strong the skin smoothing and glow are">
                               Strength

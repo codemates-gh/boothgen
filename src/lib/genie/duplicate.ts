@@ -10,7 +10,7 @@ const JSON_FIELDS = ['countdownSound', 'lookAtCamera', 'boomerang', 'attract', '
 export async function copyGenieSetup(tx: Prisma.TransactionClient, fromEventId: string, toEventId: string, tenantId: string): Promise<boolean> {
   const s = await tx.eventGenieSettings.findFirst({ where: { eventId: fromEventId, tenantId } });
   if (!s) return false;
-  const { id: _id, eventId: _e, bundleVersion: _v, bundleHash: _h, lockedAt: _l, maxDevices: _m, createdAt: _c, updatedAt: _u, ...rest } = s;
+  const { id: _id, eventId: _e, bundleVersion: _v, bundleHash: _h, lockedAt: _l, maxDevices: _m, createdAt: _c, updatedAt: _u, addOnsIncluded: _ai, ...rest } = s;
   const data: Record<string, unknown> = { ...rest };
   // A JSON column's null is written as SQL NULL
   for (const k of JSON_FIELDS) if (k in data && data[k] === null) data[k] = Prisma.DbNull;

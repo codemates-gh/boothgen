@@ -167,7 +167,8 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
     filters: {
       guestFiltersEnabled: settings.guestFiltersEnabled,
       defaultFilterId: settings.defaultFilterId,
-      filters: settings.filters,
+      // Events saved before 2.114.0 hold the old name "Beautify (Glamour)"
+      filters: (Array.isArray(settings.filters) ? settings.filters as { id: string }[] : []).map(f => f?.id === 'glamour' ? { ...f, name: 'Glamour Style' } : f),
     },
     sharing: {
       // A channel is only offered when the tenant's own provider for it is set up

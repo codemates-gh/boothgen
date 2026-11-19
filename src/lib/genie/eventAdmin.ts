@@ -38,13 +38,14 @@ export const FILTER_CATALOG = [
   { id: 'warm', name: 'Warm', steps: [{ type: 'colorPreset', preset: 'warm', intensity: 0.5 }] },
   { id: 'sepia', name: 'Sepia', steps: [{ type: 'colorPreset', preset: 'sepia', intensity: 0.8 }] },
   { id: 'bw', name: 'Black & White', steps: [{ type: 'colorPreset', preset: 'blackAndWhite', intensity: 1 }] },
-  // Skin smoothing with a soft glow (Genie 0.5.0 build 15+; older builds ignore the step)
-  { id: 'glamour', name: 'Beautify (Glamour)', steps: [{ type: 'beautify', intensity: 0.7 }] },
+  // Glamour Style: face-only skin retouching (Genie 0.5.0 build 15+; older builds ignore the step). A paid add-on
+  // (src/lib/genie/addOns.ts): offering it adds it to the event's bill
+  { id: 'glamour', name: 'Glamour Style', steps: [{ type: 'beautify', intensity: 0.7 }] },
 ] as const;
 
 type StoredFilter = { id: string; name: string; steps: unknown[] };
 
-// Beautify (Glamour) strength saved on the event; 0.7 until set
+// Glamour Style strength saved on the event; 0.7 until set
 export function glamourIntensity(current: unknown): number {
   const f = (Array.isArray(current) ? current as StoredFilter[] : []).find(x => x?.id === 'glamour');
   const n = (f?.steps?.[0] as { intensity?: unknown } | undefined)?.intensity;
@@ -102,7 +103,7 @@ export const SettingsPatch = z.object({
     guestFiltersEnabled: z.boolean(),
     defaultFilterId: z.string().min(1),
     filterIds: z.array(z.string().min(1)).min(1, 'Choose at least one filter'),
-    // Beautify (Glamour) strength; absent keeps the saved one
+    // Glamour Style strength; absent keeps the saved one
     glamourIntensity: z.number().min(0.3).max(1).optional(),
   }).strict(),
   sharing: z.object({
@@ -153,9 +154,9 @@ export function settingsUpdateData(patch: SettingsPatch, current: EventGenieSett
     const chosen = patch.filters.filterIds.map(id => available.find(f => f.id === id));
     if (chosen.some(f => !f)) return { error: 'Unknown filter' };
     if (!patch.filters.filterIds.includes(patch.filters.defaultFilterId)) return { error: 'The default filter must be one of the offered filters' };
-    // Beautify (Glamour) at the chosen strength (rounded to 0.05)
+    // Glamour Style at the chosen strength (rounded to 0.05), under its current name
     const intensity = Math.round((patch.filters.glamourIntensity ?? glamourIntensity(current.filters)) * 20) / 20;
-    data.filters = chosen.map(f => f!.id === 'glamour' ? { ...f!, steps: [{ type: 'beautify', intensity }] } : f);
+    data.filters = chosen.map(f => f!.id === 'glamour' ? { ...f!, name: 'Glamour Style', steps: [{ type: 'beautify', intensity }] } : f);
     data.defaultFilterId = patch.filters.defaultFilterId;
     data.guestFiltersEnabled = patch.filters.guestFiltersEnabled;
   }

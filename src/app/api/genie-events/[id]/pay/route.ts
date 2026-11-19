@@ -18,7 +18,8 @@ async function load(tenantId: string, eventId: string) {
 
 const Body = z.object({ moreIpads: z.boolean().optional() }).strict();
 
-// Starts Stripe Checkout for the event (if it pays per event and isn't paid, or moreIpads: 2 more iPads)
+// Starts Stripe Checkout for the event (if it pays per event and isn't paid, or moreIpads: 2 more iPads) plus add-ons
+// in use and not paid yet
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const auth = await requireGenieAdmin();
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const body = Body.safeParse(await req.json().catch(() => ({})));
   const moreIpads = body.success ? !!body.data.moreIpads : false;
   const b = await eventBilling(tenant, event.id);
-  if (!(b.paysPerEvent && (!b.paid || moreIpads))) {
+  if (!(b.paysPerEvent && (!b.paid || moreIpads)) && !b.addOnsDue.length) {
     return NextResponse.json({ error: b.paysPerEvent ? 'Nothing to pay for this event' : 'Your plan doesn\'t pay per event', code: 'not_needed' }, { status: 409 });
   }
   const user = await prisma.user.findUnique({ where: { id: auth.userId }, select: { email: true } });

@@ -148,7 +148,8 @@ describe('pay routes', () => {
     const res = await PAY(req('/x', { method: 'POST' }), p(crm.event.id));
     expect(res.status).toBe(409);
     expect((await res.json()).code).toBe('not_needed');
-    expect((await (await DASH(req('/x'), p(crm.event.id))).json()).billing).toEqual({ paysPerEvent: false });
+    // Nothing due (the add-on fields are there so Glamour Style's price can be shown)
+    expect((await (await DASH(req('/x'), p(crm.event.id))).json()).billing).toMatchObject({ paysPerEvent: false, amountDueCents: 0, addOnsDue: [] });
   });
 
   it('won\'t delete a paid booth event', async () => {
@@ -313,7 +314,7 @@ describe('Genius accounts pay the Genius price', () => {
 
     // Turn it on and change the Genius price
     r = await (await SET_PRICE(req('/x', { method: 'PATCH', body: { geniusPriceCents: 1200, geniusPays: true } }))).json();
-    expect(r).toEqual({ priceCents: 1500, geniusPriceCents: 1200, geniusPays: true });
+    expect(r).toEqual({ priceCents: 1500, geniusPriceCents: 1200, geniusPays: true, addOnPrices: { glamourStyle: 1500 } });
     expect(await eventBilling(crm.tenant, crm.event.id)).toMatchObject({ paysPerEvent: true, priceCents: 1200, paid: false, watermark: true });
     expect((await buildEventBundle(crm.tenant.id, crm.event.id) as any).bundle.watermark).toBe(true);
 

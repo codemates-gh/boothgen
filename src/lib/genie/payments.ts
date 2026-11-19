@@ -2,6 +2,7 @@ import type Stripe from 'stripe';
 import { prisma } from '@/lib/prisma/client';
 import { stripe } from '@/lib/stripe';
 import { sendEmail } from '@/lib/email/send';
+import { addOnName, addOnPrices, addOnsInUse, type AddOnId } from '@/lib/genie/addOns';
 
 // Pay per event (Genie-only stage 2b, docs/genie/genie-only-plan.md):
 // - Genie-only accounts pay per event ($15 by default); one payment covers 2 iPads, and a 3rd or 4th iPad means
@@ -57,8 +58,15 @@ export async function eventPriceFor(tenant: BillingTenant): Promise<number | nul
   return priceFor({ product: tenant.product, geniusFree }, await eventPrices());
 }
 
-// The Sharing station (PC booth) is part of every Genie event: the event's payment covers it, nothing extra
-export type EventBilling = { paysPerEvent: boolean; priceCents: number | null; paid: boolean; payments: number; ipadsCovered: number; watermark: boolean };
+// The Sharing station (PC booth) is part of every Genie event: the event's payment covers it, nothing extra.
+// Add-ons (src/lib/genie/addOns.ts) are charged on top, for every account, even ones that don't pay per event.
+export type EventBilling = {
+  paysPerEvent: boolean; priceCents: number | null; paid: boolean; payments: number; ipadsCovered: number; watermark: boolean;
+  // Add-ons the event uses, and which of them are still to pay (with their price)
+  addOns: AddOnId[]; addOnsDue: { id: AddOnId; name: string; cents: number }[];
+  // What a checkout would charge now: the event (when it pays per event and isn't paid) plus the add-ons due
+  amountDueCents: number;
+};
 
 export async function eventBilling(tenant: BillingTenant, eventId: string): Promise<EventBilling> {
   return (await eventsBilling(tenant, [eventId])).get(eventId)!;
@@ -67,14 +75,23 @@ export async function eventBilling(tenant: BillingTenant, eventId: string): Prom
 export async function eventsBilling(tenant: BillingTenant, eventIds: string[]): Promise<Map<string, EventBilling>> {
   const priceCents = await eventPriceFor(tenant);
   const pays = priceCents !== null;
-  const rows = pays && eventIds.length
-    ? await prisma.genieEventPayment.findMany({ where: { tenantId: tenant.id, eventId: { in: eventIds }, status: 'paid' }, select: { eventId: true, ipads: true } })
-    : [];
+  const [rows, settings, prices] = eventIds.length
+    ? await Promise.all([
+      prisma.genieEventPayment.findMany({ where: { tenantId: tenant.id, eventId: { in: eventIds }, status: 'paid' }, select: { eventId: true, ipads: true, addOns: true } }),
+      prisma.eventGenieSettings.findMany({ where: { tenantId: tenant.id, eventId: { in: eventIds } }, select: { eventId: true, processing: true, filters: true, addOnsIncluded: true } }),
+      addOnPrices(),
+    ])
+    : [[], [], null];
   return new Map(eventIds.map(id => {
     const mine = rows.filter(r => r.eventId === id);
-    // Payments for the event itself (an old Sharing station-only payment, 2.112.0, covers no iPads)
-    const payments = mine.filter(r => r.ipads > 0).length;
+    // Payments for the event itself (add-on-only payments, and old 2.112.0 Sharing station-only ones, cover no iPads)
+    const payments = pays ? mine.filter(r => r.ipads > 0).length : 0;
     const ipadsPaid = mine.reduce((n, r) => n + r.ipads, 0);
+    const s = settings.find(x => x.eventId === id);
+    const addOns = s ? addOnsInUse(s) : [];
+    const covered = new Set([...(s?.addOnsIncluded ?? []), ...mine.flatMap(r => r.addOns)]);
+    const addOnsDue = addOns.filter(a => !covered.has(a)).map(a => ({ id: a, name: addOnName(a), cents: prices![a] }));
+    const eventDue = pays && payments === 0;
     return [id, {
       paysPerEvent: pays,
       priceCents,
@@ -82,29 +99,38 @@ export async function eventsBilling(tenant: BillingTenant, eventIds: string[]): 
       payments,
       // Unpaid events can still run 2 iPads, with the watermark
       ipadsCovered: pays ? Math.max(IPADS_PER_PAYMENT, ipadsPaid) : Infinity,
-      watermark: pays && payments === 0,
+      // Unpaid event or an add-on in use but not paid
+      watermark: eventDue || addOnsDue.length > 0,
+      addOns, addOnsDue,
+      amountDueCents: (eventDue ? priceCents! : 0) + addOnsDue.reduce((n, a) => n + a.cents, 0),
     }];
   }));
 }
 
-// Stripe Checkout for the event payment (when it pays per event and isn't paid yet, or with moreIpads another 2 iPads).
-// `appUrl` is where Stripe sends the operator back.
+// Stripe Checkout for what the event needs: the event payment (when it pays per event and isn't paid yet, or with
+// moreIpads another 2 iPads) plus the add-ons in use and not paid. `appUrl` is where Stripe sends the operator back.
 export async function startCheckout(tenant: { id: string; name: string; product: string; geniusFree?: boolean }, event: { id: string; title: string }, appUrl: string, customerEmail?: string | null, opts: { moreIpads?: boolean } = {}) {
   const billing = await eventBilling(tenant, event.id);
   const eventLine = billing.paysPerEvent && (!billing.paid || !!opts.moreIpads);
-  if (!eventLine) throw new Error('Nothing to pay for this event');
-  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [{
+  const addOns = billing.addOnsDue;
+  if (!eventLine && !addOns.length) throw new Error('Nothing to pay for this event');
+  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+  if (eventLine) line_items.push({
     quantity: 1,
     price_data: {
       currency: 'usd', unit_amount: billing.priceCents!,
       product_data: { name: `Genie event: ${event.title}`.slice(0, 250), description: `One event, up to ${IPADS_PER_PAYMENT} iPads, texts and email included` },
     },
-  }];
-  const amountCents = billing.priceCents!;
-  const ipads = IPADS_PER_PAYMENT;
+  });
+  for (const a of addOns) line_items.push({
+    quantity: 1,
+    price_data: { currency: 'usd', unit_amount: a.cents, product_data: { name: `${a.name}: ${event.title}`.slice(0, 250), description: `${a.name} add-on for this event` } },
+  });
+  const amountCents = (eventLine ? billing.priceCents! : 0) + addOns.reduce((n, a) => n + a.cents, 0);
+  const ipads = eventLine ? IPADS_PER_PAYMENT : 0;
   const sub = await prisma.stripeSubscription.findUnique({ where: { tenantId: tenant.id }, select: { stripeCustomerId: true } });
   const back = `${appUrl}/events/${event.id}/genie`;
-  const meta = { kind: PAYMENT_KIND, tenantId: tenant.id, eventId: event.id, ipads: String(ipads) };
+  const meta = { kind: PAYMENT_KIND, tenantId: tenant.id, eventId: event.id, ipads: String(ipads), addOns: addOns.map(a => a.id).join(',') };
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     line_items,
@@ -116,7 +142,7 @@ export async function startCheckout(tenant: { id: string; name: string; product:
     cancel_url: back,
   });
   await prisma.genieEventPayment.create({
-    data: { tenantId: tenant.id, eventId: event.id, stripeCheckoutSessionId: session.id, amountCents, ipads },
+    data: { tenantId: tenant.id, eventId: event.id, stripeCheckoutSessionId: session.id, amountCents, ipads, addOns: addOns.map(a => a.id) },
   });
   return session.url!;
 }
@@ -141,6 +167,7 @@ export async function recordCheckout(session: Pick<Stripe.Checkout.Session, 'id'
       // Older checkouts carry no counts: one event payment (2.112.0 checkouts may also carry Sharing station PCs)
       ipads: session.metadata.ipads !== undefined ? Number(session.metadata.ipads) || 0 : IPADS_PER_PAYMENT,
       sharingPcs: Number(session.metadata.sharingPcs) || 0,
+      addOns: (session.metadata.addOns ?? '').split(',').filter(Boolean),
     },
   });
   await syncIpads(eventId);
@@ -161,12 +188,13 @@ export const COMP_PREFIX = 'comp_';
 export const isComp = (p: { stripeCheckoutSessionId: string }) => p.stripeCheckoutSessionId.startsWith(COMP_PREFIX);
 
 export async function compEvent(eventId: string) {
-  const event = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true, tenantId: true, genieSettings: { select: { id: true } } } });
+  const event = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true, tenantId: true, genieSettings: { select: { id: true, processing: true, filters: true } } } });
   if (!event?.genieSettings) return null;
   const payment = await prisma.genieEventPayment.create({
     data: {
       tenantId: event.tenantId, eventId, stripeCheckoutSessionId: COMP_PREFIX + crypto.randomUUID(),
-      amountCents: 0, status: 'paid', paidAt: new Date(), ipads: IPADS_PER_PAYMENT,
+      // Covers the event and the add-ons it uses now
+      amountCents: 0, status: 'paid', paidAt: new Date(), ipads: IPADS_PER_PAYMENT, addOns: addOnsInUse(event.genieSettings),
     },
   });
   await syncIpads(eventId);

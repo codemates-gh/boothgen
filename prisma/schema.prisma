@@ -1426,6 +1426,10 @@ model EventGenieSettings {
   backdropGuestPicks           Boolean @default(true)
   backdropEdgeSoftness         String  @default("medium") // soft | medium | sharp
 
+  // Paid add-ons (src/lib/genie/addOns.ts) this event has free: Glamour Style on events that already used the free
+  // "Beautify (Glamour)" filter before it became an add-on (2.114.0). Not copied by Duplicate.
+  addOnsIncluded String[] @default([])
+
   // ProcessingStep[] applied to every photo before the guest's filter
   processing Json @default("[]")
 
@@ -1500,6 +1504,7 @@ model GenieEventPayment {
   currency                String    @default("usd")
   ipads                   Int       @default(2) // iPads this payment covers (0: a Sharing station-only payment)
   sharingPcs              Int       @default(0) // Sharing station PCs this payment covered (2.112.0 only, $12 each; included with the event since 2.113.0)
+  addOns                  String[]  @default([]) // Paid add-ons this payment covers (src/lib/genie/addOns.ts ids)
   status                  String    @default("pending") // pending | paid
   paidAt                  DateTime?
   createdAt               DateTime  @default(now())

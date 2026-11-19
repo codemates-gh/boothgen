@@ -24,6 +24,8 @@ export default function GenieUsage() {
   const [price, setPrice] = useState('');
   const [geniusPrice, setGeniusPrice] = useState('');
   const [geniusPays, setGeniusPays] = useState(false);
+  // Add-on prices (Glamour Style), in dollars as typed
+  const [glamourPrice, setGlamourPrice] = useState('');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -48,6 +50,7 @@ export default function GenieUsage() {
     setPrice((d.priceCents / 100).toFixed(2));
     setGeniusPrice((d.geniusPriceCents / 100).toFixed(2));
     setGeniusPays(d.geniusPays);
+    setGlamourPrice((d.addOnPrices.glamourStyle / 100).toFixed(2));
   }, [days]);
   useEffect(() => { load(); }, [load]);
 
@@ -55,7 +58,7 @@ export default function GenieUsage() {
     setError(''); setSaved(false);
     const r = await fetch('/api/super-admin/genie-usage', {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ priceCents: Math.round(Number(price) * 100), geniusPriceCents: Math.round(Number(geniusPrice) * 100), geniusPays: pays }),
+      body: JSON.stringify({ priceCents: Math.round(Number(price) * 100), geniusPriceCents: Math.round(Number(geniusPrice) * 100), geniusPays: pays, addOnPrices: { glamourStyle: Math.round(Number(glamourPrice) * 100) } }),
     });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) { setError(d.error || 'Could not save the prices'); return false; }
@@ -89,8 +92,13 @@ export default function GenieUsage() {
               <span className="text-sm font-medium text-gray-700">Genius accounts</span>
               <div className="flex items-center gap-2"><span className="text-sm text-gray-500">$</span><Input type="number" min="0.5" step="0.01" value={geniusPrice} onChange={e => { setGeniusPrice(e.target.value); setSaved(false); }}/></div>
             </label>
+            <label className="space-y-1">
+              <span className="text-sm font-medium text-gray-700">Glamour Style add-on</span>
+              <div className="flex items-center gap-2"><span className="text-sm text-gray-500">$</span><Input type="number" min="0.5" step="0.01" value={glamourPrice} onChange={e => { setGlamourPrice(e.target.value); setSaved(false); }}/></div>
+              <span className="block text-xs text-gray-500">Per event, for every account (also Genius accounts that don't pay per event).</span>
+            </label>
           </div>
-          <Button onClick={() => savePrices()} disabled={!price || !geniusPrice}>{saved ? '✓ Saved' : 'Save prices'}</Button>
+          <Button onClick={() => savePrices()} disabled={!price || !geniusPrice || !glamourPrice}>{saved ? '✓ Saved' : 'Save prices'}</Button>
           <div className="flex items-start justify-between gap-4 border-t pt-4">
             <div>
               <p className="text-sm font-medium text-gray-700">Genius accounts pay per event</p>
@@ -98,7 +106,7 @@ export default function GenieUsage() {
                 ? 'On: Genius accounts pay the Genius price per event, with the watermark until paid. "Keep Genius free" accounts don\'t pay.'
                 : 'Off: Genius accounts run Genie events free, with no watermark. The site still shows the Genius price.'}</p>
             </div>
-            <Button variant={geniusPays ? 'outline' : 'default'} onClick={toggleGeniusPays} disabled={!price || !geniusPrice}>{geniusPays ? 'Turn off' : 'Turn on'}</Button>
+            <Button variant={geniusPays ? 'outline' : 'default'} onClick={toggleGeniusPays} disabled={!price || !geniusPrice || !glamourPrice}>{geniusPays ? 'Turn off' : 'Turn on'}</Button>
           </div>
         </CardContent>
       </Card>
