@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.121.3] — 2026-11-19
+
+### Changed
+- **Geniefied themes get a placeholder picture until a real sample is made.** A theme without a sample now gets a soft colored card, so it's offered to guests right away; the iPad shows the theme's name under it. BoothGen marks it "Placeholder" in Super Admin → AI themes, Genie → Themes and the event's theme list. Uploading a sample, or saving a Try it result, replaces it.
+
+### Fixed
+- The Geniefied routes that resize photos (renders, Try it, theme samples) now include ffmpeg in their deployed functions, like the other image routes.
+
+---
+
 ## [2.121.2] — 2026-11-19
 
 ### Fixed

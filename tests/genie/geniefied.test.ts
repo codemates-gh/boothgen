@@ -25,7 +25,7 @@ vi.mock('@/lib/storage/r2', async orig => ({
   deleteFromR2: vi.fn(async (key: string) => { deleted.push(key); objects.delete(key); }),
   r2PublicUrl: (key: string) => 'https://media.boothgen.test/' + key,
 }));
-vi.mock('@/lib/genie/ai/image', () => ({ toJpeg: vi.fn(async (b: Buffer) => ({ body: b, width: 1024, height: 1536 })) }));
+vi.mock('@/lib/genie/ai/image', () => ({ toJpeg: vi.fn(async (b: Buffer) => ({ body: b, width: 1024, height: 1536 })), placeholderJpeg: vi.fn(async (seed: string) => Buffer.from('placeholder:' + seed)) }));
 let providerResult: any = { ok: true, image: Buffer.from('geniefied') };
 const providerCalls: any[] = [];
 vi.mock('@/lib/genie/ai/provider', () => ({ renderWithGoogle: vi.fn(async (_i: Buffer, prompt: string, model: string) => { providerCalls.push({ prompt, model }); return providerResult; }) }));
@@ -103,7 +103,9 @@ describe('event settings and bundle', () => {
     b = await buildEventBundle(tenant.id, event.id);
     const ai = b.ok && (b.bundle.aiBooth as any);
     expect(ai).toMatchObject({ enabled: true, mode: 'beforeStart', waitSeconds: 60, consentText: expect.stringContaining('18 or older') });
-    expect(ai.themes.map((t: any) => [t.id, t.source])).toEqual([[mine.id, 'account'], [oil.id, 'standard']]);
+    // A theme without a sample gets a placeholder card, so it's offered too
+    expect(ai.themes.map((t: any) => [t.id, t.source])).toEqual([[mine.id, 'account'], [oil.id, 'standard'], [noSample.id, 'standard']]);
+    expect(ai.themes[2].sample.url).toContain('/genie-ai-themes/standard/placeholders/');
     expect(JSON.stringify(ai)).not.toContain('secret');
     // Unpaid add-on: watermarked
     expect(b.ok && b.bundle.watermark).toBeTruthy();

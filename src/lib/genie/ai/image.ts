@@ -20,3 +20,22 @@ export async function toJpeg(input: Buffer, maxSide: number, quality = 3): Promi
     await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
   }
 }
+
+// A placeholder sample: a soft two-color gradient (colors from the seed), JPEG, size × size. No text: the iPad shows the
+// theme's name under its picture.
+export async function placeholderJpeg(seed: string, size = 800): Promise<Buffer | null> {
+  const { run } = await import('../attractEncode');
+  let h = 0;
+  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const PALETTE = ['6d28d9', 'db2777', 'f97316', '0ea5e9', '10b981', 'eab308', '4f46e5', 'e11d48', '14b8a6', '9333ea'];
+  const c0 = PALETTE[h % PALETTE.length], c1 = PALETTE[(h >>> 8) % PALETTE.length] === c0 ? PALETTE[(h + 3) % PALETTE.length] : PALETTE[(h >>> 8) % PALETTE.length];
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-ph-'));
+  try {
+    const out = path.join(dir, 'out.jpg');
+    const r = await run(['-y', '-f', 'lavfi', '-i', `gradients=s=${size}x${size}:c0=0x${c0}:c1=0x${c1}:x0=0:y0=0:x1=${size}:y1=${size}:nb_colors=2:d=1`, '-frames:v', '1', '-q:v', '3', out]);
+    if (r.code !== 0) { console.error('[ai-image] placeholder failed', r.stderr.slice(-800)); return null; }
+    return await fs.readFile(out);
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
+}

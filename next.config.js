@@ -10,6 +10,13 @@ const nextConfig = {
     '/api/genie-backdrops/process': ['./node_modules/ffmpeg-static/ffmpeg'],
     '/api/genie-countdown/encode': ['./node_modules/ffmpeg-static/ffmpeg'],
     '/api/genie-poses/process': ['./node_modules/ffmpeg-static/ffmpeg'],
+    // Geniefied: resizing shots and results, theme samples and placeholders
+    '/api/genie/events/[eventId]/ai-renders': ['./node_modules/ffmpeg-static/ffmpeg'],
+    '/api/genie-ai-themes': ['./node_modules/ffmpeg-static/ffmpeg'],
+    '/api/genie-ai-themes/[themeId]': ['./node_modules/ffmpeg-static/ffmpeg'],
+    '/api/genie-ai-themes/[themeId]/try': ['./node_modules/ffmpeg-static/ffmpeg'],
+    '/api/super-admin/ai-themes': ['./node_modules/ffmpeg-static/ffmpeg'],
+    '/api/super-admin/ai-themes/import': ['./node_modules/ffmpeg-static/ffmpeg'],
     '/blog': ['./content/blog/**/*'],
     '/blog/[slug]': ['./content/blog/**/*'],
     '/sitemap.xml': ['./content/blog/**/*'],

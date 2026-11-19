@@ -15,11 +15,13 @@ export type AiTheme = {
   id: string; name: string; source: 'standard' | 'account';
   prompt?: string; fastModel?: string | null; qualityModel?: string | null;
   sample: RemoteAsset | null; thumbnail: RemoteAsset | null; isActive: boolean;
+  // A gradient card BoothGen made until a real sample is added (upload or Try it)
+  placeholder?: boolean;
 };
 type Scope = 'mine' | 'standard';
 
 export const THEME_FIXED_NOTE = 'BoothGen always adds its fixed instructions first: keep each person\'s face, identity, skin tone, age and pose; no text; no nudity.';
-export const THEME_NO_SAMPLE_NOTE = "A theme without a sample isn't offered to guests.";
+export const THEME_NO_SAMPLE_NOTE = 'Until a theme has its own sample (upload one, or Try it and save the result), guests see a placeholder card with its name.';
 export const THEME_TRIES_NOTE = '20 tries a day.';
 const PROMPT_MAX = 2000;
 
@@ -35,7 +37,7 @@ async function uploadThemePicture(file: File, scope: Scope, onPct: (n: number) =
 }
 
 // The sample (or its thumbnail), or a placeholder
-export function ThemeThumb({ theme, className = 'w-full aspect-square' }: { theme: Pick<AiTheme, 'sample' | 'thumbnail' | 'name'>; className?: string }) {
+export function ThemeThumb({ theme, className = 'w-full aspect-square' }: { theme: Pick<AiTheme, 'sample' | 'thumbnail' | 'name' | 'placeholder'>; className?: string }) {
   const pic = theme.thumbnail ?? theme.sample;
   if (!pic) {
     return (
@@ -45,7 +47,14 @@ export function ThemeThumb({ theme, className = 'w-full aspect-square' }: { them
       </div>
     );
   }
-  return <img src={artUrl(pic.url)} alt={theme.name} className={className + ' rounded-lg object-cover bg-gray-100'}/>;
+  const img = <img src={artUrl(pic.url)} alt={theme.name} className={className + ' rounded-lg object-cover bg-gray-100'}/>;
+  if (!theme.placeholder) return img;
+  return (
+    <div className="relative">
+      {img}
+      <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/55 text-white text-[10px] font-medium">Placeholder</span>
+    </div>
+  );
 }
 
 // Pick a JPG or PNG

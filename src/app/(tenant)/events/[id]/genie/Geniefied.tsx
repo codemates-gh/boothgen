@@ -70,7 +70,7 @@ export function GeniefiedFields({ value, info, priceCents, disabled, onChange, o
                   {chosen.map((t, i) => (
                     <div key={t.id} className="flex items-center gap-3 px-3 py-2">
                       <ThemeThumb theme={t} className="w-12 h-12 rounded-md flex-shrink-0"/>
-                      <span className="text-sm flex-1">{t.name}{t.source === 'account' && <span className="text-xs text-gray-400"> · My theme</span>}{!t.sample && <span className="block text-xs text-amber-700">No sample yet, so guests won't see it</span>}</span>
+                      <span className="text-sm flex-1">{t.name}{t.source === 'account' && <span className="text-xs text-gray-400"> · My theme</span>}{(!t.sample || t.placeholder) && <span className="block text-xs text-gray-500">Placeholder picture until a sample is made</span>}</span>
                       {value.mode === 'fixedTheme' && (
                         <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
                           <input type="radio" name="aiFixed" checked={value.fixedThemeId === t.id} disabled={disabled} onChange={() => onChange({ fixedThemeId: t.id })}/>Everyone

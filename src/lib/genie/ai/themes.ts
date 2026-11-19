@@ -1,14 +1,14 @@
 import { createHash, randomUUID } from 'crypto';
-import type { GenieAiTheme } from '@prisma/client';
+import { Prisma, type GenieAiTheme } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { deleteFromR2, getR2Object, headR2Object, r2PublicUrl, uploadToR2 } from '@/lib/storage/r2';
 import { keyForUrl, type RemoteAsset } from '../templateAssets';
 import { readImageInfo } from '../image';
-import { toJpeg } from './image';
+import { placeholderJpeg, toJpeg } from './image';
 
 // Geniefied themes (Genie P13): Standard (Super Admin → AI themes) and My themes (Genie → Themes). The prompt stays in
 // BoothGen; the bundle gets AiThemeAsset (id, name, source, sample, thumbnail). Samples are JPEGs ≤ 1200 px with a
-// 360 px thumbnail, stored content-addressed like pose pictures.
+// 360 px thumbnail, stored content-addressed like pose pictures; until a real one is made, a placeholder (ensurePlaceholders).
 
 export const THEME_SAMPLE_SIDE = 1200;
 export const THEME_THUMB_SIDE = 360;
@@ -72,12 +72,33 @@ export function themeAsset(t: GenieAiTheme) {
   };
 }
 
+// Placeholder samples (a gradient card) for themes that don't have one yet, so they're offered to guests before a real
+// sample is made; a real sample (upload or "Try it") replaces it. Stored under …/placeholders/.
+export const isPlaceholder = (a: RemoteAsset | null | undefined) => !!a?.url.includes('/placeholders/');
+export async function ensurePlaceholders(themes: GenieAiTheme[]): Promise<GenieAiTheme[]> {
+  const out: GenieAiTheme[] = [];
+  for (const t of themes) {
+    if (t.sample) { out.push(t); continue; }
+    const body = await placeholderJpeg(t.id);
+    if (!body) { out.push(t); continue; }
+    const prefix = themePrefix(t.tenantId ? 'mine' : 'standard', t.tenantId) + 'placeholders/';
+    const small = await toJpeg(body, THEME_THUMB_SIDE, 5);
+    const sample = await storeJpeg(prefix, body);
+    const thumbnail = small ? await storeJpeg(prefix + 'thumbs/', small.body) : sample;
+    // Only if it still has none (a real sample saved meanwhile wins)
+    await prisma.genieAiTheme.updateMany({ where: { id: t.id, sample: { equals: Prisma.DbNull } }, data: { sample, thumbnail } });
+    out.push((await prisma.genieAiTheme.findUnique({ where: { id: t.id } })) ?? t);
+  }
+  return out;
+}
+
 // For the owner (My themes) and Super Admin: the prompt too. Operators see Standard themes without their prompt.
 export function themeView(t: GenieAiTheme, withPrompt: boolean) {
   return {
     id: t.id, name: t.name, source: t.tenantId ? 'account' as const : 'standard' as const,
     ...(withPrompt ? { prompt: t.prompt, fastModel: t.fastModel, qualityModel: t.qualityModel } : {}),
     sample: (t.sample as RemoteAsset | null) ?? null, thumbnail: (t.thumbnail as RemoteAsset | null) ?? null,
+    placeholder: isPlaceholder(t.sample as RemoteAsset | null),
     isActive: t.isActive,
   };
 }
@@ -94,11 +115,12 @@ export function storedThemeIds(v: unknown): string[] {
   return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
 }
 
-// The event's themes in its order: ones it may use (Standard on, or its account's own) that have a sample
+// The event's themes in its order: ones it may use (Standard on, or its account's own), with a placeholder sample
+// made for any that has none
 export async function eventThemes(ids: unknown, tenantId: string): Promise<GenieAiTheme[]> {
   const list = storedThemeIds(ids);
   if (!list.length) return [];
-  const rows = await prisma.genieAiTheme.findMany({ where: { id: { in: list }, OR: [{ tenantId: null, isActive: true }, { tenantId }] } });
+  const rows = await ensurePlaceholders(await prisma.genieAiTheme.findMany({ where: { id: { in: list }, OR: [{ tenantId: null, isActive: true }, { tenantId }] } }));
   return list.map(id => rows.find(r => r.id === id)).filter((t): t is GenieAiTheme => !!t && !!t.sample);
 }
 

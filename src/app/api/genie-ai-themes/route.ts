@@ -4,13 +4,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin, requireLibraryEditor } from '@/lib/genie/admin';
-import { THEME_PROMPT_MAX, libraryThemes, sampleFrom, takeUpload, themeView } from '@/lib/genie/ai/themes';
+import { THEME_PROMPT_MAX, ensurePlaceholders, libraryThemes, sampleFrom, takeUpload, themeView } from '@/lib/genie/ai/themes';
 
 // The operator's Geniefied themes: Standard themes that are on (no prompt) and My themes (with prompt)
 export async function GET() {
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
-  const all = await libraryThemes(auth.tenantId);
+  const all = await ensurePlaceholders(await libraryThemes(auth.tenantId));
   return NextResponse.json({
     standard: all.filter(t => !t.tenantId).map(t => themeView(t, false)),
     mine: all.filter(t => t.tenantId).map(t => themeView(t, true)),
@@ -42,6 +42,6 @@ export async function POST(req: NextRequest) {
     files = s;
   }
   const last = await prisma.genieAiTheme.findFirst({ where: { tenantId }, orderBy: { sortOrder: 'desc' }, select: { sortOrder: true } });
-  const t = await prisma.genieAiTheme.create({ data: { tenantId, name, prompt, ...files, sortOrder: (last?.sortOrder ?? -1) + 1 } });
+  const [t] = await ensurePlaceholders([await prisma.genieAiTheme.create({ data: { tenantId, name, prompt, ...files, sortOrder: (last?.sortOrder ?? -1) + 1 } })]);
   return NextResponse.json({ theme: themeView(t, true) }, { status: 201 });
 }
