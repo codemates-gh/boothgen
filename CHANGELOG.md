@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.111.0] — 2026-11-18
+
+### Added
+- **Pay next to Assigned To** on the event page. Assign a team member (an attendant or a hired operator) and enter their pay: it's saved as the event's **Operator Pay** in the Profitability card and shows in Bookkeeping as Staff & Attendants, with the person as the payee (search their name to see what they're owed across events). Changing the pay updates it, assigning someone else moves it to them, and unassigning removes it. Team members don't see it, and changing only the pay doesn't email them again.
+
+Needs `docs/genie/apply-production-assignee-pay.sql` (one new column) run in production before this deploys.
+
+---
+
 ## [2.110.1] — 2026-11-18
 
 ### Fixed

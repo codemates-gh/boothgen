@@ -22,6 +22,7 @@ import { DOC_HEAD, DOC_ROW, DOC_WIDE, DOC_NARROW } from './docGrid';
 import EventAutomations, { type EventAutomationRow } from './EventAutomations';
 import { settleZeroInvoice } from '@/lib/invoices/payments';
 import { clientDisplayName } from '@/lib/clientName';
+import { assigneePayRow } from '@/lib/events/assigneePay';
 
 
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger', LOST:'default' };
@@ -78,6 +79,8 @@ export default async function EventDetailPage(
       })
     : [];
   const branding = await prisma.tenantBranding.findUnique({ where: { tenantId: session.tenantId }, select: { currency: true } });
+  // Pay for the assigned person (admins only)
+  const assigneePay = isAdmin ? await assigneePayRow(event.id) : null;
   const genieEnabled = isAdmin && !!(await prisma.tenant.findUnique({ where: { id: session.tenantId }, select: { genieEnabled: true } }))?.genieEnabled;
   const fmt = (c: number) => fmtCents(c, branding?.currency ?? 'usd');
 
@@ -199,13 +202,14 @@ export default async function EventDetailPage(
             <div className="p-6 space-y-3 text-sm">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Assigned To</p>
               {isAdmin ? (
-                <AssignEventButton eventId={event.id} currentAssigneeId={event.assignedToUserId ?? null} members={members.map(m => m.user)} />
+                <AssignEventButton eventId={event.id} currentAssigneeId={event.assignedToUserId ?? null} members={members.map(m => m.user)}
+                  currentPayCents={assigneePay?.amountCents ?? null} currency={branding?.currency ?? 'usd'} />
               ) : (
                 <p className="font-medium">{event.assignedTo?.name ?? '—'}</p>
               )}
               {event.assignedTo && <p className="text-xs text-gray-400">{event.assignedTo.email}</p>}
               {isAdmin && (
-                <p className="text-xs text-gray-400">{event.assignedTo ? '' : 'Pick who runs this event. '}Log their pay under <a href="#profitability" className="font-medium text-gray-600 hover:underline">Profitability</a> as Operator Pay.</p>
+                <p className="text-xs text-gray-400">{event.assignedTo ? 'Their pay counts as Operator Pay in ' : 'Pick who runs this event, and their pay. It counts as Operator Pay in '}<a href="#profitability" className="font-medium text-gray-600 hover:underline">Profitability</a> and Bookkeeping. They don&apos;t see it.</p>
               )}
             </div>
           </div>

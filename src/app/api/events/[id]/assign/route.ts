@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 import { sendEventAssignmentEmail } from '@/lib/email/send';
 import { format } from 'date-fns';
+import { setAssigneePay } from '@/lib/events/assigneePay';
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -18,7 +19,11 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   });
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const { userId } = await req.json();
+  const { userId, payCents } = await req.json();
+  // Pay for the assignee (dollars as cents); absent keeps it, 0 or null removes it
+  if (payCents !== undefined && payCents !== null && (typeof payCents !== 'number' || !Number.isFinite(payCents) || payCents < 0 || payCents > 100_000_000)) {
+    return NextResponse.json({ error: 'Enter the pay as an amount' }, { status: 400 });
+  }
 
   // Validate the user is an active member of this tenant
   if (userId) {
@@ -36,8 +41,10 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     include: { assignedTo: { select: { id: true, name: true, email: true } } },
   });
 
-  // Send notification email when assigning (not when unassigning)
-  if (userId && updated.assignedTo) {
+  const pay = await setAssigneePay(session.tenantId, params.id, updated.assignedTo ? { id: updated.assignedTo.id, name: updated.assignedTo.name } : null, payCents);
+
+  // Send notification email when assigning someone new (not when unassigning or only changing the pay)
+  if (userId && updated.assignedTo && userId !== event.assignedToUserId) {
     const companyName = event.tenant.branding?.companyName ?? event.tenant.name;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
     const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
@@ -53,5 +60,5 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     }).catch(e => console.error('[event/assign] notification email error:', e));
   }
 
-  return NextResponse.json(updated);
+  return NextResponse.json({ ...updated, payCents: pay?.amountCents ?? null });
 }

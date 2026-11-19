@@ -1224,6 +1224,8 @@ model EventExpense {
   description String
   amountCents Int
   category    String   @default("other")
+  // Set on the pay of the person assigned to the event (the Pay field next to Assigned To); one per event
+  assigneeUserId String?
   createdAt   DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)

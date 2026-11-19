@@ -104,12 +104,15 @@ export async function syncLedger(tenantId: string): Promise<{ added: number; rem
   // Expenses entered on an event's Profitability card
   const eventExpenses = await prisma.eventExpense.findMany({
     where: { tenantId, amountCents: { gt: 0 } },
-    select: { id: true, description: true, amountCents: true, category: true, eventId: true, event: { select: { title: true, eventDate: true, clientId: true } } },
+    select: { id: true, description: true, amountCents: true, category: true, eventId: true, assigneeUserId: true, event: { select: { title: true, eventDate: true, clientId: true } } },
   });
+  // The assigned person's pay (Pay next to Assigned To) has them as the payee, so their pay can be found by name
+  const assigneeIds = Array.from(new Set(eventExpenses.map(e => e.assigneeUserId).filter((x): x is string => !!x)));
+  const assigneeNames = new Map((assigneeIds.length ? await prisma.user.findMany({ where: { id: { in: assigneeIds } }, select: { id: true, name: true } }) : []).map(u => [u.id, u.name]));
   for (const e of eventExpenses) {
     rows.push({ sourceKey: 'eventexpense:' + e.id, source: 'event', type: 'EXPENSE', date: e.event.eventDate, amountCents: e.amountCents,
       description: `${e.description} (${e.event.title})`, categoryName: EVENT_EXPENSE_CATEGORY[e.category] ?? 'Other Expenses',
-      payee: null, invoiceId: null, eventId: e.eventId, clientId: e.event.clientId });
+      payee: (e.assigneeUserId && assigneeNames.get(e.assigneeUserId)?.trim()) || null, invoiceId: null, eventId: e.eventId, clientId: e.event.clientId });
   }
 
   // Mileage: look up distances that are new (a few per run), then one expense per event
