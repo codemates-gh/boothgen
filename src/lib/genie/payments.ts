@@ -124,7 +124,7 @@ export async function startCheckout(tenant: { id: string; name: string; product:
   });
   for (const a of addOns) line_items.push({
     quantity: 1,
-    price_data: { currency: 'usd', unit_amount: a.cents, product_data: { name: `${a.name}: ${event.title}`.slice(0, 250), description: `${a.name} add-on for this event` } },
+    price_data: { currency: 'usd', unit_amount: a.cents, product_data: { name: `${a.name}: ${event.title}`.slice(0, 250), description: a.id === 'glamourStyle' ? 'The exclusive filter from our partner Glamour Style Photo Booth, for this event' : `${a.name} add-on for this event` } },
   });
   const amountCents = (eventLine ? billing.priceCents! : 0) + addOns.reduce((n, a) => n + a.cents, 0);
   const ipads = eventLine ? IPADS_PER_PAYMENT : 0;

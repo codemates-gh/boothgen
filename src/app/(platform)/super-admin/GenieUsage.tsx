@@ -95,7 +95,7 @@ export default function GenieUsage() {
             <label className="space-y-1">
               <span className="text-sm font-medium text-gray-700">Glamour Style add-on</span>
               <div className="flex items-center gap-2"><span className="text-sm text-gray-500">$</span><Input type="number" min="0.5" step="0.01" value={glamourPrice} onChange={e => { setGlamourPrice(e.target.value); setSaved(false); }}/></div>
-              <span className="block text-xs text-gray-500">Per event, for every account (also Genius accounts that don't pay per event).</span>
+              <span className="block text-xs text-gray-500">The exclusive filter from our partner <a href="https://www.glamourstylephotobooth.com" target="_blank" rel="noopener noreferrer" className="underline">Glamour Style Photo Booth</a>. Per event, for every account (also Genius accounts that don't pay per event).</span>
             </label>
           </div>
           <Button onClick={() => savePrices()} disabled={!price || !geniusPrice || !glamourPrice}>{saved ? '✓ Saved' : 'Save prices'}</Button>

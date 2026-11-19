@@ -38,16 +38,19 @@ export const FILTER_CATALOG = [
   { id: 'warm', name: 'Warm', steps: [{ type: 'colorPreset', preset: 'warm', intensity: 0.5 }] },
   { id: 'sepia', name: 'Sepia', steps: [{ type: 'colorPreset', preset: 'sepia', intensity: 0.8 }] },
   { id: 'bw', name: 'Black & White', steps: [{ type: 'colorPreset', preset: 'blackAndWhite', intensity: 1 }] },
-  // Glamour Style: face-only skin retouching (Genie 0.5.0 build 15+; older builds ignore the step). A paid add-on
+  // Beautify: free skin smoothing, a standard filter (Genie 0.5.0 build 15+; older builds ignore the step). Its id stays
+  // 'glamour' (events saved it under the old name "Beautify (Glamour)")
+  { id: 'glamour', name: 'Beautify', steps: [{ type: 'beautify', intensity: 0.7 }] },
+  // Glamour Style: the exclusive filter from our partner Glamour Style Photo Booth. A paid add-on
   // (src/lib/genie/addOns.ts): offering it adds it to the event's bill
-  { id: 'glamour', name: 'Glamour Style', steps: [{ type: 'beautify', intensity: 0.7 }] },
+  { id: 'glamourStyle', name: 'Glamour Style', steps: [{ type: 'glamourStyle', intensity: 0.7 }] },
 ] as const;
 
 type StoredFilter = { id: string; name: string; steps: unknown[] };
 
-// Glamour Style strength saved on the event; 0.7 until set
-export function glamourIntensity(current: unknown): number {
-  const f = (Array.isArray(current) ? current as StoredFilter[] : []).find(x => x?.id === 'glamour');
+// Strength saved on the event for Beautify ('glamour') or Glamour Style ('glamourStyle'); 0.7 until set
+export function glamourIntensity(current: unknown, id: 'glamour' | 'glamourStyle' = 'glamour'): number {
+  const f = (Array.isArray(current) ? current as StoredFilter[] : []).find(x => x?.id === id);
   const n = (f?.steps?.[0] as { intensity?: unknown } | undefined)?.intensity;
   return typeof n === 'number' && n >= 0.3 && n <= 1 ? n : 0.7;
 }
@@ -103,8 +106,10 @@ export const SettingsPatch = z.object({
     guestFiltersEnabled: z.boolean(),
     defaultFilterId: z.string().min(1),
     filterIds: z.array(z.string().min(1)).min(1, 'Choose at least one filter'),
-    // Glamour Style strength; absent keeps the saved one
+    // Beautify strength; absent keeps the saved one
     glamourIntensity: z.number().min(0.3).max(1).optional(),
+    // Glamour Style strength; absent keeps the saved one
+    glamourStyleIntensity: z.number().min(0.3).max(1).optional(),
   }).strict(),
   sharing: z.object({
     smsEnabled: z.boolean(),
@@ -154,9 +159,12 @@ export function settingsUpdateData(patch: SettingsPatch, current: EventGenieSett
     const chosen = patch.filters.filterIds.map(id => available.find(f => f.id === id));
     if (chosen.some(f => !f)) return { error: 'Unknown filter' };
     if (!patch.filters.filterIds.includes(patch.filters.defaultFilterId)) return { error: 'The default filter must be one of the offered filters' };
-    // Glamour Style at the chosen strength (rounded to 0.05), under its current name
-    const intensity = Math.round((patch.filters.glamourIntensity ?? glamourIntensity(current.filters)) * 20) / 20;
-    data.filters = chosen.map(f => f!.id === 'glamour' ? { ...f!, name: 'Glamour Style', steps: [{ type: 'beautify', intensity }] } : f);
+    // Beautify and Glamour Style at the chosen strength (rounded to 0.05), under their current names
+    const round = (n: number) => Math.round(n * 20) / 20;
+    const beautify = round(patch.filters.glamourIntensity ?? glamourIntensity(current.filters));
+    const glamourStyle = round(patch.filters.glamourStyleIntensity ?? glamourIntensity(current.filters, 'glamourStyle'));
+    data.filters = chosen.map(f => f!.id === 'glamour' ? { ...f!, name: 'Beautify', steps: [{ type: 'beautify', intensity: beautify }] }
+      : f!.id === 'glamourStyle' ? { ...f!, name: 'Glamour Style', steps: [{ type: 'glamourStyle', intensity: glamourStyle }] } : f);
     data.defaultFilterId = patch.filters.defaultFilterId;
     data.guestFiltersEnabled = patch.filters.guestFiltersEnabled;
   }
@@ -253,6 +261,7 @@ export function settingsView(s: EventGenieSettings) {
       filterIds: (Array.isArray(s.filters) ? s.filters as StoredFilter[] : []).map(f => f.id),
       available: availableFilters(s.filters).map(f => ({ id: f.id, name: f.name })),
       glamourIntensity: glamourIntensity(s.filters),
+      glamourStyleIntensity: glamourIntensity(s.filters, 'glamourStyle'),
     },
     sharing: {
       smsEnabled: s.smsEnabled,

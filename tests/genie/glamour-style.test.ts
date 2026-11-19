@@ -33,7 +33,7 @@ import { GET as galleryPage } from '@/app/api/g/[token]/route';
 import { guestSession, req, resetDb, seedDevice, seedEvent, seedTenant } from './helpers';
 
 const ev = (id: string) => ({ params: Promise.resolve({ id }) });
-const GLAMOUR = { filters: { guestFiltersEnabled: true, defaultFilterId: 'original', filterIds: ['original', 'glamour'] } };
+const GLAMOUR = { filters: { guestFiltersEnabled: true, defaultFilterId: 'original', filterIds: ['original', 'glamourStyle'] } };
 
 async function setup(product: 'genie' | 'crm' = 'genie') {
   const t = await seedTenant({ pro: product === 'crm' });
@@ -54,6 +54,24 @@ beforeEach(async () => {
 afterAll(async () => { await resetDb(); await prisma.$disconnect(); });
 
 describe('Glamour Style add-on', () => {
+  it('Beautify is a free standard filter: no add-on, no charge, saved and sent as Beautify', async () => {
+    const { tenant, event } = await setup('genie');
+    await recordCheckout(checkout(tenant.id, event.id, { ipads: '2' }, 1500));
+    // An event saved under 2.114.0 holds the name "Glamour Style" on the Beautify filter
+    await prisma.eventGenieSettings.update({ where: { eventId: event.id }, data: { filters: [{ id: 'original', name: 'Original', steps: [] }, { id: 'glamour', name: 'Glamour Style', steps: [{ type: 'beautify', intensity: 0.8 }] }] } });
+    expect(await eventBilling(tenant, event.id)).toMatchObject({ addOns: [], watermark: false, amountDueCents: 0 });
+    const b = await buildEventBundle(tenant.id, event.id);
+    expect(b.ok && (b.bundle.filters as any).filters.find((f: any) => f.id === 'glamour')).toEqual({ id: 'glamour', name: 'Beautify', steps: [{ type: 'beautify', intensity: 0.8 }] });
+    // Both offered, each at its own strength: only Glamour Style is charged
+    const r = await PATCH(req('/x', { method: 'PATCH', body: { filters: { ...GLAMOUR.filters, filterIds: ['original', 'glamour', 'glamourStyle'], glamourIntensity: 0.5, glamourStyleIntensity: 0.9 } } }), ev(event.id));
+    expect(r.status).toBe(200);
+    const stored = (await prisma.eventGenieSettings.findUniqueOrThrow({ where: { eventId: event.id } })).filters as any[];
+    expect(stored.map(f => [f.id, f.name, f.steps[0]?.type, f.steps[0]?.intensity])).toEqual([
+      ['original', 'Original', undefined, undefined], ['glamour', 'Beautify', 'beautify', 0.5], ['glamourStyle', 'Glamour Style', 'glamourStyle', 0.9],
+    ]);
+    expect(await eventBilling(tenant, event.id)).toMatchObject({ addOns: ['glamourStyle'], watermark: true, amountDueCents: 1500 });
+  });
+
   it('no charge until it’s offered; offering it adds $15 to the event checkout, watermarked until paid', async () => {
     const { tenant, event } = await setup('genie');
     expect(await eventBilling(tenant, event.id)).toMatchObject({ addOns: [], addOnsDue: [], amountDueCents: 1500 });
@@ -62,7 +80,7 @@ describe('Glamour Style add-on', () => {
     let b = await buildEventBundle(tenant.id, event.id);
     // Sent before paying (try it), with the watermark; under its new name
     expect(b.ok && b.bundle.watermark).toBeTruthy();
-    expect(b.ok && (b.bundle.filters as any).filters.find((f: any) => f.id === 'glamour')).toEqual({ id: 'glamour', name: 'Glamour Style', steps: [{ type: 'beautify', intensity: 0.7 }] });
+    expect(b.ok && (b.bundle.filters as any).filters.find((f: any) => f.id === 'glamourStyle')).toEqual({ id: 'glamourStyle', name: 'Glamour Style', steps: [{ type: 'glamourStyle', intensity: 0.7 }] });
 
     expect((await PAY(req('/x', { body: {} }), ev(event.id))).status).toBe(200);
     expect(created[0].line_items.map((l: any) => [l.price_data.product_data.name.split(':')[0], l.price_data.unit_amount])).toEqual([['Genie event', 1500], ['Glamour Style', 1500]]);

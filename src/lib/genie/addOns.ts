@@ -11,15 +11,18 @@ export type AddOnId = 'glamourStyle';
 
 type Settings = Pick<EventGenieSettings, 'processing' | 'filters'>;
 
+export const GLAMOUR_STYLE_URL = 'https://www.glamourstylephotobooth.com';
+
 export const ADD_ONS: { id: AddOnId; name: string; description: string; setting: string; defaultCents: number; inUse: (s: Settings) => boolean }[] = [
   {
     id: 'glamourStyle',
     name: 'Glamour Style',
-    // G's wording (Genie brief, 2026-11-19)
-    description: 'Proprietary Glamour Filter: advanced skin-smoothing that keeps what makes each person recognizable. Looks like professional retouching, delivered instantly.',
+    // Glamour Style Photo Booth's exclusive filter, offered through a partnership with Booth Genius (G, 2026-11-19)
+    description: 'The exclusive filter from our partner Glamour Style Photo Booth: advanced skin-smoothing that keeps what makes each person recognizable, like professional retouching delivered instantly.',
     setting: 'addon_price_cents_glamour_style',
     defaultCents: 1500,
-    inUse: s => hasStep(s.processing, 'beautify') || filterList(s.filters).some(f => hasStep(f.steps, 'beautify')),
+    // The glamourStyle step only (the free Beautify filter is the beautify step)
+    inUse: s => hasStep(s.processing, 'glamourStyle') || filterList(s.filters).some(f => hasStep(f.steps, 'glamourStyle')),
   },
 ];
 

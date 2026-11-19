@@ -167,8 +167,8 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
     filters: {
       guestFiltersEnabled: settings.guestFiltersEnabled,
       defaultFilterId: settings.defaultFilterId,
-      // Events saved before 2.114.0 hold the old name "Beautify (Glamour)"
-      filters: (Array.isArray(settings.filters) ? settings.filters as { id: string }[] : []).map(f => f?.id === 'glamour' ? { ...f, name: 'Glamour Style' } : f),
+      // Beautify was saved as "Beautify (Glamour)" (before 2.114.0) and "Glamour Style" (2.114.0–2.115.0)
+      filters: (Array.isArray(settings.filters) ? settings.filters as { id: string }[] : []).map(f => f?.id === 'glamour' ? { ...f, name: 'Beautify' } : f),
     },
     sharing: {
       // A channel is only offered when the tenant's own provider for it is set up

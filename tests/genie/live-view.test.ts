@@ -65,7 +65,7 @@ describe('photo live view settings', () => {
     expect([s.thankYouSeconds, s.thankYouTitle, s.thankYouSubtitle]).toEqual([12, 'Thanks for coming', 'See you soon']);
   });
 
-  it('Beautify (Glamour) is offered as a filter and valid in the bundle', async () => {
+  it('Beautify is offered as a free filter and valid in the bundle', async () => {
     const { tenant, client } = await seedTenant();
     tenantId = tenant.id;
     const event = await seedEvent(tenant.id, client.id);
@@ -75,7 +75,7 @@ describe('photo live view settings', () => {
     const r = await PATCH(req('/x', { method: 'PATCH', body: { filters: { guestFiltersEnabled: true, defaultFilterId: 'original', filterIds: ['original', 'glamour'] } } }), { params: { id: event.id } });
     expect(r.status).toBe(200);
     const b = await (await deviceBundle(req('/x', { token }), { params: { eventId: event.id } })).json();
-    expect(b.filters.filters.find((f: any) => f.id === 'glamour')).toEqual({ id: 'glamour', name: 'Glamour Style', steps: [{ type: 'beautify', intensity: 0.7 }] });
+    expect(b.filters.filters.find((f: any) => f.id === 'glamour')).toEqual({ id: 'glamour', name: 'Beautify', steps: [{ type: 'beautify', intensity: 0.7 }] });
     const validate = await bundleValidator();
     if (validate) expect(validate(b)).toBeNull();
 

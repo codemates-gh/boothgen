@@ -83,7 +83,8 @@ export const PrintLogEntry = z.object({
 }).strict();
 
 export const ProcessingStep = z.object({
-  type: z.enum(['colorPreset', 'sharpen', 'toneCurve', 'jpegQuality', 'beautify']),
+  // beautify: the free Beautify filter; glamourStyle: Glamour Style, the paid add-on (2.116.0)
+  type: z.enum(['colorPreset', 'sharpen', 'toneCurve', 'jpegQuality', 'beautify', 'glamourStyle']),
   preset: z.enum(['none', 'blackAndWhite', 'sepia', 'warm']).optional(),
   intensity: z.number().min(0).max(1).optional(),
   radius: z.number().min(0).max(20).optional(),
@@ -91,7 +92,7 @@ export const ProcessingStep = z.object({
   quality: z.number().min(0.1).max(1).optional(),
 }).strict().superRefine((s, ctx) => {
   const need: Record<string, (keyof typeof s)[]> = {
-    colorPreset: ['preset', 'intensity'], sharpen: ['radius', 'intensity'], toneCurve: ['curvePoints'], jpegQuality: ['quality'], beautify: ['intensity'],
+    colorPreset: ['preset', 'intensity'], sharpen: ['radius', 'intensity'], toneCurve: ['curvePoints'], jpegQuality: ['quality'], beautify: ['intensity'], glamourStyle: ['intensity'],
   };
   for (const key of need[s.type]) if (s[key] === undefined) ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${s.type} requires ${key}`, path: [key] });
 });

@@ -23,11 +23,12 @@ import { EventBackdropsFields, type EventBackdropsValue } from './EventBackdrops
 import type { Backdrop } from '@/components/genie/Backdrops';
 import { PoseIdeasFields, type PoseIdeasValue } from '@/components/genie/PoseIdeas';
 import type { Pose } from '@/components/genie/Poses';
+import { GLAMOUR_STYLE_URL } from '@/lib/genie/addOns';
 import { SharingStationFields, type SharingStationValue } from './SharingStation';
 
 type Settings = {
   enabled: boolean; timeZone: string; bundleVersion: number; maxDevices: number; capture: Capture;
-  filters: { guestFiltersEnabled: boolean; defaultFilterId: string; filterIds: string[]; available: { id: string; name: string }[]; glamourIntensity: number };
+  filters: { guestFiltersEnabled: boolean; defaultFilterId: string; filterIds: string[]; available: { id: string; name: string }[]; glamourIntensity: number; glamourStyleIntensity: number };
   sharing: Sharing;
   printing: Printing;
   lookAtCamera: LookAtCamera;
@@ -402,18 +403,24 @@ export default function EventGeniePage() {
                             }}/>
                           <span className="text-sm flex-1">
                             {f.name}
-                            {f.id === 'glamour' && data.billing.addOnPrices.glamourStyle !== undefined && (
-                              <span className="block text-xs text-gray-500">Our in-house skin retouching, faces only. Add-on: {fmtCents(data.billing.addOnPrices.glamourStyle)} for this event, paid with the event.</span>
+                            {f.id === 'glamourStyle' && data.billing.addOnPrices.glamourStyle !== undefined && (
+                              <span className="block text-xs text-gray-500">
+                                The exclusive filter from our partner <a href={GLAMOUR_STYLE_URL} target="_blank" rel="noopener noreferrer" className="underline">Glamour Style Photo Booth</a>.
+                                {' '}Add-on: {fmtCents(data.billing.addOnPrices.glamourStyle)} for this event, paid with the event.
+                              </span>
                             )}
                           </span>
-                          {f.id === 'glamour' && on && (
-                            <label className="flex items-center gap-2 text-xs text-gray-600" title="How strong the skin smoothing and glow are">
-                              Strength
-                              <input type="range" min={0.3} max={1} step={0.05} value={form.filters.glamourIntensity} disabled={locked} className="w-28 accent-brand"
-                                onChange={e => set('filters', { glamourIntensity: Number(e.target.value) })}/>
-                              <span className="w-8 tabular-nums">{Math.round(form.filters.glamourIntensity * 100)}%</span>
-                            </label>
-                          )}
+                          {(f.id === 'glamour' || f.id === 'glamourStyle') && on && (() => {
+                            const key = f.id === 'glamour' ? 'glamourIntensity' : 'glamourStyleIntensity';
+                            return (
+                              <label className="flex items-center gap-2 text-xs text-gray-600" title="How strong the skin retouching is">
+                                Strength
+                                <input type="range" min={0.3} max={1} step={0.05} value={form.filters[key]} disabled={locked} className="w-28 accent-brand"
+                                  onChange={e => set('filters', { [key]: Number(e.target.value) })}/>
+                                <span className="w-8 tabular-nums">{Math.round(form.filters[key] * 100)}%</span>
+                              </label>
+                            );
+                          })()}
                           <label className={'flex items-center gap-1.5 text-xs ' + (on ? 'text-gray-600 cursor-pointer' : 'text-gray-300')}>
                             <input type="radio" name="defaultFilter" checked={form.filters.defaultFilterId === f.id} disabled={locked || !on} onChange={() => set('filters', { defaultFilterId: f.id })}/>
                             Default

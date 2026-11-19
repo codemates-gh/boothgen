@@ -1426,8 +1426,8 @@ model EventGenieSettings {
   backdropGuestPicks           Boolean @default(true)
   backdropEdgeSoftness         String  @default("medium") // soft | medium | sharp
 
-  // Paid add-ons (src/lib/genie/addOns.ts) this event has free: Glamour Style on events that already used the free
-  // "Beautify (Glamour)" filter before it became an add-on (2.114.0). Not copied by Duplicate.
+  // Paid add-ons (src/lib/genie/addOns.ts) this event has free (none at the moment: 2.114.0's Glamour Style mark on
+  // Beautify events was removed in 2.116.0, when the two became separate filters). Not copied by Duplicate.
   addOnsIncluded String[] @default([])
 
   // ProcessingStep[] applied to every photo before the guest's filter

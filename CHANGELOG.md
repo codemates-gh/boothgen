@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.116.0] — 2026-11-19
+
+### Changed
+- **Beautify and Glamour Style are now two separate filters.**
+  - **Beautify** is back to being a free standard filter, like Black & White and Sepia, with its strength slider. Events that offered it keep it, under the name "Beautify".
+  - **Glamour Style** is a new filter of its own: the exclusive filter from our partner [Glamour Style Photo Booth](https://www.glamourstylephotobooth.com), made available through Booth Genius. It's the paid add-on ($15 per event, editable in Super Admin → Genie Usage) and has its own strength slider. Only Glamour Style adds the add-on to the bill and the watermark until it's paid.
+  - The event's Genie page, the checkout line and Super Admin → Genie Usage describe it as the exclusive filter from our partner Glamour Style Photo Booth, with a link to their site.
+  - Events that used Beautify no longer get Glamour Style free (needs `docs/genie/apply-production-glamour-style-split.sql`).
+  - Glamour Style needs the Genie iPad build that knows the new filter.
+
+---
+
 ## [2.115.0] — 2026-11-19
 
 ### Added
