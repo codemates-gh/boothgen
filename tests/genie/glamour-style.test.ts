@@ -11,6 +11,13 @@ const created: any[] = [];
 vi.mock('@/lib/stripe', () => ({
   stripe: { checkout: { sessions: { create: vi.fn(async (args: any) => { created.push(args); return { id: 'cs_test_' + randomUUID(), url: 'https://checkout.stripe.test/pay' }; }) } } },
 }));
+const objects = new Map<string, number>();
+vi.mock('@/lib/storage/r2', async orig => ({
+  ...(await orig<typeof import('@/lib/storage/r2')>()),
+  getPresignedUploadUrl: vi.fn(async (key: string) => 'https://r2.test/upload/' + key),
+  headR2Object: vi.fn(async (key: string) => (objects.has(key) ? { bytes: objects.get(key)! } : null)),
+  r2PublicUrl: (key: string) => 'https://media.boothgen.test/' + key,
+}));
 
 import { prisma } from '@/lib/prisma/client';
 import { buildEventBundle } from '@/lib/genie/bundle';
@@ -19,7 +26,11 @@ import { boothEventsClient } from '@/lib/genie/boothEvents';
 import { copyGenieSetup } from '@/lib/genie/duplicate';
 import { POST as PAY } from '@/app/api/genie-events/[id]/pay/route';
 import { GET as DASH, PATCH } from '@/app/api/events/[id]/genie/route';
-import { req, resetDb, seedEvent, seedTenant } from './helpers';
+import { POST as uploadUrl } from '@/app/api/genie/events/[eventId]/upload-url/route';
+import { POST as registerAsset } from '@/app/api/genie/events/[eventId]/assets/route';
+import { GET as sessionPage } from '@/app/api/g/[token]/s/[sessionToken]/route';
+import { GET as galleryPage } from '@/app/api/g/[token]/route';
+import { guestSession, req, resetDb, seedDevice, seedEvent, seedTenant } from './helpers';
 
 const ev = (id: string) => ({ params: Promise.resolve({ id }) });
 const GLAMOUR = { filters: { guestFiltersEnabled: true, defaultFilterId: 'original', filterIds: ['original', 'glamour'] } };
@@ -101,5 +112,40 @@ describe('Glamour Style add-on', () => {
 
     await compEvent(copy.id);
     expect(await eventBilling(tenant, copy.id)).toMatchObject({ watermark: false, addOnsDue: [] });
+  });
+});
+
+describe('before/after on the guest session page', () => {
+  it('a galleryOriginal upload becomes the gallery image’s “before”, and is in no photo list', async () => {
+    const { event } = await setup('genie');
+    const { token } = await seedDevice(event.tenantId);
+    const session = guestSession();
+    async function upload(kind: string, extra: Record<string, unknown> = {}) {
+      const clientId = randomUUID();
+      const u = await uploadUrl(req('/x', { token, body: { clientId, fileName: kind + '.jpg', contentType: 'image/jpeg', bytes: 800_000 } }), { params: Promise.resolve({ eventId: event.id }) });
+      const { storageKey } = await u.json();
+      objects.set(storageKey, 800_000);
+      return registerAsset(req('/x', { token, body: { clientId, session, kind, fileName: kind + '.jpg', contentType: 'image/jpeg', bytes: 800_000, width: 1200, height: 1800,
+        sha256: 'a'.repeat(64), capturedAt: '2026-12-12T23:41:10Z', storageKey, ...extra } }), { params: Promise.resolve({ eventId: event.id }) });
+    }
+    const g = await upload('gallery');
+    expect(g.status).toBe(201);
+    const { sessionUrl } = await g.json();
+    const gallery = await prisma.gallery.findUniqueOrThrow({ where: { eventId: event.id } });
+    const open = async () => (await sessionPage(req('/x'), { params: Promise.resolve({ token: gallery.clientToken, sessionToken: sessionUrl.split('/s/')[1] }) })).json();
+    expect((await open()).assets[0].originalUrl).toBeUndefined();
+
+    expect((await upload('galleryOriginal')).status).toBe(201);
+    const page = await open();
+    expect(page.assets).toHaveLength(1);
+    expect(page.assets[0]).toMatchObject({ isGallery: true, originalUrl: expect.stringContaining('https://media.boothgen.test/') });
+    expect(page.assets[0].originalUrl).not.toBe(page.assets[0].url);
+
+    await prisma.galleryAsset.updateMany({ where: { galleryId: gallery.id }, data: { approvalStatus: 'APPROVED' } });
+    await prisma.gallery.update({ where: { id: gallery.id }, data: { isPublished: true } });
+    const list = await (await galleryPage(req('/x'), { params: Promise.resolve({ token: gallery.clientToken }) })).json();
+    const text = JSON.stringify(list);
+    expect(text).toContain(page.assets[0].url);
+    expect(text).not.toContain(page.assets[0].originalUrl);
   });
 });

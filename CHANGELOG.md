@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.115.0] — 2026-11-19
+
+### Added
+- **Glamour Style before/after on the guest's photo page.** When Glamour Style was used, the guest's photo page has a slider over the photo: drag it to compare the original with Glamour Style, labelled "Original" and "Glamour Style". It shows only on sessions where Glamour Style was applied.
+  - The Genie iPad uploads the original version of the design, without Glamour Style, from its next TestFlight build. Until then nothing changes for guests.
+  - The original appears only in that comparison. It stays out of the event's gallery, the client's gallery and the operator's gallery view.
+
+---
+
 ## [2.114.0] — 2026-11-19
 
 ### Added

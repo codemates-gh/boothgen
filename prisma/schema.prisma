@@ -751,7 +751,7 @@ model GalleryAsset {
   // Genie uploads: device-generated id (idempotency key) and the guest session
   clientId       String?
   genieSessionId String?
-  genieKind      String? // "gallery" | "shot" | "print" (printer sheet, archive only) | "boomerang" (MP4) | "boomerangPoster" (its first frame; thumbnail only) | "gif" | "video" (PC booth MP4) | "videoPoster"
+  genieKind      String? // "gallery" | "shot" | "print" (printer sheet, archive only) | "boomerang" (MP4) | "boomerangPoster" (its first frame; thumbnail only) | "gif" | "video" (PC booth MP4) | "videoPoster" | "galleryOriginal" (the gallery design without Glamour Style; session page before/after only)
   // Genie Sharing station (P12): photos from PC booth software. source "genie" (null) | "pcBooth", the print box
   // (boothId, boothName) and the original file's SHA-256 and name (sourceSha256 is unique per gallery and kind)
   source         String?

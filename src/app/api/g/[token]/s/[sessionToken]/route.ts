@@ -53,8 +53,10 @@ export async function GET(
   if (session.gallery.clientToken !== params.token) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const expired = session.gallery.isExpired;
-  // The printer sheet is a download only; a boomerang's poster is the clip's thumbnail
-  const photos = expired ? [] : session.assets.filter(a => a.genieKind !== 'print' && a.genieKind !== 'boomerangPoster' && a.genieKind !== 'videoPoster');
+  // The printer sheet is a download only; a boomerang's poster is the clip's thumbnail; the Glamour Style original is
+  // the gallery image's "before"
+  const photos = expired ? [] : session.assets.filter(a => !['print', 'boomerangPoster', 'videoPoster', 'galleryOriginal'].includes(a.genieKind ?? ''));
+  const original = expired ? undefined : session.assets.find(a => a.genieKind === 'galleryOriginal');
   // A clip (boomerang or PC booth video) plays like a boomerang, with its poster first
   const boomerang = photos.find(a => a.genieKind === 'boomerang' || a.genieKind === 'video');
   // A PC booth (Sharing station) session is one photo, GIF or video: nothing more to wait for
@@ -68,6 +70,8 @@ export async function GET(
     // Boomerang clip or gallery image first, then shots; the printer sheet is offered as a download only
     assets: photos.map(a => ({
       id: a.id, url: a.url, width: a.width, height: a.height, isGallery: a.genieKind === 'gallery',
+      // Glamour Style was used: the same design without it, for the before/after
+      ...(a.genieKind === 'gallery' && original ? { originalUrl: original.url } : {}),
       ...(a.genieKind === 'boomerang' || a.genieKind === 'video' ? { isBoomerang: true, posterUrl: a.thumbnailUrl } : {}),
     })),
     printSheetUrl: expired ? null : session.assets.find(a => a.genieKind === 'print')?.url ?? null,

@@ -12,9 +12,11 @@ export function sessionUrl(gallery: Pick<Gallery, 'clientToken'>, publicToken: s
   return `${galleryUrl(gallery)}/s/${publicToken}`;
 }
 
-// Guest- and client-facing photo lists leave out Genie printer sheets (archive copies of the gallery image) and
-// boomerang / PC video posters (shown as the clip's thumbnail instead)
-export const NOT_PRINT_SHEET = { OR: [{ genieKind: null }, { genieKind: { notIn: ['print', 'boomerangPoster', 'videoPoster'] } }] };
+// Guest- and client-facing photo lists leave out Genie printer sheets (archive copies of the gallery image),
+// boomerang / PC video posters (shown as the clip's thumbnail instead) and Glamour Style originals (the session page's
+// before/after only)
+export const NOT_PRINT_SHEET = { OR: [{ genieKind: null }, { genieKind: { notIn: ['print', 'boomerangPoster', 'videoPoster', 'galleryOriginal'] } }] };
 
-// The operator's own gallery view keeps printer sheets but shows a boomerang's (or video's) poster only as its thumbnail
-export const NOT_BOOMERANG_POSTER = { OR: [{ genieKind: null }, { genieKind: { notIn: ['boomerangPoster', 'videoPoster'] } }] };
+// The operator's own gallery view keeps printer sheets but shows a boomerang's (or video's) poster only as its thumbnail;
+// Glamour Style originals stay on the session page's before/after
+export const NOT_BOOMERANG_POSTER = { OR: [{ genieKind: null }, { genieKind: { notIn: ['boomerangPoster', 'videoPoster', 'galleryOriginal'] } }] };

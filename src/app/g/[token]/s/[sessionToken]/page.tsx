@@ -5,8 +5,9 @@ import { Camera, Download, AlertCircle } from 'lucide-react';
 import { PoweredByBadge } from '@/components/brand/PoweredByBadge';
 import { BoothOffline, FadeInImg, UploadingIndicator, useWaitingFor, useWaitingPoll } from '@/components/genie/GuestWaiting';
 import { LONG_WAIT_MS } from '@/lib/genie/guestWaiting';
+import { BeforeAfter } from '@/components/genie/BeforeAfter';
 
-type Asset = { id: string; url: string; width: number | null; height: number | null; isGallery: boolean; isBoomerang?: boolean; posterUrl?: string | null };
+type Asset = { id: string; url: string; width: number | null; height: number | null; isGallery: boolean; isBoomerang?: boolean; posterUrl?: string | null; originalUrl?: string };
 
 async function downloadFile(url: string, name: string) {
   try {
@@ -153,7 +154,9 @@ export default function GuestSessionPage() {
 
             {print && (
               <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-                <FadeInImg src={print.url} alt="Your print" className="w-full max-h-[75vh] object-contain rounded-lg"/>
+                {print.originalUrl
+                  ? <BeforeAfter afterUrl={print.url} beforeUrl={print.originalUrl} alt="Your print" className="w-full max-h-[75vh] object-contain rounded-lg"/>
+                  : <FadeInImg src={print.url} alt="Your print" className="w-full max-h-[75vh] object-contain rounded-lg"/>}
                 <button
                   onClick={() => downloadFile(print.url, fileName(print, 0))}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm"

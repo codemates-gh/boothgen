@@ -40,7 +40,8 @@ export const UploadUrlRequest = z.object({
 export const GalleryUpload = z.object({
   clientId: uuid,
   session: GuestSession,
-  kind: z.enum(['gallery', 'print', 'shot', 'boomerang', 'boomerangPoster', 'gif', 'video', 'videoPoster']),
+  // galleryOriginal: the gallery design rendered without Glamour Style, for the session page's before/after (2.115.0)
+  kind: z.enum(['gallery', 'print', 'shot', 'boomerang', 'boomerangPoster', 'gif', 'video', 'videoPoster', 'galleryOriginal']),
   shotIndex: z.number().int().min(0).optional(),
   storageKey: z.string().min(1),
   fileName: z.string(),

@@ -85,7 +85,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
         ...(body.sourceFileName ? { sourceFileName: body.sourceFileName } : {}),
         // Boomerang clip / gallery copy first, then shots in order; the printer sheet (archive only) and the
         // boomerang poster (thumbnail only) last
-        sortOrder: ['gallery', 'boomerang', 'video', 'gif'].includes(body.kind) ? 0 : body.kind === 'shot' ? (body.shotIndex ?? 0) + 1 : body.kind === 'print' ? 1000 : 1001,
+        sortOrder: ['gallery', 'boomerang', 'video', 'gif'].includes(body.kind) ? 0 : body.kind === 'shot' ? (body.shotIndex ?? 0) + 1 : body.kind === 'print' ? 1000 : body.kind === 'galleryOriginal' ? 1002 : 1001,
         approvalStatus: 'APPROVED',
       },
     });
