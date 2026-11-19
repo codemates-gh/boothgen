@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
-import { isBoothOffline, morePhotosPending } from '@/lib/genie/guestWaiting';
+import { isBoothOffline, expectedShots, morePhotosPending } from '@/lib/genie/guestWaiting';
 import { eventBoothLastSeen } from '@/lib/genie/boothStatus';
 
 // One guest's Genie session: only that session's photos, independent of the gallery's publish state
@@ -19,7 +19,7 @@ export async function GET(
       gallery: {
         select: {
           clientToken: true, isExpired: true,
-          event: { select: { title: true, eventDate: true, genieSettings: { select: { shotCount: true } } } },
+          event: { select: { title: true, eventDate: true, genieSettings: { select: { shotCount: true } }, genieTemplates: { select: { layout: true } } } },
           tenant: { select: { branding: { select: { companyName: true, logoUrl: true, primaryColor: true } } } },
         },
       },
@@ -83,7 +83,7 @@ export async function GET(
     morePending: !expired && !boomerang && !single && morePhotosPending({
       hasGallery: photos.some(a => a.genieKind === 'gallery'),
       shots: photos.filter(a => a.genieKind === 'shot').length,
-      expectedShots: session.gallery.event.genieSettings?.shotCount ?? 1,
+      expectedShots: expectedShots(session.gallery.event.genieTemplates.map(t => t.layout), session.gallery.event.genieSettings?.shotCount ?? 1),
       lastPhotoAt: photos.length ? new Date(Math.max(...photos.map(a => a.createdAt.getTime()))) : null,
     }),
     boothOffline: !expired && isBoothOffline({ photoCount: photos.length, lastSeenAt: lastSeen }),

@@ -23,6 +23,17 @@ export function isBoothOffline(o: { photoCount: number; lastSeenAt: Date | null 
 // Stop saying "more on the way" if nothing new has arrived for this long (a shot may never come)
 export const MORE_PHOTOS_GRACE_MS = 30 * 60_000;
 
+// Shots a session takes: each template sets it (one per photo frame, by the frames' shot numbers). With several
+// templates the fewest wins, so a page never waits for shots a template doesn't take; no templates: the event's count.
+export function expectedShots(layouts: unknown[], fallback: number): number {
+  const counts = layouts.map(l => {
+    const slots = (l as { slots?: { shotIndex?: unknown }[] } | null)?.slots;
+    const idx = Array.isArray(slots) ? slots.map(s => (typeof s?.shotIndex === 'number' ? s.shotIndex : -1)).filter(i => i >= 0) : [];
+    return idx.length ? Math.max(...idx) + 1 : 0;
+  }).filter(n => n > 0);
+  return counts.length ? Math.min(...counts) : fallback;
+}
+
 // The gallery copy shows first; more is expected until every shot is in
 export function morePhotosPending(o: { hasGallery: boolean; shots: number; expectedShots: number; lastPhotoAt: Date | null; now?: Date }): boolean {
   if (!o.lastPhotoAt) return false;

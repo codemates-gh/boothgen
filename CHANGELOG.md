@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.121.4] — 2026-11-19
+
+### Fixed
+- **The guest's photo page stops saying "More photos on the way" once every shot is in.** It counted on the event's shot count (e.g. 3) even when the template takes fewer photos (one per photo frame), so a one-photo template kept the message up for 30 minutes. It now expects as many shots as the event's templates take (the fewest, if they differ).
+
+---
+
 ## [2.121.3] — 2026-11-19
 
 ### Changed

@@ -5,7 +5,7 @@ import { NextRequest } from 'next/server';
 vi.mock('@/lib/inngest/client', () => ({ inngest: { send: vi.fn() } }));
 
 import { prisma } from '@/lib/prisma/client';
-import { BOOTH_OFFLINE_AFTER_MS, isBoothOffline, morePhotosPending, pollDelayMs } from '@/lib/genie/guestWaiting';
+import { BOOTH_OFFLINE_AFTER_MS, expectedShots, isBoothOffline, morePhotosPending, pollDelayMs } from '@/lib/genie/guestWaiting';
 import { GET as getSession } from '@/app/api/g/[token]/s/[sessionToken]/route';
 import { GET as getGallery } from '@/app/api/g/[token]/route';
 import { guestSession, resetDb, seedDevice, seedEvent, seedTenant } from './helpers';
@@ -41,6 +41,15 @@ describe('booth offline rule', () => {
     expect(morePhotosPending({ ...base, hasGallery: false, shots: 3, lastPhotoAt: ago(MIN) })).toBe(true);
     expect(morePhotosPending({ ...base, hasGallery: true, shots: 1, lastPhotoAt: ago(31 * MIN) })).toBe(false);
     expect(morePhotosPending({ ...base, hasGallery: false, shots: 0, lastPhotoAt: null })).toBe(false);
+  });
+
+  it('expects as many shots as the templates take (the fewest), else the event\'s shot count', () => {
+    const layout = (shots: number[]) => ({ slots: shots.map(i => ({ id: 's' + i, shotIndex: i })) });
+    expect(expectedShots([layout([0])], 3)).toBe(1);
+    expect(expectedShots([layout([0, 1, 2]), layout([0])], 3)).toBe(1);
+    expect(expectedShots([layout([0, 0, 1])], 4)).toBe(2);
+    expect(expectedShots([], 3)).toBe(3);
+    expect(expectedShots([null, { slots: [] }], 2)).toBe(2);
   });
 });
 
@@ -86,9 +95,13 @@ describe('guest page APIs', () => {
     expect(d).toMatchObject({ boothOffline: false, morePending: true });
     await photo(gallery.id, session.id, 'shot');
     await photo(gallery.id, session.id, 'shot');
+    // The event's template has three photo frames: still one to come
+    d = await (await sessionReq(gallery.clientToken, s.publicToken)).json();
+    expect(d.morePending).toBe(true);
+    await photo(gallery.id, session.id, 'shot');
     d = await (await sessionReq(gallery.clientToken, s.publicToken)).json();
     expect(d.morePending).toBe(false);
-    expect(d.assets).toHaveLength(3);
+    expect(d.assets).toHaveLength(4);
   });
 
   it('the live gallery says the booth is offline only while it is empty', async () => {
