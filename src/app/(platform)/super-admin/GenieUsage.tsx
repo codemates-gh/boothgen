@@ -27,6 +27,7 @@ export default function GenieUsage() {
   // Add-on prices (Glamour Style), in dollars as typed
   const [glamourPrice, setGlamourPrice] = useState('');
   const [glamourReady, setGlamourReady] = useState(false);
+  const [waivers, setWaivers] = useState<{ tenantId: string; operator: string; addOnId: string; addOn: string; since: string }[]>([]);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -53,6 +54,7 @@ export default function GenieUsage() {
     setGeniusPays(d.geniusPays);
     setGlamourPrice((d.addOnPrices.glamourStyle / 100).toFixed(2));
     setGlamourReady(d.glamourStyleReady);
+    setWaivers(d.waivers ?? []);
   }, [days]);
   useEffect(() => { load(); }, [load]);
 
@@ -83,6 +85,15 @@ export default function GenieUsage() {
     const d = await r.json().catch(() => ({}));
     if (!r.ok) { setError(d.error || 'Could not change it'); return; }
     setGlamourReady(d.glamourStyleReady);
+    setWaivers(d.waivers ?? []);
+  }
+
+  async function removeWaiver(w: (typeof waivers)[number]) {
+    if (!confirm(`Remove the ${w.addOn} fee waiver for ${w.operator}? Their events using it will need paying for again.`)) return;
+    setError('');
+    const r = await fetch(`/api/super-admin/tenants/${w.tenantId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ addOnWaiver: { id: w.addOnId, waived: false } }) });
+    if (!r.ok) { setError('Could not remove the waiver'); return; }
+    load();
   }
 
   const sum = (k: 'texts' | 'emails' | 'sessions' | 'photos' | 'paidCents') => (rows ?? []).reduce((n, r) => n + r[k], 0);
@@ -129,6 +140,20 @@ export default function GenieUsage() {
                 : 'Off: operators can\'t choose Glamour Style yet. Turn it on once Genie 0.6.0 is on the iPads (older iPads can\'t load an event that uses it).'}</p>
             </div>
             <Button variant={glamourReady ? 'outline' : 'default'} onClick={toggleGlamourReady}>{glamourReady ? 'Turn off' : 'Turn on'}</Button>
+          </div>
+          <div className="border-t pt-4 space-y-2">
+            <p className="text-sm font-medium text-gray-700">Add-on fees waived</p>
+            <p className="text-sm text-gray-500">These operators are never charged for the add-on, and their events using it have no watermark for it. Add a waiver in Operators (Genie column).</p>
+            {waivers.length === 0 ? <p className="text-sm text-gray-400">None</p> : (
+              <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg">
+                {waivers.map(w => (
+                  <li key={w.tenantId + w.addOnId} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                    <span><span className="font-medium text-gray-800">{w.operator}</span> <span className="text-gray-500">· {w.addOn} · since {new Date(w.since).toLocaleDateString()}</span></span>
+                    <Button variant="outline" size="sm" onClick={() => removeWaiver(w)}>Remove</Button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </CardContent>
       </Card>

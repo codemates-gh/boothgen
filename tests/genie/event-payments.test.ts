@@ -57,7 +57,7 @@ const checkout = (tenantId: string, eventId: string, over: Record<string, unknow
   metadata: { kind: PAYMENT_KIND, tenantId, eventId }, ...over,
 } as any);
 
-beforeEach(async () => { await resetDb(); created.length = 0; refunds.length = 0; refundError = null; retrieved = null; listed = []; emails.length = 0; globalRole = 'USER'; await prisma.systemSetting.deleteMany({ where: { key: { in: ['genie_event_price_cents', 'genie_event_price_cents_genius', 'genius_pays_per_event'] } } }); });
+beforeEach(async () => { await resetDb(); created.length = 0; refunds.length = 0; refundError = null; retrieved = null; listed = []; emails.length = 0; globalRole = 'USER'; await prisma.systemSetting.deleteMany({ where: { key: { in: ['genie_event_price_cents', 'genie_event_price_cents_genius', 'genius_pays_per_event', 'glamour_style_ready', 'addon_price_cents_glamour_style'] } } }); });
 afterAll(async () => { await resetDb(); await prisma.systemSetting.deleteMany({ where: { key: { in: ['genie_event_price_cents', 'genie_event_price_cents_genius', 'genius_pays_per_event'] } } }); await prisma.$disconnect(); });
 
 describe('who pays and the watermark', () => {

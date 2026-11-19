@@ -2,7 +2,7 @@ import type Stripe from 'stripe';
 import { prisma } from '@/lib/prisma/client';
 import { stripe } from '@/lib/stripe';
 import { sendEmail } from '@/lib/email/send';
-import { addOnName, addOnPrices, addOnsInUse, type AddOnId } from '@/lib/genie/addOns';
+import { addOnName, addOnPrices, addOnsInUse, addOnWaivers, type AddOnId } from '@/lib/genie/addOns';
 
 // Pay per event (Genie-only stage 2b, docs/genie/genie-only-plan.md):
 // - Genie-only accounts pay per event ($15 by default); one payment covers 2 iPads, and a 3rd or 4th iPad means
@@ -75,13 +75,15 @@ export async function eventBilling(tenant: BillingTenant, eventId: string): Prom
 export async function eventsBilling(tenant: BillingTenant, eventIds: string[]): Promise<Map<string, EventBilling>> {
   const priceCents = await eventPriceFor(tenant);
   const pays = priceCents !== null;
-  const [rows, settings, prices] = eventIds.length
+  const [rows, settings, prices, waivers] = eventIds.length
     ? await Promise.all([
       prisma.genieEventPayment.findMany({ where: { tenantId: tenant.id, eventId: { in: eventIds }, status: 'paid' }, select: { eventId: true, ipads: true, addOns: true } }),
       prisma.eventGenieSettings.findMany({ where: { tenantId: tenant.id, eventId: { in: eventIds } }, select: { eventId: true, processing: true, filters: true, addOnsIncluded: true } }),
       addOnPrices(),
+      // Super Admin fee waivers: a waived add-on is never charged and doesn't watermark
+      prisma.tenant.findUnique({ where: { id: tenant.id }, select: { addOnWaivers: true } }).then(t => Object.keys(addOnWaivers(t?.addOnWaivers))),
     ])
-    : [[], [], null];
+    : [[], [], null, []];
   return new Map(eventIds.map(id => {
     const mine = rows.filter(r => r.eventId === id);
     // Payments for the event itself (add-on-only payments, and old 2.112.0 Sharing station-only ones, cover no iPads)
@@ -89,7 +91,7 @@ export async function eventsBilling(tenant: BillingTenant, eventIds: string[]): 
     const ipadsPaid = mine.reduce((n, r) => n + r.ipads, 0);
     const s = settings.find(x => x.eventId === id);
     const addOns = s ? addOnsInUse(s) : [];
-    const covered = new Set([...(s?.addOnsIncluded ?? []), ...mine.flatMap(r => r.addOns)]);
+    const covered = new Set([...(s?.addOnsIncluded ?? []), ...mine.flatMap(r => r.addOns), ...waivers]);
     const addOnsDue = addOns.filter(a => !covered.has(a)).map(a => ({ id: a, name: addOnName(a), cents: prices![a] }));
     const eventDue = pays && payments === 0;
     return [id, {

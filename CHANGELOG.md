@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.117.0] — 2026-11-19
+
+### Added
+- **Super Admin can waive add-on fees for chosen operators.** In Super Admin → Operators, the Genie column has a "Glamour Style fee waived" checkbox per account. A waived operator is never charged for Glamour Style, and their events using it have no watermark for it; everyone else pays as before. Super Admin → Genie Usage lists who is waived, for which add-on and since when, with Remove. It works for any future add-on.
+
+Needs `docs/genie/apply-production-addon-waivers.sql` (one new column, empty for everyone) run in production before this deploys.
+
+---
+
 ## [2.116.0] — 2026-11-19
 
 ### Changed

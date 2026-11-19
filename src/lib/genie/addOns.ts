@@ -35,6 +35,13 @@ const hasStep = (steps: unknown, type: string) => Array.isArray(steps) && steps.
 
 const cents = (v: string | undefined, fallback: number) => { const n = Number(v); return Number.isInteger(n) && n >= 50 ? n : fallback; };
 
+// The account's fee waivers ({ id: waived since }), from Tenant.addOnWaivers
+export function addOnWaivers(v: unknown): Partial<Record<AddOnId, string>> {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
+  return Object.fromEntries(Object.entries(v as Record<string, unknown>)
+    .filter(([id, since]) => ADD_ONS.some(a => a.id === id) && typeof since === 'string')) as Partial<Record<AddOnId, string>>;
+}
+
 export async function addOnPrices(): Promise<Record<AddOnId, number>> {
   const rows = await prisma.systemSetting.findMany({ where: { key: { in: ADD_ONS.map(a => a.setting) } } });
   const m = new Map(rows.map(r => [r.key, r.value]));

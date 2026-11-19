@@ -256,6 +256,9 @@ model Tenant {
   // Genie paid add-on entitlement (super admin toggle until billing exists)
   // Super Admin "Keep Genius free": keeps the CRM without Genius Pro (own company, partners, beta testers). See src/lib/genius.ts
   geniusFree            Boolean   @default(false)
+  // Super Admin fee waivers for paid Genie add-ons (src/lib/genie/addOns.ts): { "<add-on id>": "<waived since, ISO>" }.
+  // A waived add-on is never charged and doesn't watermark (e.g. Glamour Style for partner operators). 2.117.0
+  addOnWaivers          Json      @default("{}")
   // Super Admin can switch the Sharing station add-on (Genie P12) off for an account; on for everyone by default
   sharingStationOff     Boolean   @default(false)
   genieEnabled          Boolean   @default(false)

@@ -19,6 +19,8 @@ interface Operator {
   genieEnabled: boolean;
   product: string;
   geniusFree: boolean;
+  // Paid Genie add-on fee waivers: { add-on id: waived since (ISO) }
+  addOnWaivers?: unknown;
   createdAt: Date;
   branding: { companyName: string | null } | null;
   memberships: { user: { name: string; email: string } }[];
@@ -57,6 +59,9 @@ const STATUS_OPTIONS: { value: TenantStatus; label: string }[] = [
 
 type Mode = 'idle' | 'upgrade' | 'status' | 'delete' | 'subscription';
 type SubConfirm = 'cancel-now' | 'refund' | null;
+
+// Paid Genie add-ons Super Admin can waive (ids and names as in src/lib/genie/addOns.ts, which is server-only)
+const WAIVABLE_ADD_ONS = [{ id: 'glamourStyle', name: 'Glamour Style' }];
 
 // Genie add-on switch (a paid add-on; set by hand until billing exists), and the account's product:
 // Genius (CRM) or Genie only. Genie-only accounts always have Genie on.
@@ -97,6 +102,17 @@ function GenieCell({ op }: { op: Operator }) {
         <input type="checkbox" className="w-3 h-3" checked={op.geniusFree} disabled={busy} onChange={e => patch({ geniusFree: e.target.checked })}/>
         Keep Genius free
       </label>
+      {/* Fee waivers for paid Genie add-ons (src/lib/genie/addOns.ts), e.g. for partner operators */}
+      {WAIVABLE_ADD_ONS.map(a => {
+        const since = (op.addOnWaivers as Record<string, string> | undefined)?.[a.id];
+        return (
+          <label key={a.id} className="flex items-center gap-1 text-[11px] text-gray-500 cursor-pointer" title={since ? `${a.name} fee waived since ${new Date(since).toLocaleDateString()}` : `Never charge ${name} for ${a.name}`}>
+            <input type="checkbox" className="w-3 h-3" checked={!!since} disabled={busy}
+              onChange={e => { if (e.target.checked || confirm(`Remove the ${a.name} fee waiver for ${name}? Their events using it will need paying for again.`)) patch({ addOnWaiver: { id: a.id, waived: e.target.checked } }); }}/>
+            {a.name} fee waived
+          </label>
+        );
+      })}
     </div>
   );
 }

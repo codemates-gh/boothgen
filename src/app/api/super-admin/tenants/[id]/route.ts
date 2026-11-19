@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
+import { ADD_ONS, addOnWaivers, type AddOnId } from '@/lib/genie/addOns';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
@@ -31,6 +32,20 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       data: { product: body.product, ...(body.product === 'genie' && !current.genieEnabled ? { genieEnabled: true, genieEnabledAt: new Date() } : {}) },
       select: { id: true, product: true, genieEnabled: true },
     });
+    return NextResponse.json(tenant);
+  }
+
+  // Fee waiver for a paid Genie add-on (e.g. Glamour Style for partner operators): { addOnWaiver: { id, waived } }
+  if (body.addOnWaiver && typeof body.addOnWaiver === 'object') {
+    const { id, waived } = body.addOnWaiver as { id?: unknown; waived?: unknown };
+    if (!ADD_ONS.some(a => a.id === id) || typeof waived !== 'boolean') return NextResponse.json({ error: 'Unknown add-on' }, { status: 400 });
+    const t = await prisma.tenant.findUnique({ where: { id: params.id }, select: { addOnWaivers: true } });
+    if (!t) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const current = addOnWaivers(t.addOnWaivers);
+    const next: Record<string, string> = { ...current };
+    if (waived) next[id as string] = current[id as AddOnId] ?? new Date().toISOString();
+    else delete next[id as string];
+    const tenant = await prisma.tenant.update({ where: { id: params.id }, data: { addOnWaivers: next }, select: { id: true, addOnWaivers: true } });
     return NextResponse.json(tenant);
   }
 

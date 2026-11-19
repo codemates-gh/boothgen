@@ -5,15 +5,22 @@ import { prisma } from '@/lib/prisma/client';
 import { requireSuperAdminApi } from '@/lib/genie/admin';
 import { genieUsage } from '@/lib/genie/usage';
 import { GENIUS_PAYS_SETTING, GENIUS_PRICE_SETTING, PRICE_SETTING, eventPrices } from '@/lib/genie/payments';
-import { ADD_ONS, GLAMOUR_STYLE_READY_SETTING, addOnPrices, glamourStyleReady } from '@/lib/genie/addOns';
+import { ADD_ONS, GLAMOUR_STYLE_READY_SETTING, addOnPrices, addOnWaivers, glamourStyleReady } from '@/lib/genie/addOns';
 
 // Super Admin → Genie Usage: per-event usage, both per-event prices, whether Genius accounts pay, and add-on prices
 export async function GET(req: NextRequest) {
   const auth = await requireSuperAdminApi();
   if (auth instanceof NextResponse) return auth;
   const days = Math.min(Math.max(Number(req.nextUrl.searchParams.get('days')) || 90, 1), 730);
-  const [rows, prices, addOns, ready] = await Promise.all([genieUsage(new Date(Date.now() - days * 86400_000)), eventPrices(), addOnPrices(), glamourStyleReady()]);
-  return NextResponse.json({ days, priceCents: prices.genieCents, geniusPriceCents: prices.geniusCents, geniusPays: prices.geniusPays, addOnPrices: addOns, glamourStyleReady: ready, events: rows });
+  const [rows, prices, addOns, ready, waived] = await Promise.all([
+    genieUsage(new Date(Date.now() - days * 86400_000)), eventPrices(), addOnPrices(), glamourStyleReady(),
+    prisma.tenant.findMany({ where: { NOT: { addOnWaivers: { equals: {} } } }, select: { id: true, name: true, addOnWaivers: true, branding: { select: { companyName: true } } } }),
+  ]);
+  // Operators with add-on fees waived, one row per add-on, oldest first
+  const waivers = waived.flatMap(t => Object.entries(addOnWaivers(t.addOnWaivers)).map(([addOnId, since]) => ({
+    tenantId: t.id, operator: t.branding?.companyName || t.name, addOnId, addOn: ADD_ONS.find(a => a.id === addOnId)!.name, since,
+  }))).sort((a, b) => String(a.since).localeCompare(String(b.since)));
+  return NextResponse.json({ days, priceCents: prices.genieCents, geniusPriceCents: prices.geniusCents, geniusPays: prices.geniusPays, addOnPrices: addOns, glamourStyleReady: ready, waivers, events: rows });
 }
 
 const Cents = z.number().int().min(50).max(100_000);

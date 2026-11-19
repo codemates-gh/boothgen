@@ -4,7 +4,8 @@ import { randomUUID } from 'crypto';
 // Genie add-ons (2.114.0): Glamour Style, $15 per event (Super Admin can change it), charged with the event
 
 let sessionTenantId = '';
-vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ userId: 'u1', tenantId: sessionTenantId, tenantRole: 'HOST_ADMIN' })) }));
+let globalRole = 'USER';
+vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ userId: 'u1', tenantId: sessionTenantId, tenantRole: 'HOST_ADMIN', globalRole })) }));
 vi.mock('@/lib/auth/config', () => ({ authOptions: {} }));
 vi.mock('@/lib/inngest/client', () => ({ inngest: { send: vi.fn(async () => ({ ids: [] })) } }));
 const created: any[] = [];
@@ -30,6 +31,8 @@ import { POST as uploadUrl } from '@/app/api/genie/events/[eventId]/upload-url/r
 import { POST as registerAsset } from '@/app/api/genie/events/[eventId]/assets/route';
 import { GET as sessionPage } from '@/app/api/g/[token]/s/[sessionToken]/route';
 import { GET as galleryPage } from '@/app/api/g/[token]/route';
+import { PATCH as TENANT } from '@/app/api/super-admin/tenants/[id]/route';
+import { GET as USAGE } from '@/app/api/super-admin/genie-usage/route';
 import { guestSession, req, resetDb, seedDevice, seedEvent, seedTenant } from './helpers';
 
 const ev = (id: string) => ({ params: Promise.resolve({ id }) });
@@ -48,7 +51,7 @@ const checkout = (tenantId: string, eventId: string, meta: Record<string, string
 } as any);
 
 beforeEach(async () => {
-  await resetDb(); created.length = 0;
+  await resetDb(); created.length = 0; globalRole = 'USER';
   await prisma.systemSetting.deleteMany({ where: { key: { in: ['genie_event_price_cents', 'genius_pays_per_event', 'addon_price_cents_glamour_style', 'glamour_style_ready'] } } });
   await prisma.systemSetting.create({ data: { key: 'glamour_style_ready', value: 'on' } });
 });
@@ -131,6 +134,34 @@ describe('Glamour Style add-on', () => {
 
     await compEvent(copy.id);
     expect(await eventBilling(tenant, copy.id)).toMatchObject({ watermark: false, addOnsDue: [] });
+  });
+});
+
+describe('fee waivers (Super Admin)', () => {
+  it('a waived operator is never charged for Glamour Style and has no watermark for it; removing the waiver brings the charge back', async () => {
+    const { tenant, event } = await setup('genie');
+    await PATCH(req('/x', { method: 'PATCH', body: GLAMOUR }), ev(event.id));
+    await recordCheckout(checkout(tenant.id, event.id, { ipads: '2' }, 1500));
+    expect(await eventBilling(tenant, event.id)).toMatchObject({ watermark: true, amountDueCents: 1500 });
+    const waive = (waived: boolean) => TENANT(req('/x', { method: 'PATCH', body: { addOnWaiver: { id: 'glamourStyle', waived } } }), { params: Promise.resolve({ id: tenant.id }) });
+
+    expect((await waive(true)).status).toBe(403);
+    globalRole = 'SUPER_ADMIN';
+    expect((await waive(true)).status).toBe(200);
+    const since = ((await prisma.tenant.findUniqueOrThrow({ where: { id: tenant.id } })).addOnWaivers as any).glamourStyle;
+    expect(Date.parse(since)).toBeGreaterThan(Date.now() - 60_000);
+    expect(await eventBilling(tenant, event.id)).toMatchObject({ watermark: false, addOnsDue: [], amountDueCents: 0 });
+    const b = await buildEventBundle(tenant.id, event.id);
+    expect(b.ok && 'watermark' in b.bundle).toBe(false);
+    // Waiving again keeps the original date; listed in Genie Usage
+    await waive(true);
+    expect(((await prisma.tenant.findUniqueOrThrow({ where: { id: tenant.id } })).addOnWaivers as any).glamourStyle).toBe(since);
+    expect((await (await USAGE(req('/api/super-admin/genie-usage'))).json()).waivers).toEqual([{ tenantId: tenant.id, operator: expect.any(String), addOnId: 'glamourStyle', addOn: 'Glamour Style', since }]);
+    expect((await TENANT(req('/x', { method: 'PATCH', body: { addOnWaiver: { id: 'nope', waived: true } } }), { params: Promise.resolve({ id: tenant.id }) })).status).toBe(400);
+
+    await waive(false);
+    expect(await eventBilling(tenant, event.id)).toMatchObject({ watermark: true, amountDueCents: 1500 });
+    expect((await (await USAGE(req('/api/super-admin/genie-usage'))).json()).waivers).toEqual([]);
   });
 });
 
