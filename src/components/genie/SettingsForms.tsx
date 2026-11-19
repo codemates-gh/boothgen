@@ -203,6 +203,20 @@ export function SharingFields({ value, onChange, disabled }: { value: Sharing; o
   );
 }
 
+export type GalleryDefaults = { uploadAll: boolean; autoPublish: boolean };
+
+// Event gallery (Event defaults and each event): upload every Sharing station photo, publish when the event ends
+export function GalleryFields({ value, onChange, disabled }: { value: GalleryDefaults; onChange: (p: Partial<GalleryDefaults>) => void; disabled?: boolean }) {
+  return (
+    <>
+      <Toggle checked={value.autoPublish} disabled={disabled} onChange={v => onChange({ autoPublish: v })} label="Publish the gallery when the event ends"
+        hint="Once the event is over, its gallery is published (if it has photos) and your client gets the usual gallery email or automation. You can still publish or unpublish it yourself."/>
+      <Toggle checked={value.uploadAll} disabled={disabled} onChange={v => onChange({ uploadAll: v })} label="Upload every photo to the gallery"
+        hint="For a Sharing station (PC booth): every photo from the PC goes to the event's gallery (uses more storage). Off: only photos guests share are uploaded. Genie iPad photos are always uploaded."/>
+    </>
+  );
+}
+
 export function PrintingFields({ value, onChange, disabled }: { value: Printing; onChange: (p: Partial<Printing>) => void; disabled?: boolean }) {
   return (
     <>

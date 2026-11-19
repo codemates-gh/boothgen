@@ -2,7 +2,7 @@
 import { Input } from '@/components/ui/input';
 import { Field, Toggle } from '@/components/genie/parts';
 
-export type SharingStationValue = { recentMinutes: number | null; blurGrid: boolean; uploadAll: boolean };
+export type SharingStationValue = { recentMinutes: number | null; blurGrid: boolean };
 
 // Event → Genie → Sharing → Sharing station (PC booth): any Genie iPad can be a Sharing station for PC booth software
 // (DSLR Remote Pro or anything that saves to a folder). The Genie print box on the PC watches the folder and sends each
@@ -29,8 +29,6 @@ export function SharingStationFields({ value, disabled, onChange }: {
       )}
       <Toggle checked={value.blurGrid} disabled={disabled} onChange={v => onChange({ blurGrid: v })} label="Blur photos until tapped"
         hint="For privacy: guests tap a photo to see it."/>
-      <Toggle checked={value.uploadAll} disabled={disabled} onChange={v => onChange({ uploadAll: v })} label="Upload every photo to the gallery"
-        hint="Off: only photos guests share are uploaded. On: every photo from the PC goes to the event's gallery (uses more storage)."/>
     </div>
   );
 }

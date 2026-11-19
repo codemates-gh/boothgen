@@ -5,8 +5,7 @@ import { getUploadLimits } from '@/lib/gallery/uploadRules';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
-import { sendGalleryPublishedEmail } from '@/lib/email/send';
-import { triggerAutomation } from '@/lib/inngest/trigger';
+import { notifyGalleryPublished } from '@/lib/gallery/publish';
 
 export async function GET(_: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -40,35 +39,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     include: { event: { include: { client: true, tenant: { include: { branding: true } } } } },
   });
 
-  // Send notification email when gallery is published for the first time
-  if (body.isPublished === true && !gallery.isPublished) {
-    const event = (updated as any).event;
-    const branding = event?.tenant?.branding;
-    const companyName = branding?.companyName ?? event?.tenant?.name ?? 'Your host';
-    const emailFrom = process.env.EMAIL_FROM ?? 'noreply@boothgen.com';
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
-    // Skip hardcoded email if an active automation rule covers GALLERY_PUBLISHED
-    const hasGalleryRule = updated.eventId
-      ? (await prisma.automationRule.count({ where: { tenantId: session.tenantId, trigger: 'GALLERY_PUBLISHED', isActive: true, actionType: 'EMAIL' } })) > 0
-      : false;
-    if (!hasGalleryRule) {
-      await sendGalleryPublishedEmail({
-        to: event.client.email,
-        firstName: event.client.firstName,
-        companyName,
-        galleryTitle: updated.title,
-        portalUrl: `${appUrl}/portal/${event.portalToken}?tab=gallery`,
-        accessCode: updated.accessCode ?? null,
-        replyTo: branding?.replyToEmail ?? undefined,
-        from: companyName ? `${companyName} <${emailFrom}>` : emailFrom,
-      }).catch(e => console.error('[gallery-publish] email error:', e));
-    }
-    if (updated.eventId) {
-      triggerAutomation({ tenantId: session.tenantId, eventId: updated.eventId, trigger: 'GALLERY_PUBLISHED' }).catch(e =>
-        console.error('[gallery-publish] GALLERY_PUBLISHED automation error:', e)
-      );
-    }
-  }
+  // First publish: the client's email and the GALLERY_PUBLISHED automations (src/lib/gallery/publish.ts)
+  if (body.isPublished === true && !gallery.isPublished) await notifyGalleryPublished(updated.id);
 
   return NextResponse.json(updated);
 }

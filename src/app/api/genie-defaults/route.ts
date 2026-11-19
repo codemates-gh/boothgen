@@ -31,6 +31,7 @@ function view(d: Awaited<ReturnType<typeof getDefaults>>) {
     printing: { enabled: v.printingEnabled, maxCopies: v.printMaxCopies, defaultCopies: v.printDefaultCopies, copiesMatchPeople: v.printCopiesMatchPeople },
     attract: attractView(v.attract, v.attractReturnAfterSeconds),
     poses: posesView(v),
+    gallery: { uploadAll: v.sharingUploadAll, autoPublish: v.galleryAutoPublish },
     templateIds: d.templateIds,
   };
 }
@@ -57,6 +58,7 @@ const Body = z.object({
   printing: shape.printing.unwrap(),
   attract: shape.attract.unwrap(),
   poses: shape.poses.unwrap(),
+  gallery: shape.gallery.unwrap(),
   templateIds: z.array(z.string().min(1)).max(20),
 }).partial().strict();
 
@@ -104,6 +106,7 @@ export async function PUT(req: NextRequest) {
     ...(b.printing ? { printingEnabled: b.printing.enabled, printMaxCopies: b.printing.maxCopies, printDefaultCopies: b.printing.defaultCopies, ...(b.printing.copiesMatchPeople !== undefined ? { printCopiesMatchPeople: b.printing.copiesMatchPeople } : {}) } : {}),
     ...attract,
     ...poses,
+    ...(b.gallery ? { sharingUploadAll: b.gallery.uploadAll, galleryAutoPublish: b.gallery.autoPublish } : {}),
     ...(b.templateIds ? { templateIds: b.templateIds } : {}),
   };
   await prisma.genieDefaults.upsert({

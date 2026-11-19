@@ -4,18 +4,18 @@ import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Camera, Share2, Printer, Settings2, LayoutTemplate, ChevronUp, ChevronDown, X, MonitorPlay, Plus, PersonStanding } from 'lucide-react';
+import { Sparkles, Camera, Share2, Printer, Settings2, LayoutTemplate, ChevronUp, ChevronDown, X, MonitorPlay, Plus, PersonStanding, Image as ImageIcon } from 'lucide-react';
 import { TemplatePicker, thumbWidth, type PickerLibrary } from '@/components/genie/TemplatePicker';
 import { Field, LayoutPreview } from '@/components/genie/parts';
-import { Attract, AttractFields, Capture, CaptureFields, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
+import { Attract, AttractFields, Capture, CaptureFields, GalleryDefaults, GalleryFields, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
 import { PoseIdeasFields, type PoseIdeasValue } from '@/components/genie/PoseIdeas';
 import type { Pose } from '@/components/genie/Poses';
 
-type Defaults = { saved: boolean; timeZone: string; capture: Capture; sharing: Sharing; printing: Printing; attract: Attract; poses: PoseIdeasValue; templateIds: string[] };
+type Defaults = { saved: boolean; timeZone: string; capture: Capture; sharing: Sharing; printing: Printing; attract: Attract; poses: PoseIdeasValue; gallery: GalleryDefaults; templateIds: string[] };
 type Form = Omit<Defaults, 'saved'>;
 
 // Only the editable settings: the GET also returns read-only extras (templates, eventsFollowing) the PUT rejects
-const toForm = (d: Defaults): Form => JSON.parse(JSON.stringify({ timeZone: d.timeZone, capture: d.capture, sharing: d.sharing, printing: d.printing, attract: d.attract, poses: d.poses, templateIds: d.templateIds }));
+const toForm = (d: Defaults): Form => JSON.parse(JSON.stringify({ timeZone: d.timeZone, capture: d.capture, sharing: d.sharing, printing: d.printing, attract: d.attract, poses: d.poses, gallery: d.gallery, templateIds: d.templateIds }));
 
 export default function GenieDefaultsPage() {
   const [data, setData] = useState<Defaults & { eventsFollowing: number; chosenPoses: Pose[] } | null>(null);
@@ -133,6 +133,10 @@ export default function GenieDefaultsPage() {
 
             <Section icon={Printer} title="Printing">
               <PrintingFields value={form.printing} onChange={p => set('printing', p)}/>
+            </Section>
+
+            <Section icon={ImageIcon} title="Gallery" description="The event's gallery of photos for your client. Events follow this until you change Gallery on the event.">
+              <GalleryFields value={form.gallery} onChange={p => set('gallery', p)}/>
             </Section>
           </>
         )}

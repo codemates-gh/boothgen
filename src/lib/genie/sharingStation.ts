@@ -12,20 +12,20 @@ export const SharingStationPatch = z.object({
   // "Show only recent photos": null = every photo of the event stays on the guest grid
   recentMinutes: z.number().int().min(5, 'Recent photos: 5 to 60 minutes').max(60, 'Recent photos: 5 to 60 minutes').nullable(),
   blurGrid: z.boolean(),
-  uploadAll: z.boolean(),
+  // "Upload every photo to the gallery" moved to the Gallery section (2.119.0; follows the Event defaults)
 }).strict();
 export type SharingStationPatch = z.infer<typeof SharingStationPatch>;
 
 export function sharingStationData(p: SharingStationPatch) {
   return {
-    sharingRecentMinutes: p.recentMinutes, sharingBlurGrid: p.blurGrid, sharingUploadAll: p.uploadAll,
+    sharingRecentMinutes: p.recentMinutes, sharingBlurGrid: p.blurGrid,
   };
 }
 
 type Stored = Pick<EventGenieSettings, 'sharingRecentMinutes' | 'sharingBlurGrid' | 'sharingUploadAll'>;
 
 export function sharingStationView(s: Stored) {
-  return { recentMinutes: s.sharingRecentMinutes, blurGrid: s.sharingBlurGrid, uploadAll: s.sharingUploadAll };
+  return { recentMinutes: s.sharingRecentMinutes, blurGrid: s.sharingBlurGrid };
 }
 
 // EventBundle.sharingStation: always sent for Genie events; defaults (false / every photo) left out

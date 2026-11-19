@@ -1,4 +1,5 @@
 
+import { autoPublishEndedGalleries } from '@/lib/genie/autoPublish';
 import { enforceGenius } from '@/lib/genius';
 import { inngest } from './client';
 import { getGalleryRetention } from '@/lib/gallery/retention';
@@ -226,6 +227,13 @@ export const purgeOldLeadMessages = inngest.createFunction(
     console.log(`[PURGE] Deleted ${total} lead messages (${countEvents} by event date, ${countLeads} by message date) — ${months} month cutoff`);
     return { deleted: total, months };
   }
+);
+
+// Genie: publish the event gallery when the event ends, where the event's Gallery setting says so (src/lib/genie/autoPublish.ts)
+export const autoPublishGenieGalleries = inngest.createFunction(
+  { id: 'auto-publish-genie-galleries', name: 'Publish Genie galleries when events end' },
+  { cron: '*/15 * * * *' },
+  async () => autoPublishEndedGalleries(),
 );
 
 // Expire galleries: unpublish + flag galleries whose event date is past the expiry window

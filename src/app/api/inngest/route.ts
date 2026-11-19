@@ -26,6 +26,7 @@ import {
   sweepAbandonedAttract,
   sweepAbandonedProps,
   checkIrsMileageRates,
+  autoPublishGenieGalleries,
 } from '@/lib/inngest/functions';
 
 const handler = serve({
@@ -43,6 +44,7 @@ const handler = serve({
     purgeOldLeadMessages,
     notifyClientDesignReady,
     notifyHostDesignDecision,
+    autoPublishGenieGalleries,
     expireGalleries,
     deleteExpiredGalleries,
     sendOverduePaymentReminders,

@@ -11,12 +11,14 @@ export const DEFAULT_SECTIONS = {
   printing: ['printingEnabled', 'printMaxCopies', 'printDefaultCopies', 'printCopiesMatchPeople'],
   attract: ['attract', 'attractReturnAfterSeconds'],
   poses: ['posesEnabled', 'poseIds'],
+  gallery: ['sharingUploadAll', 'galleryAutoPublish'],
 } as const;
 export type DefaultSection = keyof typeof DEFAULT_SECTIONS;
 export const SECTION_NAMES = Object.keys(DEFAULT_SECTIONS) as DefaultSection[];
 
-export const CUSTOM_FLAG: Record<DefaultSection, 'customTimeZone' | 'customCapture' | 'customSharing' | 'customPrinting' | 'customAttract' | 'customPoses'> = {
+export const CUSTOM_FLAG: Record<DefaultSection, 'customTimeZone' | 'customCapture' | 'customSharing' | 'customPrinting' | 'customAttract' | 'customPoses' | 'customGallery'> = {
   timeZone: 'customTimeZone', capture: 'customCapture', sharing: 'customSharing', printing: 'customPrinting', attract: 'customAttract', poses: 'customPoses',
+  gallery: 'customGallery',
 };
 
 type DefaultsValues = Omit<GenieDefaults, 'id' | 'tenantId' | 'templateIds' | 'createdAt' | 'updatedAt'>;
@@ -32,11 +34,22 @@ export const BUILT_IN_DEFAULTS: DefaultsValues = {
   printingEnabled: true, printMaxCopies: 4, printDefaultCopies: 1, printCopiesMatchPeople: true,
   attract: null, attractReturnAfterSeconds: 30,
   posesEnabled: false, poseIds: [],
+  // Gallery: off here; on for Genius accounts (defaultsFor)
+  sharingUploadAll: false, galleryAutoPublish: false,
 };
+
+// Built-in defaults for an account: Genius accounts upload every Sharing station photo and publish the event gallery
+// when the event ends (G, 2026-11-19); Genie-only accounts start with both off
+export function defaultsFor(product: string): DefaultsValues {
+  return product === 'genie' ? BUILT_IN_DEFAULTS : { ...BUILT_IN_DEFAULTS, sharingUploadAll: true, galleryAutoPublish: true };
+}
 
 export async function getDefaults(tenantId: string): Promise<{ values: DefaultsValues; templateIds: string[]; saved: boolean }> {
   const row = await prisma.genieDefaults.findUnique({ where: { tenantId } });
-  if (!row) return { values: BUILT_IN_DEFAULTS, templateIds: [], saved: false };
+  if (!row) {
+    const t = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { product: true } });
+    return { values: defaultsFor(t?.product ?? 'crm'), templateIds: [], saved: false };
+  }
   const { id: _i, tenantId: _t, templateIds, createdAt: _c, updatedAt: _u, ...values } = row;
   return { values, templateIds: Array.isArray(templateIds) ? (templateIds as string[]) : [], saved: true };
 }
@@ -66,7 +79,7 @@ export function newEventSettingsData(defaults: DefaultsValues, timeZone?: string
     poseIds: (defaults.poseIds ?? []) as Prisma.InputJsonValue,
     ...(timeZone ? { timeZone } : {}),
     customTimeZone: !!timeZone && timeZone !== defaults.timeZone,
-    customCapture: false, customSharing: false, customPrinting: false, customAttract: false, customPoses: false,
+    customCapture: false, customSharing: false, customPrinting: false, customAttract: false, customPoses: false, customGallery: false,
   };
 }
 

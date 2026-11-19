@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon, PersonStanding, Copy } from 'lucide-react';
 import { Field, Toggle, fmtDate, fmtDateTime } from '@/components/genie/parts';
+import { GalleryFields, type GalleryDefaults } from '@/components/genie/SettingsForms';
 import { Attract, AttractFields, Capture, CaptureFields, DefaultState, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
 import { Modal } from '@/components/ui/modal';
 import { fmtCents } from '@/lib/utils';
@@ -39,7 +40,8 @@ type Settings = {
   backgroundRemoval: EventBackdropsValue;
   poses: PoseIdeasValue;
   sharingStation: SharingStationValue;
-  custom: { timeZone: boolean; capture: boolean; sharing: boolean; printing: boolean; attract: boolean; poses: boolean };
+  gallery: GalleryDefaults & { autoPublishedAt: string | null };
+  custom: { timeZone: boolean; capture: boolean; sharing: boolean; printing: boolean; attract: boolean; poses: boolean; gallery: boolean };
 };
 type Dashboard = {
   event: { id: string; title: string; eventDate: string; startTime: string | null; endTime: string | null; venueName: string | null; boothEvent: boolean };
@@ -61,7 +63,7 @@ type Dashboard = {
   chosenBackdrops: Backdrop[];
   chosenPoses: Pose[];
 };
-type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'liveView' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval' | 'poses' | 'sharingStation'> & { filters: Omit<Settings['filters'], 'available'> };
+type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'liveView' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval' | 'poses' | 'sharingStation' | 'gallery'> & { filters: Omit<Settings['filters'], 'available'> };
 
 
 function toForm(s: Settings): Form {
@@ -73,13 +75,14 @@ function toForm(s: Settings): Form {
     backgroundRemoval: { ...s.backgroundRemoval, backdropIds: [...s.backgroundRemoval.backdropIds] },
     poses: { enabled: s.poses.enabled, poseIds: [...s.poses.poseIds] },
     sharingStation: { ...s.sharingStation },
+    gallery: { ...s.gallery },
   };
 }
 
 // The save body: "look at the camera" and Boomerang go only when changed, so saving other sections leaves them out
 // of the bundle (Genie's own defaults apply until the operator sets them)
 function patchBody(form: Form, saved: Settings) {
-  const { lookAtCamera, boomerang, attract, props, backgroundRemoval, poses, sharingStation, ...rest } = form;
+  const { lookAtCamera, boomerang, attract, props, backgroundRemoval, poses, sharingStation, gallery, ...rest } = form;
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const { overlay, designProblem: _p, ...b } = boomerang;
   return {
@@ -93,6 +96,8 @@ function patchBody(form: Form, saved: Settings) {
     // Pose ideas only when changed, so saving other sections keeps the event following the Event defaults
     ...(same(poses, saved.poses) ? {} : { poses }),
     ...(same(sharingStation, saved.sharingStation) ? {} : { sharingStation }),
+    // Gallery only when changed, so saving other sections keeps the event following the Event defaults
+    ...(same(gallery, saved.gallery) ? {} : { gallery: { uploadAll: gallery.uploadAll, autoPublish: gallery.autoPublish } }),
   };
 }
 
@@ -201,7 +206,7 @@ export default function EventGeniePage() {
   }
 
   // Puts a section back on the account's Genie defaults
-  async function resetSection(section: 'timeZone' | 'capture' | 'sharing' | 'printing' | 'attract' | 'poses', label: string) {
+  async function resetSection(section: 'timeZone' | 'capture' | 'sharing' | 'printing' | 'attract' | 'poses' | 'gallery', label: string) {
     if (!confirm(`Use your Genie defaults for ${label} on this event? Changes you made here for ${label} are replaced, and it follows your defaults from now on.`)) return;
     setSaveError('');
     const r = await fetch(`/api/events/${eventId}/genie`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reset: [section] }) });
@@ -452,6 +457,12 @@ export default function EventGeniePage() {
                   <div className="border-t pt-4">
                     <SharingStationFields value={form.sharingStation} disabled={locked} onChange={p => set('sharingStation', p)}/>
                   </div>
+                </Section>
+
+                <Section icon={ImageIcon} title="Gallery" description="The event's gallery of photos for your client."
+                  right={<DefaultState custom={data.settings.custom.gallery} disabled={locked} onReset={() => resetSection('gallery', 'Gallery')}/>}>
+                  <GalleryFields value={form.gallery} disabled={locked} onChange={p => set('gallery', p)}/>
+                  {data.settings.gallery.autoPublishedAt && <p className="text-xs text-gray-500">Published automatically on {fmtDateTime(data.settings.gallery.autoPublishedAt, tz)}.</p>}
                 </Section>
 
                 <Section icon={Printer} title="Printing"

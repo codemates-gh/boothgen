@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.119.0] — 2026-11-19
+
+### Added
+- **Genie event galleries fill and publish themselves (Genius accounts).** A new **Gallery** section in Genie → Event defaults and on each event's Genie page:
+  - **"Publish the gallery when the event ends":** once the event is over, its gallery is published (if it has photos) and the client gets the usual "gallery published" email, or the operator's gallery automation runs instead. It happens once: if the operator unpublishes the gallery afterwards, it stays unpublished. Manual Publish/Unpublish works as before. Booth events (Genie-only) don't email the placeholder client.
+  - **"Upload every photo to the gallery"**, for the Sharing station (PC booth), moves here from the event's Sharing section and now follows the Event defaults.
+  - Both are on by default for Genius accounts and off for Genie-only accounts. They apply to new events; existing events keep today's behaviour until changed on the event.
+
+Needs `docs/genie/apply-production-gallery-defaults.sql` (new columns; Genius accounts' saved defaults turned on; existing events kept as they are) run in production before this deploys.
+
+---
+
 ## [2.118.0] — 2026-11-19
 
 ### Added

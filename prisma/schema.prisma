@@ -1379,6 +1379,7 @@ model EventGenieSettings {
   customAttract  Boolean @default(false)
   // Pose ideas; existing events follow the defaults (off unless the account turns them on)
   customPoses    Boolean @default(false)
+  customGallery  Boolean @default(false)
 
   // CaptureConfig
   shotCount                    Int     @default(3)
@@ -1423,6 +1424,9 @@ model EventGenieSettings {
   sharingRecentMinutes         Int?
   sharingBlurGrid              Boolean @default(false)
   sharingUploadAll             Boolean @default(false)
+  // Publish the event gallery when the event ends (the publish job, src/lib/genie/autoPublish.ts); set once it has
+  galleryAutoPublish           Boolean   @default(false)
+  galleryAutoPublishedAt       DateTime?
   // Pose ideas (PosesConfig): account Event defaults + per-event override; poseIds = GeniePose ids in the guests' order
   posesEnabled                 Boolean @default(false)
   poseIds                      Json    @default("[]")
@@ -1687,6 +1691,10 @@ model GenieDefaults {
   // Pose ideas: off for new accounts; poseIds = GeniePose ids in the guests' order
   posesEnabled Boolean @default(false)
   poseIds      Json    @default("[]")
+  // Gallery (2.119.0): upload every Sharing station photo, and publish the event gallery when the event ends. On for
+  // Genius accounts, off for Genie-only (see BUILT_IN_DEFAULTS in src/lib/genie/defaults.ts)
+  sharingUploadAll   Boolean @default(false)
+  galleryAutoPublish Boolean @default(false)
 
   // BoothDesignTemplate ids added (in this order) when Genie is set up for an event
   templateIds Json @default("[]")

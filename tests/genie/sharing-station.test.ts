@@ -33,7 +33,7 @@ import { bundleValidator, guestSession, req, resetDb, seedDevice, seedEvent, see
 const MB = 1024 * 1024;
 const ev = (id: string) => ({ params: Promise.resolve({ id }) });
 const evId = (eventId: string) => ({ params: Promise.resolve({ eventId }) });
-const SHARING = { recentMinutes: null, blurGrid: false, uploadAll: false };
+const SHARING = { recentMinutes: null, blurGrid: false };
 
 async function setup(product: 'genie' | 'crm' = 'genie') {
   const t = await seedTenant({ pro: product === 'crm' });
@@ -59,7 +59,7 @@ describe('event options and bundle', () => {
     expect((await (await DASH(req('/x'), ev(event.id))).json()).settings.sharingStation).toEqual(SHARING);
     const v1 = b.ok ? b.bundleVersion : 0;
 
-    expect((await PATCH(req('/x', { method: 'PATCH', body: { sharingStation: { recentMinutes: 15, blurGrid: true, uploadAll: true } } }), ev(event.id))).status).toBe(200);
+    expect((await PATCH(req('/x', { method: 'PATCH', body: { sharingStation: { recentMinutes: 15, blurGrid: true }, gallery: { uploadAll: true, autoPublish: false } } }), ev(event.id))).status).toBe(200);
     b = await buildEventBundle(tenant.id, event.id);
     expect(b.ok && b.bundle.sharingStation).toEqual({ enabled: true, recentMinutes: 15, blurGrid: true, uploadAll: true });
     expect(b.ok && b.bundleVersion).toBeGreaterThan(v1);
