@@ -1,5 +1,10 @@
 'use client';
 import { artUrl, type Layout } from './parts';
+import { boxFontId, drawTextLayer, type TextLook } from '@/lib/templates/textLayer';
+import { loadTemplateFont } from './TextLayerCanvas';
+
+// Template text to draw on a picture: the words (samples in the designer) and the palette and fonts
+export type TextToDraw = { values: Record<string, string>; look: TextLook };
 
 // Drawing a layout to a PNG in the browser: the designer's saved thumbnail, and the full-size guide operators
 // download to design artwork on (Designer → Download, event Designs tab → Download layout)
@@ -30,7 +35,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 // Draws the layout with sample photos: small for the saved thumbnail, or full size (with the safe line, without the overlay) to design artwork on
-export async function renderThumbnail(l: Layout, samples: HTMLCanvasElement[], fullSize = false): Promise<Blob | null> {
+export async function renderThumbnail(l: Layout, samples: HTMLCanvasElement[], fullSize = false, text?: TextToDraw): Promise<Blob | null> {
   const scale = fullSize ? 1 : 480 / Math.max(l.widthPx, l.heightPx);
   const c = document.createElement('canvas'); c.width = round(l.widthPx * scale); c.height = round(l.heightPx * scale);
   const g = c.getContext('2d')!;
@@ -56,14 +61,18 @@ export async function renderThumbnail(l: Layout, samples: HTMLCanvasElement[], f
       g.strokeRect(safe, safe, l.widthPx - 2 * safe, l.heightPx - 2 * safe);
     }
   } else if (l.overlay) g.drawImage(await loadImage(artUrl(l.overlay.url)), 0, 0, l.widthPx, l.heightPx);
+  if (text && l.texts?.length) {
+    await Promise.all(l.texts.map(b => loadTemplateFont(boxFontId(b, text.look.pairing))));
+    drawTextLayer(g as any, l, text.values, text.look, (w, h) => { const x = document.createElement('canvas'); x.width = w; x.height = h; return x; });
+  }
   return new Promise(resolve => { try { c.toBlob(b => resolve(b), 'image/png'); } catch { resolve(null); } });
 }
 
 
 // Saves the full-size guide (sample photos + safe line, no overlay) as <name>-<w>x<h>.png
-export async function downloadLayoutPng(layout: Layout, name: string): Promise<boolean> {
+export async function downloadLayoutPng(layout: Layout, name: string, text?: TextToDraw): Promise<boolean> {
   const samples = [0, 1, 2, 3].map(makeSample);
-  const blob = await renderThumbnail(layout, samples, true).catch(() => null);
+  const blob = await renderThumbnail(layout, samples, true, text).catch(() => null);
   if (!blob) return false;
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);

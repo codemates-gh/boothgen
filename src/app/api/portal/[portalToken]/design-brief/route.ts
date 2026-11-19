@@ -5,6 +5,9 @@ import { sendEmail } from '@/lib/email/send';
 import { clientTemplateView, clientTemplates, clientTemplatesWhere } from '@/lib/templates/clientLibrary';
 import { cleanTextValues } from '@/lib/templates/customRequest';
 import { closedForClients } from '@/lib/genius';
+import { z } from 'zod';
+import { Prisma } from '@prisma/client';
+import { TextAdjust } from '@/lib/templates/textLayer';
 
 export async function GET(_: NextRequest, props: { params: Promise<{ portalToken: string }> }) {
   const params = await props.params;
@@ -57,7 +60,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ portalTo
   { const closed = await closedForClients(event.tenantId); if (closed) return closed; } // Genie-only account: CRM is closed
   if (!event.tenant.branding?.designBriefEnabled) return NextResponse.json({ error: 'Design brief not enabled.' }, { status: 400 });
 
-  const { templateId, selectedColorVariantId, selectedFontPairingId, textValues, themeInput, themeDirections, selectedDirectionIndex, isCustomDesign, notes } = await req.json();
+  const { templateId, selectedColorVariantId, selectedFontPairingId, textValues, textAdjust, themeInput, themeDirections, selectedDirectionIndex, isCustomDesign, notes } = await req.json();
+  // Template text: outline/shadow on or off and size per text box (ignored if malformed)
+  const adjust = z.record(TextAdjust).refine(v => Object.keys(v).length <= 20).safeParse(textAdjust);
 
   // The layout must be one this operator offers
   if (templateId && !(await prisma.boothDesignTemplate.findFirst({ where: { id: templateId, ...(await clientTemplatesWhere(event.tenantId)) }, select: { id: true } }))) {
@@ -77,6 +82,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ portalTo
     selectedColorVariantId: selectedColorVariantId || null,
     selectedFontPairingId: selectedFontPairingId || null,
     textValues: cleanTextValues(textValues),
+    textAdjust: adjust.success && Object.keys(adjust.data).length ? adjust.data : Prisma.DbNull,
     themeInput: themeInput || null,
     themeDirections: themeDirections ?? null,
     selectedDirectionIndex: selectedDirectionIndex ?? null,

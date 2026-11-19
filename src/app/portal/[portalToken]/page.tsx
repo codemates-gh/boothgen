@@ -1,5 +1,7 @@
 'use client';
 import { LayoutPreview } from '@/components/genie/parts';
+import { BriefTextPreview } from '@/components/genie/BriefTextPreview';
+import type { TextAdjust } from '@/lib/templates/textLayer';
 import { CUSTOM_FIELDS } from '@/lib/templates/customRequest';
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -69,6 +71,8 @@ export default function ClientPortalPage() {
   const [selectedColorVariantId, setSelectedColorVariantId] = useState('');
   const [selectedFontPairingId, setSelectedFontPairingId] = useState('');
   const [briefText, setBriefText] = useState<Record<string, string>>({});
+  // Template text: outline/shadow on or off and size, per text box
+  const [briefAdjust, setBriefAdjust] = useState<Record<string, TextAdjust>>({});
   const [briefNotes, setBriefNotes] = useState('');
   const [themeInput, setThemeInput] = useState('');
   const [themeDirections, setThemeDirections] = useState<{title: string; description: string}[]>([]);
@@ -179,6 +183,7 @@ export default function ClientPortalPage() {
           selectedColorVariantId: selectedColorVariantId || null,
           selectedFontPairingId: selectedFontPairingId || null,
           textValues: briefText,
+          textAdjust: !isCustomDesign && selectedTemplate?.layout?.texts?.length ? briefAdjust : null,
           themeInput: themeInput || null,
           themeDirections: themeDirections.length ? themeDirections : null,
           selectedDirectionIndex: selectedDirectionIndex ?? null,
@@ -197,6 +202,7 @@ export default function ClientPortalPage() {
     // Auto-select first color variant and font pairing
     setSelectedColorVariantId(t.colorVariants?.[0]?.id ?? '');
     setSelectedFontPairingId(t.fontPairings?.[0]?.id ?? '');
+    setBriefAdjust({});
     setBriefStep('customize');
     setIsCustomDesign(false);
   }
@@ -1173,6 +1179,17 @@ export default function ClientPortalPage() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Template text: their words on the layout, live */}
+                  {!isCustomDesign && selectedTemplate?.layout?.texts?.length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-gray-800 text-sm">Preview</h3>
+                      <BriefTextPreview layout={selectedTemplate.layout} zones={selectedTemplate.textZones ?? []}
+                        palette={(selectedTemplate.colorVariants ?? []).find((v: any) => v.id === selectedColorVariantId) ?? null}
+                        pairing={(selectedTemplate.fontPairings ?? []).find((p: any) => p.id === selectedFontPairingId) ?? null}
+                        values={briefText} adjust={briefAdjust} onAdjust={setBriefAdjust} accent={pc}/>
                     </div>
                   )}
 

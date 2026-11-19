@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TextBox } from '@/lib/templates/textLayer';
 
 // Zod mirrors of the Genie wire schemas (Genie repo: shared/schemas/*.json)
 
@@ -207,6 +208,8 @@ export const StoredLayout = z.object({
   background: RemoteAsset.optional(),
   overlay: RemoteAsset.optional(),
   slots: z.array(PhotoSlot).min(1),
+  // Template text boxes (BoothGen only): drawn into the overlay sent to iPads, never sent as boxes
+  texts: z.array(TextBox).max(10).optional(),
 }).strict();
 export type StoredLayout = z.infer<typeof StoredLayout>;
 

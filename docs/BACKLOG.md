@@ -6,7 +6,7 @@ Ideas agreed on but not scheduled yet. Newest first. When one is picked up, move
 
 ## Templates: draw the client's text on the layout
 
-**Status:** not started. **Added:** 2026-11-18.
+**Status:** shipped in 2.115.0 (designer text boxes with outline and shadow, client portal live preview with outline/shadow on or off and size, event Template Text card, words drawn into the iPad overlay for photos and Boomerang). Still to do: the "Later option" below (per-guest text drawn by Genie), uploaded fonts. **Added:** 2026-11-18.
 
 **Goal:** a template's Text fields, Color palettes and Font pairings (Client Options) show on the template itself, not only as questions in the client's design brief. Today they draw nothing: the designer places only photo frames, a background colour, a background image and an overlay PNG, so the operator makes the artwork elsewhere from the client's answers and uploads it as a proof.
 

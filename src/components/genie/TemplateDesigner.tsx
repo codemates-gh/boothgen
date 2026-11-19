@@ -13,6 +13,9 @@ import { Field, Layout, RemoteAsset, Slot, artUrl } from '@/components/genie/par
 import { SAFE_INCH, coverBackground, downloadLayoutPng, imageSize, imageSizeOfUrl, makeSample, renderThumbnail, sameShape, shrinkOriginal, type BackgroundFocus } from './layoutImage';
 import { BackgroundPositioner } from './BackgroundPositioner';
 import { ClientOptionsCard, EMPTY_CLIENT_OPTS, clientOptsProblem, type ClientOpts } from '@/components/genie/ClientOptionsCard';
+import { TextBoxPanel } from './TextBoxPanel';
+import { TextLayerCanvas } from './TextLayerCanvas';
+import { DEFAULT_TEXT_COLORS, newTextBox, pickByIdOrName, sampleValues, type TextBox, type TextLook } from '@/lib/templates/textLayer';
 
 const PRESETS = [
   { id: '4x6-landscape', label: '4×6 landscape', format: '4x6', orientation: 'landscape', widthPx: 1800, heightPx: 1200 },
@@ -92,10 +95,16 @@ const isStartingLayout = (l: Layout) => strip(l.slots) === strip(defaultSlots(pr
 // An untouched starting layout becomes the new size's starting layout. Shaped frames keep their shape.
 // Boomerang & GIF sizes keep only the first frame (photo 1).
 function resize(l: Layout, p: Preset): Layout {
-  const { background: _b, overlay: _o, ...rest } = l;
-  const base = { ...rest, format: p.format, orientation: p.orientation, widthPx: p.widthPx, heightPx: p.heightPx };
-  if (isStartingLayout(l)) return { ...base, slots: defaultSlots(p) };
+  const { background: _b, overlay: _o, texts, ...rest } = l;
   const sx = p.widthPx / l.widthPx, sy = p.heightPx / l.heightPx;
+  // Text boxes keep their place; their size follows the narrower change so the words still fit
+  const k = Math.min(sx, sy);
+  const scaledTexts = texts?.map(t => {
+    const width = Math.min(p.widthPx, Math.max(MIN, round(t.width * sx))), height = Math.min(p.heightPx, Math.max(MIN, round(t.height * k)));
+    return { ...t, width, height, x: round(clamp(t.x * sx, 0, p.widthPx - width)), y: round(clamp((t.y + t.height / 2) * sy - height / 2, 0, p.heightPx - height)), maxFontPx: Math.max(8, round(t.maxFontPx * k)) };
+  });
+  const base = { ...rest, format: p.format, orientation: p.orientation, widthPx: p.widthPx, heightPx: p.heightPx, ...(scaledTexts ? { texts: scaledTexts } : {}) };
+  if (isStartingLayout(l)) return { ...base, slots: defaultSlots(p) };
   const kept = clipOnly(p.format) ? [{ ...(l.slots.find(s => s.shotIndex === 0) ?? l.slots[0]), shotIndex: 0 }] : l.slots;
   return {
     ...base,
@@ -109,9 +118,11 @@ function resize(l: Layout, p: Preset): Layout {
   };
 }
 
+// Photo frames and text boxes move, resize and rotate the same way
+type Box = { id: string; x: number; y: number; width: number; height: number; rotationDegrees: number };
 type Drag =
   | { kind: 'move'; startX: number; startY: number; orig: Record<string, { x: number; y: number }> }
-  | { kind: 'resize'; id: string; corner: 'nw' | 'ne' | 'sw' | 'se'; startX: number; startY: number; orig: Slot; ratio: number | null }
+  | { kind: 'resize'; id: string; corner: 'nw' | 'ne' | 'sw' | 'se'; startX: number; startY: number; orig: Box; ratio: number | null }
   | { kind: 'rotate'; id: string; cx: number; cy: number };
 
 // Template Designer: Templates (operators, chrome "tenant") and Super Admin → Design Templates (BoothGen,
@@ -148,6 +159,9 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
   // The background being positioned: a new file, or a saved original being repositioned
   const [bgPick, setBgPick] = useState<{ key: 'main' | 'alt'; src: string; local: boolean; size: { width: number; height: number }; focus?: BackgroundFocus; file?: File; sourceAsset?: RemoteAsset; open: boolean } | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
+  // Template text preview: which palette and font pairing to show, with the fields' sample words
+  const [previewPaletteId, setPreviewPaletteId] = useState<string | null>(null);
+  const [previewPairingId, setPreviewPairingId] = useState<string | null>(null);
   // Frames set to "Free" that happen to match a shape (this session only)
   const [freeIds, setFreeIds] = useState<string[]>([]);
   const lockedRatio = (s: Slot) => freeIds.includes(s.id) ? null : ratioOf(s);
@@ -159,6 +173,9 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
   const layout = active === 'alt' && layouts.alt ? layouts.alt : layouts.main;
   const setLayout = useCallback((fn: (l: Layout) => Layout) => setLayouts(ls => active === 'alt' && ls.alt ? { ...ls, alt: fn(ls.alt) } : { ...ls, main: fn(ls.main) }), [active]);
   const setSlots = useCallback((fn: (s: Slot[]) => Slot[]) => setLayout(l => ({ ...l, slots: fn(l.slots) })), [setLayout]);
+  const setTexts = useCallback((fn: (t: TextBox[]) => TextBox[]) => setLayout(l => ({ ...l, texts: fn(l.texts ?? []) })), [setLayout]);
+  // Changes frames and text boxes alike
+  const setBoxes = useCallback((fn: <T extends Box>(b: T) => T) => setLayout(l => ({ ...l, slots: l.slots.map(fn), ...(l.texts ? { texts: l.texts.map(fn) } : {}) })), [setLayout]);
   const snapshot = JSON.stringify({ name, layouts, clientOpts });
   const dirty = snapshot !== savedSnapshot;
 
@@ -200,6 +217,14 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
   const scale = Math.min(stageW / layout.widthPx, maxH / layout.heightPx);
   const sel = layout.slots.filter(s => selected.includes(s.id));
   const one = sel.length === 1 ? sel[0] : null;
+  const texts = layout.texts ?? [];
+  const selTexts = texts.filter(t => selected.includes(t.id));
+  const oneText = selTexts.length === 1 && sel.length === 0 ? selTexts[0] : null;
+  const palette = pickByIdOrName(clientOpts.colorVariants, previewPaletteId);
+  const look: TextLook = useMemo(() => ({ colors: palette?.colors ?? DEFAULT_TEXT_COLORS, pairing: pickByIdOrName(clientOpts.fontPairings, previewPairingId) }), [palette, clientOpts.fontPairings, previewPairingId]);
+  const samplesText = useMemo(() => sampleValues(clientOpts.textZones), [clientOpts.textZones]);
+  // A layout with text takes the palette's background colour (when the template has palettes)
+  const stageBg = (l: Layout) => l.texts?.length && clientOpts.colorVariants.length ? look.colors.background : l.backgroundColor;
   const readOnly = !canEdit;
 
   const frameCount = new Set(layout.slots.map(s => s.shotIndex)).size;
@@ -213,7 +238,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
     const move = (e: PointerEvent) => {
       if (drag.kind === 'move') {
         const dx = (e.clientX - drag.startX) / scale, dy = (e.clientY - drag.startY) / scale;
-        setSlots(slots => slots.map(s => drag.orig[s.id] ? { ...s, x: round(clamp(drag.orig[s.id].x + dx, 0, layout.widthPx - s.width)), y: round(clamp(drag.orig[s.id].y + dy, 0, layout.heightPx - s.height)) } : s));
+        setBoxes(s => drag.orig[s.id] ? { ...s, x: round(clamp(drag.orig[s.id].x + dx, 0, layout.widthPx - s.width)), y: round(clamp(drag.orig[s.id].y + dy, 0, layout.heightPx - s.height)) } : s);
       } else if (drag.kind === 'resize') {
         const dx = (e.clientX - drag.startX) / scale, dy = (e.clientY - drag.startY) / scale, o = drag.orig;
         let { x, y, width, height } = o;
@@ -233,27 +258,27 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
           x = drag.corner.includes('w') ? o.x + o.width - width : o.x;
           y = drag.corner.includes('n') ? o.y + o.height - height : o.y;
         }
-        setSlots(slots => slots.map(s => s.id === drag.id ? { ...s, x: round(x), y: round(y), width: round(width), height: round(height) } : s));
+        setBoxes(s => s.id === drag.id ? { ...s, x: round(x), y: round(y), width: round(width), height: round(height) } : s);
       } else {
         const rect = stageRef.current!.getBoundingClientRect();
         let deg = Math.atan2(e.clientY - (rect.top + drag.cy * scale), e.clientX - (rect.left + drag.cx * scale)) * 180 / Math.PI + 90;
         if (deg > 180) deg -= 360;
         const snapped = [-180, -90, 0, 90, 180].find(a => Math.abs(a - deg) < 4);
-        setSlots(slots => slots.map(s => s.id === drag.id ? { ...s, rotationDegrees: round(snapped ?? deg) } : s));
+        setBoxes(s => s.id === drag.id ? { ...s, rotationDegrees: round(snapped ?? deg) } : s);
       }
     };
     const up = () => setDrag(null);
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
     return () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
-  }, [drag, scale, layout.widthPx, layout.heightPx, setSlots]);
+  }, [drag, scale, layout.widthPx, layout.heightPx, setBoxes]);
 
-  function startMove(e: React.PointerEvent, s: Slot) {
+  function startMove(e: React.PointerEvent, s: Box) {
     if (readOnly || preview) return;
     e.preventDefault(); e.stopPropagation();
     const ids = e.shiftKey ? (selected.includes(s.id) ? selected.filter(i => i !== s.id) : [...selected, s.id]) : selected.includes(s.id) ? selected : [s.id];
     setSelected(ids);
     if (!ids.includes(s.id)) return;
-    setDrag({ kind: 'move', startX: e.clientX, startY: e.clientY, orig: Object.fromEntries(layout.slots.filter(x => ids.includes(x.id)).map(x => [x.id, { x: x.x, y: x.y }])) });
+    setDrag({ kind: 'move', startX: e.clientX, startY: e.clientY, orig: Object.fromEntries([...layout.slots, ...texts].filter(x => ids.includes(x.id)).map(x => [x.id, { x: x.x, y: x.y }])) });
   }
 
   // Arrow keys nudge (Shift = 10 px), Delete removes
@@ -266,8 +291,8 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
       const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
       if (d) {
         e.preventDefault();
-        setSlots(slots => slots.map(s => selected.includes(s.id) ? { ...s, x: clamp(s.x + d[0], 0, layout.widthPx - s.width), y: clamp(s.y + d[1], 0, layout.heightPx - s.height) } : s));
-      } else if ((e.key === 'Delete' || e.key === 'Backspace') && layout.slots.length > selected.length) {
+        setBoxes(s => selected.includes(s.id) ? { ...s, x: clamp(s.x + d[0], 0, layout.widthPx - s.width), y: clamp(s.y + d[1], 0, layout.heightPx - s.height) } : s);
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && layout.slots.length > sel.length) {
         e.preventDefault(); removeSelected();
       }
     };
@@ -313,10 +338,26 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
     setSlots(slots => [...slots, ...copies]); setSelected(copies.map(c => c.id));
   }
   function removeSelected() {
-    setSlots(slots => slots.filter(s => !selected.includes(s.id))); setSelected([]);
+    setLayout(l => ({ ...l, slots: l.slots.filter(s => !selected.includes(s.id)), ...(l.texts ? { texts: l.texts.filter(t => !selected.includes(t.id)) } : {}) })); setSelected([]);
   }
   function center(axis: 'h' | 'v') {
-    setSlots(slots => slots.map(s => !selected.includes(s.id) ? s : axis === 'h' ? { ...s, x: round((layout.widthPx - s.width) / 2) } : { ...s, y: round((layout.heightPx - s.height) / 2) }));
+    setBoxes(s => !selected.includes(s.id) ? s : axis === 'h' ? { ...s, x: round((layout.widthPx - s.width) / 2) } : { ...s, y: round((layout.heightPx - s.height) / 2) });
+  }
+  // ── text tools ───────────────────────────────────────────────────────────
+  function addText(zoneId: string) {
+    const t = newTextBox('t' + Math.random().toString(36).slice(2, 8), zoneId, layout);
+    setTexts(ts => [...ts, t]); setSelected([t.id]); setPreview(false);
+  }
+  function updateText(patch: Partial<TextBox>) {
+    if (!oneText) return;
+    setTexts(ts => ts.map(t => {
+      if (t.id !== oneText.id) return t;
+      const n = { ...t, ...patch };
+      n.width = clamp(n.width || MIN, MIN, layout.widthPx); n.height = clamp(n.height || MIN, MIN, layout.heightPx);
+      n.x = clamp(n.x || 0, 0, layout.widthPx - n.width); n.y = clamp(n.y || 0, 0, layout.heightPx - n.height);
+      n.rotationDegrees = clamp(n.rotationDegrees || 0, -180, 180);
+      return n;
+    }));
   }
   // Equal gaps between the selected frames, keeping the first and last in place
   function distribute(axis: 'h' | 'v') {
@@ -433,7 +474,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
     setSaving(true); setError('');
     let thumb: RemoteAsset | null = thumbnail;
     try {
-      const blob = await renderThumbnail(layouts.main, samples).catch(() => null);
+      const blob = await renderThumbnail({ ...layouts.main, backgroundColor: stageBg(layouts.main) }, samples, false, { values: samplesText, look }).catch(() => null);
       thumb = blob ? await uploadFile(blob, 'image/png') : null;
     } catch { thumb = null; }
     const { visible, description, ...options } = clientOpts;
@@ -455,11 +496,11 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
   // Full-size PNG of the current layout to design a background or overlay on
   async function downloadGuide() {
     setError('');
-    if (!(await downloadLayoutPng(layout, name || 'template'))) setError('Could not create the image. Try again.');
+    if (!(await downloadLayoutPng({ ...layout, backgroundColor: stageBg(layout) }, name || 'template', { values: samplesText, look }))) setError('Could not create the image. Try again.');
   }
 
-  const handle = (corner: 'nw' | 'ne' | 'sw' | 'se', s: Slot) => (
-    <div key={corner} onPointerDown={e => { e.preventDefault(); e.stopPropagation(); setDrag({ kind: 'resize', id: s.id, corner, startX: e.clientX, startY: e.clientY, orig: s, ratio: lockedRatio(s)?.r ?? null }); }}
+  const handle = (corner: 'nw' | 'ne' | 'sw' | 'se', s: Box, ratio: number | null) => (
+    <div key={corner} onPointerDown={e => { e.preventDefault(); e.stopPropagation(); setDrag({ kind: 'resize', id: s.id, corner, startX: e.clientX, startY: e.clientY, orig: s, ratio }); }}
       className={'absolute w-3 h-3 bg-white border-2 border-[#0085FF] rounded-sm ' + { nw: '-left-1.5 -top-1.5 cursor-nwse-resize', ne: '-right-1.5 -top-1.5 cursor-nesw-resize', sw: '-left-1.5 -bottom-1.5 cursor-nesw-resize', se: '-right-1.5 -bottom-1.5 cursor-nwse-resize' }[corner]}/>
   );
 
@@ -509,7 +550,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
               </div>
 
               <div className="w-full flex justify-center bg-[#F5F6F8] rounded-lg p-4 pt-8 select-none" onPointerDown={() => setSelected([])}>
-                <div ref={stageRef} className="relative shadow-md touch-none" style={{ width: layout.widthPx * scale, height: layout.heightPx * scale, backgroundColor: layout.backgroundColor }}>
+                <div ref={stageRef} className="relative shadow-md touch-none" style={{ width: layout.widthPx * scale, height: layout.heightPx * scale, backgroundColor: stageBg(layout) }}>
                   <div className="absolute inset-0 overflow-hidden pointer-events-none">
                   {layout.background && <img src={artUrl(layout.background.url)} alt="" draggable={false} className="absolute inset-0 w-full h-full pointer-events-none"/>}
                   {layout.slots.map(s => (
@@ -520,6 +561,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
                     </div>
                   ))}
                   {layout.overlay && <img src={artUrl(layout.overlay.url)} alt="" draggable={false} className={'absolute inset-0 w-full h-full pointer-events-none ' + (preview ? '' : 'opacity-60')}/>}
+                  <TextLayerCanvas layout={layout} values={samplesText} look={look} width={layout.widthPx * scale}/>
                   {!preview && !clipSize && <div className="absolute border border-dashed border-[#E2445C]/70 pointer-events-none" style={{ inset: safe * scale }} title="Safe area"/>}
                   </div>
                   {!preview && layout.slots.map(s => {
@@ -531,7 +573,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
                         <span className="absolute left-1 top-1 bg-[#1F1F3D] text-white text-[11px] font-semibold rounded px-1.5 py-0.5">{s.shotIndex + 1}</span>
                         {on && one?.id === s.id && !readOnly && (
                           <>
-                            {(['nw', 'ne', 'sw', 'se'] as const).map(c => handle(c, s))}
+                            {(['nw', 'ne', 'sw', 'se'] as const).map(c => handle(c, s, lockedRatio(s)?.r ?? null))}
                             <div onPointerDown={e => { e.preventDefault(); e.stopPropagation(); setDrag({ kind: 'rotate', id: s.id, cx: s.x + s.width / 2, cy: s.y + s.height / 2 }); }}
                               className="absolute left-1/2 -top-7 -ml-2.5 w-5 h-5 rounded-full bg-white border-2 border-[#0085FF] flex items-center justify-center cursor-grab" title="Rotate">
                               <RotateCw className="w-3 h-3 text-[#0085FF]"/>
@@ -541,9 +583,28 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
                       </div>
                     );
                   })}
+                  {!preview && texts.map(t => {
+                    const on = selected.includes(t.id);
+                    return (
+                      <div key={t.id} onPointerDown={e => startMove(e, t)} title={clientOpts.textZones.find(z => z.id === t.zoneId)?.label ?? 'Removed text field'}
+                        className={'absolute border ' + (on ? 'border-2 border-[#0085FF]' : 'border-dashed border-[#0085FF]/60') + (readOnly ? '' : ' cursor-move')}
+                        style={{ left: t.x * scale, top: t.y * scale, width: t.width * scale, height: t.height * scale, transform: `rotate(${t.rotationDegrees}deg)` }}>
+                        <span className="absolute left-0 -top-5 bg-[#0085FF] text-white text-[10px] font-semibold rounded px-1 py-px whitespace-nowrap">T · {clientOpts.textZones.find(z => z.id === t.zoneId)?.label ?? 'Removed field'}</span>
+                        {on && oneText?.id === t.id && !readOnly && (
+                          <>
+                            {(['nw', 'ne', 'sw', 'se'] as const).map(c => handle(c, t, null))}
+                            <div onPointerDown={e => { e.preventDefault(); e.stopPropagation(); setDrag({ kind: 'rotate', id: t.id, cx: t.x + t.width / 2, cy: t.y + t.height / 2 }); }}
+                              className="absolute left-1/2 -top-12 -ml-2.5 w-5 h-5 rounded-full bg-white border-2 border-[#0085FF] flex items-center justify-center cursor-grab" title="Rotate">
+                              <RotateCw className="w-3 h-3 text-[#0085FF]"/>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-              {!readOnly && !preview && <p className="text-xs text-gray-400 mt-2">Drag frames to move, corners to resize, the round handle to rotate. Shift-click to select several. Arrow keys nudge.</p>}
+              {!readOnly && !preview && <p className="text-xs text-gray-400 mt-2">Drag frames and text boxes to move, corners to resize, the round handle to rotate. Shift-click to select several. Arrow keys nudge.</p>}
               {!preview && <p className="text-xs text-gray-400 mt-1"><span className="inline-block w-4 border-t border-dashed border-[#E2445C] align-middle mr-1.5"/>Safe area: printers can trim up to 1/8 inch at the edges, so keep faces, logos and text inside the dashed line.</p>}
             </CardContent>
           </Card>
@@ -605,6 +666,13 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
               </Card>
             )}
 
+            {!readOnly && (
+              <TextBoxPanel zones={clientOpts.textZones} palettes={clientOpts.colorVariants} pairings={clientOpts.fontPairings} boxes={texts} selected={oneText}
+                colors={look.colors} previewPaletteId={palette?.id ?? null} previewPairingId={look.pairing?.id ?? null}
+                onPreviewPalette={setPreviewPaletteId} onPreviewPairing={setPreviewPairingId}
+                onAdd={addText} onChange={updateText} onRemove={removeSelected}/>
+            )}
+
             <Card>
               <CardHeader className="pb-3"><CardTitle>Canvas</CardTitle></CardHeader>
               <CardContent className="space-y-3">
@@ -616,7 +684,7 @@ export function TemplateDesigner({ templateId, initialScope = 'mine', backHref, 
                     })}
                   </Select>
                 </Field>
-                <Field label="Background colour">
+                <Field label="Background colour" hint={texts.length && clientOpts.colorVariants.length ? 'This layout has text, so it uses the client’s palette background colour instead.' : undefined}>
                   <div className="flex gap-2">
                     <input type="color" value={layout.backgroundColor} disabled={readOnly} onChange={e => setLayout(l => ({ ...l, backgroundColor: e.target.value.toUpperCase() }))} className="h-10 w-12 rounded border border-gray-300 cursor-pointer"/>
                     <Input key={layout.backgroundColor} defaultValue={layout.backgroundColor} disabled={readOnly} maxLength={7}

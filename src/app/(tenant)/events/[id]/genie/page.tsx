@@ -15,6 +15,7 @@ import { Modal } from '@/components/ui/modal';
 import { fmtCents } from '@/lib/utils';
 import { BoothEventModal, localEndDate, localTime } from '@/components/genie/BoothEventModal';
 import GenieTemplates, { ApprovedDesign, EventTemplate, templateMismatch } from './GenieTemplates';
+import GenieTemplateText from './GenieTemplateText';
 import GenieEventDevices from './GenieEventDevices';
 import GenieShares from './GenieShares';
 import { Boomerang, BoomerangFields, LookAtCamera, LookAtCameraFields } from './CaptureExtras';
@@ -388,6 +389,7 @@ export default function EventGeniePage() {
                 </Section>
 
                 <GenieTemplates eventId={eventId} templates={data.templates} shotCount={form.capture.shotCount} locked={locked} onChange={() => { setBundle(null); load(false); }} approvedDesign={data.approvedDesign} briefTemplate={data.briefTemplate}/>
+                <GenieTemplateText eventId={eventId} locked={locked} version={data.templates.map(t => t.id + ':' + (t.designId ?? '') + ':' + (t.alternateLayout ? 1 : 0)).join()} onChange={() => setBundle(null)}/>
 
                 <Section icon={ImageIcon} title="Virtual backdrop" description="Background removal: guests on a backdrop instead of the room. This event only.">
                   <EventBackdropsFields value={form.backgroundRemoval} chosen={data.chosenBackdrops} disabled={locked} onChange={p => set('backgroundRemoval', p)}/>
