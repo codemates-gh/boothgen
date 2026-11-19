@@ -14,6 +14,8 @@ import { bundleSharingStation } from './sharingStation';
 import { isBoothClient } from './boothClient';
 import { eventBilling } from './payments';
 import { glamourStyleReady, withoutGlamourStyle } from './addOns';
+import { bundleAiBooth } from './ai/eventConfig';
+import { aiSettings } from './ai/settings';
 import { galleryRetentionDates, getGalleryRetention, type GalleryRetention } from '@/lib/gallery/retention';
 
 export { appUrl, galleryUrl, sessionUrl } from './urls';
@@ -117,7 +119,7 @@ export type BundleResult =
   | { ok: true; bundle: Record<string, unknown>; bundleVersion: number }
   | { ok: false; status: 404 | 409; code: string; error: string };
 
-function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number, props: GenieProp[], backdrops: GenieBackdrop[], watermark: boolean, design?: Awaited<ReturnType<typeof boomerangDesign>>, poses: GeniePose[] = [], glamourReady = false) {
+function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number, props: GenieProp[], backdrops: GenieBackdrop[], watermark: boolean, design?: Awaited<ReturnType<typeof boomerangDesign>>, poses: GeniePose[] = [], glamourReady = false, aiBooth?: Awaited<ReturnType<typeof bundleAiBooth>>) {
   // Glamour Style (step glamourStyle) only once it's available: older iPads reject a bundle with it
   const looks = glamourReady ? { processing: settings.processing, filters: settings.filters, defaultFilterId: settings.defaultFilterId }
     : withoutGlamourStyle(settings.processing, settings.filters, settings.defaultFilterId);
@@ -207,6 +209,8 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
     ...(backdrops_ ? { backgroundRemoval: backdrops_ } : {}),
     // Optional; only when pose ideas are on (Event defaults or the event's own) and some poses are chosen
     ...(poses_ ? { poses: poses_ } : {}),
+    // Optional; Geniefied (AI photo booth) when it's on for the event (Genie P13)
+    ...(aiBooth ? { aiBooth } : {}),
     // The Sharing station (PC booth) is part of every Genie event
     sharingStation: sharing_,
   };
@@ -235,7 +239,8 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
   if (event.genieTemplates.length === 0) return { ok: false, status: 409, code: 'no_templates', error: 'The event has no Genie templates yet' };
 
   const gallery = await ensureGallery(event);
-  const [messaging, retention, props, backdrops, billing, design, poses, glamourReady] = await Promise.all([
+  const current = settings;
+  const [messaging, retention, props, backdrops, billing, design, poses, glamourReady, aiBooth] = await Promise.all([
     prisma.genieMessagingConfig.findUnique({ where: { tenantId } }),
     getGalleryRetention(),
     settings.propsEnabled ? eventProps(settings.propIds, tenantId) : Promise.resolve([]),
@@ -244,8 +249,9 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
     boomerangDesign(settings.boomerang, tenantId),
     settings.posesEnabled ? chosenPoses(settings.poseIds, tenantId) : Promise.resolve([]),
     glamourStyleReady(),
+    aiSettings().then(a => bundleAiBooth(current, tenantId, a.ready)),
   ]);
-  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props, backdrops, billing.watermark, design, poses, glamourReady);
+  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props, backdrops, billing.watermark, design, poses, glamourReady, aiBooth);
   const hash = contentHash(bundle);
 
   for (let attempt = 0; settings.bundleHash !== hash && attempt < 3; attempt++) {

@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+import { galleryReplaced } from '@/lib/genie/ai/late';
 import { NextRequest, NextResponse } from 'next/server';
 import type { Gallery, GalleryAsset, GenieSession } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
@@ -104,6 +105,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
   if (gallery.approvalStatus === 'PENDING_UPLOAD') {
     await prisma.gallery.updateMany({ where: { id: gallery.id, approvalStatus: 'PENDING_UPLOAD' }, data: { approvalStatus: 'PENDING_REVIEW' } });
   }
+  // A newer gallery design for the session (a late Geniefied one) replaces the earlier and may send the ready message
+  if (body.kind === 'gallery') await galleryReplaced(session.id, asset.id);
   await dispatchReadyShares(session.id);
   return registered(asset, gallery, session, 201);
 }

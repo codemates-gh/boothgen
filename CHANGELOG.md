@@ -4,6 +4,22 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.121.0] — 2026-11-19
+
+### Added
+- **Geniefied, the AI photo booth (Genie P13), BoothGen side.** Guests restyle their booth photos in themes the operator picks; BoothGen renders each photo with Google's image model (Gemini paid tier) and never sends prompts to the iPad. Hidden until Super Admin turns on "Geniefied available".
+  - **A paid add-on per event, with a render allowance:** $29 per event with 100 renders, charged with the event. Each photo rendered is one render; blocked and failed ones don't count. Unpaid events get 20 trial renders, with the watermark. Operators buy top-up packs (100 renders for $19) on the event's Genie page. Super Admin fee waivers and comps cover it too.
+  - **Super Admin → Genie Usage → Geniefied:** the price, renders included, top-up pack, trial renders, the fast model (1–2 people, `gemini-3.1-flash-image`) and quality model (3 or more, `gemini-3-pro-image-preview`), estimated costs, the "available" switch, and a ledger of renders per event (done, trial, blocked, failed, estimated cost).
+  - **Themes:** Super Admin → AI themes holds the Standard themes (the 12 starter themes with draft prompts for review, and no samples yet). Genie → Themes holds the operator's own. Each theme has a name, prompt and sample, plus "Try it" (render your own photo; 20 tries a day for operators), which can save the result as the sample. A fixed preamble that operators can't change always comes first (keep each person's face, identity, skin tone, age and pose; no text; no nudity). A theme without a sample isn't offered to guests.
+  - **Event page → Geniefied:** on/off, when guests get it (before Start, one theme for everyone, or on the review screen), the themes in order, the consent text guests agree to (BoothGen's wording by default, including the 18+ line), the longest wait, the "Your Geniefied photo is ready" message, the renders left, and "Add renders".
+  - **For the iPad:** `EventBundle.aiBooth`, and the render routes `POST /api/genie/events/{id}/ai-renders` and `GET …/ai-renders/{renderId}`. They're idempotent per shot and theme, check the allowance atomically, log consent (never images), delete the uploaded shot after rendering, and return a link to the result.
+  - **Late Geniefied designs:** a newer gallery image for a session replaces the earlier one. The guest's page shows a before/after labelled "Geniefied". Guests who already got a text or email get the "ready" message with their link.
+  - Geniefied results are deleted with the event's gallery.
+
+Needs `docs/genie/apply-production-geniefied.sql` (two new tables, new columns, the 12 Standard themes) run in production before this deploys.
+
+---
+
 ## [2.120.0] — 2026-11-19
 
 ### Added

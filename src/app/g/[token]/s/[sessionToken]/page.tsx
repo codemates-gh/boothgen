@@ -7,7 +7,7 @@ import { BoothOffline, FadeInImg, UploadingIndicator, useWaitingFor, useWaitingP
 import { LONG_WAIT_MS } from '@/lib/genie/guestWaiting';
 import { BeforeAfter } from '@/components/genie/BeforeAfter';
 
-type Asset = { id: string; url: string; width: number | null; height: number | null; isGallery: boolean; isBoomerang?: boolean; posterUrl?: string | null; originalUrl?: string };
+type Asset = { id: string; url: string; width: number | null; height: number | null; isGallery: boolean; isBoomerang?: boolean; posterUrl?: string | null; originalUrl?: string; afterLabel?: string };
 
 async function downloadFile(url: string, name: string) {
   try {
@@ -155,7 +155,7 @@ export default function GuestSessionPage() {
             {print && (
               <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
                 {print.originalUrl
-                  ? <BeforeAfter afterUrl={print.url} beforeUrl={print.originalUrl} alt="Your print" className="w-full max-h-[75vh] object-contain rounded-lg"/>
+                  ? <BeforeAfter afterUrl={print.url} beforeUrl={print.originalUrl} afterLabel={print.afterLabel} alt="Your print" className="w-full max-h-[75vh] object-contain rounded-lg"/>
                   : <FadeInImg src={print.url} alt="Your print" className="w-full max-h-[75vh] object-contain rounded-lg"/>}
                 <button
                   onClick={() => downloadFile(print.url, fileName(print, 0))}

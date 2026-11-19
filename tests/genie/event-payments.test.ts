@@ -314,7 +314,7 @@ describe('Genius accounts pay the Genius price', () => {
 
     // Turn it on and change the Genius price
     r = await (await SET_PRICE(req('/x', { method: 'PATCH', body: { geniusPriceCents: 1200, geniusPays: true } }))).json();
-    expect(r).toEqual({ priceCents: 1500, geniusPriceCents: 1200, geniusPays: true, addOnPrices: { glamourStyle: 1500 }, glamourStyleReady: false });
+    expect(r).toMatchObject({ priceCents: 1500, geniusPriceCents: 1200, geniusPays: true, addOnPrices: { glamourStyle: 1500, geniefied: 2900 }, glamourStyleReady: false });
     expect(await eventBilling(crm.tenant, crm.event.id)).toMatchObject({ paysPerEvent: true, priceCents: 1200, paid: false, watermark: true });
     expect((await buildEventBundle(crm.tenant.id, crm.event.id) as any).bundle.watermark).toBe(true);
 

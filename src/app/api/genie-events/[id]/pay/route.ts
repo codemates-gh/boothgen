@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma/client';
 import { stripe } from '@/lib/stripe';
 import { requireGenieAdmin } from '@/lib/genie/admin';
+import { eventAllowance } from '@/lib/genie/ai/renders';
 import { PAYMENT_KIND, eventBilling, recordCheckout, startCheckout } from '@/lib/genie/payments';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
@@ -16,7 +17,7 @@ async function load(tenantId: string, eventId: string) {
   return { tenant, event };
 }
 
-const Body = z.object({ moreIpads: z.boolean().optional() }).strict();
+const Body = z.object({ moreIpads: z.boolean().optional(), aiTopUp: z.boolean().optional() }).strict();
 
 // Starts Stripe Checkout for the event (if it pays per event and isn't paid, or moreIpads: 2 more iPads) plus add-ons
 // in use and not paid yet
@@ -29,7 +30,14 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   if (!event.genieSettings) return NextResponse.json({ error: 'Set up Genie for this event first', code: 'not_configured' }, { status: 409 });
   const body = Body.safeParse(await req.json().catch(() => ({})));
   const moreIpads = body.success ? !!body.data.moreIpads : false;
+  const aiTopUp = body.success ? !!body.data.aiTopUp : false;
   const b = await eventBilling(tenant, event.id);
+  // A Geniefied top-up pack: only once the add-on itself is paid (or waived)
+  if (aiTopUp) {
+    if (!(await eventAllowance(event.id, tenant.id)).covered) return NextResponse.json({ error: 'Pay for Geniefied on this event first', code: 'not_needed' }, { status: 409 });
+    const user = await prisma.user.findUnique({ where: { id: auth.userId }, select: { email: true } });
+    return NextResponse.json({ url: await startCheckout(tenant, event, APP_URL, user?.email, { aiTopUp: true }) });
+  }
   if (!(b.paysPerEvent && (!b.paid || moreIpads)) && !b.addOnsDue.length) {
     return NextResponse.json({ error: b.paysPerEvent ? 'Nothing to pay for this event' : 'Your plan doesn\'t pay per event', code: 'not_needed' }, { status: 409 });
   }

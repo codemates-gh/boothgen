@@ -7,9 +7,9 @@ import { prisma } from '@/lib/prisma/client';
 // (G, 2026-11-19), so an add-on reaches the iPad only on an event that pays for it or shows the watermark.
 // Prices: Super Admin → Genie Usage ($15 for Glamour Style until changed there).
 
-export type AddOnId = 'glamourStyle';
+export type AddOnId = 'glamourStyle' | 'geniefied';
 
-type Settings = Pick<EventGenieSettings, 'processing' | 'filters'>;
+type Settings = Pick<EventGenieSettings, 'processing' | 'filters' | 'aiEnabled'>;
 
 export const GLAMOUR_STYLE_URL = 'https://www.glamourstylephotobooth.com';
 
@@ -23,6 +23,15 @@ export const ADD_ONS: { id: AddOnId; name: string; description: string; setting:
     defaultCents: 1500,
     // The glamourStyle step only (the free Beautify filter is the beautify step)
     inUse: s => hasStep(s.processing, 'glamourStyle') || filterList(s.filters).some(f => hasStep(f.steps, 'glamourStyle')),
+  },
+  {
+    id: 'geniefied',
+    name: 'Geniefied',
+    // Genie P13: the AI photo booth. Paying adds the included renders (src/lib/genie/ai/settings.ts); top-ups add more
+    description: 'Geniefied, the AI photo booth: guests restyle their photos in themes you choose.',
+    setting: 'addon_price_cents_geniefied',
+    defaultCents: 2900,
+    inUse: s => s.aiEnabled,
   },
 ];
 

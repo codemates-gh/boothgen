@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+import { deleteEventRenderResults } from '@/lib/genie/ai/renders';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
@@ -41,5 +42,6 @@ export async function DELETE(_: NextRequest, props: { params: Promise<{ id: stri
   const assets = await prisma.galleryAsset.findMany({ where: { galleryId: params.id } });
   await Promise.allSettled(assets.map(a => deleteFromR2(r2KeyFromUrl(a.url))));
   await prisma.galleryAsset.deleteMany({ where: { galleryId: params.id } });
+  if (gallery.eventId) await deleteEventRenderResults(gallery.eventId);
   return NextResponse.json({ deleted: assets.length });
 }

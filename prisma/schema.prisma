@@ -272,7 +272,9 @@ model Tenant {
   ledgerTransactions LedgerTransaction[]
   ledgerCategories   LedgerCategory[]
 
-  eventMileages EventMileage[]
+  eventMileages  EventMileage[]
+  genieAiThemes  GenieAiTheme[]
+  genieAiRenders GenieAiRender[]
 
   @@map("tenants")
 }
@@ -475,7 +477,8 @@ model Event {
 
   ledgerTransactions LedgerTransaction[]
 
-  mileage EventMileage?
+  mileage        EventMileage?
+  genieAiRenders GenieAiRender[]
 
   @@index([tenantId])
   @@index([tenantId, eventDate])
@@ -1231,15 +1234,15 @@ model EventPrintLog {
 }
 
 model EventExpense {
-  id          String   @id @default(cuid())
-  tenantId    String
-  eventId     String
-  description String
-  amountCents Int
-  category    String   @default("other")
+  id             String   @id @default(cuid())
+  tenantId       String
+  eventId        String
+  description    String
+  amountCents    Int
+  category       String   @default("other")
   // Set on the pay of the person assigned to the event (the Pay field next to Assigned To); one per event
   assigneeUserId String?
-  createdAt   DateTime @default(now())
+  createdAt      DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -1250,34 +1253,34 @@ model EventExpense {
 
 // BoothGen-managed shared design template library
 model BoothDesignTemplate {
-  id              String   @id @default(cuid())
-  tenantId        String? // null = BoothGen shared template
-  name            String
-  description     String?
-  format          String // "2x6" | "4x6"
-  orientation     String // "portrait" | "landscape"
-  photoCount      Int      @default(3)
-  thumbnailUrl    String? // Layout wireframe image (R2)
+  id                String   @id @default(cuid())
+  tenantId          String? // null = BoothGen shared template
+  name              String
+  description       String?
+  format            String // "2x6" | "4x6"
+  orientation       String // "portrait" | "landscape"
+  photoCount        Int      @default(3)
+  thumbnailUrl      String? // Layout wireframe image (R2)
   // JSON: [{id, label, placeholder, maxChars, required, hint?}]
-  textZones       Json     @default("[]")
+  textZones         Json     @default("[]")
   // JSON: [{id, name, colors: {background, text, accent}}]
-  colorVariants   Json     @default("[]")
+  colorVariants     Json     @default("[]")
   // JSON: [{id, name, fonts: [{zoneId, fontId, label, fontFamily}]}]
-  fontPairings    Json     @default("[]")
+  fontPairings      Json     @default("[]")
   // Genie designer layouts (LayoutTemplate minus id/version); set = shows in the Genie template library
-  layout          Json?
-  alternateLayout Json?
-  genieThumbnail  Json? // RemoteAsset rendered by the designer on save
+  layout            Json?
+  alternateLayout   Json?
+  genieThumbnail    Json? // RemoteAsset rendered by the designer on save
   // Original background images kept so the designer can reposition them: { main?, alt? } each { source: RemoteAsset,
   // focus: {x,y}, croppedUrl } (designer only; never sent to iPads)
   backgroundSources Json?
-  isPublished     Boolean  @default(false) // Standard: shown to operators and their clients
+  isPublished       Boolean  @default(false) // Standard: shown to operators and their clients
   // An operator's own template offered in their clients' design brief picker
-  offerToClients  Boolean  @default(false)
-  isActive        Boolean  @default(true)
-  sortOrder       Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  offerToClients    Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   tenant Tenant?            @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   briefs EventDesignBrief[]
@@ -1382,58 +1385,67 @@ model EventGenieSettings {
   customGallery  Boolean @default(false)
 
   // CaptureConfig
-  shotCount                    Int     @default(3)
-  initialCountdownSeconds      Int     @default(5)
-  betweenShotsCountdownSeconds Int     @default(3)
-  showPerShotPreview           Boolean @default(true)
-  allowPerShotRetake           Boolean @default(true)
-  perShotPreviewSeconds        Int     @default(2)
-  allowReviewRetake            Boolean @default(false)
-  retakesPerShot               Int     @default(1)
-  idleTimeoutSeconds           Int     @default(60)
+  shotCount                    Int       @default(3)
+  initialCountdownSeconds      Int       @default(5)
+  betweenShotsCountdownSeconds Int       @default(3)
+  showPerShotPreview           Boolean   @default(true)
+  allowPerShotRetake           Boolean   @default(true)
+  perShotPreviewSeconds        Int       @default(2)
+  allowReviewRetake            Boolean   @default(false)
+  retakesPerShot               Int       @default(1)
+  idleTimeoutSeconds           Int       @default(60)
   // CaptureConfig.boomerang.edgeLight: white border lighting the live view while a boomerang records
-  boomerangEdgeLight           Boolean @default(true)
+  boomerangEdgeLight           Boolean   @default(true)
   // CaptureConfig.countdownSound (StoredCountdownSound in src/lib/genie/countdownSound.ts); null = "Use the iPad's
   // setting", left out of the bundle
   countdownSound               Json?
   // CaptureConfig.thankYou: the screen after Done (absent from the bundle while it's the Genie default)
-  thankYouSeconds              Int     @default(5)
-  thankYouTitle                String  @default("Thank you!")
-  thankYouSubtitle             String  @default("Your photos are on their way.")
+  thankYouSeconds              Int       @default(5)
+  thankYouTitle                String    @default("Thank you!")
+  thankYouSubtitle             String    @default("Your photos are on their way.")
   // Genie logo and sparkle on the iPad's plain start screen (CaptureConfig.startScreen.showGenieLogo, 2.120.0)
-  startScreenGenieLogo         Boolean @default(true)
+  startScreenGenieLogo         Boolean   @default(true)
   // CaptureConfig.lookAtCamera / .boomerang (per event, not account defaults); null = absent from the bundle
   // (Genie: look-at-camera on with its own wording, boomerang off)
   lookAtCamera                 Json?
   boomerang                    Json?
   // CaptureConfig.mirrorLiveView / .showDesignWhilePosing (photo sessions, per event only; always sent)
-  mirrorLiveView               Boolean @default(true)
-  showDesignWhilePosing        Boolean @default(false)
+  mirrorLiveView               Boolean   @default(true)
+  showDesignWhilePosing        Boolean   @default(false)
   // Attract screen (AttractMedia in src/lib/genie/attract.ts; null = none) and its return delay
   attract                      Json?
-  attractReturnAfterSeconds    Int     @default(30)
+  attractReturnAfterSeconds    Int       @default(30)
   // Virtual props (PropsConfig): off for new events; propIds = GenieProp ids in the guests' order
-  propsEnabled                 Boolean @default(false)
-  propIds                      Json    @default("[]")
+  propsEnabled                 Boolean   @default(false)
+  propIds                      Json      @default("[]")
   // Virtual backdrop (BackdropsConfig): off for new events; backdropIds = GenieBackdrop ids in the guests' order
-  backdropsEnabled             Boolean @default(false)
-  backdropIds                  Json    @default("[]")
+  backdropsEnabled             Boolean   @default(false)
+  backdropIds                  Json      @default("[]")
   backdropDefaultId            String?
   // Sharing station for PC booth software (SharingStationConfig, Genie P12): paid add-on, $12 per PC per event.
   // sharingStationPcs = PCs planned (each needs paying); recentMinutes null = every photo of the event on the grid
-  sharingStationEnabled        Boolean @default(false)
-  sharingStationPcs            Int     @default(1)
+  sharingStationEnabled        Boolean   @default(false)
+  sharingStationPcs            Int       @default(1)
   sharingRecentMinutes         Int?
-  sharingBlurGrid              Boolean @default(false)
-  sharingUploadAll             Boolean @default(false)
+  sharingBlurGrid              Boolean   @default(false)
+  sharingUploadAll             Boolean   @default(false)
   // Publish the event gallery when the event ends (the publish job, src/lib/genie/autoPublish.ts); set once it has
   galleryAutoPublish           Boolean   @default(false)
   galleryAutoPublishedAt       DateTime?
+  // Geniefied (AI photo booth, Genie P13; src/lib/genie/ai/*): a paid add-on per event. aiThemeIds = GenieAiTheme ids in
+  // the guests' order; aiConsentText / aiReadyText null = BoothGen's default wording
+  aiEnabled                    Boolean   @default(false)
+  aiMode                       String    @default("beforeStart") // beforeStart | fixedTheme | afterReview
+  aiThemeIds                   Json      @default("[]")
+  aiFixedThemeId               String?
+  aiConsentText                String?   @db.Text
+  aiWaitSeconds                Int       @default(45)
+  aiReadyText                  String?   @db.Text
   // Pose ideas (PosesConfig): account Event defaults + per-event override; poseIds = GeniePose ids in the guests' order
-  posesEnabled                 Boolean @default(false)
-  poseIds                      Json    @default("[]")
-  backdropGuestPicks           Boolean @default(true)
-  backdropEdgeSoftness         String  @default("medium") // soft | medium | sharp
+  posesEnabled                 Boolean   @default(false)
+  poseIds                      Json      @default("[]")
+  backdropGuestPicks           Boolean   @default(true)
+  backdropEdgeSoftness         String    @default("medium") // soft | medium | sharp
 
   // Paid add-ons (src/lib/genie/addOns.ts) this event has free (none at the moment: 2.114.0's Glamour Style mark on
   // Beautify events was removed in 2.116.0, when the two became separate filters). Not copied by Duplicate.
@@ -1458,9 +1470,9 @@ model EventGenieSettings {
   smsConsentText String
 
   // PrintingConfig
-  printingEnabled    Boolean @default(true)
-  printMaxCopies     Int     @default(4)
-  printDefaultCopies Int     @default(1)
+  printingEnabled        Boolean @default(true)
+  printMaxCopies         Int     @default(4)
+  printDefaultCopies     Int     @default(1)
   // "Copies match the number of people": the iPad starts the copies at the people it counts (2x6: half, rounded up), up
   // to printMaxCopies; printDefaultCopies when it sees nobody (2.118.0)
   printCopiesMatchPeople Boolean @default(true)
@@ -1517,6 +1529,7 @@ model GenieEventPayment {
   ipads                   Int       @default(2) // iPads this payment covers (0: a Sharing station-only payment)
   sharingPcs              Int       @default(0) // Sharing station PCs this payment covered (2.112.0 only, $12 each; included with the event since 2.113.0)
   addOns                  String[]  @default([]) // Paid add-ons this payment covers (src/lib/genie/addOns.ts ids)
+  aiRenders               Int       @default(0) // Geniefied renders this payment adds (the add-on's included renders, or a top-up pack)
   status                  String    @default("pending") // pending | paid
   paidAt                  DateTime?
   createdAt               DateTime  @default(now())
@@ -1534,7 +1547,8 @@ model GenieShare {
   tenantId          String
   eventId           String
   sessionId         String
-  clientId          String    @unique // share id generated on the device
+  clientId          String    @unique // share id generated on the device ("ready:<share id>" for a Geniefied-ready message)
+  kind              String    @default("photos") // photos | aiReady ("Your Geniefied photo is ready", sent by BoothGen)
   channel           String // "sms" | "email"
   destination       String
   firstName         String?
@@ -1678,9 +1692,9 @@ model GenieDefaults {
   emailBody      String  @db.Text
   smsConsentText String
 
-  printingEnabled    Boolean @default(true)
-  printMaxCopies     Int     @default(4)
-  printDefaultCopies Int     @default(1)
+  printingEnabled        Boolean @default(true)
+  printMaxCopies         Int     @default(4)
+  printDefaultCopies     Int     @default(1)
   // "Copies match the number of people": the iPad starts the copies at the people it counts (2x6: half, rounded up), up
   // to printMaxCopies; printDefaultCopies when it sees nobody (2.118.0)
   printCopiesMatchPeople Boolean @default(true)
@@ -1693,8 +1707,8 @@ model GenieDefaults {
   attractReturnAfterSeconds Int   @default(30)
 
   // Pose ideas: off for new accounts; poseIds = GeniePose ids in the guests' order
-  posesEnabled Boolean @default(false)
-  poseIds      Json    @default("[]")
+  posesEnabled       Boolean @default(false)
+  poseIds            Json    @default("[]")
   // Gallery (2.119.0): upload every Sharing station photo, and publish the event gallery when the event ends. On for
   // Genius accounts, off for Genie-only (see BUILT_IN_DEFAULTS in src/lib/genie/defaults.ts)
   sharingUploadAll   Boolean @default(false)
@@ -1931,23 +1945,23 @@ model GeniePose {
 // an account's own My Boomerang designs, made in the template designer or from an uploaded PNG frame. The canvas is
 // the format's clip size (square 1080×1080 … landscape16x9 1920×1080); the one photo slot is in those pixels.
 model GenieClipDesign {
-  id              String    @id @default(cuid())
+  id              String   @id @default(cuid())
   tenantId        String?
   name            String
   format          String // BoomerangFormat: square | portrait4x6 | landscape6x4 | portrait3x4 | landscape4x3 | portrait9x16 | landscape16x9
-  backgroundColor String    @default("#FFFFFF")
+  backgroundColor String   @default("#FFFFFF")
   // RemoteAssets (url, sha256, contentType, bytes)
   background      Json?
   overlay         Json?
   thumbnail       Json?
   // PhotoSlot {id, shotIndex: 0, x, y, width, height, rotationDegrees, fit}
   slot            Json
-  source          String    @default("designer") // designer | upload
-  version         Int       @default(1) // raised on every edit (ClipDesign.version)
-  isActive        Boolean   @default(true) // Standard: shown to operators
-  sortOrder       Int       @default(0)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  source          String   @default("designer") // designer | upload
+  version         Int      @default(1) // raised on every edit (ClipDesign.version)
+  isActive        Boolean  @default(true) // Standard: shown to operators
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -2040,4 +2054,63 @@ model EventMileage {
 
   @@index([tenantId])
   @@map("event_mileages")
+}
+
+// Geniefied themes (Genie P13): Standard (tenantId null, Super Admin → AI themes) and an account's My themes. The prompt
+// never leaves BoothGen; the iPad gets the name and sample (AiThemeAsset). No sample: not offered to guests.
+model GenieAiTheme {
+  id           String   @id @default(cuid())
+  tenantId     String?
+  name         String
+  prompt       String   @db.Text
+  sample       Json?
+  thumbnail    Json?
+  // Model overrides for this theme; null = the Super Admin setting
+  fastModel    String?
+  qualityModel String?
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("genie_ai_themes")
+}
+
+// One Geniefied render of a shot (Genie P13), keyed by the iPad's idempotencyKey per event. counted = it uses the
+// event's allowance (queued, rendering, done); blocked and failed renders give it back. Consent is logged; images never.
+model GenieAiRender {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  eventId            String
+  sessionClientId    String // GuestSession.id from the iPad (GenieSession.clientId)
+  shotIndex          Int
+  themeId            String
+  idempotencyKey     String
+  status             String    @default("queued") // queued | rendering | done | blocked | failed
+  counted            Boolean   @default(true)
+  model              String?
+  trial              Boolean   @default(false) // rendered under the unpaid event's trial allowance
+  inputKey           String // the uploaded shot (deleted after the render)
+  resultKey          String? // R2 key of the Geniefied shot (JPEG)
+  width              Int?
+  height             Int?
+  message            String?
+  estimatedCostCents Int       @default(0)
+  consentAcceptedAt  DateTime
+  consentTextSha256  String
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, idempotencyKey])
+  @@index([tenantId])
+  @@index([eventId, status])
+  @@map("genie_ai_renders")
 }

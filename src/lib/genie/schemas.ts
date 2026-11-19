@@ -214,3 +214,14 @@ export function firstIssue(err: z.ZodError): string {
   const i = err.issues[0];
   return i ? `${i.path.join('.') || 'body'}: ${i.message}` : 'Invalid request';
 }
+
+// Geniefied render request (Genie P13, AiRenderRequest.json)
+export const AiRenderRequest = z.object({
+  sessionId: z.string().uuid(),
+  shotIndex: z.number().int().min(0),
+  shotStorageKey: z.string().min(1).max(500),
+  themeId: z.string().min(1).max(80),
+  faceCount: z.number().int().min(0).max(30),
+  idempotencyKey: z.string().min(1).max(200),
+  consent: z.object({ acceptedAt: z.string().datetime({ offset: true }), textSha256: z.string().regex(/^[0-9a-f]{64}$/) }).strict(),
+}).strict();

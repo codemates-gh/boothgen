@@ -1,5 +1,6 @@
 
 import { autoPublishEndedGalleries } from '@/lib/genie/autoPublish';
+import { deleteEventRenderResults } from '@/lib/genie/ai/renders';
 import { enforceGenius } from '@/lib/genius';
 import { inngest } from './client';
 import { getGalleryRetention } from '@/lib/gallery/retention';
@@ -299,6 +300,8 @@ export const deleteExpiredGalleries = inngest.createFunction(
           console.error(`[GALLERY_DELETE] R2 delete failed for ${asset.url}:`, err);
         }
       }
+      // Geniefied results stored with the event's gallery files
+      if (gallery.eventId) filesDeleted += await deleteEventRenderResults(gallery.eventId);
       // Delete gallery record (cascades to assets in DB)
       await prisma.gallery.delete({ where: { id: gallery.id } });
     }

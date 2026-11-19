@@ -13,6 +13,7 @@ import { CountdownSoundPatch, countdownSoundView } from './countdownSound';
 import { PropsPatch, storedPropIds } from './props';
 import { BackdropsPatch, backdropsView } from './backdrops';
 import { PosesPatch, posesView } from './poses';
+import { AiBoothPatch, aiBoothView } from './ai/eventConfig';
 import { SharingStationPatch, sharingStationData, sharingStationView } from './sharingStation';
 
 // ── Lock ────────────────────────────────────────────────────────────────────
@@ -149,6 +150,8 @@ export const SettingsPatch = z.object({
   sharingStation: SharingStationPatch,
   // Gallery (account defaults + per event): upload every Sharing station photo, publish the gallery when the event ends
   gallery: z.object({ uploadAll: z.boolean(), autoPublish: z.boolean() }).strict(),
+  // Geniefied (AI photo booth, per event only); saved by aiBoothData (it checks the themes)
+  aiBooth: AiBoothPatch,
   // Sections to put back on the account defaults (they follow default changes again)
   reset: z.array(z.enum(['timeZone', 'capture', 'sharing', 'printing', 'attract', 'poses', 'gallery'])).min(1),
 }).partial().strict();
@@ -288,6 +291,7 @@ export function settingsView(s: EventGenieSettings) {
     backgroundRemoval: backdropsView(s),
     poses: posesView(s),
     sharingStation: sharingStationView(s),
+    aiBooth: aiBoothView(s),
     gallery: { uploadAll: s.sharingUploadAll, autoPublish: s.galleryAutoPublish, autoPublishedAt: s.galleryAutoPublishedAt },
     // Which sections were customized for this event (false = follows the account's Genie defaults)
     custom: { timeZone: s.customTimeZone, capture: s.customCapture, sharing: s.customSharing, printing: s.customPrinting, attract: s.customAttract, poses: s.customPoses, gallery: s.customGallery },

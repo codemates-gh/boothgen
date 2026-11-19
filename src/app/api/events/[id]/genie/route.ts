@@ -1,5 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { addOnName, addOnPrices, glamourStyleReady } from '@/lib/genie/addOns';
+import { aiBoothData } from '@/lib/genie/ai/eventConfig';
+import { DEFAULT_CONSENT_TEXT, DEFAULT_READY_TEXT, aiSettings } from '@/lib/genie/ai/settings';
+import { eventAllowance } from '@/lib/genie/ai/renders';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
@@ -60,6 +63,14 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     event: { id: event.id, title: event.title, eventDate: event.eventDate, startTime: event.startTime, endTime: event.endTime, venueName: event.venueName, boothEvent: isBoothClient(event.client) },
     settings: s ? await withBoomerangDesignProblem(settingsView(s), s) : null,
     billing,
+    // Geniefied (Genie P13): available (Super Admin), the allowance, the top-up pack and BoothGen's default wording
+    geniefied: await (async () => {
+      const ai = await aiSettings();
+      return {
+        available: ai.ready, allowance: await eventAllowance(event.id, auth.tenantId, ai), trialRenders: ai.trialRenders, rendersIncluded: ai.rendersIncluded,
+        topUp: { renders: ai.topUpRenders, priceCents: ai.topUpPriceCents }, defaultConsentText: DEFAULT_CONSENT_TEXT, defaultReadyText: DEFAULT_READY_TEXT,
+      };
+    })(),
     lockedAt: s ? effectiveLockedAt(event, s) : null,
     locksAt: eventLocksAt(event, s?.timeZone ?? 'America/New_York'),
     // 48 hours after the event ends iPads can no longer run it; it can still be viewed and duplicated
@@ -148,6 +159,13 @@ export async function PATCH(req: NextRequest, props0: { params: Promise<{ id: st
     const b = await backdropsData(parsed.data.backgroundRemoval, s.backdropIds, auth.tenantId);
     if ('error' in b) return NextResponse.json({ error: b.error, path: 'backgroundRemoval' }, { status: 400 });
     Object.assign(result.data, b.data);
+  }
+  if (parsed.data.aiBooth) {
+    // Geniefied can be turned on only once it's available (Super Admin); an event that has it can keep it
+    if (parsed.data.aiBooth.enabled && !s.aiEnabled && !(await aiSettings()).ready) return NextResponse.json({ error: "Geniefied isn't available yet", path: 'aiBooth' }, { status: 400 });
+    const a = await aiBoothData(parsed.data.aiBooth, auth.tenantId);
+    if ('error' in a) return NextResponse.json({ error: a.error, path: 'aiBooth' }, { status: 400 });
+    Object.assign(result.data, a.data);
   }
   if (parsed.data.poses) {
     const p = await posesData(parsed.data.poses, s.poseIds, auth.tenantId);

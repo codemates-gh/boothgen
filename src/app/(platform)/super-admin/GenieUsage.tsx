@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { fmtCents } from '@/lib/utils';
+import { GeniefiedCard, type AiSettingsView, type AiUsageRow } from './GeniefiedCard';
 
 type Row = {
   eventId: string; title: string; eventDate: string; tenantId: string; operator: string; product: string;
@@ -27,6 +28,7 @@ export default function GenieUsage() {
   // Add-on prices (Glamour Style), in dollars as typed
   const [glamourPrice, setGlamourPrice] = useState('');
   const [glamourReady, setGlamourReady] = useState(false);
+  const [ai, setAi] = useState<{ settings: AiSettingsView; priceCents: number; usage: AiUsageRow[] } | null>(null);
   const [waivers, setWaivers] = useState<{ tenantId: string; operator: string; addOnId: string; addOn: string; since: string }[]>([]);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
@@ -55,6 +57,7 @@ export default function GenieUsage() {
     setGlamourPrice((d.addOnPrices.glamourStyle / 100).toFixed(2));
     setGlamourReady(d.glamourStyleReady);
     setWaivers(d.waivers ?? []);
+    setAi({ settings: d.ai, priceCents: d.addOnPrices.geniefied, usage: d.aiUsage ?? [] });
   }, [days]);
   useEffect(() => { load(); }, [load]);
 
@@ -157,6 +160,8 @@ export default function GenieUsage() {
           </div>
         </CardContent>
       </Card>
+
+      {ai && <GeniefiedCard ai={ai.settings} priceCents={ai.priceCents} usage={ai.usage} onSaved={load}/>}
 
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[

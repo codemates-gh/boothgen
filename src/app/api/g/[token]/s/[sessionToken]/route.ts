@@ -55,12 +55,16 @@ export async function GET(
   const expired = session.gallery.isExpired;
   // The printer sheet is a download only; a boomerang's poster is the clip's thumbnail; the Glamour Style original is
   // the gallery image's "before"
-  const photos = expired ? [] : session.assets.filter(a => !['print', 'boomerangPoster', 'videoPoster', 'galleryOriginal'].includes(a.genieKind ?? ''));
-  const original = expired ? undefined : session.assets.find(a => a.genieKind === 'galleryOriginal');
+  const photos = expired ? [] : session.assets.filter(a => !['print', 'boomerangPoster', 'videoPoster', 'galleryOriginal', 'gallerySuperseded'].includes(a.genieKind ?? ''));
+  // The before/after original: the iPad's galleryOriginal, else the design a late Geniefied one replaced (the newest)
+  const original = expired ? undefined : session.assets.find(a => a.genieKind === 'galleryOriginal')
+    ?? [...session.assets].reverse().find(a => a.genieKind === 'gallerySuperseded');
   // A clip (boomerang or PC booth video) plays like a boomerang, with its poster first
   const boomerang = photos.find(a => a.genieKind === 'boomerang' || a.genieKind === 'video');
   // A PC booth (Sharing station) session is one photo, GIF or video: nothing more to wait for
   const single = photos.some(a => a.source === 'pcBooth' || a.genieKind === 'gif' || a.genieKind === 'video');
+  // Geniefied sessions label the slider "Geniefied" (Glamour Style otherwise)
+  const geniefied = !!original && (await prisma.genieAiRender.count({ where: { eventId: session.eventId, sessionClientId: session.clientId, status: 'done' } })) > 0;
   const lastSeen = session.device && !session.device.revokedAt ? session.device.lastSeenAt : session.device ? null : await eventBoothLastSeen(session.eventId);
   return NextResponse.json({
     event: { title: session.gallery.event.title, eventDate: session.gallery.event.eventDate },
@@ -71,7 +75,7 @@ export async function GET(
     assets: photos.map(a => ({
       id: a.id, url: a.url, width: a.width, height: a.height, isGallery: a.genieKind === 'gallery',
       // Glamour Style was used: the same design without it, for the before/after
-      ...(a.genieKind === 'gallery' && original ? { originalUrl: original.url } : {}),
+      ...(a.genieKind === 'gallery' && original ? { originalUrl: original.url, afterLabel: geniefied ? 'Geniefied' : 'Glamour Style' } : {}),
       ...(a.genieKind === 'boomerang' || a.genieKind === 'video' ? { isBoomerang: true, posterUrl: a.thumbnailUrl } : {}),
     })),
     printSheetUrl: expired ? null : session.assets.find(a => a.genieKind === 'print')?.url ?? null,

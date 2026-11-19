@@ -7,7 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon, PersonStanding, Copy } from 'lucide-react';
+import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon, PersonStanding, Copy, Wand2 } from 'lucide-react';
 import { Field, Toggle, fmtDate, fmtDateTime } from '@/components/genie/parts';
 import { GalleryFields, type GalleryDefaults } from '@/components/genie/SettingsForms';
 import { Attract, AttractFields, Capture, CaptureFields, DefaultState, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
@@ -25,6 +25,7 @@ import type { Backdrop } from '@/components/genie/Backdrops';
 import { PoseIdeasFields, type PoseIdeasValue } from '@/components/genie/PoseIdeas';
 import type { Pose } from '@/components/genie/Poses';
 import { GLAMOUR_STYLE_URL } from '@/lib/genie/addOns';
+import { GeniefiedFields, type AiBoothValue, type GeniefiedInfo } from './Geniefied';
 import { SharingStationFields, type SharingStationValue } from './SharingStation';
 
 type Settings = {
@@ -41,9 +42,11 @@ type Settings = {
   poses: PoseIdeasValue;
   sharingStation: SharingStationValue;
   gallery: GalleryDefaults & { autoPublishedAt: string | null };
+  aiBooth: AiBoothValue;
   custom: { timeZone: boolean; capture: boolean; sharing: boolean; printing: boolean; attract: boolean; poses: boolean; gallery: boolean };
 };
 type Dashboard = {
+  geniefied: GeniefiedInfo;
   event: { id: string; title: string; eventDate: string; startTime: string | null; endTime: string | null; venueName: string | null; boothEvent: boolean };
   billing: (
     { paysPerEvent: false } | { paysPerEvent: true; paid: boolean; payments: number; ipadsCovered: number; ipadsPerPayment: number; priceCents: number }
@@ -63,7 +66,7 @@ type Dashboard = {
   chosenBackdrops: Backdrop[];
   chosenPoses: Pose[];
 };
-type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'liveView' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval' | 'poses' | 'sharingStation' | 'gallery'> & { filters: Omit<Settings['filters'], 'available'> };
+type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'liveView' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval' | 'poses' | 'sharingStation' | 'gallery' | 'aiBooth'> & { filters: Omit<Settings['filters'], 'available'> };
 
 
 function toForm(s: Settings): Form {
@@ -76,13 +79,14 @@ function toForm(s: Settings): Form {
     poses: { enabled: s.poses.enabled, poseIds: [...s.poses.poseIds] },
     sharingStation: { ...s.sharingStation },
     gallery: { ...s.gallery },
+    aiBooth: { ...s.aiBooth, themeIds: [...s.aiBooth.themeIds] },
   };
 }
 
 // The save body: "look at the camera" and Boomerang go only when changed, so saving other sections leaves them out
 // of the bundle (Genie's own defaults apply until the operator sets them)
 function patchBody(form: Form, saved: Settings) {
-  const { lookAtCamera, boomerang, attract, props, backgroundRemoval, poses, sharingStation, gallery, ...rest } = form;
+  const { lookAtCamera, boomerang, attract, props, backgroundRemoval, poses, sharingStation, gallery, aiBooth, ...rest } = form;
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const { overlay, designProblem: _p, ...b } = boomerang;
   return {
@@ -97,6 +101,8 @@ function patchBody(form: Form, saved: Settings) {
     ...(same(poses, saved.poses) ? {} : { poses }),
     ...(same(sharingStation, saved.sharingStation) ? {} : { sharingStation }),
     // Gallery only when changed, so saving other sections keeps the event following the Event defaults
+    // Geniefied only when changed
+    ...(same(aiBooth, saved.aiBooth) ? {} : { aiBooth }),
     ...(same(gallery, saved.gallery) ? {} : { gallery: { uploadAll: gallery.uploadAll, autoPublish: gallery.autoPublish } }),
   };
 }
@@ -144,9 +150,9 @@ export default function EventGeniePage() {
       .finally(() => load(false));
   }, [eventId, load]);
 
-  async function pay(moreIpads = false) {
+  async function pay(moreIpads = false, aiTopUp = false) {
     setPayBusy(true); setPayError('');
-    const r = await fetch(`/api/genie-events/${eventId}/pay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(moreIpads ? { moreIpads: true } : {}) });
+    const r = await fetch(`/api/genie-events/${eventId}/pay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(aiTopUp ? { aiTopUp: true } : moreIpads ? { moreIpads: true } : {}) });
     const d = await r.json().catch(() => ({}));
     if (r.ok && d.url) { window.location.href = d.url; return; }
     setPayBusy(false);
@@ -458,6 +464,13 @@ export default function EventGeniePage() {
                     <SharingStationFields value={form.sharingStation} disabled={locked} onChange={p => set('sharingStation', p)}/>
                   </div>
                 </Section>
+
+                {(data.geniefied.available || form.aiBooth.enabled) && (
+                  <Section icon={Wand2} title="Geniefied" description="The AI photo booth: guests restyle their photos in themes you choose. This event only.">
+                    <GeniefiedFields value={form.aiBooth} info={data.geniefied} priceCents={data.billing.addOnPrices.geniefied ?? 0} disabled={locked}
+                      onChange={p => set('aiBooth', p)} onTopUp={() => pay(false, true)} topUpBusy={payBusy}/>
+                  </Section>
+                )}
 
                 <Section icon={ImageIcon} title="Gallery" description="The event's gallery of photos for your client."
                   right={<DefaultState custom={data.settings.custom.gallery} disabled={locked} onReset={() => resetSection('gallery', 'Gallery')}/>}>
