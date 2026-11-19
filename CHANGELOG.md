@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.118.0] — 2026-11-19
+
+### Added
+- **Genie printing: "Copies match the number of people"**, on by default, in Genie → Event defaults and on each event's Genie page (Printing), next to Default copies and Max copies. The iPad counts the people in the photos and sets the number of prints (one per person; for 2x6 strips, one sheet per two people), never above Max copies, and uses Default copies when it can't see anyone. Guests can still change the number before printing. Needs a Genie build with the feature; older builds keep using Default copies.
+
+Needs `docs/genie/apply-production-print-copies.sql` (one column on Event defaults and one on events, on for all) run in production before this deploys.
+
+---
+
 ## [2.117.0] — 2026-11-19
 
 ### Added

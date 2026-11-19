@@ -8,7 +8,7 @@ export const DEFAULT_SECTIONS = {
   timeZone: ['timeZone'],
   capture: ['shotCount', 'initialCountdownSeconds', 'betweenShotsCountdownSeconds', 'showPerShotPreview', 'allowPerShotRetake', 'perShotPreviewSeconds', 'allowReviewRetake', 'retakesPerShot', 'idleTimeoutSeconds', 'boomerangEdgeLight', 'thankYouSeconds', 'thankYouTitle', 'thankYouSubtitle', 'countdownSound'],
   sharing: ['smsEnabled', 'emailEnabled', 'qrEnabled', 'guestLinkScope', 'smsBody', 'emailSubject', 'emailBody', 'smsConsentText'],
-  printing: ['printingEnabled', 'printMaxCopies', 'printDefaultCopies'],
+  printing: ['printingEnabled', 'printMaxCopies', 'printDefaultCopies', 'printCopiesMatchPeople'],
   attract: ['attract', 'attractReturnAfterSeconds'],
   poses: ['posesEnabled', 'poseIds'],
 } as const;
@@ -29,7 +29,7 @@ export const BUILT_IN_DEFAULTS: DefaultsValues = {
   countdownSound: null,
   ...THANK_YOU_DEFAULT,
   smsEnabled: true, emailEnabled: true, qrEnabled: true, guestLinkScope: 'own', ...GENIE_SETTINGS_DEFAULTS,
-  printingEnabled: true, printMaxCopies: 4, printDefaultCopies: 1,
+  printingEnabled: true, printMaxCopies: 4, printDefaultCopies: 1, printCopiesMatchPeople: true,
   attract: null, attractReturnAfterSeconds: 30,
   posesEnabled: false, poseIds: [],
 };

@@ -125,6 +125,8 @@ export const SettingsPatch = z.object({
     enabled: z.boolean(),
     maxCopies: int(1, 10),
     defaultCopies: int(1, 10),
+    // Copies match the number of people (PrintingConfig.copiesMatchPeople); absent keeps the saved value
+    copiesMatchPeople: z.boolean().optional(),
   }).strict().refine(p => p.defaultCopies <= p.maxCopies, { message: 'Default copies must not exceed max copies', path: ['defaultCopies'] }),
   // Per event only (no account defaults)
   lookAtCamera: LookAtCamera,
@@ -176,6 +178,7 @@ export function settingsUpdateData(patch: SettingsPatch, current: EventGenieSett
     data.printingEnabled = patch.printing.enabled;
     data.printMaxCopies = patch.printing.maxCopies;
     data.printDefaultCopies = patch.printing.defaultCopies;
+    if (patch.printing.copiesMatchPeople !== undefined) data.printCopiesMatchPeople = patch.printing.copiesMatchPeople;
   }
   return { data };
 }
@@ -273,7 +276,7 @@ export function settingsView(s: EventGenieSettings) {
       emailBody: s.emailBody,
       smsConsentText: s.smsConsentText,
     },
-    printing: { enabled: s.printingEnabled, maxCopies: s.printMaxCopies, defaultCopies: s.printDefaultCopies },
+    printing: { enabled: s.printingEnabled, maxCopies: s.printMaxCopies, defaultCopies: s.printDefaultCopies, copiesMatchPeople: s.printCopiesMatchPeople },
     attract: attractView(s.attract, s.attractReturnAfterSeconds),
     props: { enabled: s.propsEnabled, propIds: storedPropIds(s.propIds) },
     backgroundRemoval: backdropsView(s),

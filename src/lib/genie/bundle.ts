@@ -194,6 +194,8 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
       enabled: settings.printingEnabled,
       maxCopies: settings.printMaxCopies,
       defaultCopies: Math.min(settings.printDefaultCopies, settings.printMaxCopies),
+      // Always sent (absent means on; older iPads ignore it)
+      copiesMatchPeople: settings.printCopiesMatchPeople,
     },
     // Optional; only when there's attract media, so it changes the version only when the media or delay changes
     ...(settings.attract ? { attract: bundleAttract(settings.attract, settings.attractReturnAfterSeconds) } : {}),

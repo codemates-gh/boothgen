@@ -22,7 +22,7 @@ export type Capture = {
 };
 export type CountdownSound = { style: 'ipad' | 'off' | 'beeps' | 'femaleVoice' | 'maleVoice' | 'custom'; custom: { url: string; name: string; durationMs: number; bytes: number } | null };
 export type Sharing = { smsEnabled: boolean; emailEnabled: boolean; qrEnabled: boolean; guestLinkScope: 'own' | 'all'; smsBody: string; emailSubject: string; emailBody: string; smsConsentText: string };
-export type Printing = { enabled: boolean; maxCopies: number; defaultCopies: number };
+export type Printing = { enabled: boolean; maxCopies: number; defaultCopies: number; copiesMatchPeople: boolean };
 export type AttractMedia = { url: string; kind: 'image' | 'video'; width: number; height: number; bytes: number; durationMs: number | null };
 export type Attract = { media: AttractMedia | null; returnAfterSeconds: number };
 
@@ -208,10 +208,14 @@ export function PrintingFields({ value, onChange, disabled }: { value: Printing;
     <>
       <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Printing on"/>
       {value.enabled && (
+        <>
+        <Toggle checked={value.copiesMatchPeople} disabled={disabled} onChange={v => onChange({ copiesMatchPeople: v })} label="Copies match the number of people"
+          hint="The iPad counts the people in the photos and sets the number of prints for you (one per person; for 2x6 strips, one sheet per two people). It never goes above Max copies, and uses Default copies when it can't see anyone. Guests can still change the number before printing."/>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Field label="Default copies" hint="1–10"><Num value={value.defaultCopies} min={1} max={10} disabled={disabled} onChange={n => onChange({ defaultCopies: n })}/></Field>
+          <Field label="Default copies" hint={value.copiesMatchPeople ? '1–10, when nobody is detected' : '1–10'}><Num value={value.defaultCopies} min={1} max={10} disabled={disabled} onChange={n => onChange({ defaultCopies: n })}/></Field>
           <Field label="Max copies per session" hint="1–10"><Num value={value.maxCopies} min={1} max={10} disabled={disabled} onChange={n => onChange({ maxCopies: n })}/></Field>
         </div>
+        </>
       )}
     </>
   );

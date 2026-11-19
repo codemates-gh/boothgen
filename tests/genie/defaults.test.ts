@@ -11,6 +11,7 @@ import { GET as GET_DEFAULTS, PUT as PUT_DEFAULTS } from '@/app/api/genie-defaul
 import { GET as DASH, POST as SETUP, PATCH } from '@/app/api/events/[id]/genie/route';
 import { GET as BUNDLE_PREVIEW } from '@/app/api/events/[id]/genie/bundle/route';
 import { GET as EVENTS } from '@/app/api/genie-events/route';
+import { buildEventBundle } from '@/lib/genie/bundle';
 import { SAMPLE_LAYOUT, bundleValidator, req, resetDb, seedEvent, seedTenant } from './helpers';
 
 const json = (body: unknown, method = 'PUT') => req('/x', { method, body });
@@ -104,6 +105,31 @@ describe('Genie event defaults', () => {
     expect((await PATCH(json({ reset: ['printing'] }, 'PATCH'), p(e.id))).status).toBe(200);
     expect(await prisma.eventGenieSettings.findUniqueOrThrow({ where: { eventId: e.id } })).toMatchObject({ printingEnabled: true, printMaxCopies: 3, printDefaultCopies: 2, customPrinting: false });
     expect((await PATCH(json({ reset: ['filters'] }, 'PATCH'), p(e.id))).status).toBe(400);
+  });
+
+  it('copies match the number of people: on by default, set in the defaults or per event, always in the bundle', async () => {
+    const { tenant, client } = await setup();
+    let e = await newEvent(tenant.id, client.id);
+    await SETUP(json({}, 'POST'), p(e.id));
+    expect((await (await DASH(req('/x'), p(e.id))).json()).settings.printing.copiesMatchPeople).toBe(true);
+    let b = await buildEventBundle(tenant.id, e.id);
+    if (b.ok) expect((b.bundle.printing as any).copiesMatchPeople).toBe(true);
+
+    // Off for this event only: custom, and sent as false
+    await PATCH(json({ printing: { ...PRINTING, maxCopies: 4, defaultCopies: 1, copiesMatchPeople: false } }, 'PATCH'), p(e.id));
+    const d = await (await DASH(req('/x'), p(e.id))).json();
+    expect([d.settings.printing.copiesMatchPeople, d.settings.custom.printing]).toEqual([false, true]);
+    b = await buildEventBundle(tenant.id, e.id);
+    if (b.ok) expect((b.bundle.printing as any).copiesMatchPeople).toBe(false);
+    const validate = await bundleValidator();
+    if (validate && b.ok) expect(validate(b.bundle)).toBeNull();
+
+    // Off in the defaults: new events start off
+    expect((await PUT_DEFAULTS(json({ printing: { ...PRINTING, copiesMatchPeople: false } }))).status).toBe(200);
+    expect((await (await GET_DEFAULTS()).json()).printing.copiesMatchPeople).toBe(false);
+    e = await newEvent(tenant.id, client.id);
+    await SETUP(json({}, 'POST'), p(e.id));
+    expect((await prisma.eventGenieSettings.findUniqueOrThrow({ where: { eventId: e.id } })).printCopiesMatchPeople).toBe(false);
   });
 
   it('validates defaults and keeps them per account', async () => {

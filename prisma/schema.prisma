@@ -1455,6 +1455,9 @@ model EventGenieSettings {
   printingEnabled    Boolean @default(true)
   printMaxCopies     Int     @default(4)
   printDefaultCopies Int     @default(1)
+  // "Copies match the number of people": the iPad starts the copies at the people it counts (2x6: half, rounded up), up
+  // to printMaxCopies; printDefaultCopies when it sees nobody (2.118.0)
+  printCopiesMatchPeople Boolean @default(true)
 
   // Devices that may run this event at once (slots claimed on first bundle download)
   maxDevices Int @default(2)
@@ -1670,6 +1673,9 @@ model GenieDefaults {
   printingEnabled    Boolean @default(true)
   printMaxCopies     Int     @default(4)
   printDefaultCopies Int     @default(1)
+  // "Copies match the number of people": the iPad starts the copies at the people it counts (2x6: half, rounded up), up
+  // to printMaxCopies; printDefaultCopies when it sees nobody (2.118.0)
+  printCopiesMatchPeople Boolean @default(true)
 
   // Countdown sound (Capture section); null = "Use the iPad's setting"
   countdownSound Json?
