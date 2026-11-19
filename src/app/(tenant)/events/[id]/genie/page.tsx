@@ -50,6 +50,8 @@ type Dashboard = {
     history: { amountCents: number; status: string; paidAt: string | null; comp: boolean; sharingPcs: number; ipads: number; addOns: string[] }[];
     // Paid add-ons (Glamour Style) in use and not paid, what a checkout charges now, and add-on prices by id
     addOnsDue: { id: string; name: string; cents: number }[]; amountDueCents: number; watermark: boolean; addOnPrices: Record<string, number>;
+    // Glamour Style is offered only once Super Admin makes it available (Genie 0.6.0+)
+    glamourStyleReady: boolean;
   };
   settings: Settings | null; lockedAt: string | null; locksAt: string; expired: boolean; templates: EventTemplate[];
   providerWarnings: { channel: 'sms' | 'email'; message: string }[]; photosHiddenAt: string; photosDeletedAt: string; designApprovalPending: boolean;
@@ -392,7 +394,7 @@ export default function EventGeniePage() {
                 <Section icon={Palette} title="Filters" description="Looks guests can pick on the review screen.">
                   <Toggle checked={form.filters.guestFiltersEnabled} disabled={locked} onChange={v => set('filters', { guestFiltersEnabled: v })} label="Let guests choose a filter" hint="Off: every photo uses the default filter."/>
                   <div className="border border-gray-100 rounded-lg divide-y divide-gray-100">
-                    {data.settings.filters.available.map(f => {
+                    {data.settings.filters.available.filter(f => f.id !== 'glamourStyle' || data.billing.glamourStyleReady || form.filters.filterIds.includes('glamourStyle')).map(f => {
                       const on = form.filters.filterIds.includes(f.id);
                       return (
                         <div key={f.id} className="flex items-center gap-3 px-3 py-2.5">

@@ -44,3 +44,24 @@ export async function addOnPrices(): Promise<Record<AddOnId, number>> {
 export function addOnsInUse(s: Settings): AddOnId[] {
   return ADD_ONS.filter(a => a.inUse(s)).map(a => a.id);
 }
+
+// Glamour Style needs Genie 0.6.0+: older iPads reject a whole bundle with an unknown step type, and BoothGen doesn't
+// know each iPad's current version. So it's offered to operators (and sent to iPads) only once Super Admin turns
+// "Glamour Style available" on (Super Admin → Genie Usage), when 0.6.0 is out.
+export const GLAMOUR_STYLE_READY_SETTING = 'glamour_style_ready';
+
+export async function glamourStyleReady(): Promise<boolean> {
+  return (await prisma.systemSetting.findUnique({ where: { key: GLAMOUR_STYLE_READY_SETTING } }))?.value === 'on';
+}
+
+// The bundle's processing and filters without glamourStyle steps (before Glamour Style is available): a filter left
+// with no steps is dropped (Original if none is left), and the default falls back to the first filter left
+export function withoutGlamourStyle(processing: unknown, filters: unknown, defaultFilterId: string) {
+  const keep = (steps: unknown) => (Array.isArray(steps) ? steps : []).filter(x => (x as Step)?.type !== 'glamourStyle');
+  let list = filterList(filters).flatMap(f => {
+    const steps = keep(f.steps);
+    return Array.isArray(f.steps) && f.steps.length > 0 && steps.length === 0 ? [] : [{ ...f, steps }];
+  });
+  if (!list.length) list = [{ id: 'original', name: 'Original', steps: [] }];
+  return { processing: keep(processing), filters: list, defaultFilterId: list.some(f => f.id === defaultFilterId) ? defaultFilterId : list[0].id };
+}

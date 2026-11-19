@@ -13,6 +13,7 @@ import { bundlePoses, chosenPoses } from './poses';
 import { bundleSharingStation } from './sharingStation';
 import { isBoothClient } from './boothClient';
 import { eventBilling } from './payments';
+import { glamourStyleReady, withoutGlamourStyle } from './addOns';
 import { galleryRetentionDates, getGalleryRetention, type GalleryRetention } from '@/lib/gallery/retention';
 
 export { appUrl, galleryUrl, sessionUrl } from './urls';
@@ -116,7 +117,10 @@ export type BundleResult =
   | { ok: true; bundle: Record<string, unknown>; bundleVersion: number }
   | { ok: false; status: 404 | 409; code: string; error: string };
 
-function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number, props: GenieProp[], backdrops: GenieBackdrop[], watermark: boolean, design?: Awaited<ReturnType<typeof boomerangDesign>>, poses: GeniePose[] = []) {
+function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number, props: GenieProp[], backdrops: GenieBackdrop[], watermark: boolean, design?: Awaited<ReturnType<typeof boomerangDesign>>, poses: GeniePose[] = [], glamourReady = false) {
+  // Glamour Style (step glamourStyle) only once it's available: older iPads reject a bundle with it
+  const looks = glamourReady ? { processing: settings.processing, filters: settings.filters, defaultFilterId: settings.defaultFilterId }
+    : withoutGlamourStyle(settings.processing, settings.filters, settings.defaultFilterId);
   const props_ = bundleProps(settings.propsEnabled, props);
   const backdrops_ = bundleBackdrops(settings, backdrops);
   const poses_ = bundlePoses(settings, poses);
@@ -163,12 +167,12 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
       ...(bundleCountdownSound(settings.countdownSound) ? { countdownSound: bundleCountdownSound(settings.countdownSound) } : {}),
     },
     templates: [...event.genieTemplates].sort((a, b) => a.sortOrder - b.sortOrder).map(eventTemplateJson),
-    processing: settings.processing,
+    processing: looks.processing,
     filters: {
       guestFiltersEnabled: settings.guestFiltersEnabled,
-      defaultFilterId: settings.defaultFilterId,
+      defaultFilterId: looks.defaultFilterId,
       // Beautify was saved as "Beautify (Glamour)" (before 2.114.0) and "Glamour Style" (2.114.0–2.115.0)
-      filters: (Array.isArray(settings.filters) ? settings.filters as { id: string }[] : []).map(f => f?.id === 'glamour' ? { ...f, name: 'Beautify' } : f),
+      filters: (Array.isArray(looks.filters) ? looks.filters as { id: string }[] : []).map(f => f?.id === 'glamour' ? { ...f, name: 'Beautify' } : f),
     },
     sharing: {
       // A channel is only offered when the tenant's own provider for it is set up
@@ -227,7 +231,7 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
   if (event.genieTemplates.length === 0) return { ok: false, status: 409, code: 'no_templates', error: 'The event has no Genie templates yet' };
 
   const gallery = await ensureGallery(event);
-  const [messaging, retention, props, backdrops, billing, design, poses] = await Promise.all([
+  const [messaging, retention, props, backdrops, billing, design, poses, glamourReady] = await Promise.all([
     prisma.genieMessagingConfig.findUnique({ where: { tenantId } }),
     getGalleryRetention(),
     settings.propsEnabled ? eventProps(settings.propIds, tenantId) : Promise.resolve([]),
@@ -235,8 +239,9 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
     eventBilling(event.tenant, event.id),
     boomerangDesign(settings.boomerang, tenantId),
     settings.posesEnabled ? chosenPoses(settings.poseIds, tenantId) : Promise.resolve([]),
+    glamourStyleReady(),
   ]);
-  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props, backdrops, billing.watermark, design, poses);
+  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props, backdrops, billing.watermark, design, poses, glamourReady);
   const hash = contentHash(bundle);
 
   for (let attempt = 0; settings.bundleHash !== hash && attempt < 3; attempt++) {

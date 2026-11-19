@@ -49,7 +49,8 @@ const checkout = (tenantId: string, eventId: string, meta: Record<string, string
 
 beforeEach(async () => {
   await resetDb(); created.length = 0;
-  await prisma.systemSetting.deleteMany({ where: { key: { in: ['genie_event_price_cents', 'genius_pays_per_event', 'addon_price_cents_glamour_style'] } } });
+  await prisma.systemSetting.deleteMany({ where: { key: { in: ['genie_event_price_cents', 'genius_pays_per_event', 'addon_price_cents_glamour_style', 'glamour_style_ready'] } } });
+  await prisma.systemSetting.create({ data: { key: 'glamour_style_ready', value: 'on' } });
 });
 afterAll(async () => { await resetDb(); await prisma.$disconnect(); });
 
@@ -130,6 +131,22 @@ describe('Glamour Style add-on', () => {
 
     await compEvent(copy.id);
     expect(await eventBilling(tenant, copy.id)).toMatchObject({ watermark: false, addOnsDue: [] });
+  });
+});
+
+describe('Glamour Style available (Super Admin, once Genie 0.6.0 is out)', () => {
+  it('off: can’t be chosen, and an event that has it doesn’t send it to iPads (older ones reject the bundle)', async () => {
+    const { tenant, event } = await setup('genie');
+    await PATCH(req('/x', { method: 'PATCH', body: { filters: { ...GLAMOUR.filters, defaultFilterId: 'glamourStyle' } } }), ev(event.id));
+    await prisma.systemSetting.update({ where: { key: 'glamour_style_ready' }, data: { value: 'off' } });
+    const b = await buildEventBundle(tenant.id, event.id);
+    expect(JSON.stringify(b.ok && b.bundle)).not.toContain('glamourStyle');
+    expect(b.ok && (b.bundle.filters as any).defaultFilterId).toBe('original');
+    expect((await (await DASH(req('/x'), ev(event.id))).json()).billing.glamourStyleReady).toBe(false);
+    // Kept on the event that has it; a new one can't choose it
+    expect((await PATCH(req('/x', { method: 'PATCH', body: GLAMOUR }), ev(event.id))).status).toBe(200);
+    const other = await seedEvent(tenant.id, (await boothEventsClient(tenant.id)).id);
+    expect((await PATCH(req('/x', { method: 'PATCH', body: GLAMOUR }), ev(other.id))).status).toBe(400);
   });
 });
 

@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic';
-import { addOnName, addOnPrices } from '@/lib/genie/addOns';
+import { addOnName, addOnPrices, glamourStyleReady } from '@/lib/genie/addOns';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
@@ -54,8 +54,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       .map(p => ({ amountCents: p.amountCents, status: p.status, paidAt: p.paidAt, comp: isComp(p), sharingPcs: p.sharingPcs, ipads: p.ipads, addOns: p.addOns.map(addOnName) }))
     : [];
   const billing = b.paysPerEvent
-    ? { paysPerEvent: true, paid: b.paid, payments: b.payments, ipadsCovered: b.ipadsCovered, ipadsPerPayment: IPADS_PER_PAYMENT, priceCents: b.priceCents!, history, addOnsDue: b.addOnsDue, amountDueCents: b.amountDueCents, watermark: b.watermark, addOnPrices: await addOnPrices() }
-    : { paysPerEvent: false, history, addOnsDue: b.addOnsDue, amountDueCents: b.amountDueCents, watermark: b.watermark, addOnPrices: await addOnPrices() };
+    ? { paysPerEvent: true, paid: b.paid, payments: b.payments, ipadsCovered: b.ipadsCovered, ipadsPerPayment: IPADS_PER_PAYMENT, priceCents: b.priceCents!, history, addOnsDue: b.addOnsDue, amountDueCents: b.amountDueCents, watermark: b.watermark, addOnPrices: await addOnPrices(), glamourStyleReady: await glamourStyleReady() }
+    : { paysPerEvent: false, history, addOnsDue: b.addOnsDue, amountDueCents: b.amountDueCents, watermark: b.watermark, addOnPrices: await addOnPrices(), glamourStyleReady: await glamourStyleReady() };
   return NextResponse.json({
     event: { id: event.id, title: event.title, eventDate: event.eventDate, startTime: event.startTime, endTime: event.endTime, venueName: event.venueName, boothEvent: isBoothClient(event.client) },
     settings: s ? await withBoomerangDesignProblem(settingsView(s), s) : null,
@@ -117,6 +117,11 @@ export async function PATCH(req: NextRequest, props0: { params: Promise<{ id: st
   if (!s) return NextResponse.json({ error: 'Set up Genie for this event first', code: 'not_configured' }, { status: 409 });
   if (effectiveLockedAt(event, s)) return lockedError();
 
+  // Glamour Style can be chosen only once it's available (Genie 0.6.0+ on the iPads); an event that has it can keep it
+  const storedIds = (Array.isArray(s.filters) ? s.filters as { id?: string }[] : []).map(f => f?.id);
+  if (parsed.data.filters?.filterIds.includes('glamourStyle') && !storedIds.includes('glamourStyle') && !(await glamourStyleReady())) {
+    return NextResponse.json({ error: "Glamour Style isn't available yet" }, { status: 400 });
+  }
   const result = settingsUpdateData(parsed.data, s);
   if ('error' in result) return NextResponse.json({ error: result.error }, { status: 400 });
   if (parsed.data.boomerang) {

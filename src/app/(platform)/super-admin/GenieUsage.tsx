@@ -26,6 +26,7 @@ export default function GenieUsage() {
   const [geniusPays, setGeniusPays] = useState(false);
   // Add-on prices (Glamour Style), in dollars as typed
   const [glamourPrice, setGlamourPrice] = useState('');
+  const [glamourReady, setGlamourReady] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -51,6 +52,7 @@ export default function GenieUsage() {
     setGeniusPrice((d.geniusPriceCents / 100).toFixed(2));
     setGeniusPays(d.geniusPays);
     setGlamourPrice((d.addOnPrices.glamourStyle / 100).toFixed(2));
+    setGlamourReady(d.glamourStyleReady);
   }, [days]);
   useEffect(() => { load(); }, [load]);
 
@@ -70,6 +72,17 @@ export default function GenieUsage() {
     const next = !geniusPays;
     if (next && !confirm('Genius accounts (except "Keep Genius free") will see a watermark on unpaid Genie events and a Pay button. Turn it on?')) return;
     if (await savePrices(next)) { setGeniusPays(next); load(); }
+  }
+
+  // Glamour Style offered to operators and sent to iPads: only once Genie 0.6.0 is on the iPads (older ones reject it)
+  async function toggleGlamourReady() {
+    const next = !glamourReady;
+    if (next && !confirm('Operators will be able to choose Glamour Style, and iPads will receive it. iPads older than Genie 0.6.0 can\'t load an event that uses it. Turn it on?')) return;
+    setError('');
+    const r = await fetch('/api/super-admin/genie-usage', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ glamourStyleReady: next }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { setError(d.error || 'Could not change it'); return; }
+    setGlamourReady(d.glamourStyleReady);
   }
 
   const sum = (k: 'texts' | 'emails' | 'sessions' | 'photos' | 'paidCents') => (rows ?? []).reduce((n, r) => n + r[k], 0);
@@ -107,6 +120,15 @@ export default function GenieUsage() {
                 : 'Off: Genius accounts run Genie events free, with no watermark. The site still shows the Genius price.'}</p>
             </div>
             <Button variant={geniusPays ? 'outline' : 'default'} onClick={toggleGeniusPays} disabled={!price || !geniusPrice || !glamourPrice}>{geniusPays ? 'Turn off' : 'Turn on'}</Button>
+          </div>
+          <div className="flex items-start justify-between gap-4 border-t pt-4">
+            <div>
+              <p className="text-sm font-medium text-gray-700">Glamour Style available</p>
+              <p className="text-sm text-gray-500">{glamourReady
+                ? 'On: operators can choose Glamour Style on their events, and iPads receive it.'
+                : 'Off: operators can\'t choose Glamour Style yet. Turn it on once Genie 0.6.0 is on the iPads (older iPads can\'t load an event that uses it).'}</p>
+            </div>
+            <Button variant={glamourReady ? 'outline' : 'default'} onClick={toggleGlamourReady}>{glamourReady ? 'Turn off' : 'Turn on'}</Button>
           </div>
         </CardContent>
       </Card>
