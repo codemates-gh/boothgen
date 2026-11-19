@@ -1499,7 +1499,7 @@ model GenieEventPayment {
   amountCents             Int
   currency                String    @default("usd")
   ipads                   Int       @default(2) // iPads this payment covers (0: a Sharing station-only payment)
-  sharingPcs              Int       @default(0) // Sharing station PCs this payment covers ($12 each)
+  sharingPcs              Int       @default(0) // Sharing station PCs this payment covered (2.112.0 only, $12 each; included with the event since 2.113.0)
   status                  String    @default("pending") // pending | paid
   paidAt                  DateTime?
   createdAt               DateTime  @default(now())

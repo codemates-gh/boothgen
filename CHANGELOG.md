@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.113.0] — 2026-11-19
+
+### Changed
+- **The Sharing station (PC booth) is now part of every Genie event**, no longer a paid add-on. Any Genie iPad can be used as a photo booth or as a Sharing station for PC booth software; it uses one of the event's 2 iPad spots, with one PC per event.
+  - **No extra price:** the $12 per PC is gone, and so is its checkout line. The event's own payment ($15 Genie-only, $10 Genius) covers it, and the watermark clears when the event is paid, as for any Genie event.
+  - **No on/off switch:** the event's Genie page no longer has a "Sharing station (PC booth)" section, and Super Admin → Operators no longer has a per-account "Sharing station" switch. Its three options ("Show only recent photos", "Blur photos until tapped", "Upload every photo to the gallery", all off by default) are now under **Sharing** on the event's Genie page.
+  - Every Genie event's bundle now includes the Sharing station. Payments made under 2.112.0 still show in the event's payment history as they were.
+
+---
+
 ## [2.112.0] — 2026-11-18
 
 ### Added

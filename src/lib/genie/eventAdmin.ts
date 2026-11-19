@@ -135,7 +135,7 @@ export const SettingsPatch = z.object({
   backgroundRemoval: BackdropsPatch,
   // Pose ideas (account default with per-event override); saved by posesData
   poses: PosesPatch,
-  // Sharing station for PC booth software (paid add-on, per event only)
+  // Sharing station for PC booth software: its guest-grid and upload options (per event only)
   sharingStation: SharingStationPatch,
   // Sections to put back on the account defaults (they follow default changes again)
   reset: z.array(z.enum(['timeZone', 'capture', 'sharing', 'printing', 'attract', 'poses'])).min(1),

@@ -19,7 +19,6 @@ interface Operator {
   genieEnabled: boolean;
   product: string;
   geniusFree: boolean;
-  sharingStationOff?: boolean;
   createdAt: Date;
   branding: { companyName: string | null } | null;
   memberships: { user: { name: string; email: string } }[];
@@ -97,11 +96,6 @@ function GenieCell({ op }: { op: Operator }) {
       <label className="flex items-center gap-1 text-[11px] text-gray-500 cursor-pointer" title="Keeps Genius without a Pro subscription">
         <input type="checkbox" className="w-3 h-3" checked={op.geniusFree} disabled={busy} onChange={e => patch({ geniusFree: e.target.checked })}/>
         Keep Genius free
-      </label>
-      {/* Sharing station (PC booth) add-on, $12 per PC per event: on for everyone unless switched off */}
-      <label className="flex items-center gap-1 text-[11px] text-gray-500 cursor-pointer" title="Lets the account use the Sharing station (PC booth) add-on">
-        <input type="checkbox" className="w-3 h-3" checked={!op.sharingStationOff} disabled={busy} onChange={e => patch({ sharingStationOff: !e.target.checked })}/>
-        Sharing station
       </label>
     </div>
   );

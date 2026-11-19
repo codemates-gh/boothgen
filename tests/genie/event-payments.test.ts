@@ -148,8 +148,7 @@ describe('pay routes', () => {
     const res = await PAY(req('/x', { method: 'POST' }), p(crm.event.id));
     expect(res.status).toBe(409);
     expect((await res.json()).code).toBe('not_needed');
-    // Nothing due without a Sharing station (the sharing fields are there so its $12 per PC can be shown)
-    expect((await (await DASH(req('/x'), p(crm.event.id))).json()).billing).toMatchObject({ paysPerEvent: false, sharingStation: false, amountDueCents: 0 });
+    expect((await (await DASH(req('/x'), p(crm.event.id))).json()).billing).toEqual({ paysPerEvent: false });
   });
 
   it('won\'t delete a paid booth event', async () => {

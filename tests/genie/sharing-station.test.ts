@@ -33,7 +33,7 @@ import { bundleValidator, guestSession, req, resetDb, seedDevice, seedEvent, see
 const MB = 1024 * 1024;
 const ev = (id: string) => ({ params: Promise.resolve({ id }) });
 const evId = (eventId: string) => ({ params: Promise.resolve({ eventId }) });
-const SHARING = { enabled: true, pcs: 1, recentMinutes: null, blurGrid: false, uploadAll: false };
+const SHARING = { recentMinutes: null, blurGrid: false, uploadAll: false };
 
 async function setup(product: 'genie' | 'crm' = 'genie') {
   const t = await seedTenant({ pro: product === 'crm' });
@@ -48,85 +48,73 @@ const checkout = (tenantId: string, eventId: string, meta: Record<string, string
   id: 'cs_test_' + randomUUID(), payment_status: 'paid', amount_total: amount, currency: 'usd', metadata: { kind: PAYMENT_KIND, tenantId, eventId, ...meta },
 } as any);
 
-beforeEach(async () => { await resetDb(); created.length = 0; objects.clear(); await prisma.systemSetting.deleteMany({ where: { key: { in: ['genie_event_price_cents', 'genius_pays_per_event', 'sharing_station_pc_price_cents'] } } }); });
+beforeEach(async () => { await resetDb(); created.length = 0; objects.clear(); await prisma.systemSetting.deleteMany({ where: { key: { in: ['genie_event_price_cents', 'genius_pays_per_event'] } } }); });
 afterAll(async () => { await resetDb(); await prisma.$disconnect(); });
 
-describe('event setting and bundle', () => {
-  it('off by default; on sends sharingStation (valid against the Genie schema) and the settings change the version', async () => {
+describe('event options and bundle', () => {
+  it('always in the bundle (valid against the Genie schema); the options are off by default and change the version', async () => {
     const { tenant, event } = await setup();
     let b = await buildEventBundle(tenant.id, event.id);
-    expect(b.ok && 'sharingStation' in b.bundle).toBe(false);
-    expect((await (await DASH(req('/x'), ev(event.id))).json()).settings.sharingStation).toEqual({ enabled: false, pcs: 1, recentMinutes: null, blurGrid: false, uploadAll: false });
-
-    expect((await PATCH(req('/x', { method: 'PATCH', body: { sharingStation: SHARING } }), ev(event.id))).status).toBe(200);
-    b = await buildEventBundle(tenant.id, event.id);
     expect(b.ok && b.bundle.sharingStation).toEqual({ enabled: true });
+    expect((await (await DASH(req('/x'), ev(event.id))).json()).settings.sharingStation).toEqual(SHARING);
     const v1 = b.ok ? b.bundleVersion : 0;
-    await PATCH(req('/x', { method: 'PATCH', body: { sharingStation: { ...SHARING, recentMinutes: 15, blurGrid: true, uploadAll: true } } }), ev(event.id));
+
+    expect((await PATCH(req('/x', { method: 'PATCH', body: { sharingStation: { recentMinutes: 15, blurGrid: true, uploadAll: true } } }), ev(event.id))).status).toBe(200);
     b = await buildEventBundle(tenant.id, event.id);
     expect(b.ok && b.bundle.sharingStation).toEqual({ enabled: true, recentMinutes: 15, blurGrid: true, uploadAll: true });
     expect(b.ok && b.bundleVersion).toBeGreaterThan(v1);
     const validate = await bundleValidator();
     if (validate && b.ok) expect(validate(b.bundle)).toBeNull();
     expect((await PATCH(req('/x', { method: 'PATCH', body: { sharingStation: { ...SHARING, recentMinutes: 2 } } }), ev(event.id))).status).toBe(400);
+    // No on/off switch or PC count any more (2.113.0)
+    expect((await PATCH(req('/x', { method: 'PATCH', body: { sharingStation: { ...SHARING, enabled: true, pcs: 1 } } }), ev(event.id))).status).toBe(400);
   });
 
-  it('Super Admin can switch it off for an account: it can’t be turned on and leaves the bundle', async () => {
+  it('ignores the old account switch-off (Tenant.sharingStationOff)', async () => {
     const { tenant, event } = await setup();
-    await PATCH(req('/x', { method: 'PATCH', body: { sharingStation: SHARING } }), ev(event.id));
     await prisma.tenant.update({ where: { id: tenant.id }, data: { sharingStationOff: true } });
     const b = await buildEventBundle(tenant.id, event.id);
-    expect(b.ok && 'sharingStation' in b.bundle).toBe(false);
-    const other = await seedEvent(tenant.id, (await boothEventsClient(tenant.id)).id);
-    expect((await PATCH(req('/x', { method: 'PATCH', body: { sharingStation: SHARING } }), ev(other.id))).status).toBe(400);
-    expect((await (await DASH(req('/x'), ev(event.id))).json()).billing).toMatchObject({ sharingAvailable: false, sharingStation: false, amountDueCents: 1500 });
+    expect(b.ok && b.bundle.sharingStation).toEqual({ enabled: true });
   });
 });
 
-describe('billing: $12 per PC, in the same checkout as the event', () => {
-  it('Genie-only: one checkout for the event and the PC; watermark until paid; the PC payment adds no iPads', async () => {
+describe('billing: included with the Genie event', () => {
+  it('Genie-only: the event payment alone clears the watermark; no Sharing station line in checkout', async () => {
     const { tenant, event } = await setup('genie');
-    await PATCH(req('/x', { method: 'PATCH', body: { sharingStation: SHARING } }), ev(event.id));
-    expect(await eventBilling(tenant, event.id)).toMatchObject({ watermark: true, sharingStation: true, sharingPcsDue: 1, amountDueCents: 2700 });
+    expect(await eventBilling(tenant, event.id)).toMatchObject({ watermark: true, paid: false });
     expect((await PAY(req('/x', { body: {} }), ev(event.id))).status).toBe(200);
-    expect(created[0].line_items.map((l: any) => [l.quantity, l.price_data.unit_amount])).toEqual([[1, 1500], [1, 1200]]);
-    expect(created[0].metadata).toMatchObject({ ipads: '2', sharingPcs: '1' });
-
-    // Paid for the event only: still watermarked while the Sharing station isn't
-    await recordCheckout(checkout(tenant.id, event.id, { ipads: '2', sharingPcs: '0' }, 1500));
-    expect(await eventBilling(tenant, event.id)).toMatchObject({ paid: true, watermark: true, sharingPcsDue: 1, amountDueCents: 1200 });
-    created.length = 0;
-    await PAY(req('/x', { body: {} }), ev(event.id));
-    expect(created[0].line_items.map((l: any) => [l.quantity, l.price_data.unit_amount])).toEqual([[1, 1200]]);
-    await recordCheckout(checkout(tenant.id, event.id, { ipads: '0', sharingPcs: '1' }, 1200));
-    expect(await eventBilling(tenant, event.id)).toMatchObject({ watermark: false, sharingPcsPaid: 1, amountDueCents: 0, ipadsCovered: 2 });
-    expect((await prisma.eventGenieSettings.findUniqueOrThrow({ where: { eventId: event.id } })).maxDevices).toBe(2);
-    // Nothing left to pay, but more iPads can still be bought
+    expect(created[0].line_items.map((l: any) => [l.quantity, l.price_data.unit_amount])).toEqual([[1, 1500]]);
+    expect(created[0].metadata).toMatchObject({ ipads: '2' });
+    expect(created[0].metadata.sharingPcs).toBeUndefined();
+    await recordCheckout(checkout(tenant.id, event.id, { ipads: '2' }, 1500));
+    expect(await eventBilling(tenant, event.id)).toMatchObject({ paid: true, watermark: false, ipadsCovered: 2 });
+    const b = await buildEventBundle(tenant.id, event.id);
+    expect(b.ok && 'watermark' in b.bundle).toBe(false);
+    expect(b.ok && b.bundle.sharingStation).toEqual({ enabled: true });
+    // Paid: only more iPads can be bought
     expect((await PAY(req('/x', { body: {} }), ev(event.id))).status).toBe(409);
     expect((await PAY(req('/x', { body: { moreIpads: true } }), ev(event.id))).status).toBe(200);
   });
 
-  it('Genius accounts pay $10 for the event plus $12 per PC in one checkout', async () => {
+  it('Genius accounts pay $10 for the event, nothing more', async () => {
     await prisma.systemSetting.upsert({ where: { key: 'genius_pays_per_event' }, create: { key: 'genius_pays_per_event', value: 'on' }, update: { value: 'on' } });
     const { tenant, event } = await setup('crm');
-    await PATCH(req('/x', { method: 'PATCH', body: { sharingStation: SHARING } }), ev(event.id));
-    expect(await eventBilling(tenant, event.id)).toMatchObject({ paysPerEvent: true, priceCents: 1000, amountDueCents: 2200 });
+    expect(await eventBilling(tenant, event.id)).toMatchObject({ paysPerEvent: true, priceCents: 1000 });
     expect((await PAY(req('/x', { body: {} }), ev(event.id))).status).toBe(200);
-    expect(created[0].line_items.map((l: any) => [l.quantity, l.price_data.unit_amount])).toEqual([[1, 1000], [1, 1200]]);
+    expect(created[0].line_items.map((l: any) => [l.quantity, l.price_data.unit_amount])).toEqual([[1, 1000]]);
   });
 
-  it('Genius accounts that don’t pay per event (switch off or kept free) still pay $12 per PC for the Sharing station', async () => {
+  it('Genius accounts that don’t pay per event pay nothing and have no watermark', async () => {
     const { tenant, event } = await setup('crm');
+    expect(await eventBilling(tenant, event.id)).toMatchObject({ paysPerEvent: false, watermark: false });
     expect((await PAY(req('/x', { body: {} }), ev(event.id))).status).toBe(409);
-    // Release A: one PC per event
-    expect((await PATCH(req('/x', { method: 'PATCH', body: { sharingStation: { ...SHARING, pcs: 2 } } }), ev(event.id))).status).toBe(400);
-    await PATCH(req('/x', { method: 'PATCH', body: { sharingStation: SHARING } }), ev(event.id));
-    expect(await eventBilling(tenant, event.id)).toMatchObject({ paysPerEvent: false, watermark: true, sharingPcsDue: 1, amountDueCents: 1200 });
-    expect((await PAY(req('/x', { body: {} }), ev(event.id))).status).toBe(200);
-    expect(created[0].line_items.map((l: any) => [l.quantity, l.price_data.unit_amount])).toEqual([[1, 1200]]);
+  });
+
+  it('an old 2.112.0 Sharing station-only payment adds no iPads and doesn’t count as paying for the event', async () => {
+    const { tenant, event } = await setup('genie');
     await recordCheckout(checkout(tenant.id, event.id, { ipads: '0', sharingPcs: '1' }, 1200));
-    const b = await buildEventBundle(tenant.id, event.id);
-    expect(b.ok && 'watermark' in b.bundle).toBe(false);
+    expect(await eventBilling(tenant, event.id)).toMatchObject({ paid: false, watermark: true, ipadsCovered: 2 });
+    expect((await prisma.eventGenieSettings.findUniqueOrThrow({ where: { eventId: event.id } })).maxDevices).toBe(2);
   });
 });
 

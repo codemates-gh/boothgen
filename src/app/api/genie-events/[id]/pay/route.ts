@@ -10,7 +10,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.boothgen.com';
 
 async function load(tenantId: string, eventId: string) {
   const [tenant, event] = await Promise.all([
-    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { id: true, name: true, product: true, geniusFree: true, sharingStationOff: true } }),
+    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { id: true, name: true, product: true, geniusFree: true } }),
     prisma.event.findFirst({ where: { id: eventId, tenantId }, select: { id: true, title: true, genieSettings: { select: { id: true } } } }),
   ]);
   return { tenant, event };
@@ -18,8 +18,7 @@ async function load(tenantId: string, eventId: string) {
 
 const Body = z.object({ moreIpads: z.boolean().optional() }).strict();
 
-// Starts Stripe Checkout for what the event needs: the event (if it pays per event and isn't paid, or moreIpads: 2 more
-// iPads) plus Sharing station PCs not paid yet
+// Starts Stripe Checkout for the event (if it pays per event and isn't paid, or moreIpads: 2 more iPads)
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const auth = await requireGenieAdmin();
@@ -30,7 +29,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const body = Body.safeParse(await req.json().catch(() => ({})));
   const moreIpads = body.success ? !!body.data.moreIpads : false;
   const b = await eventBilling(tenant, event.id);
-  if (!(b.paysPerEvent && (!b.paid || moreIpads)) && b.sharingPcsDue === 0) {
+  if (!(b.paysPerEvent && (!b.paid || moreIpads))) {
     return NextResponse.json({ error: b.paysPerEvent ? 'Nothing to pay for this event' : 'Your plan doesn\'t pay per event', code: 'not_needed' }, { status: 409 });
   }
   const user = await prisma.user.findUnique({ where: { id: auth.userId }, select: { email: true } });
