@@ -94,7 +94,7 @@ function ActionDialog({ dialog, onClose, p }: { dialog: Dialog | null; onClose: 
     },
     duplicate: {
       title: 'Duplicate this event?',
-      body: <p>Creates a new Lead for the same client with the same venue, times, package and guest count. Quotes, invoices, contracts, notes and photos aren&apos;t copied, and the client isn&apos;t emailed. You&apos;ll go to the new event&apos;s edit page to set its date.</p>,
+      body: <p>Creates a new Lead for the same client with the same venue, times, package and guest count, and the same Genie setup (settings and templates). Quotes, invoices, contracts, notes, photos and Genie iPads aren&apos;t copied, and the client isn&apos;t emailed. You&apos;ll go to the new event&apos;s edit page to set its date.</p>,
       confirm: 'Duplicate',
       go: async () => { const e = await post(`/api/events/${p.eventId}/duplicate`); router.push(`/events/${e.id}/edit`); },
     },

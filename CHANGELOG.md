@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.109.1] — 2026-11-18
+
+### Changed
+- **Duplicate Event copies the Genie setup.** The copy gets the original's Genie settings (capture, sharing, printing, attract screen, Boomerang, filters, props, backdrops, pose ideas; sections that followed your Event defaults still follow them) and its Genie templates with their artwork. Not copied: the iPads on the event (spots go back to the usual 2), Genie payments, and the link to the original event's approved client design. Events without Genie copy as before.
+
+---
+
 ## [2.109.0] — 2026-11-18
 
 ### Added
