@@ -17,7 +17,8 @@ import { galleryRetentionDates, getGalleryRetention, type GalleryRetention } fro
 export { appUrl, galleryUrl, sessionUrl } from './urls';
 
 export const BUNDLE_SCHEMA_VERSION = '1.0';
-const VALID_AFTER_END_MS = 24 * 3600 * 1000;
+// iPads keep running an event offline until 48 hours after it ends (G, 2026-11-18); after that it has expired
+export const VALID_AFTER_END_MS = 48 * 3600 * 1000;
 
 // Copy used when an event's Genie settings are first created
 export const GENIE_SETTINGS_DEFAULTS = {
@@ -48,7 +49,7 @@ export function tzOffsetMs(timeZone: string, at: Date): number {
   return Date.UTC(n('year'), n('month') - 1, n('day'), n('hour'), n('minute'), n('second')) - at.getTime();
 }
 
-// Device may run the event offline until endTime (or the end of the event day in its time zone) + 24 h
+// Device may run the event offline until endTime (or the end of the event day in its time zone) + 48 h
 export function bundleValidUntil(event: Pick<Event, 'eventDate' | 'endTime'>, timeZone: string): Date {
   if (event.endTime) return new Date(event.endTime.getTime() + VALID_AFTER_END_MS);
   const d = event.eventDate;

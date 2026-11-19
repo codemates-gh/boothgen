@@ -2,23 +2,26 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { authenticateDevice } from '@/lib/genie/auth';
-import { designApprovalPending } from '@/lib/genie/bundle';
+import { bundleValidUntil, designApprovalPending } from '@/lib/genie/bundle';
 import { slotStatusForDevice } from '@/lib/genie/slots';
 
 export async function GET(req: NextRequest) {
   const auth = await authenticateDevice(req);
   if (auth instanceof NextResponse) return auth;
 
-  const events = await prisma.event.findMany({
+  const all = await prisma.event.findMany({
     // Events with Genie turned off are hidden from iPads
     where: { tenantId: auth.tenant.id, status: { in: ['BOOKED', 'IN_PROGRESS'] }, NOT: { genieSettings: { is: { enabled: false } } } },
     orderBy: { eventDate: 'asc' },
     select: {
-      id: true, title: true, eventDate: true, status: true,
-      genieSettings: { select: { bundleVersion: true, maxDevices: true } },
+      id: true, title: true, eventDate: true, endTime: true, status: true,
+      genieSettings: { select: { bundleVersion: true, maxDevices: true, timeZone: true } },
       _count: { select: { genieTemplates: true } },
     },
   });
+  // Expired events (48 hours after they ended) are no longer offered to iPads
+  const now = Date.now();
+  const events = all.filter(e => bundleValidUntil(e, e.genieSettings?.timeZone ?? 'UTC').getTime() > now);
   const pending = await designApprovalPending(events.map(e => e.id));
   const slots = await slotStatusForDevice(auth.device.id, events.map(e => ({ id: e.id, maxDevices: e.genieSettings?.maxDevices ?? 2 })));
 

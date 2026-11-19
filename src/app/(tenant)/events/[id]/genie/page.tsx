@@ -7,12 +7,12 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon, PersonStanding } from 'lucide-react';
+import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon, PersonStanding, Copy } from 'lucide-react';
 import { Field, Toggle, fmtDate, fmtDateTime } from '@/components/genie/parts';
 import { Attract, AttractFields, Capture, CaptureFields, DefaultState, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
 import { Modal } from '@/components/ui/modal';
 import { fmtCents } from '@/lib/utils';
-import { BoothEventModal, localTime } from '@/components/genie/BoothEventModal';
+import { BoothEventModal, localEndDate, localTime } from '@/components/genie/BoothEventModal';
 import GenieTemplates, { ApprovedDesign, EventTemplate, templateMismatch } from './GenieTemplates';
 import GenieEventDevices from './GenieEventDevices';
 import GenieShares from './GenieShares';
@@ -41,7 +41,7 @@ type Settings = {
 type Dashboard = {
   event: { id: string; title: string; eventDate: string; startTime: string | null; endTime: string | null; venueName: string | null; boothEvent: boolean };
   billing: { paysPerEvent: false } | { paysPerEvent: true; paid: boolean; payments: number; ipadsCovered: number; ipadsPerPayment: number; priceCents: number; history: { amountCents: number; status: string; paidAt: string | null; comp: boolean }[] };
-  settings: Settings | null; lockedAt: string | null; locksAt: string; templates: EventTemplate[];
+  settings: Settings | null; lockedAt: string | null; locksAt: string; expired: boolean; templates: EventTemplate[];
   providerWarnings: { channel: 'sms' | 'email'; message: string }[]; photosHiddenAt: string; photosDeletedAt: string; designApprovalPending: boolean;
   approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
   defaults: { saved: boolean; timeZone: string };
@@ -143,6 +143,18 @@ export default function EventGeniePage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
+  const [duplicateError, setDuplicateError] = useState('');
+
+  // A copy with the same Genie setup, starting today with the same times (works on expired events too)
+  async function duplicateEvent() {
+    setDuplicateError('');
+    const r = await fetch(`/api/events/${eventId}/duplicate`, { method: 'POST' });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { setDuplicateError(d.error || 'Could not duplicate the event'); return; }
+    setDuplicating(false);
+    router.push(`/events/${d.id}/genie`);
+  }
 
   async function deleteEvent() {
     setDeleteBusy(true); setDeleteError('');
@@ -227,19 +239,27 @@ export default function EventGeniePage() {
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <h2 className="text-xl sm:text-2xl font-bold">{data.event.title}</h2>
                   {data.settings && <Badge variant={data.settings.enabled ? 'success' : 'default'}>{data.settings.enabled ? 'Genie on' : 'Genie off'}</Badge>}
-                  {locked && <Badge variant="info"><Lock className="w-3 h-3 mr-1 inline"/>Locked</Badge>}
+                  {data.expired ? <Badge variant="default">Expired</Badge> : locked && <Badge variant="info"><Lock className="w-3 h-3 mr-1 inline"/>Locked</Badge>}
                 </div>
                 <p className="text-sm text-gray-500">{fmtDate(data.event.eventDate, 'UTC')}{data.event.boothEvent && data.event.venueName ? ` · ${data.event.venueName}` : ''}{data.settings ? ` · Bundle version ${data.settings.bundleVersion}` : ''}</p>
               </div>
               {data.event.boothEvent && (
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setEditing(true)}><Pencil className="w-3.5 h-3.5 mr-1"/>Edit Details</Button>
+                  {!data.expired && <Button variant="outline" size="sm" onClick={() => setEditing(true)}><Pencil className="w-3.5 h-3.5 mr-1"/>Edit Details</Button>}
+                  <Button variant="outline" size="sm" onClick={() => { setDuplicateError(''); setDuplicating(true); }}><Copy className="w-3.5 h-3.5 mr-1"/>Duplicate</Button>
                   <Button variant="ghost" size="sm" onClick={() => { setDeleteError(''); setDeleting(true); }}><Trash2 className="w-3.5 h-3.5 mr-1"/>Delete</Button>
                 </div>
               )}
             </div>
 
-            {data.billing.paysPerEvent && data.settings && (data.billing.paid ? (
+            {data.expired && (
+              <div className="flex items-start gap-2 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                <Lock className="w-4 h-4 mt-0.5 flex-shrink-0 text-gray-400"/>
+                <span>This event is over: iPads stopped running it 48 hours after it ended. You can still see its settings{data.event.boothEvent ? ', and Duplicate makes a copy starting today with the same setup.' : '. Duplicate it from the event page (•••) to run it again, starting today with the same setup.'}</span>
+              </div>
+            )}
+
+            {data.billing.paysPerEvent && data.settings && !data.expired && (data.billing.paid ? (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                 <span className="flex items-start gap-2 flex-1"><CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0"/>Paid. Covers up to {data.billing.ipadsCovered} iPads, with texts and email.</span>
                 <Button variant="outline" size="sm" onClick={pay} disabled={payBusy}>{payBusy ? 'Opening…' : `Add ${data.billing.ipadsPerPayment} iPads (${fmtCents(data.billing.priceCents)})`}</Button>
@@ -442,10 +462,20 @@ export default function EventGeniePage() {
           initial={{
             title: data.event.title, date: data.event.eventDate.slice(0, 10),
             startTime: localTime(data.event.startTime, tz ?? 'UTC'), endTime: localTime(data.event.endTime, tz ?? 'UTC'),
+            endDate: localEndDate(data.event.endTime, data.event.eventDate.slice(0, 10), tz ?? 'UTC'),
             venueName: data.event.venueName ?? '', timeZone: tz ?? 'UTC',
           }}
           onSaved={() => { setEditing(false); load(); }}/>
       )}
+
+      <Modal open={duplicating} onClose={() => setDuplicating(false)} title="Duplicate Event">
+        <p className="text-sm text-gray-600 mb-2">Makes a new booth event starting today, with the same times, venue and Genie setup (settings and templates). iPads, payments and photos aren&apos;t copied. Change its date with Edit Details.</p>
+        {duplicateError && <p className="text-sm text-red-600 mb-2">{duplicateError}</p>}
+        <div className="flex justify-end gap-2 mt-4">
+          <Button variant="outline" onClick={() => setDuplicating(false)}>Cancel</Button>
+          <Button onClick={duplicateEvent}>Duplicate</Button>
+        </div>
+      </Modal>
 
       <Modal open={deleting} onClose={() => setDeleting(false)} title="Delete Event">
         <p className="text-sm text-gray-600 mb-5">Delete <span className="font-medium text-gray-800">{data?.event.title}</span> and its booth setup? This can&apos;t be undone. Events with guest photos can&apos;t be deleted.</p>

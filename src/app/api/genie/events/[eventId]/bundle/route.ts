@@ -11,6 +11,10 @@ export async function GET(req: NextRequest, props: { params: Promise<{ eventId: 
 
   const result = await buildEventBundle(auth.tenant.id, params.eventId);
   if (!result.ok) return genieError(result.status, result.code, result.error);
+  // Expired (48 hours after it ended): no longer operational. Operators can still open and duplicate it in BoothGen.
+  if (Date.parse(String(result.bundle.validUntil)) <= Date.now()) {
+    return genieError(409, 'event_expired', 'This event is over, so iPads can no longer run it. Duplicate it in BoothGen to run it again.');
+  }
 
   // Each event can be run by a limited number of devices; the first download takes a slot
   const slot = await claimEventSlot(auth.tenant.id, params.eventId, auth.device.id);

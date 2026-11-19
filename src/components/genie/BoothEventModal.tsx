@@ -8,7 +8,14 @@ import { TimeZoneSelect } from '@/components/genie/SettingsForms';
 
 // New booth event (Genie → Events) and editing a booth event's details (its Genie page)
 
-export type BoothEventValues = { title: string; date: string; startTime: string; endTime: string; venueName: string; timeZone: string };
+export type BoothEventValues = { title: string; date: string; startTime: string; endDate?: string; endTime: string; venueName: string; timeZone: string };
+
+// "YYYY-MM-DD" of an instant in a time zone; the End Date field shows it only when it's after the start date
+export function localEndDate(iso: string | null, startDate: string, timeZone: string): string {
+  if (!iso) return '';
+  const d = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
+  return d > startDate ? d : '';
+}
 
 // "HH:MM" of an instant in a time zone, for the edit form
 export function localTime(iso: string | null, timeZone: string): string {
@@ -31,7 +38,7 @@ export function BoothEventModal({ open, onClose, initial, eventId, lockedTimes, 
 
   async function submit() {
     setBusy(true); setError('');
-    const body: Record<string, unknown> = { title: v.title, date: v.date, startTime: v.startTime || null, endTime: v.endTime || null, venueName: v.venueName || null };
+    const body: Record<string, unknown> = { title: v.title, date: v.date, startTime: v.startTime || null, endDate: v.endDate || null, endTime: v.endTime || null, venueName: v.venueName || null };
     if (!eventId) body.timeZone = v.timeZone;
     const r = await fetch(eventId ? `/api/genie-events/${eventId}` : '/api/genie-events', { method: eventId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const d = await r.json().catch(() => ({}));
@@ -54,9 +61,9 @@ export function BoothEventModal({ open, onClose, initial, eventId, lockedTimes, 
           <label className="block text-sm font-medium text-gray-700 mb-1">Event name</label>
           <Input value={v.title} onChange={e => set('title', e.target.value)} maxLength={200} autoFocus placeholder="Rivera Wedding"/>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Start date</label>
             {/* The browser's own calendar icon isn't shown everywhere (Safari), so the field has its own button */}
             <div className="relative">
               <Input ref={dateRef} type="date" value={v.date} onChange={e => set('date', e.target.value)} disabled={lockedTimes}
@@ -68,16 +75,20 @@ export function BoothEventModal({ open, onClose, initial, eventId, lockedTimes, 
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Start time</label>
             <Input type="time" value={v.startTime} onChange={e => set('startTime', e.target.value)} disabled={lockedTimes}/>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">End date <span className="text-gray-400 font-normal">(if a later day)</span></label>
+            <Input type="date" value={v.endDate ?? ''} min={v.date || undefined} onChange={e => set('endDate', e.target.value)} disabled={lockedTimes}/>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">End time</label>
             <Input type="time" value={v.endTime} onChange={e => set('endTime', e.target.value)} disabled={lockedTimes}/>
           </div>
         </div>
         <p className="text-xs text-gray-400 -mt-2">
-          {lockedTimes ? 'The event has started, so its date and times can no longer change.' : 'Times are optional. The booth setup locks when the event starts (or at the start of the day).'}
+          {lockedTimes ? 'The event has started, so its date and times can no longer change.' : 'Times are optional. An end time earlier than the start means the next day; an event lasts at most 48 hours. The booth setup locks when the event starts (or at the start of the day).'}
         </p>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Venue <span className="text-gray-400 font-normal">(optional)</span></label>

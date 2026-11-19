@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
+import { eventSpan } from '@/lib/eventTimes';
 
 export async function GET(_: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -20,7 +21,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const event = await prisma.event.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const body = await req.json();
-  const { title, status, eventDate, startTime, endTime, venueName, venueAddress, venueCity, venueState, venuePostalCode, packageName, guestCount, internalNotes, firstName, lastName, email, phone, estimatedValueCents, clientId } = body;
+  const { title, status, eventDate, startTime, endDate, endTime, venueName, venueAddress, venueCity, venueState, venuePostalCode, packageName, guestCount, internalNotes, firstName, lastName, email, phone, estimatedValueCents, clientId } = body;
 
   // Reassign to a different client
   if (clientId && clientId !== event.clientId) {
@@ -28,13 +29,16 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     if (!newClient) return NextResponse.json({ error: 'Client not found' }, { status: 404 });
   }
 
+  // Start Date/Time to End Date/Time: ends after it starts, at most 48 hours
+  const span = eventSpan({ date: eventDate, startTime, endDate, endTime });
+  if ('error' in span) return NextResponse.json({ error: span.error }, { status: 400 });
+
   const updated = await prisma.event.update({
     where: { id: params.id },
     data: {
       ...(clientId && clientId !== event.clientId ? { clientId } : {}),
       title, status, eventDate: new Date(eventDate),
-      startTime: startTime ? new Date(eventDate + 'T' + startTime) : null,
-      endTime: endTime ? new Date(eventDate + 'T' + endTime) : null,
+      startTime: span.startTime, endTime: span.endTime,
       venueName: venueName || null, venueAddress: venueAddress || null,
       venueCity: venueCity || null, venueState: venueState || null,
       venuePostalCode: venuePostalCode || null,

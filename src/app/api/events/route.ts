@@ -3,16 +3,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
+import { eventSpan } from '@/lib/eventTimes';
 import { triggerAutomation, scheduleEventDateAutomations } from '@/lib/inngest/trigger';
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await req.json();
-  const { firstName, lastName, email, phone, company, clientId, title, eventDate, startTime, endTime,
+  const { firstName, lastName, email, phone, company, clientId, title, eventDate, startTime, endDate, endTime,
     venueName, venueAddress, venueCity, venueState, venuePostalCode,
     packageName, guestCount, internalNotes, status, estimatedValueCents } = body;
   if (!title || !eventDate) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+  // Start Date/Time to End Date/Time: ends after it starts, at most 48 hours
+  const span = eventSpan({ date: eventDate, startTime, endDate, endTime });
+  if ('error' in span) return NextResponse.json({ error: span.error }, { status: 400 });
 
   let client;
   if (clientId) {
@@ -32,8 +36,7 @@ export async function POST(req: NextRequest) {
     data: {
       tenantId: session.tenantId, clientId: client.id,
       title, status: eventStatus, eventDate: new Date(eventDate),
-      startTime: startTime ? new Date(eventDate + 'T' + startTime) : null,
-      endTime: endTime ? new Date(eventDate + 'T' + endTime) : null,
+      startTime: span.startTime, endTime: span.endTime,
       venueName: venueName || null, venueAddress: venueAddress || null,
       venueCity: venueCity || null, venueState: venueState || null,
       venuePostalCode: venuePostalCode || null,

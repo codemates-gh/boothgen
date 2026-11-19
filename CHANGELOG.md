@@ -4,6 +4,19 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.110.0] — 2026-11-18
+
+### Added
+- **Start Date, Start Time, End Date and End Time** on events (the event form and booth events), so an event can run past midnight or over two days. End Date is only needed when the event ends on a later day; an end time earlier than the start time still means the next day. An event lasts at most 48 hours.
+- **Duplicate on booth events** (their Genie page), like the ••• menu on CRM events.
+
+### Changed
+- **iPads keep running an event for 48 hours after it ends** (was 24), for slow venues and late uploads. The live guest gallery ("all guests' photos" events) also stays live for those 48 hours.
+- **Expired events** (more than 48 hours after they ended) are no longer operational: iPads stop listing them and can't download them. You can still open them and see their settings (marked Expired), and Duplicate them.
+- **Duplicate starts the copy today**, keeping its start and end times and how long it lasts, so an expired event can be run again; change the date on the copy if needed. Booth event copies are booked, so iPads see them.
+
+---
+
 ## [2.109.1] — 2026-11-18
 
 ### Changed

@@ -80,9 +80,11 @@ export async function POST(req: NextRequest) {
     const i = parsed.error.issues[0];
     return NextResponse.json({ error: i?.message ?? 'Invalid request', path: i?.path.join('.') }, { status: 400 });
   }
+  const fields = boothEventFields(parsed.data);
+  if ('error' in fields) return NextResponse.json({ error: fields.error }, { status: 400 });
   const client = await boothEventsClient(auth.tenantId);
   const event = await prisma.event.create({
-    data: { tenantId: auth.tenantId, clientId: client.id, status: 'BOOKED', ...boothEventFields(parsed.data) },
+    data: { tenantId: auth.tenantId, clientId: client.id, status: 'BOOKED', ...fields },
   });
   await setUpGenie(auth.tenantId, event.id, parsed.data.timeZone);
   return NextResponse.json({ id: event.id }, { status: 201 });

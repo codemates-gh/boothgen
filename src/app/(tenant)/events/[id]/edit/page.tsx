@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { addressLabels, eventTimeInput } from '@/lib/utils';
+import { endDateInput } from '@/lib/eventTimes';
 import { useParams, useRouter } from 'next/navigation';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +23,7 @@ export default function EditEventPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
-    title:'', status:'LEAD', eventDate:'', startTime:'', endTime:'',
+    title:'', status:'LEAD', eventDate:'', startTime:'', endDate:'', endTime:'',
     venueName:'', venueAddress:'', venueCity:'', venueState:'', venuePostalCode:'',
     packageName:'', guestCount:'', internalNotes:'', estimatedValueCents:'',
     firstName:'', lastName:'', email:'', phone:'',
@@ -48,7 +49,7 @@ export default function EditEventPage() {
       const toDate = (dt: string) => new Date(dt).toISOString().slice(0,10);
       setForm({
         title: ev.title ?? '', status: ev.status ?? 'LEAD',
-        eventDate: toDate(ev.eventDate), startTime: eventTimeInput(ev.startTime), endTime: eventTimeInput(ev.endTime),
+        eventDate: toDate(ev.eventDate), startTime: eventTimeInput(ev.startTime), endDate: endDateInput(ev.eventDate, ev.endTime), endTime: eventTimeInput(ev.endTime),
         venueName: ev.venueName ?? '', venueAddress: ev.venueAddress ?? '',
         venueCity: ev.venueCity ?? '', venueState: ev.venueState ?? '',
         venuePostalCode: ev.venuePostalCode ?? '',
@@ -181,13 +182,14 @@ export default function EditEventPage() {
           <CardHeader><CardTitle>Event Details</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">{F('title','Event Name')}</div>
-            {F('eventDate','Event Date','date')}
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <div className="sm:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
               <Select value={form.status} onChange={e => set('status',e.target.value)}>
                 {STATUSES.map(s => <option key={s} value={s}>{s.replace('_',' ')}</option>)}
               </Select>
             </div>
-            {F('startTime','Start Time','time')} {F('endTime','End Time','time')}
+            {F('eventDate','Start Date','date')} {F('startTime','Start Time','time')}
+            {F('endDate','End Date','date')} {F('endTime','End Time','time')}
+            <p className="sm:col-span-2 -mt-2 text-xs text-gray-400">End Date is only needed when the event ends on a later day. An end time earlier than the start time means the next day. At most 48 hours.</p>
           </CardContent>
         </Card>
         <Card>

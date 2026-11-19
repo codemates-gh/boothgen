@@ -27,7 +27,7 @@ export default function NewEventPage() {
 
   const [form, setForm] = useState({
     firstName: '', lastName: '', email: '', phone: '', company: '',
-    title: '', eventDate: '', startTime: '', endTime: '',
+    title: '', eventDate: '', startTime: '', endDate: '', endTime: '',
     venueName: '', venueAddress: '', venueCity: '', venueState: '', venuePostalCode: '',
     packageName: '', guestCount: '', internalNotes: '', status: 'LEAD', estimatedValueCents: '',
   });
@@ -196,8 +196,7 @@ export default function NewEventPage() {
             <CardHeader><CardTitle>Event Details</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">{F('title', 'Event Name', 'text', 'Smith Wedding', true)}</div>
-              {F('eventDate', 'Event Date', 'date', '', true)}
-              <div>
+              <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <Select value={form.status} onChange={e => set('status', e.target.value)}>
                   <option value="LEAD">Lead</option>
@@ -205,8 +204,11 @@ export default function NewEventPage() {
                   <option value="BOOKED">Booked</option>
                 </Select>
               </div>
+              {F('eventDate', 'Start Date', 'date', '', true)}
               {F('startTime', 'Start Time', 'time')}
+              {F('endDate', 'End Date', 'date')}
               {F('endTime', 'End Time', 'time')}
+              <p className="sm:col-span-2 -mt-2 text-xs text-gray-400">End Date is only needed when the event ends on a later day. An end time earlier than the start time means the next day. At most 48 hours.</p>
             </CardContent>
           </Card>
 

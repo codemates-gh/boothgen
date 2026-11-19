@@ -26,6 +26,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const timeZone = event.genieSettings?.timeZone ?? 'UTC';
   const fields = boothEventFields({ ...parsed.data, timeZone });
+  if ('error' in fields) return NextResponse.json({ error: fields.error }, { status: 400 });
   // Once the event has started on the iPad, the name and venue can change but not when it happens
   if (event.genieSettings && effectiveLockedAt(event, event.genieSettings)) {
     const same = (a: Date | null, b: Date | null) => (a?.getTime() ?? null) === (b?.getTime() ?? null);

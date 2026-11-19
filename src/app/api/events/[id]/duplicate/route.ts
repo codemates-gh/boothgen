@@ -4,10 +4,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 import { copyGenieSetup } from '@/lib/genie/duplicate';
+import { clockTime, moveEventTo, todayIn } from '@/lib/eventTimes';
+import { isBoothClient, zonedTime } from '@/lib/genie/boothEvents';
+import { getDefaults } from '@/lib/genie/defaults';
 
-// Copy an event as a new Lead for the same client: venue, times, package, guest count, estimated value, and its Genie
-// setup (settings and templates; see copyGenieSetup). Quotes, invoices, contracts, notes, checklist, photos, Genie
-// iPads and payments aren't copied, and no automations run (the client isn't emailed); the host sets the new date on
+// Copy an event as a new Lead for the same client: venue, package, guest count, estimated value, and its Genie setup
+// (settings and templates; see copyGenieSetup). The copy starts today (in the event's time zone) with the same times
+// and length, so even an expired event can be run again. Quotes, invoices, contracts, notes, checklist, photos, Genie
+// iPads and payments aren't copied, and no automations run (the client isn't emailed); the host adjusts the date on
 // the edit page.
 export async function POST(_: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -15,15 +19,22 @@ export async function POST(_: NextRequest, props: { params: Promise<{ id: string
   if (!session?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (session.tenantRole !== 'HOST_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const e = await prisma.event.findFirst({ where: { id: params.id, tenantId: session.tenantId } });
+  const e = await prisma.event.findFirst({ where: { id: params.id, tenantId: session.tenantId }, include: { client: { select: { email: true } }, genieSettings: { select: { timeZone: true } } } });
   if (!e) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  // Today in the event's time zone (else the account's Genie time zone). Booth events keep their times in that zone;
+  // CRM events keep clock times (UTC), so they move as they are.
+  const timeZone = e.genieSettings?.timeZone ?? (await getDefaults(e.tenantId)).values.timeZone;
+  const booth = isBoothClient(e.client);
+  const when = moveEventTo(e, todayIn(timeZone), booth ? timeZone : 'UTC', booth ? (d, t) => zonedTime(d, t, timeZone) : clockTime);
 
   const title = `${e.title} (copy)`;
   const copy = await prisma.$transaction(async tx => {
     const created = await tx.event.create({
       data: {
-        tenantId: e.tenantId, clientId: e.clientId, title, status: 'LEAD',
-        eventDate: e.eventDate, setupTime: e.setupTime, startTime: e.startTime, endTime: e.endTime,
+        // Booth events have no sales pipeline: their copies are booked, so iPads see them
+        tenantId: e.tenantId, clientId: e.clientId, title, status: booth ? 'BOOKED' : 'LEAD',
+        ...when,
         venueName: e.venueName, venueAddress: e.venueAddress, venueCity: e.venueCity, venueState: e.venueState,
         venuePostalCode: e.venuePostalCode, packageName: e.packageName, packageNotes: e.packageNotes,
         guestCount: e.guestCount, estimatedValueCents: e.estimatedValueCents, internalNotes: e.internalNotes,

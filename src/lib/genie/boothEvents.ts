@@ -9,6 +9,7 @@ import { isValidTimeZone, tzOffsetMs } from '@/lib/genie/bundle';
 // Every event needs a client, so they all go on one "Booth events" client per account. Plan: docs/genie/genie-only-plan.md
 
 import { BOOTH_CLIENT_EMAIL } from '@/lib/genie/boothClient';
+import { eventSpan } from '@/lib/eventTimes';
 export { BOOTH_CLIENT_EMAIL, isBoothClient } from '@/lib/genie/boothClient';
 
 export async function boothEventsClient(tenantId: string) {
@@ -36,21 +37,23 @@ export const BoothEventInput = z.object({
   title: z.string().trim().min(1, 'Name the event').max(200),
   date: z.string().regex(DATE, 'Pick a date'),
   startTime: z.string().regex(TIME, 'Start time is HH:MM').nullable().optional(),
+  // Only when the event ends on a later day than it starts
+  endDate: z.string().regex(DATE, 'Pick an end date').nullable().optional(),
   endTime: z.string().regex(TIME, 'End time is HH:MM').nullable().optional(),
   venueName: z.string().trim().max(200).nullable().optional(),
   timeZone: z.string().refine(isValidTimeZone, 'Unknown time zone'),
 }).strict();
 export type BoothEventInput = z.infer<typeof BoothEventInput>;
 
-// Event fields from the form. An end time earlier than the start runs past midnight (next day).
+// Event fields from the form: Start Date/Time to End Date/Time in the event's time zone, at most 48 hours. Without an
+// End Date, an end time earlier than the start runs past midnight (next day).
 export function boothEventFields(input: BoothEventInput) {
-  const startTime = input.startTime ? zonedTime(input.date, input.startTime, input.timeZone) : null;
-  let endTime = input.endTime ? zonedTime(input.date, input.endTime, input.timeZone) : null;
-  if (startTime && endTime && endTime <= startTime) endTime = new Date(endTime.getTime() + 86400_000);
+  const span = eventSpan({ date: input.date, startTime: input.startTime, endDate: input.endDate, endTime: input.endTime }, (d, t) => zonedTime(d, t, input.timeZone));
+  if ('error' in span) return span;
   return {
     title: input.title,
     eventDate: new Date(input.date + 'T00:00:00Z'), // stored at UTC midnight, like CRM events
-    startTime, endTime,
+    startTime: span.startTime, endTime: span.endTime,
     venueName: input.venueName?.trim() || null,
   };
 }

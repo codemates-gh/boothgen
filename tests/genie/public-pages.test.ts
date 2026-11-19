@@ -104,8 +104,8 @@ describe('live event gallery (guestLinkScope all)', () => {
     expect((await (await galleryReq(g.gallery.clientToken, 'RIVERA')).json()).assets).toHaveLength(3);
   });
 
-  it('ends 24 h after the event and returns to the publish flow', async () => {
-    const g = await seedGallery({ scope: 'all', endTime: new Date(Date.now() - 25 * 3600000) });
+  it('ends 48 h after the event and returns to the publish flow', async () => {
+    const g = await seedGallery({ scope: 'all', endTime: new Date(Date.now() - 49 * 3600000) });
     const json = await (await galleryReq(g.gallery.clientToken)).json();
     expect(json.gallery.isLive).toBe(false);
     expect(json.assets).toEqual([]);
