@@ -2093,7 +2093,7 @@ model GenieAiRender {
   counted            Boolean   @default(true)
   model              String?
   trial              Boolean   @default(false) // rendered under the unpaid event's trial allowance
-  inputKey           String // the uploaded shot (deleted after the render)
+  inputKey           String // the uploaded shot (kept; '' once the daily sweep deleted an unregistered one)
   resultKey          String? // R2 key of the Geniefied shot (JPEG)
   width              Int?
   height             Int?

@@ -55,7 +55,8 @@ export async function startRender(input: {
 }
 
 // Renders one shot: the input (≤ 2048 px JPEG) and the preamble + theme prompt go to Google; the result is stored with
-// the event's gallery files; the input is deleted whatever happens. Never throws.
+// the event's gallery files. The input is kept: the iPad may register that same upload as the session's `shot` (no
+// extra copy is made); sweepRenderInputs deletes it later only if it never became a gallery photo. Never throws.
 export async function processRender(renderId: string, faceCount: number): Promise<void> {
   // Claim it (queued → rendering) so a render never runs twice
   const claimed = await prisma.genieAiRender.updateMany({ where: { id: renderId, status: 'queued' }, data: { status: 'rendering', startedAt: new Date() } });
@@ -88,8 +89,6 @@ export async function processRender(renderId: string, faceCount: number): Promis
   } catch (err) {
     console.error('[geniefied] render failed', r.id, err);
     await finish({ status: 'failed', counted: false, message: 'Something went wrong rendering this photo.' }).catch(() => {});
-  } finally {
-    await deleteFromR2(r.inputKey).catch(err => console.error('[geniefied] input cleanup failed', r.inputKey, err));
   }
 }
 
@@ -97,7 +96,6 @@ export async function processRender(renderId: string, faceCount: number): Promis
 export const STALE_RENDER_MS = 5 * 60_000;
 export async function settleStale(r: GenieAiRender, now = new Date()): Promise<GenieAiRender> {
   if ((r.status !== 'queued' && r.status !== 'rendering') || now.getTime() - (r.startedAt ?? r.createdAt).getTime() < STALE_RENDER_MS) return r;
-  await deleteFromR2(r.inputKey).catch(() => {});
   return prisma.genieAiRender.update({ where: { id: r.id }, data: { status: 'failed', counted: false, message: 'The render took too long.', completedAt: now } });
 }
 
@@ -117,4 +115,23 @@ export async function deleteEventRenderResults(eventId: string): Promise<number>
   for (const r of rows) await deleteFromR2(r.resultKey!).catch(err => console.error('[geniefied] result cleanup failed', r.resultKey, err));
   if (rows.length) await prisma.genieAiRender.updateMany({ where: { id: { in: rows.map(r => r.id) } }, data: { resultKey: null } });
   return rows.length;
+}
+
+// Daily: a render's input that never became a gallery photo (the iPad didn't register it as the session's shot) is
+// deleted two days after the render, so BoothGen keeps no copy beyond the session photos it keeps anyway
+export const INPUT_KEEP_MS = 48 * 3600_000;
+export async function sweepRenderInputs(now = new Date()): Promise<{ deleted: number }> {
+  const rows = await prisma.genieAiRender.findMany({
+    where: { inputKey: { not: '' }, createdAt: { lt: new Date(now.getTime() - INPUT_KEEP_MS) }, status: { notIn: ['queued', 'rendering'] } },
+    select: { id: true, inputKey: true }, take: 500,
+  });
+  let deleted = 0;
+  for (const r of rows) {
+    const registered = await prisma.galleryAsset.count({ where: { url: { endsWith: '/' + r.inputKey } } });
+    if (!registered) {
+      try { await deleteFromR2(r.inputKey); deleted++; } catch (err) { console.error('[geniefied] input cleanup failed', r.inputKey, err); continue; }
+    }
+    await prisma.genieAiRender.update({ where: { id: r.id }, data: { inputKey: '' } });
+  }
+  return { deleted };
 }

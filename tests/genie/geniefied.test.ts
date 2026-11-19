@@ -33,7 +33,7 @@ vi.mock('@/lib/genie/ai/provider', () => ({ renderWithGoogle: vi.fn(async (_i: B
 import { prisma } from '@/lib/prisma/client';
 import { buildEventBundle } from '@/lib/genie/bundle';
 import { eventBilling, recordCheckout, PAYMENT_KIND } from '@/lib/genie/payments';
-import { eventAllowance } from '@/lib/genie/ai/renders';
+import { eventAllowance, sweepRenderInputs } from '@/lib/genie/ai/renders';
 import { PROMPT_PREAMBLE } from '@/lib/genie/ai/settings';
 import { GET as DASH, PATCH } from '@/app/api/events/[id]/genie/route';
 import { POST as PAY } from '@/app/api/genie-events/[id]/pay/route';
@@ -141,7 +141,8 @@ describe('render routes', () => {
 
     await waitDone(first.renderId);
     expect(providerCalls).toEqual([{ prompt: PROMPT_PREAMBLE + '\n\nStyle: Make it an oil painting.', model: 'gemini-3-pro-image-preview' }]);
-    expect(deleted).toContain(key);
+    // The shot is kept: the iPad may register this same upload as the session's shot
+    expect(deleted).not.toContain(key);
     const status = await (await RENDER_STATUS(req('/x', { token }), { params: Promise.resolve({ eventId: event.id, renderId: first.renderId }) })).json();
     expect(status).toMatchObject({ status: 'done', width: 1024, height: 1536, resultUrl: expect.stringContaining('/ai-' + first.renderId + '.jpg'), rendersLeft: 19 });
     const row = await prisma.genieAiRender.findUniqueOrThrow({ where: { id: first.renderId } });
@@ -184,6 +185,24 @@ describe('render routes', () => {
     expect((await post(event.id, token, renderBody(await shot(event.id, token), oil.id))).status).toBe(202);
     const none = await post(event.id, token, renderBody(await shot(event.id, token), oil.id));
     expect([none.status, await none.json()]).toEqual([200, { status: 'allowanceExhausted', rendersLeft: 0 }]);
+  });
+});
+
+describe('render inputs', () => {
+  it('kept when registered as the session shot; deleted two days later when never registered', async () => {
+    const { event, token, oil } = await setup();
+    await PATCH(req('/x', { method: 'PATCH', body: AI([oil.id]) }), ev(event.id));
+    const session = guestSession();
+    const kept = await shot(event.id, token), unused = await shot(event.id, token);
+    for (const [k, i] of [[kept, 0], [unused, 1]] as const) await waitDone((await (await post(event.id, token, renderBody(k, oil.id, session.id, i))).json()).renderId);
+    // The iPad registers the first upload as the session's shot (same object, no copy)
+    const reg = await registerAsset(req('/x', { token, body: { clientId: randomUUID(), session, kind: 'shot', shotIndex: 0, fileName: 'shot.jpg', contentType: 'image/jpeg', bytes: 900_000,
+      width: 1200, height: 1800, sha256: 'a'.repeat(64), capturedAt: '2026-12-12T23:41:10Z', storageKey: kept } }), evId(event.id));
+    expect(reg.status).toBe(201);
+    expect(await sweepRenderInputs()).toEqual({ deleted: 0 });
+    expect(await sweepRenderInputs(new Date(Date.now() + 49 * 3600_000))).toEqual({ deleted: 1 });
+    expect(deleted).toEqual([unused]);
+    expect(objects.has(kept)).toBe(true);
   });
 });
 

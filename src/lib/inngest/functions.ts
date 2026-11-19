@@ -1,6 +1,6 @@
 
 import { autoPublishEndedGalleries } from '@/lib/genie/autoPublish';
-import { deleteEventRenderResults } from '@/lib/genie/ai/renders';
+import { deleteEventRenderResults, sweepRenderInputs } from '@/lib/genie/ai/renders';
 import { enforceGenius } from '@/lib/genius';
 import { inngest } from './client';
 import { getGalleryRetention } from '@/lib/gallery/retention';
@@ -228,6 +228,13 @@ export const purgeOldLeadMessages = inngest.createFunction(
     console.log(`[PURGE] Deleted ${total} lead messages (${countEvents} by event date, ${countLeads} by message date) — ${months} month cutoff`);
     return { deleted: total, months };
   }
+);
+
+// Geniefied: delete render inputs that never became gallery photos (src/lib/genie/ai/renders.ts)
+export const sweepGeniefiedInputs = inngest.createFunction(
+  { id: 'sweep-geniefied-inputs', name: 'Delete unused Geniefied render inputs' },
+  { cron: '15 5 * * *' },
+  async () => sweepRenderInputs(),
 );
 
 // Genie: publish the event gallery when the event ends, where the event's Gallery setting says so (src/lib/genie/autoPublish.ts)
