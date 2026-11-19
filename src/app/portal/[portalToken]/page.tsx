@@ -109,7 +109,12 @@ export default function ClientPortalPage() {
 
   async function load() {
     const r = await fetch('/api/portal/' + portalToken);
-    if (r.ok) { setData(await r.json()); }
+    if (r.ok) {
+      const d = await r.json();
+      setData(d);
+      // No quote (e.g. a contract sent on its own): open on the first document there is instead of an empty Quote tab
+      if (!searchParams.get('tab') && !d.quote) setTab(t => (t === 'quote' ? (d.contract ? 'contract' : d.invoice ? 'invoice' : t) : t));
+    }
     // The business moved to Genie only (no Genius Pro): the portal is closed
     else if (r.status === 410) setClosedBy((await r.json().catch(() => ({}))).companyName || 'the business');
     setLoading(false);
@@ -218,6 +223,7 @@ export default function ClientPortalPage() {
     data.invoice.milestones?.some((m: any) => m.status !== 'PAID' && new Date(m.dueDate) < new Date()));
 
   const quoteAccepted  = data?.quote?.status === 'ACCEPTED';
+  const quoteBlocks    = !!data?.quote && !quoteAccepted;
   const contractSigned = data?.contract?.status === 'FULLY_EXECUTED' ||
                          data?.contract?.status === 'CLIENT_SIGNED';
   const contractHtml   = stripMergeTagSpans(data?.contract?.renderedContent || data?.contract?.templateContent || '');
@@ -244,8 +250,9 @@ export default function ClientPortalPage() {
 
   const allTabs: { id: Tab; label: string; icon: any; locked: boolean; done: boolean }[] = [
     { id: 'quote',    label: 'Quote',    icon: FileText, locked: false,              done: quoteAccepted  },
-    { id: 'contract', label: 'Contract', icon: FileText, locked: !quoteAccepted,    done: contractSigned },
-    { id: 'invoice',  label: 'Invoice',  icon: Receipt,  locked: !contractSigned,   done: invoicePaid    },
+    // Each step waits for the one before it only when that one exists (a contract can be sent without a quote)
+    { id: 'contract', label: 'Contract', icon: FileText, locked: quoteBlocks,       done: contractSigned },
+    { id: 'invoice',  label: 'Invoice',  icon: Receipt,  locked: data?.contract ? !contractSigned : quoteBlocks, done: invoicePaid },
     { id: 'design',   label: 'Design',   icon: Layers,   locked: !designUnlocked,   done: designDone     },
     { id: 'gallery',  label: 'Gallery',  icon: Image,    locked: !data?.gallery?.isPublished, done: false },
   ];

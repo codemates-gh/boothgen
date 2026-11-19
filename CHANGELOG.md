@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.110.1] — 2026-11-18
+
+### Fixed
+- **Client portal: a contract sent without a quote can be opened and signed.** The Contract tab used to stay locked until a quote was accepted, so a contract on its own (for example an agreement with a white-label operator) couldn't be opened. Now each step only waits for the one before it when that one exists, and the portal opens on the contract when there's no quote. The same goes for an invoice without a contract.
+
+---
+
 ## [2.110.0] — 2026-11-18
 
 ### Added
