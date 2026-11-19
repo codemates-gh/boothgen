@@ -37,6 +37,13 @@ export const DesignLayout = StoredLayout.extend({ background: AssetRef.optional(
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Frame ${i + 1} goes past the edge of the layout`, path: ['slots', i] });
       }
     });
+    (l.texts ?? []).forEach((t, i) => {
+      if (ids.has(t.id)) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Each text box needs its own id', path: ['texts', i, 'id'] });
+      ids.add(t.id);
+      if (t.x + t.width > l.widthPx + 0.5 || t.y + t.height > l.heightPx + 0.5) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Text box ${i + 1} goes past the edge of the layout`, path: ['texts', i] });
+      }
+    });
   });
 export type DesignLayout = z.infer<typeof DesignLayout>;
 
@@ -59,6 +66,12 @@ export const TemplateBody = z.object({
   copyFrom: z.string().optional(), // duplicating: the source template's images are reused as they are
   offerToClients: z.boolean().optional(), // My templates: shown in this account's clients' design brief picker
 }).merge(ClientOptions).strict().superRefine((b, ctx) => {
+  const zoneIds = new Set((b.textZones ?? []).map(z => z.id));
+  for (const [key, l] of [['layout', b.layout], ['alternateLayout', b.alternateLayout]] as const) {
+    (l?.texts ?? []).forEach((t, i) => {
+      if (!zoneIds.has(t.zoneId)) ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Text box ${i + 1} shows a text field that was removed. Choose another field or delete the box.`, path: [key, 'texts', i, 'zoneId'] });
+    });
+  }
   if (b.alternateLayout && (b.alternateLayout.orientation === b.layout.orientation || b.alternateLayout.format !== b.layout.format)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'The alternate layout must be the same size in the other orientation', path: ['alternateLayout'] });
   }

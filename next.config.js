@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: { remotePatterns: [{ protocol: 'https', hostname: '**' }] },
+  // Template text is drawn on the server with @napi-rs/canvas (native binary)
+  serverExternalPackages: ['@napi-rs/canvas'],
   experimental: {
     serverActions: { bodySizeLimit: '10mb' },
   },

@@ -1,11 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
+import type { TextBox } from '@/lib/templates/textLayer';
 
 export type Slot = { id: string; shotIndex: number; x: number; y: number; width: number; height: number; rotationDegrees: number; fit: 'fill' | 'fit' };
 export type RemoteAsset = { url: string; sha256: string; contentType: string; bytes: number };
 export type Layout = {
   format: '4x6' | '2x6' | 'square' | '9x16'; orientation: 'portrait' | 'landscape'; widthPx: number; heightPx: number; dpi: number;
-  backgroundColor: string; background?: RemoteAsset; overlay?: RemoteAsset; slots: Slot[];
+  backgroundColor: string; background?: RemoteAsset; overlay?: RemoteAsset; slots: Slot[]; texts?: TextBox[];
 };
 
 export function Toggle({ checked, onChange, label, hint, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint?: string; disabled?: boolean }) {

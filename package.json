@@ -26,6 +26,7 @@
     "@heroui/styles": "^3.2.7",
     "@hookform/resolvers": "^3.4.0",
     "@internationalized/date": "^3.12.4",
+    "@napi-rs/canvas": "1.0.13",
     "@prisma/client": "^5.14.0",
     "@react-aria/ssr": "^3.10.1",
     "@react-aria/utils": "^3.34.1",

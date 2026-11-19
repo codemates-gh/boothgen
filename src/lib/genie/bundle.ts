@@ -12,6 +12,7 @@ import { bundleBackdrops, eventBackdrops } from './backdrops';
 import { bundlePoses, chosenPoses } from './poses';
 import { bundleSharingStation } from './sharingStation';
 import { isBoothClient } from './boothClient';
+import { boomerangDesignWithText, eventTextForBundle, type TextForBundle } from './eventText';
 import { eventBilling } from './payments';
 import { galleryRetentionDates, getGalleryRetention, type GalleryRetention } from '@/lib/gallery/retention';
 
@@ -91,17 +92,19 @@ export function isValidTimeZone(tz: string): boolean {
   }
 }
 
-function layoutJson(id: string, version: number, layout: StoredLayout) {
-  return { id, version, ...layout };
+// Text boxes never go to iPads: their words are drawn into the overlay (and the palette sets the background colour)
+function layoutJson(id: string, version: number, layout: StoredLayout, text?: TextForBundle['main']) {
+  const { texts: _t, ...rest } = layout;
+  return { id, version, ...rest, ...(text?.backgroundColor ? { backgroundColor: text.backgroundColor } : {}), ...(text?.overlay ? { overlay: text.overlay } : {}) };
 }
 
-function eventTemplateJson(t: EventGenieTemplate) {
+function eventTemplateJson(t: EventGenieTemplate, text?: TextForBundle) {
   return {
     id: t.id,
     name: t.name,
     ...(t.thumbnail ? { thumbnail: t.thumbnail } : {}),
-    layout: layoutJson(t.id, t.version, t.layout as unknown as StoredLayout),
-    ...(t.alternateLayout ? { alternateLayout: layoutJson(t.id + '-alt', t.version, t.alternateLayout as unknown as StoredLayout) } : {}),
+    layout: layoutJson(t.id, t.version, t.layout as unknown as StoredLayout, text?.main),
+    ...(t.alternateLayout ? { alternateLayout: layoutJson(t.id + '-alt', t.version, t.alternateLayout as unknown as StoredLayout, text?.alt) } : {}),
   };
 }
 
@@ -116,7 +119,7 @@ export type BundleResult =
   | { ok: true; bundle: Record<string, unknown>; bundleVersion: number }
   | { ok: false; status: 404 | 409; code: string; error: string };
 
-function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number, props: GenieProp[], backdrops: GenieBackdrop[], watermark: boolean, design?: Awaited<ReturnType<typeof boomerangDesign>>, poses: GeniePose[] = []) {
+function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gallery, messaging: GenieMessagingConfig | null, retention: GalleryRetention, bundleVersion: number, props: GenieProp[], backdrops: GenieBackdrop[], watermark: boolean, design?: Awaited<ReturnType<typeof boomerangDesign>>, poses: GeniePose[] = [], text = new Map<string, TextForBundle>()) {
   const props_ = bundleProps(settings.propsEnabled, props);
   const backdrops_ = bundleBackdrops(settings, backdrops);
   const poses_ = bundlePoses(settings, poses);
@@ -162,7 +165,7 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
       // Left out for "Use the iPad's setting", so the attendant picks on the iPad
       ...(bundleCountdownSound(settings.countdownSound) ? { countdownSound: bundleCountdownSound(settings.countdownSound) } : {}),
     },
-    templates: [...event.genieTemplates].sort((a, b) => a.sortOrder - b.sortOrder).map(eventTemplateJson),
+    templates: [...event.genieTemplates].sort((a, b) => a.sortOrder - b.sortOrder).map(t => eventTemplateJson(t, text.get(t.id))),
     processing: settings.processing,
     filters: {
       guestFiltersEnabled: settings.guestFiltersEnabled,
@@ -236,7 +239,11 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
     boomerangDesign(settings.boomerang, tenantId),
     settings.posesEnabled ? chosenPoses(settings.poseIds, tenantId) : Promise.resolve([]),
   ]);
-  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props, backdrops, billing.watermark, design, poses);
+  const [text, designWithText] = await Promise.all([
+    eventTextForBundle(tenantId, event.id, event.genieTemplates, settings.templateText),
+    boomerangDesignWithText(tenantId, event.id, settings.boomerang, design, settings.templateText),
+  ]);
+  let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props, backdrops, billing.watermark, designWithText, poses, text);
   const hash = contentHash(bundle);
 
   for (let attempt = 0; settings.bundleHash !== hash && attempt < 3; attempt++) {

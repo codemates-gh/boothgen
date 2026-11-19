@@ -63,6 +63,8 @@ export async function copyToEvent(tenantId: string, eventId: string, lib: BoothD
       tenantId, eventId, name: lib.name.slice(0, 80), sortOrder: (last?.sortOrder ?? -1) + 1,
       layout: layout.data, ...(alternate?.success ? { alternateLayout: alternate.data } : {}), libraryTemplateId: lib.id,
       ...(lib.genieThumbnail ? { thumbnail: lib.genieThumbnail } : {}),
+      // Text fields, palettes and fonts travel with the copy (template text)
+      textOptions: { textZones: lib.textZones ?? [], colorVariants: lib.colorVariants ?? [], fontPairings: lib.fontPairings ?? [] } as Prisma.InputJsonValue,
     },
   });
   return { template };

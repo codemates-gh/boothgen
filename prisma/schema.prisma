@@ -1292,6 +1292,8 @@ model EventDesignBrief {
   status                 DesignBriefStatus @default(PENDING)
   // Text zone values: {zoneId: "text"}
   textValues             Json?
+  // Template text: outline/shadow on or off and size per text box ({boxId: {outline?, shadow?, scale?}})
+  textAdjust             Json?
   // Selected variant/pairing IDs
   selectedColorVariantId String?
   selectedFontPairingId  String?
@@ -1456,6 +1458,9 @@ model EventGenieSettings {
   // Devices that may run this event at once (slots claimed on first bundle download)
   maxDevices Int @default(2)
 
+  // Template text the operator typed for this event, by Text field label; replaces the client's brief answers
+  templateText Json?
+
   // Increases whenever the bundle content changes; bundleHash is the hash it was computed from
   bundleVersion Int       @default(1)
   bundleHash    String?
@@ -1582,6 +1587,9 @@ model EventGenieTemplate {
   thumbnail         Json? // RemoteAsset
   libraryTemplateId String? // BoothDesignTemplate it was copied from
   designId          String? // approved TemplateDesign used as the artwork
+  // Template text: the template's Text fields, palettes and font pairings (copied with it) and this event's choice of
+  // palette, fonts and outline/shadow/size changes (src/lib/genie/eventText.ts)
+  textOptions       Json?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

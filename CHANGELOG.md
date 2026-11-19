@@ -4,6 +4,22 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.115.0] — 2026-11-19
+
+### Added
+- **Template text: the client's words drawn on the template.** A template's Text fields (names, date…), Color palettes and Font pairings now show on the layout itself, not only as questions in the design brief.
+  - **Template Designer → Text:** add a box for any Text field and drag, resize or rotate it like a photo frame. Each box sets its alignment, colour (the palette's text, accent or background colour, or a fixed one) and largest size; long words shrink to fit. It takes its font from the client's font pairing (or a chosen font when the template has none).
+  - **Outline and drop shadow** per box: outline colour and thickness; shadow presets (Soft, Hard, Glow) or your own colour, strength, softness, distance and direction.
+  - The designer shows the fields' example words in the palette and fonts you pick to preview, and the saved picture clients see includes them. A layout with text takes the palette's background colour.
+  - **Client portal → Design:** when the client picks a layout with text, they see it with their words drawn in, live, in their palette and fonts. They can turn each box's outline and shadow on or off and make the words bigger or smaller.
+  - **Event → Genie → Template Text** (new card): the words for the whole event, filled in from the client's design brief, or typed by you (for events without a brief, or to correct them). Pick each template's palette and fonts on the event. It warns when words are missing; iPads leave that text off until it's filled in, never printing the example words.
+  - **On the iPad:** BoothGen draws the words into the template's overlay, with the same fonts, so no app update is needed. It works for photo templates and for Boomerang templates (Square, 9:16, 16:9). Templates showing a client-approved design are left as they are, since that design has the words.
+- Twelve template fonts (Playfair Display, Cormorant Garamond, Cinzel, Montserrat, Raleway, Josefin Sans, Lato, Bebas Neue, Great Vibes, Dancing Script, Pacifico, Sacramento) are now hosted by BoothGen, all under the SIL Open Font License.
+
+Needs `docs/genie/apply-production-template-text.sql` (three new columns) run in production before this deploys.
+
+---
+
 ## [2.114.0] — 2026-11-19
 
 ### Added
