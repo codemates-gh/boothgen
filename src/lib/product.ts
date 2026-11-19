@@ -28,7 +28,8 @@ const CRM_PAGES = [
   '/settings/import', '/settings/print-costs', '/settings/billing',
 ];
 
-// CRM APIs a Genie-only operator can't call. /api/events/<id>/genie… stays open.
+// CRM APIs a Genie-only operator can't call. /api/events/<id>/genie… and /api/events/<id>/duplicate (Duplicate on a
+// booth event's Genie page) stay open.
 const CRM_APIS = [
   '/api/analytics', '/api/automation', '/api/bookkeeping', '/api/blackout-dates', '/api/calendar', '/api/clients', '/api/contracts',
   '/api/events', '/api/import', '/api/invoices', '/api/leads', '/api/messages', '/api/quotes', '/api/search',
@@ -39,7 +40,7 @@ const CRM_APIS = [
 ];
 
 const EVENT_GENIE_PAGE = /^\/events\/[^/]+\/genie(\/|$)/;
-const EVENT_GENIE_API = /^\/api\/events\/[^/]+\/genie(\/|$)/;
+const EVENT_GENIE_API = /^\/api\/events\/[^/]+\/(genie(\/|$)|duplicate$)/;
 
 // What a Genie-only operator gets for a path: null = allowed
 export function genieOnlyBlock(pathname: string): { kind: 'home' } | { kind: 'page' } | { kind: 'api' } | null {

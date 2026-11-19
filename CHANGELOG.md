@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.121.1] — 2026-11-19
+
+### Fixed
+- **Duplicate works for Genie-only accounts.** On a booth event's Genie page, Duplicate showed "This is part of Genius, the BoothGen CRM" and copied nothing, because the Genie-only rules blocked the duplicate request. It now makes the copy.
+
+---
+
 ## [2.121.0] — 2026-11-19
 
 ### Added

@@ -82,6 +82,10 @@ describe('new booth event', () => {
   it('is open to Genie-only accounts', () => {
     expect(genieOnlyBlock('/api/genie-events')).toBeNull();
     expect(genieOnlyBlock('/api/genie-events/abc')).toBeNull();
+    // Duplicate on a booth event's Genie page; the rest of /api/events stays CRM
+    expect(genieOnlyBlock('/api/events/abc/duplicate')).toBeNull();
+    expect(genieOnlyBlock('/api/events/abc/duplicate/x')).toEqual({ kind: 'api' });
+    expect(genieOnlyBlock('/api/events/abc')).toEqual({ kind: 'api' });
   });
 });
 
