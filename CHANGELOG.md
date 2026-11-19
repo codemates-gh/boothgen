@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.121.2] — 2026-11-19
+
+### Fixed
+- **Geniefied theme pictures show in BoothGen.** Samples saved fine, but Super Admin → AI themes, Genie → Themes and the event's theme list showed a broken image, because the image preview didn't allow the themes' storage folder. iPads were never affected.
+
+---
+
 ## [2.121.1] — 2026-11-19
 
 ### Fixed
