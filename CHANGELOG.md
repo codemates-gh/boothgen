@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.121.5] — 2026-11-19
+
+### Fixed
+- **Super Admin → Operators: a change that fails to save now says so.** Ticking "Glamour Style fee waived" or "Geniefied fee waived" (and the other Genie switches there) used to untick silently when the save failed; it now shows the server's reason, and the waiver route logs every save and any failure so the cause can be found.
+
+---
+
 ## [2.121.4] — 2026-11-19
 
 ### Fixed

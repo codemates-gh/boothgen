@@ -72,8 +72,13 @@ function GenieCell({ op }: { op: Operator }) {
   const genieOnly = op.product === 'genie';
   async function patch(body: object) {
     setBusy(true);
-    await fetch(`/api/super-admin/tenants/${op.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    // A failed save is shown, not silently dropped (the box would just untick on refresh)
+    const res = await fetch(`/api/super-admin/tenants/${op.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
     setBusy(false);
+    if (!res?.ok) {
+      const data = await res?.json().catch(() => null);
+      alert(`Couldn't save the change for ${name}: ${data?.error ?? (res ? `error ${res.status}` : 'no connection')}`);
+    }
     router.refresh();
   }
   function toggle() {

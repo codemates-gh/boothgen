@@ -20,7 +20,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const session = await getServerSession(authOptions);
   if (session?.globalRole !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body !== 'object') return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
 
   // Product: Genius (CRM) or Genie only. Genie only turns Genie on; switching back keeps Genie as it was.
   if (body.product !== undefined) {
@@ -39,14 +40,20 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   if (body.addOnWaiver && typeof body.addOnWaiver === 'object') {
     const { id, waived } = body.addOnWaiver as { id?: unknown; waived?: unknown };
     if (!ADD_ONS.some(a => a.id === id) || typeof waived !== 'boolean') return NextResponse.json({ error: 'Unknown add-on' }, { status: 400 });
-    const t = await prisma.tenant.findUnique({ where: { id: params.id }, select: { addOnWaivers: true } });
-    if (!t) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    const current = addOnWaivers(t.addOnWaivers);
-    const next: Record<string, string> = { ...current };
-    if (waived) next[id as string] = current[id as AddOnId] ?? new Date().toISOString();
-    else delete next[id as string];
-    const tenant = await prisma.tenant.update({ where: { id: params.id }, data: { addOnWaivers: next }, select: { id: true, addOnWaivers: true } });
-    return NextResponse.json(tenant);
+    try {
+      const t = await prisma.tenant.findUnique({ where: { id: params.id }, select: { addOnWaivers: true } });
+      if (!t) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      const current = addOnWaivers(t.addOnWaivers);
+      const next: Record<string, string> = { ...current };
+      if (waived) next[id as string] = current[id as AddOnId] ?? new Date().toISOString();
+      else delete next[id as string];
+      const tenant = await prisma.tenant.update({ where: { id: params.id }, data: { addOnWaivers: next }, select: { id: true, addOnWaivers: true } });
+      console.log(`[super-admin] add-on waiver ${id} ${waived ? 'on' : 'off'} for tenant ${params.id}`);
+      return NextResponse.json(tenant);
+    } catch (e) {
+      console.error(`[super-admin] add-on waiver ${id} failed for tenant ${params.id}:`, e);
+      return NextResponse.json({ error: `Saving the waiver failed: ${e instanceof Error ? e.message.split('\n').filter(Boolean).pop() : 'database error'}` }, { status: 500 });
+    }
   }
 
   // Genie add-on on/off (until billing exists). A Genie-only account can't turn it off.
