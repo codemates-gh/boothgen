@@ -247,6 +247,7 @@ model Tenant {
   genieProps           GenieProp[]
   genieBackdrops       GenieBackdrop[]
   genieClipDesigns     GenieClipDesign[]
+  geniePoses           GeniePose[]
   geniePayments        GenieEventPayment[]
   feedbackReports      FeedbackReport[]
 
@@ -1361,6 +1362,8 @@ model EventGenieSettings {
   customPrinting Boolean @default(true)
   // Attract screen; existing events follow the defaults (they had none to customize)
   customAttract  Boolean @default(false)
+  // Pose ideas; existing events follow the defaults (off unless the account turns them on)
+  customPoses    Boolean @default(false)
 
   // CaptureConfig
   shotCount                    Int     @default(3)
@@ -1398,6 +1401,9 @@ model EventGenieSettings {
   backdropsEnabled             Boolean @default(false)
   backdropIds                  Json    @default("[]")
   backdropDefaultId            String?
+  // Pose ideas (PosesConfig): account Event defaults + per-event override; poseIds = GeniePose ids in the guests' order
+  posesEnabled                 Boolean @default(false)
+  poseIds                      Json    @default("[]")
   backdropGuestPicks           Boolean @default(true)
   backdropEdgeSoftness         String  @default("medium") // soft | medium | sharp
 
@@ -1644,6 +1650,10 @@ model GenieDefaults {
   attract                   Json?
   attractReturnAfterSeconds Int   @default(30)
 
+  // Pose ideas: off for new accounts; poseIds = GeniePose ids in the guests' order
+  posesEnabled Boolean @default(false)
+  poseIds      Json    @default("[]")
+
   // BoothDesignTemplate ids added (in this order) when Genie is set up for an event
   templateIds Json @default("[]")
 
@@ -1844,6 +1854,31 @@ model GenieBackdrop {
 
   @@index([tenantId])
   @@map("genie_backdrops")
+}
+
+// Pose library (PoseAsset in the Genie repo's shared/schemas): Standard (tenantId null, switched on or off in Super
+// Admin) and My poses per account. Solo poses have soloStyle (female | male | any = Her / Him / All); group poses have
+// people (2 = For two, 3+ = For groups). PNG (transparent art) or JPEG (photos), ≤ 1200 px, content-addressed in R2.
+model GeniePose {
+  id        String   @id @default(cuid())
+  tenantId  String?
+  name      String
+  group     String // solo | group
+  soloStyle String? // solo only: female | male | any
+  people    Int? // group only: 2–10
+  image     Json
+  thumbnail Json?
+  width     Int
+  height    Int
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("genie_poses")
 }
 
 // Boomerang designs (Genie ClipDesign): Standard (tenantId null, BoothGen-managed, switched on/off with isActive) and

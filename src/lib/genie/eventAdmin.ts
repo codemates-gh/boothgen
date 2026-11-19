@@ -12,6 +12,7 @@ import { AttractPatch, attractView } from './attract';
 import { CountdownSoundPatch, countdownSoundView } from './countdownSound';
 import { PropsPatch, storedPropIds } from './props';
 import { BackdropsPatch, backdropsView } from './backdrops';
+import { PosesPatch, posesView } from './poses';
 
 // ── Lock ────────────────────────────────────────────────────────────────────
 // Locks when the event starts (see effectiveLockedAt in bundle.ts); iPads ignore newer bundle versions after that,
@@ -131,8 +132,10 @@ export const SettingsPatch = z.object({
   props: PropsPatch,
   // Virtual backdrop (per event only); saved by backdropsData
   backgroundRemoval: BackdropsPatch,
+  // Pose ideas (account default with per-event override); saved by posesData
+  poses: PosesPatch,
   // Sections to put back on the account defaults (they follow default changes again)
-  reset: z.array(z.enum(['timeZone', 'capture', 'sharing', 'printing', 'attract'])).min(1),
+  reset: z.array(z.enum(['timeZone', 'capture', 'sharing', 'printing', 'attract', 'poses'])).min(1),
 }).partial().strict();
 
 export type SettingsPatch = z.infer<typeof SettingsPatch>;
@@ -260,8 +263,9 @@ export function settingsView(s: EventGenieSettings) {
     attract: attractView(s.attract, s.attractReturnAfterSeconds),
     props: { enabled: s.propsEnabled, propIds: storedPropIds(s.propIds) },
     backgroundRemoval: backdropsView(s),
+    poses: posesView(s),
     // Which sections were customized for this event (false = follows the account's Genie defaults)
-    custom: { timeZone: s.customTimeZone, capture: s.customCapture, sharing: s.customSharing, printing: s.customPrinting, attract: s.customAttract },
+    custom: { timeZone: s.customTimeZone, capture: s.customCapture, sharing: s.customSharing, printing: s.customPrinting, attract: s.customAttract, poses: s.customPoses },
   };
 }
 

@@ -1,0 +1,1063 @@
+{
+  "about": "Genie Standard pose set (P11). Made by prepare-poses.js from AI-generated black-on-white art reviewed by G; edit prompts.json and the source art, not this file.",
+  "size": 1024,
+  "thumbnailSize": 360,
+  "items": [
+    {
+      "id": "her-01",
+      "name": "Hand on hip waving",
+      "category": "her",
+      "label": "Her",
+      "group": "solo",
+      "soloStyle": "female",
+      "image": {
+        "file": "png/her-01.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 48334,
+        "sha256": "d00eef257371560020772b4823f4bbda24343ede3f7aa9dd11fd4c20b5a1f6e4"
+      },
+      "thumbnail": {
+        "file": "thumb/her-01.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 11880,
+        "sha256": "42df4803bfc5dfbe3723e5b6b2b49340a4ca2697bdd5095fc19e20ef2b375890"
+      }
+    },
+    {
+      "id": "her-02",
+      "name": "Look over shoulder",
+      "category": "her",
+      "label": "Her",
+      "group": "solo",
+      "soloStyle": "female",
+      "image": {
+        "file": "png/her-02.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 46196,
+        "sha256": "efe8a31fe8c78a40449deb3a2f3162398887f23349d8968d70a97032fd3ba90e"
+      },
+      "thumbnail": {
+        "file": "thumb/her-02.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 11065,
+        "sha256": "4b2199b9e96322e66fb88c1fe24d49eaf46c9e14e895132d5880ce4fa8f5bbc4"
+      }
+    },
+    {
+      "id": "her-03",
+      "name": "Peace sign by face",
+      "category": "her",
+      "label": "Her",
+      "group": "solo",
+      "soloStyle": "female",
+      "image": {
+        "file": "png/her-03.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 49569,
+        "sha256": "772a7c4d63887bc098268b35ef62c44f30df08c715282fadbf6de3b914221f48"
+      },
+      "thumbnail": {
+        "file": "thumb/her-03.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 11902,
+        "sha256": "94c27349888f2f4a4dad575a08d78ed077956702e8138a298f32f1722bc9ee9b"
+      }
+    },
+    {
+      "id": "her-04",
+      "name": "Blowing a kiss",
+      "category": "her",
+      "label": "Her",
+      "group": "solo",
+      "soloStyle": "female",
+      "image": {
+        "file": "png/her-04.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 49470,
+        "sha256": "a96ea0eaad35a45508ddf0a01d0210699b771e55c6e29bb1632ce001176d721a"
+      },
+      "thumbnail": {
+        "file": "thumb/her-04.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 11512,
+        "sha256": "60ef2d93a915421a665612f289746872550238411a849ac6780ec354169d2915"
+      }
+    },
+    {
+      "id": "her-05",
+      "name": "Hands framing face",
+      "category": "her",
+      "label": "Her",
+      "group": "solo",
+      "soloStyle": "female",
+      "image": {
+        "file": "png/her-05.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 51219,
+        "sha256": "1d3b61a41d0dd08d9c4e8510e6e1457ff31c178357d31a5d4feddadae1903c44"
+      },
+      "thumbnail": {
+        "file": "thumb/her-05.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 12256,
+        "sha256": "5c92bb75cb99680770b29ee07fc63819aa7e5c4d404e00cdc92ea2115ca48b51"
+      }
+    },
+    {
+      "id": "her-06",
+      "name": "Laughing, hand on chest",
+      "category": "her",
+      "label": "Her",
+      "group": "solo",
+      "soloStyle": "female",
+      "image": {
+        "file": "png/her-06.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 58410,
+        "sha256": "f2ecc8daddfd5a42bd8107d554e797fcda9b0146d35e861cd7fb136b304e6e09"
+      },
+      "thumbnail": {
+        "file": "thumb/her-06.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 13888,
+        "sha256": "3087cc3a7f7c2afc64426317746a3d32927c6b4c292827b5ac873e7494f08c6a"
+      }
+    },
+    {
+      "id": "her-07",
+      "name": "Arms crossed confident",
+      "category": "her",
+      "label": "Her",
+      "group": "solo",
+      "soloStyle": "female",
+      "image": {
+        "file": "png/her-07.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 49311,
+        "sha256": "52fa8feb755aa26cab63921109e60020ab80af6afe05eeaaad321a47e84697eb"
+      },
+      "thumbnail": {
+        "file": "thumb/her-07.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 11724,
+        "sha256": "c836da55db2fa04cf5ecbc91f126db95ce138d132f8f18df98c85976515663ef"
+      }
+    },
+    {
+      "id": "her-08",
+      "name": "Pointing at camera",
+      "category": "her",
+      "label": "Her",
+      "group": "solo",
+      "soloStyle": "female",
+      "image": {
+        "file": "png/her-08.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 46936,
+        "sha256": "1680e3c953cfaa7a3b09fd23df84ab96d7c9f1601fe96ee3dac6fc0aeb2b4f78"
+      },
+      "thumbnail": {
+        "file": "thumb/her-08.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 10811,
+        "sha256": "e440e8db2b4fe5b3d62868ead3e7b59e8be139afb6aa5fe86c738eefdb55b66a"
+      }
+    },
+    {
+      "id": "her-09",
+      "name": "One knee bent leaning",
+      "category": "her",
+      "label": "Her",
+      "group": "solo",
+      "soloStyle": "female",
+      "image": {
+        "file": "png/her-09.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 49715,
+        "sha256": "f08e8a7c1f9c5a607011dcfa334334f23cf099e4e9c47e48b6b8831a045d79b7"
+      },
+      "thumbnail": {
+        "file": "thumb/her-09.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 11791,
+        "sha256": "215c3b76ac5d9e359e99e9d44b8bcec20996145f943f997c98e14d34a62aecb7"
+      }
+    },
+    {
+      "id": "her-10",
+      "name": "Jumping arms up",
+      "category": "her",
+      "label": "Her",
+      "group": "solo",
+      "soloStyle": "female",
+      "image": {
+        "file": "png/her-10.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 56896,
+        "sha256": "e555f455cd4d611e56521110b9809a30fd148964117821788edf42c452a3a3f3"
+      },
+      "thumbnail": {
+        "file": "thumb/her-10.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 12806,
+        "sha256": "d61288ecc6b58138b84943e216ff8ec94a689dfbe3d0d0ce4d0fec96e1f58cd2"
+      }
+    },
+    {
+      "id": "her-11",
+      "name": "Chin on hand thinking",
+      "category": "her",
+      "label": "Her",
+      "group": "solo",
+      "soloStyle": "female",
+      "image": {
+        "file": "png/her-11.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 48602,
+        "sha256": "bde7e8317575c5b2d6b990207dc73901b0ed68c779fe56ac683c426e37f601e2"
+      },
+      "thumbnail": {
+        "file": "thumb/her-11.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 11625,
+        "sha256": "6cd9421a1ed04a3de2562d76ea5048481899967496d6bd580db2092ab302e418"
+      }
+    },
+    {
+      "id": "her-12",
+      "name": "Hair toss",
+      "category": "her",
+      "label": "Her",
+      "group": "solo",
+      "soloStyle": "female",
+      "image": {
+        "file": "png/her-12.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 61518,
+        "sha256": "e410e0eb0f72239269c7b4f659f4d9fefbe5df29a7e9073e0a6095401e146431"
+      },
+      "thumbnail": {
+        "file": "thumb/her-12.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 14555,
+        "sha256": "105fe58b77b02dbf4ac76c9e74033c73e62b70142912d184e7481c95965dbfcc"
+      }
+    },
+    {
+      "id": "him-01",
+      "name": "Arms crossed",
+      "category": "him",
+      "label": "Him",
+      "group": "solo",
+      "soloStyle": "male",
+      "image": {
+        "file": "png/him-01.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 47085,
+        "sha256": "44dd4f1651d2a3152ae45c3f90d669758b1013c8abca758f392a077a3b3792b2"
+      },
+      "thumbnail": {
+        "file": "thumb/him-01.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 11480,
+        "sha256": "f6c1ff22fed75801f0b2dbc4b680aebc9b45a118ae7696567e92e8a8d3d450df"
+      }
+    },
+    {
+      "id": "him-02",
+      "name": "Adjusting cuff",
+      "category": "him",
+      "label": "Him",
+      "group": "solo",
+      "soloStyle": "male",
+      "image": {
+        "file": "png/him-02.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 44288,
+        "sha256": "750b90a000fc25cfedf7526d706de22f07f0c39027377284919a6f03ea675c6e"
+      },
+      "thumbnail": {
+        "file": "thumb/him-02.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 10735,
+        "sha256": "18ee3c0fe715971703684e4a3e32564ce9838911a8c5be89b2c13adf08306695"
+      }
+    },
+    {
+      "id": "him-03",
+      "name": "Two thumbs up",
+      "category": "him",
+      "label": "Him",
+      "group": "solo",
+      "soloStyle": "male",
+      "image": {
+        "file": "png/him-03.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 49283,
+        "sha256": "b90a9065a470cb964a9d0121ef57c056705d395091027b9a912784a2e1041cd4"
+      },
+      "thumbnail": {
+        "file": "thumb/him-03.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 11485,
+        "sha256": "983d2dc858243b7753354f62e5962f8c335bec62bfc85756e837b9d0b65b45d2"
+      }
+    },
+    {
+      "id": "him-04",
+      "name": "Finger guns",
+      "category": "him",
+      "label": "Him",
+      "group": "solo",
+      "soloStyle": "male",
+      "image": {
+        "file": "png/him-04.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 47929,
+        "sha256": "bced624644a1304d526bd309da724460af026c713da5e4ad525c16b976bc70e1"
+      },
+      "thumbnail": {
+        "file": "thumb/him-04.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 11422,
+        "sha256": "9b50efa98aacf7c7f83f40ad70dce185754628ea9b1dd08bedc0200157f62872"
+      }
+    },
+    {
+      "id": "him-05",
+      "name": "Flexing bicep",
+      "category": "him",
+      "label": "Him",
+      "group": "solo",
+      "soloStyle": "male",
+      "image": {
+        "file": "png/him-05.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 52227,
+        "sha256": "11c763452093326b121b08dd223cbbd8fd78f8c44267876170157aa72c55f542"
+      },
+      "thumbnail": {
+        "file": "thumb/him-05.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 12527,
+        "sha256": "3936de9a27b81a4ad909ed0bf00d8adcd178f46b448de83aefaa17f30aeeec55"
+      }
+    },
+    {
+      "id": "him-06",
+      "name": "Hand in pocket leaning",
+      "category": "him",
+      "label": "Him",
+      "group": "solo",
+      "soloStyle": "male",
+      "image": {
+        "file": "png/him-06.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 44017,
+        "sha256": "dec20460ed683abbfc7023d8ef53e0d79aa3c1e5de4015b62594fdcc6bf6a01c"
+      },
+      "thumbnail": {
+        "file": "thumb/him-06.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 10614,
+        "sha256": "7bae86c8edfa5b74ac70be7bf60507138ee44d1564f8857ba400b89d58ce2637"
+      }
+    },
+    {
+      "id": "him-07",
+      "name": "Salute",
+      "category": "him",
+      "label": "Him",
+      "group": "solo",
+      "soloStyle": "male",
+      "image": {
+        "file": "png/him-07.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 48619,
+        "sha256": "6ea40912bef281c9a1a127254e6adf42610c2415851194bec82bb7c3cb6ca27b"
+      },
+      "thumbnail": {
+        "file": "thumb/him-07.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 11411,
+        "sha256": "3b5f646087a21abe2024696d0b45bc7717113e154d8377ee49c2efc06e2459d2"
+      }
+    },
+    {
+      "id": "him-08",
+      "name": "Pointing at camera",
+      "category": "him",
+      "label": "Him",
+      "group": "solo",
+      "soloStyle": "male",
+      "image": {
+        "file": "png/him-08.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 48681,
+        "sha256": "3d7def6c0f41da3ba1d006acf15fd428c1031680735b106510ecce975246b749"
+      },
+      "thumbnail": {
+        "file": "thumb/him-08.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 11031,
+        "sha256": "cb0b953e03d890d9e14fc3805dbd7fb64b6ebebcd79123a16608d2f1ecf38c91"
+      }
+    },
+    {
+      "id": "him-09",
+      "name": "Chin stroke thinking",
+      "category": "him",
+      "label": "Him",
+      "group": "solo",
+      "soloStyle": "male",
+      "image": {
+        "file": "png/him-09.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 45141,
+        "sha256": "5e974c6f2d118b31940f48d37578bd4bf1adf2bff4ea6e506a3978e68c63bd7b"
+      },
+      "thumbnail": {
+        "file": "thumb/him-09.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 11110,
+        "sha256": "52b8f744f1fb6244fc031073fe0ead497d502223acd5504d1db53913414c4414"
+      }
+    },
+    {
+      "id": "him-10",
+      "name": "Jumping arms up",
+      "category": "him",
+      "label": "Him",
+      "group": "solo",
+      "soloStyle": "male",
+      "image": {
+        "file": "png/him-10.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 55661,
+        "sha256": "8289181e11dc6a6e0892eb3a899d7fe27c51359495c79a5b9ce77b39bc0a89d7"
+      },
+      "thumbnail": {
+        "file": "thumb/him-10.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 12406,
+        "sha256": "acab513966df42dc9e301d9ad6d03f58daa91dac8661fe8505861fd86a637f7f"
+      }
+    },
+    {
+      "id": "him-11",
+      "name": "Superhero stance fists on hips",
+      "category": "him",
+      "label": "Him",
+      "group": "solo",
+      "soloStyle": "male",
+      "image": {
+        "file": "png/him-11.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 50934,
+        "sha256": "99c1b6a7d1a75e71ae155f240df419bc1e3456c677e8b06691f88236bb0d39b9"
+      },
+      "thumbnail": {
+        "file": "thumb/him-11.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 12204,
+        "sha256": "81ab5c6036a086bb6a6fac20fccf9f0a2c5c5d7911d77d2b09dfa01a21cb5c90"
+      }
+    },
+    {
+      "id": "him-12",
+      "name": "Tipping an invisible hat",
+      "category": "him",
+      "label": "Him",
+      "group": "solo",
+      "soloStyle": "male",
+      "image": {
+        "file": "png/him-12.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 47867,
+        "sha256": "e3287079bf93433003bb3260ba4727ed1ab8d69b7ccf82a241a289092ec7ad0a"
+      },
+      "thumbnail": {
+        "file": "thumb/him-12.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 11800,
+        "sha256": "58dc4465605655c675de1dde3d4a3a2b2021a764923c688aa9a753b5061d8ad7"
+      }
+    },
+    {
+      "id": "two-01",
+      "name": "Back to back arms crossed",
+      "category": "two",
+      "label": "For two",
+      "group": "group",
+      "people": 2,
+      "image": {
+        "file": "png/two-01.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 72281,
+        "sha256": "ab3559cf93cba643b087dee344a3e132844e24f54034dbb2624aba5947123f0d"
+      },
+      "thumbnail": {
+        "file": "thumb/two-01.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 17836,
+        "sha256": "a74c824de64b6780c7b74d5d5bef0b1c529a48f0dd19f9b45a669cc3a771523b"
+      }
+    },
+    {
+      "id": "two-02",
+      "name": "Heart with hands together",
+      "category": "two",
+      "label": "For two",
+      "group": "group",
+      "people": 2,
+      "image": {
+        "file": "png/two-02.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 71778,
+        "sha256": "ab20731a183d9b7534953efb461fe0e1f19c819915b250b454bf2064d63cc404"
+      },
+      "thumbnail": {
+        "file": "thumb/two-02.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 17621,
+        "sha256": "41f285c312d173cd886d6b1747c240fa02507b2198ad37435d574c0cc340a1db"
+      }
+    },
+    {
+      "id": "two-03",
+      "name": "Foreheads touching",
+      "category": "two",
+      "label": "For two",
+      "group": "group",
+      "people": 2,
+      "image": {
+        "file": "png/two-03.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 49586,
+        "sha256": "317ccba6e440a3268cb4f1edc0d6e378f93b0a5588a646faecf276aca065343c"
+      },
+      "thumbnail": {
+        "file": "thumb/two-03.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 12115,
+        "sha256": "6004c83958fde9ab049da586027859aed2104b63e220b42a881f9661b872809b"
+      }
+    },
+    {
+      "id": "two-04",
+      "name": "Piggyback",
+      "category": "two",
+      "label": "For two",
+      "group": "group",
+      "people": 2,
+      "image": {
+        "file": "png/two-04.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 50239,
+        "sha256": "59c319210da939b5db88e2e4f19cce9f14cc27f2bba189eb755bc7d803e79727"
+      },
+      "thumbnail": {
+        "file": "thumb/two-04.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 11803,
+        "sha256": "59529645f925ca846ca5cffa7eb83615c0c3ffbef34716afef750f012f9409f3"
+      }
+    },
+    {
+      "id": "two-05",
+      "name": "Cheek kiss",
+      "category": "two",
+      "label": "For two",
+      "group": "group",
+      "people": 2,
+      "image": {
+        "file": "png/two-05.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 79973,
+        "sha256": "c99a3f8b553a531558169c48373892b365e499315a4494a1e50989c2f0dc402f"
+      },
+      "thumbnail": {
+        "file": "thumb/two-05.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 18091,
+        "sha256": "c15f59ff8b0302fea7a4fb68e72bef9640e909c667f298ab602cd45409b29f54"
+      }
+    },
+    {
+      "id": "two-06",
+      "name": "Pointing at each other",
+      "category": "two",
+      "label": "For two",
+      "group": "group",
+      "people": 2,
+      "image": {
+        "file": "png/two-06.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 63771,
+        "sha256": "180a3504a0563e117aafaaeec5fafbc65328a5258b0263edae6ef2b6661ab6a7"
+      },
+      "thumbnail": {
+        "file": "thumb/two-06.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 16463,
+        "sha256": "254d483549fb516948e8c716edee8bc061c19751f36559b39683f614aefafb79"
+      }
+    },
+    {
+      "id": "two-07",
+      "name": "High five",
+      "category": "two",
+      "label": "For two",
+      "group": "group",
+      "people": 2,
+      "image": {
+        "file": "png/two-07.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 70935,
+        "sha256": "e3a4bc0762db20999feb2dc5cdb94bedcd48b02b135bd7b9654202ff26c671ee"
+      },
+      "thumbnail": {
+        "file": "thumb/two-07.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 17879,
+        "sha256": "045807dd135e08bec9d3c5b229b9cb2a4d57a2686b1bda6d5729d683a6336e6a"
+      }
+    },
+    {
+      "id": "two-08",
+      "name": "Dance dip",
+      "category": "two",
+      "label": "For two",
+      "group": "group",
+      "people": 2,
+      "image": {
+        "file": "png/two-08.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 66974,
+        "sha256": "14aec7e8706ae7d2e25d31fd28a279c994382692ae4fbd2adbf5604b6b83cee5"
+      },
+      "thumbnail": {
+        "file": "thumb/two-08.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 15749,
+        "sha256": "8f83895da18f8c5972bd01cec5e641e43308351b9377111a5f8bc6ea6f8f4b77"
+      }
+    },
+    {
+      "id": "two-09",
+      "name": "Side hug heads leaning",
+      "category": "two",
+      "label": "For two",
+      "group": "group",
+      "people": 2,
+      "image": {
+        "file": "png/two-09.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 66021,
+        "sha256": "37ccb769a861b78393c2317241f7168fb5e14c0faa31a2748dbaf30d0f34bc85"
+      },
+      "thumbnail": {
+        "file": "thumb/two-09.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 16139,
+        "sha256": "fadbb2eb993e24bb20e334943c93295afd688bd1c911f0e799b0f8ee1b297cf1"
+      }
+    },
+    {
+      "id": "two-10",
+      "name": "Both peace signs",
+      "category": "two",
+      "label": "For two",
+      "group": "group",
+      "people": 2,
+      "image": {
+        "file": "png/two-10.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 67645,
+        "sha256": "25500c49d52e200345ddcb6aa59880569d3d8a83065b9b41e116f991108b79e7"
+      },
+      "thumbnail": {
+        "file": "thumb/two-10.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 17159,
+        "sha256": "675923e0dee0d0ad00a749f9e256ba9aa6583835ce4894d57d0b7201ae3ce9e4"
+      }
+    },
+    {
+      "id": "two-11",
+      "name": "Whispering a secret",
+      "category": "two",
+      "label": "For two",
+      "group": "group",
+      "people": 2,
+      "image": {
+        "file": "png/two-11.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 59001,
+        "sha256": "0a9d1909083b48ef58518e633826d94885333735bff8d5e4eff4365fdae024c9"
+      },
+      "thumbnail": {
+        "file": "thumb/two-11.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 14850,
+        "sha256": "6fc9604c78090288e7e7d23cc56574ac9ab2e599f98d1a343f6cc9d1ebb19025"
+      }
+    },
+    {
+      "id": "two-12",
+      "name": "Both jumping",
+      "category": "two",
+      "label": "For two",
+      "group": "group",
+      "people": 2,
+      "image": {
+        "file": "png/two-12.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 76697,
+        "sha256": "fd820367b43847d1dc79bafa7fc75e34ad56e15eaf7f03e423d5fa3a39f94399"
+      },
+      "thumbnail": {
+        "file": "thumb/two-12.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 17624,
+        "sha256": "c155976dc2de9a03f828f627ff93facf84bc228f9103c03d646160adaf9efda2"
+      }
+    },
+    {
+      "id": "groups-01",
+      "name": "Everyone jumping",
+      "category": "groups",
+      "label": "For groups",
+      "group": "group",
+      "people": 4,
+      "image": {
+        "file": "png/groups-01.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 74560,
+        "sha256": "a4b0f6ffaaadb44e7eb58d8af7c442668a6c3697aacfe26048e8976804a8fe44"
+      },
+      "thumbnail": {
+        "file": "thumb/groups-01.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 18561,
+        "sha256": "52681e7fc4a06496f5342a1752643800e77f297d1ffbaf30508b79d463804764"
+      }
+    },
+    {
+      "id": "groups-02",
+      "name": "V formation arms crossed",
+      "category": "groups",
+      "label": "For groups",
+      "group": "group",
+      "people": 4,
+      "image": {
+        "file": "png/groups-02.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 111124,
+        "sha256": "f7c9b16298a65c8382e1b35f7af257ab5cbb3d823f51fb9ab3a212cd78d891fe"
+      },
+      "thumbnail": {
+        "file": "thumb/groups-02.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 29925,
+        "sha256": "bb2fe0f24b03e6e04f044ef397ea9f2f413af2f457a4f28be0e955eadda4b400"
+      }
+    },
+    {
+      "id": "groups-03",
+      "name": "All leaning to centre",
+      "category": "groups",
+      "label": "For groups",
+      "group": "group",
+      "people": 4,
+      "image": {
+        "file": "png/groups-03.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 81060,
+        "sha256": "812f8498ecb71260c1a60a1b08bc8f44e8c3425dccfba56791c23187312cfa56"
+      },
+      "thumbnail": {
+        "file": "thumb/groups-03.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 20977,
+        "sha256": "98d7cd533b120e21b070c6ab17903d1253463b531983f721846875055d107ec9"
+      }
+    },
+    {
+      "id": "groups-04",
+      "name": "Group hug",
+      "category": "groups",
+      "label": "For groups",
+      "group": "group",
+      "people": 4,
+      "image": {
+        "file": "png/groups-04.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 123236,
+        "sha256": "e30da3abada333b8c2e3999f8d9825c225bb4c2544e1526c4a0fb4113dc1cf7d"
+      },
+      "thumbnail": {
+        "file": "thumb/groups-04.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 31404,
+        "sha256": "bb2f716a023e981fd221a8957b99711a4accdaed9c24fac57e582d229545da94"
+      }
+    },
+    {
+      "id": "groups-05",
+      "name": "All pointing at middle person",
+      "category": "groups",
+      "label": "For groups",
+      "group": "group",
+      "people": 4,
+      "image": {
+        "file": "png/groups-05.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 82312,
+        "sha256": "1ca3d083040a3d7b9514661cfe648e58d181b53235fdf01ba5d49edde2f9bbab"
+      },
+      "thumbnail": {
+        "file": "thumb/groups-05.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 22443,
+        "sha256": "1e67491183ed8fa0d0a71a5318028a6fc949e93c1f35a45cd0b391ca30090ed7"
+      }
+    },
+    {
+      "id": "groups-06",
+      "name": "Conga line",
+      "category": "groups",
+      "label": "For groups",
+      "group": "group",
+      "people": 4,
+      "image": {
+        "file": "png/groups-06.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 88831,
+        "sha256": "806aba130fb777f5ee631bd00e2f9814696904a63aa39f602f18af0f135a77dc"
+      },
+      "thumbnail": {
+        "file": "thumb/groups-06.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 22299,
+        "sha256": "2805de83ad4e5ba805b70dde6d691e9cd43a441683649c8feb103f7931d70c21"
+      }
+    },
+    {
+      "id": "groups-07",
+      "name": "Hands stacked in middle",
+      "category": "groups",
+      "label": "For groups",
+      "group": "group",
+      "people": 4,
+      "image": {
+        "file": "png/groups-07.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 117188,
+        "sha256": "b0b92604b4a2ddd682bfb07f088fe7c59234ac4297f8a99bc9f8f65961a967c3"
+      },
+      "thumbnail": {
+        "file": "thumb/groups-07.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 31420,
+        "sha256": "af832722ccbb865e153fefa0f64ba4ce46759244cbb8f0f18fcfbae44f2fabbb"
+      }
+    },
+    {
+      "id": "groups-08",
+      "name": "Tallest at back in rows",
+      "category": "groups",
+      "label": "For groups",
+      "group": "group",
+      "people": 4,
+      "image": {
+        "file": "png/groups-08.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 105753,
+        "sha256": "ec3f60badc3608456028248089c75c8ecbfa865f51d25f46740eddc571595986"
+      },
+      "thumbnail": {
+        "file": "thumb/groups-08.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 29622,
+        "sha256": "34f284b051f014409c6e01e0399457d618735b7c66590084b9a19859b690c2be"
+      }
+    },
+    {
+      "id": "groups-09",
+      "name": "Looking up pointing at sky",
+      "category": "groups",
+      "label": "For groups",
+      "group": "group",
+      "people": 4,
+      "image": {
+        "file": "png/groups-09.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 103000,
+        "sha256": "6309d30afb526c5a2cfe2a106cad12cfecb8b29c33a12a00aea94f28474c3720"
+      },
+      "thumbnail": {
+        "file": "thumb/groups-09.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 27541,
+        "sha256": "cf7f1e47b6de82bfbab74bb2cfcc5a5e6346d6cc9dfa960007a29e3dd7af6295"
+      }
+    },
+    {
+      "id": "groups-10",
+      "name": "Everyone laughing",
+      "category": "groups",
+      "label": "For groups",
+      "group": "group",
+      "people": 4,
+      "image": {
+        "file": "png/groups-10.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 117387,
+        "sha256": "5c3c4e4374c4627da2793e40adf3d29338482ca6a6b8dfdc588e2dcda862ecd9"
+      },
+      "thumbnail": {
+        "file": "thumb/groups-10.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 29643,
+        "sha256": "3b2017e348af4a95175c30c80fa5e4596741138ce7a4c1078e1332cc41196587"
+      }
+    },
+    {
+      "id": "groups-11",
+      "name": "Superhero line",
+      "category": "groups",
+      "label": "For groups",
+      "group": "group",
+      "people": 4,
+      "image": {
+        "file": "png/groups-11.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 72079,
+        "sha256": "e0219315a3b4a9a12a32873ebd170ec835deaec1c3040b1ff4dd03f631342700"
+      },
+      "thumbnail": {
+        "file": "thumb/groups-11.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 19062,
+        "sha256": "cc029e97cb3645dcf86635021bf54f622208ee5202ae2012ff34d446fc565dde"
+      }
+    },
+    {
+      "id": "groups-12",
+      "name": "Everyone peace signs",
+      "category": "groups",
+      "label": "For groups",
+      "group": "group",
+      "people": 4,
+      "image": {
+        "file": "png/groups-12.png",
+        "width": 1024,
+        "height": 1024,
+        "bytes": 89983,
+        "sha256": "fa4f109c8a061a35cac6fb8a945765656fd1dfd95fc5b70b247eed0d7c42b76a"
+      },
+      "thumbnail": {
+        "file": "thumb/groups-12.png",
+        "width": 360,
+        "height": 360,
+        "bytes": 25126,
+        "sha256": "bdc7e6b9fe1899c6982733391ef1badc1c3ee650e553fce53c2303bc973ed5ce"
+      }
+    }
+  ]
+}

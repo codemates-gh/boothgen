@@ -11,8 +11,9 @@ export async function GET(req: NextRequest) {
   const auth = await requireTemplateEditor();
   if (auth instanceof NextResponse) return auth;
   const key = keyForUrl(req.nextUrl.searchParams.get('url') ?? '');
-  // Prop PNGs and backdrops too (Standard, and the account's own)
-  const prefixes = [...allowedPrefixes('mine', auth.tenantId), 'genie-props/standard/', 'genie-backdrops/standard/', ...(auth.tenantId ? [`genie-props/${auth.tenantId}/`, `genie-backdrops/${auth.tenantId}/`] : [])];
+  // Prop PNGs, backdrops and poses too (Standard, and the account's own)
+  const prefixes = [...allowedPrefixes('mine', auth.tenantId), 'genie-props/standard/', 'genie-backdrops/standard/', 'genie-poses/standard/',
+    ...(auth.tenantId ? [`genie-props/${auth.tenantId}/`, `genie-backdrops/${auth.tenantId}/`, `genie-poses/${auth.tenantId}/`] : [])];
   if (!key || key.includes('..') || !prefixes.some(p => key.startsWith(p))) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const obj = await getR2Object(key);
   const info = obj ? readImageInfo(obj.body) : null;

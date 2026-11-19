@@ -7,7 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon } from 'lucide-react';
+import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon, PersonStanding } from 'lucide-react';
 import { Field, Toggle, fmtDate, fmtDateTime } from '@/components/genie/parts';
 import { Attract, AttractFields, Capture, CaptureFields, DefaultState, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
 import { Modal } from '@/components/ui/modal';
@@ -21,6 +21,8 @@ import { EventPropsFields, type EventPropsValue } from './EventProps';
 import type { Prop } from '@/components/genie/Props';
 import { EventBackdropsFields, type EventBackdropsValue } from './EventBackdrops';
 import type { Backdrop } from '@/components/genie/Backdrops';
+import { PoseIdeasFields, type PoseIdeasValue } from '@/components/genie/PoseIdeas';
+import type { Pose } from '@/components/genie/Poses';
 
 type Settings = {
   enabled: boolean; timeZone: string; bundleVersion: number; maxDevices: number; capture: Capture;
@@ -33,7 +35,8 @@ type Settings = {
   attract: Attract;
   props: EventPropsValue;
   backgroundRemoval: EventBackdropsValue;
-  custom: { timeZone: boolean; capture: boolean; sharing: boolean; printing: boolean; attract: boolean };
+  poses: PoseIdeasValue;
+  custom: { timeZone: boolean; capture: boolean; sharing: boolean; printing: boolean; attract: boolean; poses: boolean };
 };
 type Dashboard = {
   event: { id: string; title: string; eventDate: string; startTime: string | null; endTime: string | null; venueName: string | null; boothEvent: boolean };
@@ -44,8 +47,9 @@ type Dashboard = {
   defaults: { saved: boolean; timeZone: string };
   chosenProps: Prop[];
   chosenBackdrops: Backdrop[];
+  chosenPoses: Pose[];
 };
-type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'liveView' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval'> & { filters: Omit<Settings['filters'], 'available'> };
+type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'liveView' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval' | 'poses'> & { filters: Omit<Settings['filters'], 'available'> };
 
 
 function toForm(s: Settings): Form {
@@ -55,13 +59,14 @@ function toForm(s: Settings): Form {
     lookAtCamera: { ...s.lookAtCamera }, liveView: { ...s.liveView }, boomerang: { ...s.boomerang }, attract: { ...s.attract },
     props: { enabled: s.props.enabled, propIds: [...s.props.propIds] },
     backgroundRemoval: { ...s.backgroundRemoval, backdropIds: [...s.backgroundRemoval.backdropIds] },
+    poses: { enabled: s.poses.enabled, poseIds: [...s.poses.poseIds] },
   };
 }
 
 // The save body: "look at the camera" and Boomerang go only when changed, so saving other sections leaves them out
 // of the bundle (Genie's own defaults apply until the operator sets them)
 function patchBody(form: Form, saved: Settings) {
-  const { lookAtCamera, boomerang, attract, props, backgroundRemoval, ...rest } = form;
+  const { lookAtCamera, boomerang, attract, props, backgroundRemoval, poses, ...rest } = form;
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const { overlay, designProblem: _p, ...b } = boomerang;
   return {
@@ -72,6 +77,8 @@ function patchBody(form: Form, saved: Settings) {
     // Props only when changed (a prop switched off since stays allowed while it's kept)
     ...(same(props, saved.props) ? {} : { props }),
     ...(same(backgroundRemoval, saved.backgroundRemoval) ? {} : { backgroundRemoval }),
+    // Pose ideas only when changed, so saving other sections keeps the event following the Event defaults
+    ...(same(poses, saved.poses) ? {} : { poses }),
   };
 }
 
@@ -168,7 +175,7 @@ export default function EventGeniePage() {
   }
 
   // Puts a section back on the account's Genie defaults
-  async function resetSection(section: 'timeZone' | 'capture' | 'sharing' | 'printing' | 'attract', label: string) {
+  async function resetSection(section: 'timeZone' | 'capture' | 'sharing' | 'printing' | 'attract' | 'poses', label: string) {
     if (!confirm(`Use your Genie defaults for ${label} on this event? Changes you made here for ${label} are replaced, and it follows your defaults from now on.`)) return;
     setSaveError('');
     const r = await fetch(`/api/events/${eventId}/genie`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reset: [section] }) });
@@ -332,6 +339,11 @@ export default function EventGeniePage() {
 
                 <Section icon={ImageIcon} title="Virtual backdrop" description="Background removal: guests on a backdrop instead of the room. This event only.">
                   <EventBackdropsFields value={form.backgroundRemoval} chosen={data.chosenBackdrops} disabled={locked} onChange={p => set('backgroundRemoval', p)}/>
+                </Section>
+
+                <Section icon={PersonStanding} title="Pose ideas" description="Sample poses for guests who don't know how to pose."
+                  right={<DefaultState custom={data.settings.custom.poses} disabled={locked} onReset={() => resetSection('poses', 'pose ideas')}/>}>
+                  <PoseIdeasFields value={form.poses} chosen={data.chosenPoses} disabled={locked} onChange={p => set('poses', p)}/>
                 </Section>
 
                 <Section icon={Smile} title="Props" description="Virtual glasses, hats and more that follow guests' faces. This event only.">

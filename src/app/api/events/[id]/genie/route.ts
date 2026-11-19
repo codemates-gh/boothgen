@@ -17,6 +17,7 @@ import { attractData, deleteUnusedAttractMedia, storedAttract } from '@/lib/geni
 import { countdownSoundData, deleteUnusedCountdownSounds, storedCountdownSound } from '@/lib/genie/countdownSound';
 import { eventProps, propView, propsData } from '@/lib/genie/props';
 import { backdropView, backdropsData, eventBackdrops } from '@/lib/genie/backdrops';
+import { chosenPoses, poseView, posesData } from '@/lib/genie/poses';
 
 // Everything the event's Genie dashboard shows
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -26,7 +27,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   const event = await findAdminEvent(auth.tenantId, params.id);
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const [templates, messaging, retention, pending, approved, briefTemplate, defaults, chosenProps, chosenBackdrops] = await Promise.all([
+  const [templates, messaging, retention, pending, approved, briefTemplate, defaults, chosenProps, chosenBackdrops, posesChosen] = await Promise.all([
     prisma.eventGenieTemplate.findMany({ where: { eventId: event.id, tenantId: auth.tenantId }, orderBy: { sortOrder: 'asc' } }),
     prisma.genieMessagingConfig.findUnique({ where: { tenantId: auth.tenantId } }),
     getGalleryRetention(),
@@ -36,6 +37,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     getDefaults(auth.tenantId),
     event.genieSettings ? eventProps(event.genieSettings.propIds, auth.tenantId) : Promise.resolve([]),
     event.genieSettings ? eventBackdrops(event.genieSettings.backdropIds, auth.tenantId) : Promise.resolve([]),
+    event.genieSettings ? chosenPoses(event.genieSettings.poseIds, auth.tenantId) : Promise.resolve([]),
   ]);
   const libIds = Array.from(new Set(templates.map(t => t.libraryTemplateId).filter((id): id is string => !!id)));
   const withAlternate = new Set((await prisma.boothDesignTemplate.findMany({
@@ -70,6 +72,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     // The event's props (including any Super Admin has since switched off), in the guests' order
     chosenProps: chosenProps.map(propView),
     chosenBackdrops: chosenBackdrops.map(backdropView),
+    // The event's poses (including Standard ones switched off since), in the guests' order
+    chosenPoses: posesChosen.map(poseView),
   });
 }
 
@@ -136,6 +140,11 @@ export async function PATCH(req: NextRequest, props0: { params: Promise<{ id: st
     const b = await backdropsData(parsed.data.backgroundRemoval, s.backdropIds, auth.tenantId);
     if ('error' in b) return NextResponse.json({ error: b.error, path: 'backgroundRemoval' }, { status: 400 });
     Object.assign(result.data, b.data);
+  }
+  if (parsed.data.poses) {
+    const p = await posesData(parsed.data.poses, s.poseIds, auth.tenantId);
+    if ('error' in p) return NextResponse.json({ error: p.error, path: 'poses' }, { status: 400 });
+    Object.assign(result.data, p.data);
   }
   const defaults = (await getDefaults(auth.tenantId)).values;
   // Sections put back on the defaults

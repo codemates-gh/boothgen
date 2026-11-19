@@ -22,11 +22,12 @@ import BackdropsManager from './BackdropsManager';
 import GenieUsage from './GenieUsage';
 import GeniusRuleCard from './GeniusRuleCard';
 import ReportsTriage from './ReportsTriage';
+import PosesManager from './PosesManager';
 import StorageUsage from './StorageUsage';
 import { DEFAULT_UPLOAD_LIMITS, getUploadLimits } from '@/lib/gallery/uploadRules';
 
 
-const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'props', 'backdrops', 'genie-usage', 'storage', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
+const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'props', 'backdrops', 'poses', 'genie-usage', 'storage', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
 type Tab = typeof VALID_TABS[number];
 
 const TENANT_BADGE: Record<string, 'warning' | 'success' | 'danger' | 'default'> = {
@@ -326,6 +327,17 @@ export default async function SuperAdminPage(props: { searchParams: Promise<{ ta
               <p className="text-sm text-gray-500 mt-1">Virtual backdrops for Genie background removal: the iPad cuts guests out of the real background and puts them on one of these. Operators choose per event.</p>
             </div>
             <BackdropsManager />
+          </>
+        )}
+
+        {/* POSES */}
+        {tab === 'poses' && (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Poses</h1>
+              <p className="text-sm text-gray-500 mt-1">Pose ideas for Genie: guests choose Solo (Her, Him, All) or Group (For two, For groups) and see these before Start and during each countdown. Never in the photos. Operators choose in Event defaults or per event.</p>
+            </div>
+            <PosesManager />
           </>
         )}
 

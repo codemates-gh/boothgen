@@ -4,19 +4,21 @@ import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Camera, Share2, Printer, Settings2, LayoutTemplate, ChevronUp, ChevronDown, X, MonitorPlay, Plus } from 'lucide-react';
+import { Sparkles, Camera, Share2, Printer, Settings2, LayoutTemplate, ChevronUp, ChevronDown, X, MonitorPlay, Plus, PersonStanding } from 'lucide-react';
 import { TemplatePicker, thumbWidth, type PickerLibrary } from '@/components/genie/TemplatePicker';
 import { Field, LayoutPreview } from '@/components/genie/parts';
 import { Attract, AttractFields, Capture, CaptureFields, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
+import { PoseIdeasFields, type PoseIdeasValue } from '@/components/genie/PoseIdeas';
+import type { Pose } from '@/components/genie/Poses';
 
-type Defaults = { saved: boolean; timeZone: string; capture: Capture; sharing: Sharing; printing: Printing; attract: Attract; templateIds: string[] };
+type Defaults = { saved: boolean; timeZone: string; capture: Capture; sharing: Sharing; printing: Printing; attract: Attract; poses: PoseIdeasValue; templateIds: string[] };
 type Form = Omit<Defaults, 'saved'>;
 
 // Only the editable settings: the GET also returns read-only extras (templates, eventsFollowing) the PUT rejects
-const toForm = (d: Defaults): Form => JSON.parse(JSON.stringify({ timeZone: d.timeZone, capture: d.capture, sharing: d.sharing, printing: d.printing, attract: d.attract, templateIds: d.templateIds }));
+const toForm = (d: Defaults): Form => JSON.parse(JSON.stringify({ timeZone: d.timeZone, capture: d.capture, sharing: d.sharing, printing: d.printing, attract: d.attract, poses: d.poses, templateIds: d.templateIds }));
 
 export default function GenieDefaultsPage() {
-  const [data, setData] = useState<Defaults & { eventsFollowing: number } | null>(null);
+  const [data, setData] = useState<Defaults & { eventsFollowing: number; chosenPoses: Pose[] } | null>(null);
   const [form, setForm] = useState<Form | null>(null);
   const [library, setLibrary] = useState<PickerLibrary | null>(null);
   const [picking, setPicking] = useState(false);
@@ -92,6 +94,10 @@ export default function GenieDefaultsPage() {
 
             <Section icon={MonitorPlay} title="Attract screen" description="What the iPad shows between guests.">
               <AttractFields value={form.attract} onChange={p => set('attract', p)}/>
+            </Section>
+
+            <Section icon={PersonStanding} title="Pose ideas" description="Sample poses for guests who don't know how to pose. Off for new accounts. Events follow this until you change Pose ideas on the event.">
+              <PoseIdeasFields value={form.poses} chosen={data?.chosenPoses ?? []} onChange={p => set('poses', p)}/>
             </Section>
 
             <Section icon={LayoutTemplate} title="Templates" description="Added to an event, in this order, when you set up Genie for it. The client's design-brief pick goes first. Later changes here don't change existing events.">

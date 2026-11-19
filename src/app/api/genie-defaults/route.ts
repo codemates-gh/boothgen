@@ -9,6 +9,7 @@ import { DefaultSection, SECTION_NAMES, applyDefaultsToEvents, getDefaults, same
 import { findLibraryTemplate, libraryView } from '@/lib/genie/library';
 import { attractData, attractView, deleteUnusedAttractMedia, storedAttract } from '@/lib/genie/attract';
 import { countdownSoundData, countdownSoundView, deleteUnusedCountdownSounds, storedCountdownSound } from '@/lib/genie/countdownSound';
+import { chosenPoses, poseView, posesData, posesView } from '@/lib/genie/poses';
 
 function view(d: Awaited<ReturnType<typeof getDefaults>>) {
   const v = d.values;
@@ -29,6 +30,7 @@ function view(d: Awaited<ReturnType<typeof getDefaults>>) {
     },
     printing: { enabled: v.printingEnabled, maxCopies: v.printMaxCopies, defaultCopies: v.printDefaultCopies },
     attract: attractView(v.attract, v.attractReturnAfterSeconds),
+    poses: posesView(v),
     templateIds: d.templateIds,
   };
 }
@@ -40,9 +42,11 @@ export async function GET() {
   const templates = (await Promise.all(d.templateIds.map(id => findLibraryTemplate(auth.tenantId, id)))).filter(Boolean).map(t => libraryView(t!));
   // Events that follow at least one default section
   const eventsFollowing = await prisma.eventGenieSettings.count({
-    where: { tenantId: auth.tenantId, OR: [{ customTimeZone: false }, { customCapture: false }, { customSharing: false }, { customPrinting: false }, { customAttract: false }] },
+    where: { tenantId: auth.tenantId, OR: [{ customTimeZone: false }, { customCapture: false }, { customSharing: false }, { customPrinting: false }, { customAttract: false }, { customPoses: false }] },
   });
-  return NextResponse.json({ ...view(d), templates, eventsFollowing });
+  // The default poses (including Standard ones switched off since), in the guests' order
+  const poses = (await chosenPoses(d.values.poseIds, auth.tenantId)).map(poseView);
+  return NextResponse.json({ ...view(d), templates, eventsFollowing, chosenPoses: poses });
 }
 
 const shape = SettingsPatch.shape;
@@ -52,6 +56,7 @@ const Body = z.object({
   sharing: shape.sharing.unwrap(),
   printing: shape.printing.unwrap(),
   attract: shape.attract.unwrap(),
+  poses: shape.poses.unwrap(),
   templateIds: z.array(z.string().min(1)).max(20),
 }).partial().strict();
 
@@ -85,6 +90,12 @@ export async function PUT(req: NextRequest) {
     if ('error' in c) return NextResponse.json({ error: c.error, path: 'capture.countdownSound' }, { status: 400 });
     countdown = { countdownSound: c.value };
   }
+  let poses = {};
+  if (b.poses) {
+    const p = await posesData(b.poses, before.values.poseIds, auth.tenantId);
+    if ('error' in p) return NextResponse.json({ error: p.error, path: 'poses' }, { status: 400 });
+    poses = p.data;
+  }
   const data = {
     ...(b.timeZone ? { timeZone: b.timeZone } : {}),
     ...capture,
@@ -92,11 +103,12 @@ export async function PUT(req: NextRequest) {
     ...(b.sharing ?? {}),
     ...(b.printing ? { printingEnabled: b.printing.enabled, printMaxCopies: b.printing.maxCopies, printDefaultCopies: b.printing.defaultCopies } : {}),
     ...attract,
+    ...poses,
     ...(b.templateIds ? { templateIds: b.templateIds } : {}),
   };
   await prisma.genieDefaults.upsert({
     where: { tenantId: auth.tenantId },
-    create: { tenantId: auth.tenantId, ...before.values, attract: before.values.attract ?? Prisma.DbNull, countdownSound: before.values.countdownSound ?? Prisma.DbNull, ...data },
+    create: { tenantId: auth.tenantId, ...before.values, attract: before.values.attract ?? Prisma.DbNull, countdownSound: before.values.countdownSound ?? Prisma.DbNull, poseIds: (before.values.poseIds ?? []) as Prisma.InputJsonValue, ...data },
     update: data,
   });
   const after = await getDefaults(auth.tenantId);
@@ -108,5 +120,5 @@ export async function PUT(req: NextRequest) {
   const customUrl = (v: unknown) => { const c = storedCountdownSound(v); return c?.style === 'custom' ? c.custom.url : null; };
   const oldSound = customUrl(before.values.countdownSound);
   if (oldSound && oldSound !== customUrl(after.values.countdownSound)) await deleteUnusedCountdownSounds([oldSound]);
-  return NextResponse.json({ ...view(after), eventsUpdated });
+  return NextResponse.json({ ...view(after), eventsUpdated, chosenPoses: (await chosenPoses(after.values.poseIds, auth.tenantId)).map(poseView) });
 }

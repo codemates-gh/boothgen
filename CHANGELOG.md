@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.109.0] — 2026-11-18
+
+### Added
+- **Genie: Pose ideas.** For guests who don't know how to pose: before Start they choose Solo (Her, Him or All) or Group (For two or For groups) and see sample poses, and during each photo's countdown a card shows one. Photos only, never Boomerangs, and the poses are never in the photos.
+- **Genie → Poses:** your own poses next to the Standard ones. Upload a PNG with a transparent background (drawings) or a photo, give it a name and say who it's for. The form reminds you to use photos only of people who agreed. Edit or delete them; deleting one in use asks first and takes it off.
+- **Pose ideas in Genie → Event Defaults** (off for new accounts) and on each event's Genie page. Events follow the defaults until you change Pose ideas on the event, with "Use default" to go back. Choose poses per category (with Select all), put them in order, and see each as the iPad shows it, on a dark card. About 8 per category is suggested, never enforced.
+- **Super Admin → Poses:** the Standard poses every operator can use. Import the 48 starter poses, add or replace pictures, edit names and categories, and switch each on or off (events that chose one keep it).
+
+Needs `docs/genie/apply-production-poses.sql` (one new table, new columns, all off) run in production before this deploys; then Super Admin → Poses → Import starter poses.
+
+---
+
 ## [2.108.0] — 2026-11-18
 
 ### Added

@@ -10,12 +10,13 @@ export const DEFAULT_SECTIONS = {
   sharing: ['smsEnabled', 'emailEnabled', 'qrEnabled', 'guestLinkScope', 'smsBody', 'emailSubject', 'emailBody', 'smsConsentText'],
   printing: ['printingEnabled', 'printMaxCopies', 'printDefaultCopies'],
   attract: ['attract', 'attractReturnAfterSeconds'],
+  poses: ['posesEnabled', 'poseIds'],
 } as const;
 export type DefaultSection = keyof typeof DEFAULT_SECTIONS;
 export const SECTION_NAMES = Object.keys(DEFAULT_SECTIONS) as DefaultSection[];
 
-export const CUSTOM_FLAG: Record<DefaultSection, 'customTimeZone' | 'customCapture' | 'customSharing' | 'customPrinting' | 'customAttract'> = {
-  timeZone: 'customTimeZone', capture: 'customCapture', sharing: 'customSharing', printing: 'customPrinting', attract: 'customAttract',
+export const CUSTOM_FLAG: Record<DefaultSection, 'customTimeZone' | 'customCapture' | 'customSharing' | 'customPrinting' | 'customAttract' | 'customPoses'> = {
+  timeZone: 'customTimeZone', capture: 'customCapture', sharing: 'customSharing', printing: 'customPrinting', attract: 'customAttract', poses: 'customPoses',
 };
 
 type DefaultsValues = Omit<GenieDefaults, 'id' | 'tenantId' | 'templateIds' | 'createdAt' | 'updatedAt'>;
@@ -30,6 +31,7 @@ export const BUILT_IN_DEFAULTS: DefaultsValues = {
   smsEnabled: true, emailEnabled: true, qrEnabled: true, guestLinkScope: 'own', ...GENIE_SETTINGS_DEFAULTS,
   printingEnabled: true, printMaxCopies: 4, printDefaultCopies: 1,
   attract: null, attractReturnAfterSeconds: 30,
+  posesEnabled: false, poseIds: [],
 };
 
 export async function getDefaults(tenantId: string): Promise<{ values: DefaultsValues; templateIds: string[]; saved: boolean }> {
@@ -61,9 +63,10 @@ export function newEventSettingsData(defaults: DefaultsValues, timeZone?: string
     ...defaults,
     attract: defaults.attract ?? Prisma.DbNull,
     countdownSound: defaults.countdownSound ?? Prisma.DbNull,
+    poseIds: (defaults.poseIds ?? []) as Prisma.InputJsonValue,
     ...(timeZone ? { timeZone } : {}),
     customTimeZone: !!timeZone && timeZone !== defaults.timeZone,
-    customCapture: false, customSharing: false, customPrinting: false, customAttract: false,
+    customCapture: false, customSharing: false, customPrinting: false, customAttract: false, customPoses: false,
   };
 }
 

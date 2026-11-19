@@ -11,6 +11,7 @@ import { deleteTenant } from '@/lib/tenant/cleanup';
 import { sweepAbandonedAttractFiles } from '@/lib/genie/attract';
 import { sweepAbandonedPropImages } from '@/lib/genie/props';
 import { sweepAbandonedBackdropFiles } from '@/lib/genie/backdrops';
+import { sweepAbandonedPoseFiles } from '@/lib/genie/poses';
 import { prepareShare, deliverShare, recordShareResult, markShareFailed } from '@/lib/genie/shares';
 
 export const processAutomation = inngest.createFunction(
@@ -711,7 +712,7 @@ export const sweepAbandonedAttract = inngest.createFunction(
   }
 );
 
-// Daily at 5:25 AM UTC — delete prop PNGs and backdrop files that were uploaded but never saved
+// Daily at 5:25 AM UTC — delete prop PNGs, backdrop and pose files that were uploaded but never saved
 export const sweepAbandonedProps = inngest.createFunction(
   { id: 'sweep-abandoned-props' },
   { cron: '25 5 * * *' },
@@ -720,7 +721,9 @@ export const sweepAbandonedProps = inngest.createFunction(
     console.log(`[PROPS_SWEEP] Deleted ${deleted} unsaved prop images`);
     const backdrops = await sweepAbandonedBackdropFiles();
     console.log(`[BACKDROPS_SWEEP] Deleted ${backdrops.sources} unprocessed uploads and ${backdrops.unsaved} unsaved backdrop files`);
-    return { deleted, backdrops };
+    const poses = await sweepAbandonedPoseFiles();
+    console.log(`[POSES_SWEEP] Deleted ${poses.sources} unprocessed uploads and ${poses.unsaved} unsaved pose files`);
+    return { deleted, backdrops, poses };
   }
 );
 

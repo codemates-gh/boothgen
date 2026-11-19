@@ -9,6 +9,7 @@ const nextConfig = {
     '/api/genie-attract/encode': ['./node_modules/ffmpeg-static/ffmpeg'],
     '/api/genie-backdrops/process': ['./node_modules/ffmpeg-static/ffmpeg'],
     '/api/genie-countdown/encode': ['./node_modules/ffmpeg-static/ffmpeg'],
+    '/api/genie-poses/process': ['./node_modules/ffmpeg-static/ffmpeg'],
     '/blog': ['./content/blog/**/*'],
     '/blog/[slug]': ['./content/blog/**/*'],
     '/sitemap.xml': ['./content/blog/**/*'],
@@ -18,6 +19,7 @@ const nextConfig = {
     '/api/super-admin/blog/[id]': ['./content/blog/**/*'],
     '/api/super-admin/props/import': ['./content/genie-props/**/*'],
     '/api/super-admin/backdrops/import': ['./content/genie-backdrops/**/*'],
+    '/api/super-admin/poses/import': ['./content/genie-poses/**/*'],
   },
   typescript: { ignoreBuildErrors: true },
 };
