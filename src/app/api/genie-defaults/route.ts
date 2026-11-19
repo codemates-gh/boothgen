@@ -22,6 +22,7 @@ function view(d: Awaited<ReturnType<typeof getDefaults>>) {
       allowReviewRetake: v.allowReviewRetake, retakesPerShot: v.retakesPerShot, idleTimeoutSeconds: v.idleTimeoutSeconds,
       boomerangEdgeLight: v.boomerangEdgeLight,
       thankYouSeconds: v.thankYouSeconds, thankYouTitle: v.thankYouTitle, thankYouSubtitle: v.thankYouSubtitle,
+      startScreenGenieLogo: v.startScreenGenieLogo,
       countdownSound: countdownSoundView(v.countdownSound),
     },
     sharing: {

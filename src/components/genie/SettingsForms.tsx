@@ -17,6 +17,7 @@ export type Capture = {
   perShotPreviewSeconds: number; allowReviewRetake: boolean; retakesPerShot: number; idleTimeoutSeconds: number;
   boomerangEdgeLight: boolean;
   thankYouSeconds: number; thankYouTitle: string; thankYouSubtitle: string;
+  startScreenGenieLogo: boolean;
   // 'ipad' = "Use the iPad's setting"; custom.url is an encoded sound from /api/genie-countdown/encode
   countdownSound?: CountdownSound;
 };
@@ -153,6 +154,10 @@ export function CaptureFields({ value, onChange, disabled, children }: { value: 
         <Field label="Review screen timeout (sec)" hint="How long the final photo with Print / Share stays up without a tap before going back to the start screen. Also applies to any screen waiting for the guest. 10–600">
           <Num value={value.idleTimeoutSeconds} min={10} max={600} disabled={disabled} onChange={n => onChange({ idleTimeoutSeconds: n })}/>
         </Field>
+      </div>
+      <div className="border-t pt-4">
+        <Toggle checked={value.startScreenGenieLogo} disabled={disabled} onChange={v => onChange({ startScreenGenieLogo: v })} label="Show the Genie logo on the start screen"
+          hint="The Genie logo and sparkle on the iPad's start screen. Off: guests see only “Tap anywhere to start” over the camera. Needs Genie 0.6.0 (40) or later."/>
       </div>
       <div className="border-t pt-4 space-y-3">
         <div>

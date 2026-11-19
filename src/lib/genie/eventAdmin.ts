@@ -99,6 +99,8 @@ export const SettingsPatch = z.object({
     thankYouSeconds: int(1, 30).optional(),
     thankYouTitle: z.string().trim().min(1, "The thank-you title can't be empty").max(40, 'Keep the thank-you title to 40 characters').optional(),
     thankYouSubtitle: z.string().trim().max(100, 'Keep the thank-you line to 100 characters').optional(),
+    // Genie logo and sparkle on the plain start screen; optional so older pages keep the saved value
+    startScreenGenieLogo: z.boolean().optional(),
     // Saved by countdownSoundData (it checks an uploaded file); optional so older pages keep the saved value
     countdownSound: CountdownSoundPatch.optional(),
   }).strict(),
@@ -248,6 +250,7 @@ export function settingsView(s: EventGenieSettings) {
       idleTimeoutSeconds: s.idleTimeoutSeconds,
       boomerangEdgeLight: s.boomerangEdgeLight,
       thankYouSeconds: s.thankYouSeconds, thankYouTitle: s.thankYouTitle, thankYouSubtitle: s.thankYouSubtitle,
+      startScreenGenieLogo: s.startScreenGenieLogo,
       countdownSound: countdownSoundView(s.countdownSound),
     },
     lookAtCamera: (s.lookAtCamera as LookAtCamera | null) ?? LOOK_AT_CAMERA_DEFAULT,

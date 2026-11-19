@@ -36,6 +36,33 @@ describe('photo live view settings', () => {
     if (validate) expect(validate(after)).toBeNull();
   });
 
+  it('start screen Genie logo: on by default (left out of the bundle), sent as false when off, and follows the account default', async () => {
+    const { tenant, client } = await seedTenant();
+    tenantId = tenant.id;
+    const event = await seedEvent(tenant.id, client.id);
+    const { token } = await seedDevice(tenant.id);
+    const bundleOf = async () => (await deviceBundle(req('/x', { token }), { params: { eventId: event.id } })).json();
+    const validate = await bundleValidator();
+
+    const d = await (await DASH(req('/x'), { params: { id: event.id } })).json();
+    expect(d.settings.capture.startScreenGenieLogo).toBe(true);
+    const before = await bundleOf();
+    expect(before.capture.startScreen).toBeUndefined();
+
+    await PATCH(req('/x', { method: 'PATCH', body: { capture: { ...d.settings.capture, startScreenGenieLogo: false } } }), { params: { id: event.id } });
+    const after = await bundleOf();
+    expect(after.capture.startScreen).toEqual({ showGenieLogo: false });
+    expect(after.bundleVersion).toBe(before.bundleVersion + 1);
+    if (validate) expect(validate(after)).toBeNull();
+
+    // Off in the account defaults: events following them turn it off too
+    const other = await seedEvent(tenant.id, client.id);
+    const { prisma } = await import('@/lib/prisma/client');
+    await prisma.eventGenieSettings.update({ where: { eventId: other.id }, data: { customCapture: false } });
+    expect((await PUT_DEFAULTS(req('/x', { method: 'PUT', body: { capture: { ...d.settings.capture, startScreenGenieLogo: false } } }))).status).toBe(200);
+    expect((await prisma.eventGenieSettings.findUniqueOrThrow({ where: { eventId: other.id } })).startScreenGenieLogo).toBe(false);
+  });
+
   it('thank-you screen: absent while default, sent when changed, and follows the account default', async () => {
     const { tenant, client } = await seedTenant();
     tenantId = tenant.id;

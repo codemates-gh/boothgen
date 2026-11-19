@@ -6,7 +6,7 @@ import { THANK_YOU_DEFAULT } from './schemas';
 // Sections that have account-wide defaults. Field names are the same on GenieDefaults and EventGenieSettings.
 export const DEFAULT_SECTIONS = {
   timeZone: ['timeZone'],
-  capture: ['shotCount', 'initialCountdownSeconds', 'betweenShotsCountdownSeconds', 'showPerShotPreview', 'allowPerShotRetake', 'perShotPreviewSeconds', 'allowReviewRetake', 'retakesPerShot', 'idleTimeoutSeconds', 'boomerangEdgeLight', 'thankYouSeconds', 'thankYouTitle', 'thankYouSubtitle', 'countdownSound'],
+  capture: ['shotCount', 'initialCountdownSeconds', 'betweenShotsCountdownSeconds', 'showPerShotPreview', 'allowPerShotRetake', 'perShotPreviewSeconds', 'allowReviewRetake', 'retakesPerShot', 'idleTimeoutSeconds', 'boomerangEdgeLight', 'thankYouSeconds', 'thankYouTitle', 'thankYouSubtitle', 'startScreenGenieLogo', 'countdownSound'],
   sharing: ['smsEnabled', 'emailEnabled', 'qrEnabled', 'guestLinkScope', 'smsBody', 'emailSubject', 'emailBody', 'smsConsentText'],
   printing: ['printingEnabled', 'printMaxCopies', 'printDefaultCopies', 'printCopiesMatchPeople'],
   attract: ['attract', 'attractReturnAfterSeconds'],
@@ -30,6 +30,7 @@ export const BUILT_IN_DEFAULTS: DefaultsValues = {
   perShotPreviewSeconds: 2, allowReviewRetake: false, retakesPerShot: 1, idleTimeoutSeconds: 60, boomerangEdgeLight: true,
   countdownSound: null,
   ...THANK_YOU_DEFAULT,
+  startScreenGenieLogo: true,
   smsEnabled: true, emailEnabled: true, qrEnabled: true, guestLinkScope: 'own', ...GENIE_SETTINGS_DEFAULTS,
   printingEnabled: true, printMaxCopies: 4, printDefaultCopies: 1, printCopiesMatchPeople: true,
   attract: null, attractReturnAfterSeconds: 30,

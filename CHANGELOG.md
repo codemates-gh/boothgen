@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.120.0] — 2026-11-19
+
+### Added
+- **Genie: "Show the Genie logo on the start screen"**, on by default, in Genie → Event defaults and on each event's Genie page (Capture), above the thank-you screen. Off: the iPad's plain start screen shows only "Tap anywhere to start" over the camera, with no Genie logo or sparkle. Needs Genie 0.6.0 (40) or later; older iPads keep showing the logo.
+
+Needs `docs/genie/apply-production-start-screen-logo.sql` (one column on Event defaults and one on events, on for all) run in production before this deploys.
+
+---
+
 ## [2.119.0] — 2026-11-19
 
 ### Added

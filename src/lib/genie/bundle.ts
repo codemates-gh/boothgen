@@ -160,6 +160,8 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
       showDesignWhilePosing: settings.showDesignWhilePosing,
       // Optional; left out until the operator sets them, so existing bundles (and their version) don't change
       ...(settings.lookAtCamera ? { lookAtCamera: settings.lookAtCamera } : {}),
+      // Left out while the logo shows (the iPad's default); older iPads ignore it
+      ...(settings.startScreenGenieLogo ? {} : { startScreen: { showGenieLogo: false } }),
       ...(thankYouChanged(settings) ? { thankYou: { seconds: settings.thankYouSeconds, title: settings.thankYouTitle, subtitle: settings.thankYouSubtitle } } : {}),
       // design: the chosen ClipDesign, left out when none, deleted, or at another shape
       ...(settings.boomerang ? { boomerang: bundleBoomerang(settings.boomerang, settings.boomerangEdgeLight, design) } : {}),

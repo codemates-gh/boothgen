@@ -1400,6 +1400,8 @@ model EventGenieSettings {
   thankYouSeconds              Int     @default(5)
   thankYouTitle                String  @default("Thank you!")
   thankYouSubtitle             String  @default("Your photos are on their way.")
+  // Genie logo and sparkle on the iPad's plain start screen (CaptureConfig.startScreen.showGenieLogo, 2.120.0)
+  startScreenGenieLogo         Boolean @default(true)
   // CaptureConfig.lookAtCamera / .boomerang (per event, not account defaults); null = absent from the bundle
   // (Genie: look-at-camera on with its own wording, boomerang off)
   lookAtCamera                 Json?
@@ -1664,6 +1666,8 @@ model GenieDefaults {
   thankYouSeconds              Int     @default(5)
   thankYouTitle                String  @default("Thank you!")
   thankYouSubtitle             String  @default("Your photos are on their way.")
+  // Genie logo and sparkle on the iPad's plain start screen (CaptureConfig.startScreen.showGenieLogo, 2.120.0)
+  startScreenGenieLogo         Boolean @default(true)
 
   smsEnabled     Boolean @default(true)
   emailEnabled   Boolean @default(true)
