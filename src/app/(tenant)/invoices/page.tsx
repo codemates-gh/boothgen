@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { fmtCents } from '@/lib/utils';
 import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
+import { StripePayoutsLink } from '@/components/StripePayoutsLink';
 import EventsTabs from '@/app/(tenant)/events/EventsTabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +46,7 @@ export default function InvoicesPage() {
           </div>
           <Link href="/invoices/new"><Button><Plus className="w-4 h-4 mr-2"/>New Invoice</Button></Link>
         </div>
+        <div className="mb-4"><StripePayoutsLink/></div>
         <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mb-4">
           <Info className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
           <span>Showing active events only. Invoices for completed or lost events are not listed.</span>

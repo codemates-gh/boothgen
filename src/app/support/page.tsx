@@ -872,6 +872,9 @@ Genius operators need to set up Stripe Connect to accept online payments from cl
 
 Once connected, your Stripe account status shows as "Connected" and clients can pay invoices online. If you disconnect Stripe, clients will no longer be able to pay online until you reconnect.
 
+**Seeing Your Payouts: "View payouts in Stripe"**
+Card payments show in BoothGen as soon as they're paid: the invoice is marked paid and the payment and Stripe's fee appear in Bookkeeping. Stripe then sends the money to your bank, usually within 2 business days. To see payouts, disputes and Stripe's fees, click "View payouts in Stripe" in Bookkeeping, on the Invoices page or in Settings → Billing → Stripe Connect. It opens your Stripe account in a new tab. The button shows once Stripe is connected and can take payments.
+
 **When to Use "Update Stripe"**
 If you are already connected to Stripe and need to make changes, click "Update Stripe" from Settings → Billing → Stripe Connect. Use this button when you need to:
 - Change your payout bank account or deposit schedule

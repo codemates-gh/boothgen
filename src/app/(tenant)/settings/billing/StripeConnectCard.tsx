@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { CheckCircle2, AlertCircle, Loader2, ShieldCheck, Zap, DollarSign } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, ShieldCheck, Zap, DollarSign, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PAYOUTS_NOTE } from '@/components/StripePayoutsLink';
 
 interface Props {
   status: 'active' | 'incomplete' | 'none';
@@ -84,7 +85,10 @@ export function StripeConnectCard({ status, chargesEnabled }: Props) {
         </div>
       )}
 
-      {/* Action button */}
+      {status === 'active' && chargesEnabled && <p className="text-xs text-gray-500">{PAYOUTS_NOTE}</p>}
+
+      {/* Action buttons */}
+      <div className="flex flex-wrap gap-2">
       <Button
         variant={status === 'active' ? 'outline' : 'default'}
         onClick={handleConnect}
@@ -96,6 +100,12 @@ export function StripeConnectCard({ status, chargesEnabled }: Props) {
           : status === 'incomplete' ? 'Complete Stripe Setup'
           : 'Connect Stripe Account'}
       </Button>
+      {status === 'active' && chargesEnabled && (
+        <a href="/api/stripe/connect/dashboard" target="_blank" rel="noopener noreferrer">
+          <Button variant="outline"><ExternalLink className="w-4 h-4 mr-2" />View payouts in Stripe</Button>
+        </a>
+      )}
+      </div>
     </div>
   );
 }

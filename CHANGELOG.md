@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.129.0] — 2026-11-20
+
+### Added
+- **"View payouts in Stripe"** button in Bookkeeping (under the totals), on the Invoices page and in Settings → Billing next to "Update Stripe". It opens your Stripe account in a new tab to see payouts, disputes and Stripe's fees.
+  - It shows only when Stripe is connected and can take payments. Otherwise Bookkeeping and Invoices show a Connect Stripe prompt.
+  - It comes with a short note: card payments show in BoothGen as soon as they're paid, and Stripe sends the money to your bank, usually within 2 business days.
+  - Express accounts (the kind BoothGen sets up) sign straight in. Standard accounts go to Stripe's payouts page. If Stripe still needs setup details, it opens the Stripe setup instead.
+- Help: "Seeing Your Payouts" in the Stripe Connect article.
+
+---
+
 ## [2.128.0] — 2026-11-20
 
 ### Added

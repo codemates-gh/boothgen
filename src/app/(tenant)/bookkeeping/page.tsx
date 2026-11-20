@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { TopBar } from '@/components/layout/TopBar';
+import { StripePayoutsLink } from '@/components/StripePayoutsLink';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -135,6 +136,7 @@ export default function BookkeepingPage() {
             <Card key={label as string}><CardContent className="pt-4 pb-4"><p className="text-xs uppercase tracking-wide text-gray-400">{label as string}</p><p className={'text-lg sm:text-2xl font-bold ' + cls}>{fmt(cents as number)}</p></CardContent></Card>
           ))}
         </div>
+        <StripePayoutsLink/>
 
         {/* Tabs */}
         <div className="flex flex-wrap border-b border-gray-200">
