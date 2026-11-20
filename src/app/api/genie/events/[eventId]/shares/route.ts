@@ -48,6 +48,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
   const gallery = await ensureGallery(event);
   const session = await ensureGenieSession(event, gallery, auth.device.id, body.session);
   if (!session) return genieError(422, 'session_conflict', 'This session id or token belongs to another event');
+  if (session.deletedAt) return genieError(410, 'session_deleted', 'This session was deleted');
 
   try {
     await prisma.genieShare.create({

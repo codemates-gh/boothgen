@@ -49,8 +49,8 @@ export async function GET(
       boothOffline: !gallery.isExpired && isBoothOffline({ photoCount: 0, lastSeenAt: await eventBoothLastSeen(gallery.eventId) }),
     });
   }
-  // The session must belong to the gallery in the link
-  if (session.gallery.clientToken !== params.token) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  // The session must belong to the gallery in the link; a session the guest cancelled is gone
+  if (session.gallery.clientToken !== params.token || session.deletedAt) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const expired = session.gallery.isExpired;
   // The printer sheet is a download only; a boomerang's poster is the clip's thumbnail; the Glamour Style original is

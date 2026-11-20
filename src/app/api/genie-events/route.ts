@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       id: true, title: true, eventDate: true, startTime: true, endTime: true, status: true, venueName: true,
       client: { select: { firstName: true, lastName: true, email: true } },
       genieSettings: true,
-      _count: { select: { genieTemplates: true, genieSessions: true } },
+      _count: { select: { genieTemplates: true, genieSessions: { where: { deletedAt: null } } } },
     },
   });
   const defaultTz = (await getDefaults(auth.tenantId)).values.timeZone;

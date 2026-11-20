@@ -8,11 +8,12 @@ export async function generateMetadata(props: { params: Promise<{ token: string;
   const session = await prisma.genieSession.findUnique({
     where: { publicToken: params.sessionToken },
     select: {
+      deletedAt: true,
       gallery: { select: { clientToken: true, isExpired: true, event: { select: { title: true } } } },
       assets: { where: { approvalStatus: 'APPROVED', genieKind: { in: ['boomerangPoster', 'videoPoster', 'gallery', 'gif'] } }, select: { url: true, genieKind: true, width: true, height: true } },
     },
   }).catch(() => null);
-  if (!session || session.gallery.clientToken !== params.token) return {};
+  if (!session || session.deletedAt || session.gallery.clientToken !== params.token) return {};
   const title = session.gallery.event.title ? `Your photos from ${session.gallery.event.title}` : 'Your photos';
   const image = session.gallery.isExpired ? undefined
     : session.assets.find(a => a.genieKind === 'boomerangPoster' || a.genieKind === 'videoPoster') ?? session.assets.find(a => a.genieKind === 'gallery' || a.genieKind === 'gif');

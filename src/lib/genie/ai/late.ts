@@ -10,8 +10,10 @@ export async function galleryReplaced(sessionId: string, newAssetId: string): Pr
     data: { genieKind: 'gallerySuperseded' },
   });
   if (count === 0) return false;
-  const session = await prisma.genieSession.findUnique({ where: { id: sessionId }, select: { event: { select: { genieSettings: { select: { aiEnabled: true } } } } } });
+  const session = await prisma.genieSession.findUnique({ where: { id: sessionId }, select: { clientId: true, eventId: true, event: { select: { genieSettings: { select: { aiEnabled: true } } } } } });
   if (!session?.event.genieSettings?.aiEnabled) return true;
+  // Only a session with Geniefied images: a plain change (a new filter) never texts "your Geniefied photo is ready"
+  if (!(await prisma.genieAiRender.count({ where: { eventId: session.eventId, sessionClientId: session.clientId, status: 'done' } }))) return true;
   const sent = await prisma.genieShare.findMany({ where: { sessionId, kind: 'photos', status: { in: ['sent', 'delivered'] } } });
   for (const s of sent) {
     await prisma.genieShare.create({

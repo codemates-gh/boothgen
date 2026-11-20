@@ -48,7 +48,7 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: s
   if (await prisma.genieEventPayment.count({ where: { eventId: event.id, status: 'paid' } })) {
     return NextResponse.json({ error: 'This event is paid, so it can\'t be deleted', code: 'paid' }, { status: 409 });
   }
-  if (await prisma.genieSession.count({ where: { eventId: event.id } })) {
+  if (await prisma.genieSession.count({ where: { eventId: event.id, deletedAt: null } })) {
     return NextResponse.json({ error: 'This event has guest photos, so it can\'t be deleted', code: 'has_photos' }, { status: 409 });
   }
   await prisma.event.delete({ where: { id: event.id } });

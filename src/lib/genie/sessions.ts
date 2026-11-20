@@ -12,7 +12,8 @@ export async function ensureGenieSession(
   deviceId: string,
   input: GuestSessionInput,
 ): Promise<GenieSession | null> {
-  const owned = (s: GenieSession) => (s.eventId === event.id && s.tenantId === event.tenantId && s.publicToken === input.publicToken ? s : null);
+  // A deleted session (tombstone) is returned whatever its token, so the caller answers 410 session_deleted
+  const owned = (s: GenieSession) => (s.eventId === event.id && s.tenantId === event.tenantId && (s.publicToken === input.publicToken || s.deletedAt) ? s : null);
   const existing = await prisma.genieSession.findUnique({ where: { clientId: input.id } });
   if (existing) return owned(existing);
   try {

@@ -264,7 +264,7 @@ async function notifyDispute(eventId: string, amountCents: number) {
   if (!to) return;
   const event = await prisma.event.findUniqueOrThrow({ where: { id: eventId }, select: { title: true, eventDate: true, tenant: { select: { name: true } } } });
   const [sessions, shares, devices] = await Promise.all([
-    prisma.genieSession.count({ where: { eventId } }),
+    prisma.genieSession.count({ where: { eventId, deletedAt: null } }),
     prisma.genieShare.groupBy({ by: ['channel'], where: { eventId, status: { not: 'failed' } }, _count: { _all: true } }),
     prisma.genieEventDevice.count({ where: { eventId } }),
   ]);

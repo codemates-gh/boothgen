@@ -3,7 +3,7 @@ import { galleryReplaced } from '@/lib/genie/ai/late';
 import { NextRequest, NextResponse } from 'next/server';
 import type { Gallery, GalleryAsset, GenieSession } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
-import { headR2Object, r2PublicUrl } from '@/lib/storage/r2';
+import { deleteFromR2, headR2Object, r2PublicUrl } from '@/lib/storage/r2';
 import { authenticateDevice, findDeviceEvent, genieError, isUniqueViolation, readJson } from '@/lib/genie/auth';
 import { ensureGallery, sessionUrl } from '@/lib/genie/bundle';
 import { dispatchReadyShares, ensureGenieSession } from '@/lib/genie/sessions';
@@ -56,6 +56,11 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
 
   const session = await ensureGenieSession(event, gallery, auth.device.id, body.session);
   if (!session) return genieError(422, 'session_conflict', 'This session id or token belongs to another event');
+  // The guest cancelled on review: an upload still in the iPad's outbox doesn't bring the session back
+  if (session.deletedAt) {
+    await deleteFromR2(body.storageKey).catch(err => console.error('[genie-delete] late upload cleanup failed', body.storageKey, err));
+    return genieError(410, 'session_deleted', 'This session was deleted');
+  }
 
   // A boomerang's (or PC video's) poster is its thumbnail (gallery grid, link previews); either may arrive first
   const posterKind = body.kind === 'boomerang' ? 'boomerangPoster' : body.kind === 'video' ? 'videoPoster' : null;

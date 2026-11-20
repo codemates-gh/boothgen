@@ -1509,6 +1509,8 @@ model GenieSession {
   publicToken String   @unique // generated on the device; forms the session page link
   startedAt   DateTime
   createdAt   DateTime @default(now())
+  // The guest cancelled on review: files and images are gone, the row stays so late uploads get 410 session_deleted
+  deletedAt   DateTime?
 
   tenant  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   event   Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)

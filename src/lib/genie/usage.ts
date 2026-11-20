@@ -26,7 +26,7 @@ export async function genieUsage(since: Date): Promise<UsageRow[]> {
   const where = { eventId: { in: ids } };
   const [devices, sessions, photos, shares, payments, paymentRows, prices] = await Promise.all([
     prisma.genieEventDevice.groupBy({ by: ['eventId'], where, _count: { _all: true } }),
-    prisma.genieSession.groupBy({ by: ['eventId'], where, _count: { _all: true } }),
+    prisma.genieSession.groupBy({ by: ['eventId'], where: { ...where, deletedAt: null }, _count: { _all: true } }),
     // Guest photos (the gallery image of each session), not the single shots or print sheets
     prisma.galleryAsset.groupBy({ by: ['galleryId'], where: { gallery: { eventId: { in: ids } }, genieKind: 'gallery' }, _count: { _all: true } }),
     prisma.genieShare.groupBy({ by: ['eventId', 'channel', 'status'], where, _count: { _all: true } }),

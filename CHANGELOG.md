@@ -4,6 +4,19 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.122.0] — 2026-11-19
+
+### Added
+- **A guest who cancels on the iPad's review screen leaves nothing behind.** The iPad now uploads while the guest is still reviewing. If they cancel, BoothGen removes everything from that session: its photos, its Geniefied images, and any text or email that hadn't gone out. The guest's link then shows "Photos not found". If an upload was still on its way, BoothGen refuses it instead of bringing the session back. Deleted sessions don't count in session numbers.
+- **A photo the guest changes on review replaces the earlier one** (a retake, a new filter, a before/after that no longer applies), so the gallery never shows it twice. Manually uploaded photos are never touched. If the session's main design is removed, the previous one comes back.
+
+### Fixed
+- The "Your Geniefied photo is ready" message now goes out only for sessions that really have Geniefied images, never because of a plain filter change.
+
+Needs `docs/genie/apply-production-session-delete.sql` (one new column) run in production before this deploys.
+
+---
+
 ## [2.121.6] — 2026-11-19
 
 ### Fixed
