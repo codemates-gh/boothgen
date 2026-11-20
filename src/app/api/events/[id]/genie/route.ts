@@ -72,6 +72,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       };
     })(),
     lockedAt: s ? effectiveLockedAt(event, s) : null,
+    // Until a guest takes photos, the date and times can still move (e.g. a copy that kept a date that's already here)
+    hasGuestSessions: (await prisma.genieSession.count({ where: { eventId: event.id, deletedAt: null } })) > 0,
     locksAt: eventLocksAt(event, s?.timeZone ?? 'America/New_York'),
     // 48 hours after the event ends iPads can no longer run it; it can still be viewed and duplicated
     expired: !!s && bundleValidUntil(event, s.timeZone).getTime() <= Date.now(),

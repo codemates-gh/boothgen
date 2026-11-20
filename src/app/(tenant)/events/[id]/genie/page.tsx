@@ -59,7 +59,7 @@ type Dashboard = {
     // Glamour Style is offered only once Super Admin makes it available (Genie 0.6.0+)
     glamourStyleReady: boolean;
   };
-  settings: Settings | null; lockedAt: string | null; locksAt: string; expired: boolean; templates: EventTemplate[];
+  settings: Settings | null; lockedAt: string | null; hasGuestSessions?: boolean; locksAt: string; expired: boolean; templates: EventTemplate[];
   providerWarnings: { channel: 'sms' | 'email'; message: string }[]; photosHiddenAt: string; photosDeletedAt: string; designApprovalPending: boolean;
   approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
   defaults: { saved: boolean; timeZone: string };
@@ -519,7 +519,7 @@ export default function EventGeniePage() {
       )}
 
       {data?.event.boothEvent && (
-        <BoothEventModal open={editing} onClose={() => setEditing(false)} eventId={eventId} lockedTimes={locked}
+        <BoothEventModal open={editing} onClose={() => setEditing(false)} eventId={eventId} lockedTimes={locked && data?.hasGuestSessions !== false}
           initial={{
             title: data.event.title, date: data.event.eventDate.slice(0, 10),
             startTime: localTime(data.event.startTime, tz ?? 'UTC'), endTime: localTime(data.event.endTime, tz ?? 'UTC'),

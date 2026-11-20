@@ -14,6 +14,7 @@ import { PATCH, DELETE } from '@/app/api/genie-events/[id]/route';
 import { GET as DASH } from '@/app/api/events/[id]/genie/route';
 import { BOOTH_CLIENT_EMAIL, zonedTime } from '@/lib/genie/boothEvents';
 import { genieOnlyBlock } from '@/lib/product';
+import { ensureGallery } from '@/lib/genie/bundle';
 import { req, resetDb, seedEvent, seedTenant } from './helpers';
 
 const p = (id: string) => ({ params: { id } });
@@ -103,10 +104,20 @@ describe('editing and deleting a booth event', () => {
     expect(e.endTime!.toISOString()).toBe('2027-03-21T06:00:00.000Z');
   });
 
-  it('keeps the date and times once the event has started, but allows a new name', async () => {
+  it('a started event without guest photos (e.g. a copy that kept today\'s date) can still be moved', async () => {
     await setup();
     const { id } = await (await create()).json();
     await prisma.eventGenieSettings.update({ where: { eventId: id }, data: { lockedAt: new Date() } });
+    expect((await edit(id, { ...editBody, startTime: '20:00' })).status).toBe(200);
+  });
+
+  it('keeps the date and times once the event has started and guests took photos, but allows a new name', async () => {
+    const { tenant } = await setup();
+    const { id } = await (await create()).json();
+    await prisma.eventGenieSettings.update({ where: { eventId: id }, data: { lockedAt: new Date() } });
+    const event = await prisma.event.findUniqueOrThrow({ where: { id } });
+    const gallery = await ensureGallery(event);
+    await prisma.genieSession.create({ data: { tenantId: tenant.id, eventId: id, galleryId: gallery.id, clientId: randomUUID(), publicToken: randomUUID(), startedAt: new Date() } });
     const res = await edit(id, { ...editBody, startTime: '20:00' });
     expect(res.status).toBe(409);
     expect((await res.json()).code).toBe('locked');

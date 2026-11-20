@@ -27,8 +27,9 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const timeZone = event.genieSettings?.timeZone ?? 'UTC';
   const fields = boothEventFields({ ...parsed.data, timeZone });
   if ('error' in fields) return NextResponse.json({ error: fields.error }, { status: 400 });
-  // Once the event has started on the iPad, the name and venue can change but not when it happens
-  if (event.genieSettings && effectiveLockedAt(event, event.genieSettings)) {
+  // Once the event has started and guests took photos, the name and venue can change but not when it happens. Before
+  // any photos (e.g. a copy that kept a date that's already here), it can still be moved; a later date unlocks it.
+  if (event.genieSettings && effectiveLockedAt(event, event.genieSettings) && await prisma.genieSession.count({ where: { eventId: event.id, deletedAt: null } })) {
     const same = (a: Date | null, b: Date | null) => (a?.getTime() ?? null) === (b?.getTime() ?? null);
     if (!same(fields.eventDate, event.eventDate) || !same(fields.startTime, event.startTime) || !same(fields.endTime, event.endTime)) {
       return NextResponse.json({ error: 'The event has started, so its date and times can no longer change', code: 'locked' }, { status: 409 });

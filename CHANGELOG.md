@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.122.1] — 2026-11-19
+
+### Fixed
+- **A copied event can be moved to its new date.** A copy keeps the original's date. When that date had already started (e.g. copying today's event), the copy was locked straight away, and its date and times couldn't be changed. An event's date and times now stay editable until guests have taken photos. Moving it to a later date unlocks the whole event again.
+
+---
+
 ## [2.122.0] — 2026-11-19
 
 ### Added
