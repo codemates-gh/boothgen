@@ -10,8 +10,9 @@ export async function GET(req: NextRequest) {
   if (auth instanceof NextResponse) return auth;
 
   const all = await prisma.event.findMany({
-    // Events with Genie turned off are hidden from iPads
-    where: { tenantId: auth.tenant.id, status: { in: ['BOOKED', 'IN_PROGRESS'] }, NOT: { genieSettings: { is: { enabled: false } } } },
+    // Events with Genie turned off are hidden from iPads. COMPLETED stays listed until the event expires below (the
+    // daily auto-complete may mark an evening event completed while it's still running)
+    where: { tenantId: auth.tenant.id, status: { in: ['BOOKED', 'IN_PROGRESS', 'COMPLETED'] }, NOT: { genieSettings: { is: { enabled: false } } } },
     orderBy: { eventDate: 'asc' },
     select: {
       id: true, title: true, eventDate: true, endTime: true, status: true,
@@ -30,7 +31,8 @@ export async function GET(req: NextRequest) {
       id: e.id,
       title: e.title,
       eventDate: e.eventDate.toISOString(),
-      status: e.status,
+      // The wire allows BOOKED | IN_PROGRESS: an auto-completed event that hasn't expired is still running for the iPad
+      status: e.status === 'COMPLETED' ? 'IN_PROGRESS' : e.status,
       bundleVersion: e.genieSettings?.bundleVersion ?? 0,
       ready: !!e.genieSettings && e._count.genieTemplates > 0,
       designApprovalPending: pending.has(e.id),

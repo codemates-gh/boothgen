@@ -55,6 +55,16 @@ describe('start and end', () => {
 });
 
 describe('expired events', () => {
+  it('an event auto-completed while still running stays on iPads, reported as IN_PROGRESS', async () => {
+    const { tenant, client } = await seedTenant();
+    const { token } = await seedDevice(tenant.id);
+    const running = await seedEvent(tenant.id, client.id);
+    const now = Date.now();
+    await prisma.event.update({ where: { id: running.id }, data: { status: 'COMPLETED', eventDate: new Date(new Date(now - 2 * HOURS).toISOString().slice(0, 10)), startTime: new Date(now - 2 * HOURS), endTime: new Date(now + HOURS) } });
+    const list = await (await DEVICE_EVENTS(req('/x', { token }))).json();
+    expect(list.events.map((e: any) => [e.id, e.status])).toEqual([[running.id, 'IN_PROGRESS']]);
+  });
+
   it('iPads keep an event until 48 hours after it ends, then it drops off and its bundle is refused; operators still see it', async () => {
     const { tenant, client } = await seedTenant();
     session = { tenantId: tenant.id, tenantRole: 'HOST_ADMIN', userId: 'u1' };

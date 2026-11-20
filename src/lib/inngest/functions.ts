@@ -701,12 +701,14 @@ export const autoCompleteEvents = inngest.createFunction(
   { cron: '0 1 * * *' },
   async () => {
     const now = new Date();
-    // Use start-of-today so events happening today are never auto-completed.
-    const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+    // Only events that are surely over: the run is at 1 AM UTC (evening in the Americas), so an event dated "yesterday" in
+    // UTC may still be running. Its date must be over a day and a half ago, and its end time (if any) passed.
+    const cutoff = new Date(now.getTime() - 36 * 3600_000);
     const { count } = await prisma.event.updateMany({
       where: {
         status: { in: ['BOOKED', 'IN_PROGRESS'] },
-        eventDate: { lt: todayStart },
+        eventDate: { lt: cutoff },
+        OR: [{ endTime: null }, { endTime: { lt: now } }],
       },
       data: { status: 'COMPLETED' },
     });

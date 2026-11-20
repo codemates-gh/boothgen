@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.123.1] — 2026-11-19
+
+### Fixed
+- **An evening event no longer disappears from iPads once it starts.** The nightly job that marks past events completed runs at 1 AM UTC (8 PM Eastern). It treated an event dated today in the US as yesterday, so it marked the event completed while it was running, and iPads stopped listing it. That job now only completes events that are surely over (dated more than a day and a half ago, and past their end time). iPads list an event until it expires, 48 hours after it ends, even if it was marked completed.
+
+---
+
 ## [2.123.0] — 2026-11-19
 
 ### Changed
