@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.127.0] — 2026-11-20
+
+### Added
+- **Test Templates** (Genie event page, next to Duplicate): pick the event's templates and enter your own phone and/or email. Each template is drawn with sample photos, exactly as the iPad draws it (template text included), and sent with the event's real text or email message, marked "[Test]".
+  - It checks the design and the sharing setup before the event day, when iPads can only run tests.
+  - Nothing is added to the event's gallery, guest sessions or usage.
+  - Limited to 10 test texts and 20 test emails per event; the window shows how many are left.
+
+---
+
 ## [2.126.0] — 2026-11-20
 
 ### Changed

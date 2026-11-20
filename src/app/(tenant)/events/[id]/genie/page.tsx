@@ -7,7 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon, PersonStanding, Copy, Wand2 } from 'lucide-react';
+import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon, PersonStanding, Copy, Wand2, Send } from 'lucide-react';
 import { Field, Toggle, fmtDate, fmtDateTime } from '@/components/genie/parts';
 import { GalleryFields, type GalleryDefaults } from '@/components/genie/SettingsForms';
 import { Attract, AttractFields, Capture, CaptureFields, DefaultState, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
@@ -18,6 +18,7 @@ import GenieTemplates, { ApprovedDesign, EventTemplate, templateMismatch } from 
 import GenieTemplateText from './GenieTemplateText';
 import GenieEventDevices from './GenieEventDevices';
 import GenieShares from './GenieShares';
+import TestTemplates from './TestTemplates';
 import { Boomerang, BoomerangFields, LookAtCamera, LookAtCameraFields } from './CaptureExtras';
 import { EventPropsFields, type EventPropsValue } from './EventProps';
 import type { Prop } from '@/components/genie/Props';
@@ -174,6 +175,7 @@ export default function EventGeniePage() {
   const [deleteError, setDeleteError] = useState('');
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [duplicateError, setDuplicateError] = useState('');
 
   // A copy with the same Genie setup, starting today with the same times (works on expired events too)
@@ -273,11 +275,12 @@ export default function EventGeniePage() {
                 </div>
                 <p className="text-sm text-gray-500">{fmtDate(data.event.eventDate, 'UTC')}{data.event.boothEvent && data.event.venueName ? ` · ${data.event.venueName}` : ''}{data.settings ? ` · Bundle version ${data.settings.bundleVersion}` : ''}</p>
               </div>
-              {data.event.boothEvent && (
-                <div className="flex gap-2">
-                  {!ended && <Button variant="outline" size="sm" onClick={() => setEditing(true)}><Pencil className="w-3.5 h-3.5 mr-1"/>Edit Details</Button>}
-                  <Button variant="outline" size="sm" onClick={() => { setDuplicateError(''); setDuplicating(true); }}><Copy className="w-3.5 h-3.5 mr-1"/>Duplicate</Button>
-                  <Button variant="ghost" size="sm" onClick={() => { setDeleteError(''); setDeleting(true); }}><Trash2 className="w-3.5 h-3.5 mr-1"/>Delete</Button>
+              {(data.event.boothEvent || (data.settings && !ended)) && (
+                <div className="flex flex-wrap gap-2">
+                  {data.settings && !ended && data.templates.length > 0 && <Button variant="outline" size="sm" onClick={() => setTesting(true)}><Send className="w-3.5 h-3.5 mr-1"/>Test Templates</Button>}
+                  {data.event.boothEvent && !ended && <Button variant="outline" size="sm" onClick={() => setEditing(true)}><Pencil className="w-3.5 h-3.5 mr-1"/>Edit Details</Button>}
+                  {data.event.boothEvent && <Button variant="outline" size="sm" onClick={() => { setDuplicateError(''); setDuplicating(true); }}><Copy className="w-3.5 h-3.5 mr-1"/>Duplicate</Button>}
+                  {data.event.boothEvent && <Button variant="ghost" size="sm" onClick={() => { setDeleteError(''); setDeleting(true); }}><Trash2 className="w-3.5 h-3.5 mr-1"/>Delete</Button>}
                 </div>
               )}
             </div>
@@ -535,6 +538,8 @@ export default function EventGeniePage() {
           }}
           onSaved={() => { setEditing(false); load(); }}/>
       )}
+
+      <TestTemplates eventId={eventId} open={testing} onClose={() => setTesting(false)}/>
 
       <Modal open={duplicating} onClose={() => setDuplicating(false)} title="Duplicate Event">
         <p className="text-sm text-gray-600 mb-2">Makes a new booth event starting today (tomorrow if today's start time has passed), with the same times, venue and Genie setup (settings and templates). iPads, payments and photos aren&apos;t copied. Change its date with Edit Details.</p>

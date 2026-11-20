@@ -69,6 +69,28 @@ export async function renderThumbnail(l: Layout, samples: HTMLCanvasElement[], f
 }
 
 
+// The finished picture a guest gets: background, sample photos, then the overlay (template text already drawn into it
+// for the iPad's bundle), at most maxSide px on the long side, as a JPEG data URL (Test Templates)
+export async function renderComposite(l: Layout, samples: HTMLCanvasElement[], maxSide = 1800): Promise<string> {
+  const scale = Math.min(1, maxSide / Math.max(l.widthPx, l.heightPx));
+  const c = document.createElement('canvas'); c.width = round(l.widthPx * scale); c.height = round(l.heightPx * scale);
+  const g = c.getContext('2d')!;
+  g.scale(scale, scale);
+  g.fillStyle = l.backgroundColor; g.fillRect(0, 0, l.widthPx, l.heightPx);
+  if (l.background) g.drawImage(await loadImage(artUrl(l.background.url)), 0, 0, l.widthPx, l.heightPx);
+  for (const s of l.slots) {
+    g.save();
+    g.translate(s.x + s.width / 2, s.y + s.height / 2); g.rotate(s.rotationDegrees * Math.PI / 180);
+    const img = samples[s.shotIndex % samples.length];
+    const k = s.fit === 'fill' ? Math.max(s.width / img.width, s.height / img.height) : Math.min(s.width / img.width, s.height / img.height);
+    g.beginPath(); g.rect(-s.width / 2, -s.height / 2, s.width, s.height); g.clip();
+    g.drawImage(img, -img.width * k / 2, -img.height * k / 2, img.width * k, img.height * k);
+    g.restore();
+  }
+  if (l.overlay) g.drawImage(await loadImage(artUrl(l.overlay.url)), 0, 0, l.widthPx, l.heightPx);
+  return c.toDataURL('image/jpeg', 0.88);
+}
+
 // Saves the full-size guide (sample photos + safe line, no overlay) as <name>-<w>x<h>.png
 export async function downloadLayoutPng(layout: Layout, name: string, text?: TextToDraw): Promise<boolean> {
   const samples = [0, 1, 2, 3].map(makeSample);
