@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { fmtCents } from '@/lib/utils';
 import { TrendingUp, Printer, DollarSign, Plus, Trash2, ChevronDown, ChevronUp, Car } from 'lucide-react';
 import { MileageTripModal } from '@/app/(tenant)/bookkeeping/MileageModals';
+import Link from 'next/link';
+import type { EventLedgerSummary } from '@/lib/events/eventLedger';
 
 type Profile = { id: string; name: string; costPerPrintCents?: number; isDefault: boolean };
 type Expense = { id: string; description: string; amountCents: number; category: string };
@@ -145,13 +147,21 @@ function PrintLogOnly({ eventId }: { eventId: string }) {
 function FullProfitability({
   eventId,
   revenueCents,
+  invoiceRevenueCents,
+  ledger,
   currency,
 }: {
   eventId: string;
   revenueCents: number;
+  invoiceRevenueCents: number;
+  ledger: EventLedgerSummary | null;
   currency: string;
 }) {
   const fmt = (c: number) => fmtCents(c, currency);
+  // Entered by hand in Bookkeeping and linked to this event (report #14): counted here, edited in Bookkeeping
+  const ledgerIncome = ledger?.income ?? [];
+  const ledgerExpenses = ledger?.expenses ?? [];
+  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [printLog, setPrintLog] = useState<PrintLog>(null);
@@ -238,7 +248,7 @@ function FullProfitability({
   const printCostCents = printLog
     ? (printLog.printCount ?? 0) * (printLog.consumableProfile?.costPerPrintCents ?? 0)
     : 0;
-  const otherCostCents = expenses.reduce((sum, e) => sum + e.amountCents, 0);
+  const otherCostCents = expenses.reduce((sum, e) => sum + e.amountCents, 0) + (ledger?.expenseCents ?? 0);
   const mileageCents = mileage?.enabled && mileage.eligible ? mileage.calc?.amountCents ?? 0 : 0;
   const totalCostCents = printCostCents + otherCostCents + mileageCents;
   const profitCents = revenueCents - totalCostCents;
@@ -279,6 +289,35 @@ function FullProfitability({
 
       {expanded && (
         <CardContent className="space-y-5 pt-0">
+          {/* Revenue: invoice payments plus income entered in Bookkeeping for this event */}
+          {ledgerIncome.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-semibold flex items-center gap-1.5 text-gray-700"><DollarSign className="w-3.5 h-3.5" />Revenue</p>
+                <Link href="/bookkeeping" className="text-xs text-[#0085FF] hover:underline">Open Bookkeeping</Link>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-sm px-3 py-2">
+                  <span className="font-medium">Invoice payments</span>
+                  <span className="font-semibold">{fmt(invoiceRevenueCents)}</span>
+                </div>
+                {ledgerIncome.map(r => (
+                  <div key={r.id} className="flex items-center justify-between text-sm px-3 py-2">
+                    <div className="min-w-0">
+                      <span className="font-medium">{r.description}</span>
+                      <span className="ml-2 text-xs text-gray-400">{fmtDate(r.date)} · from Bookkeeping</span>
+                    </div>
+                    <span className={`font-semibold flex-shrink-0 ${r.amountCents < 0 ? 'text-red-600' : ''}`}>{fmt(r.amountCents)}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between text-sm font-semibold border-t pt-2 mt-2 px-3">
+                  <span>Total Revenue</span>
+                  <span>{fmt(revenueCents)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Print Log */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -423,7 +462,7 @@ function FullProfitability({
               </div>
             )}
 
-            {expenses.length > 0 ? (
+            {expenses.length > 0 || ledgerExpenses.length > 0 ? (
               <div className="space-y-1">
                 {expenses.map(e => (
                   <div key={e.id} className="flex items-center justify-between text-sm px-3 py-2 rounded-lg hover:bg-gray-50 group">
@@ -441,6 +480,15 @@ function FullProfitability({
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
+                  </div>
+                ))}
+                {ledgerExpenses.map(r => (
+                  <div key={r.id} className="flex items-center justify-between text-sm px-3 py-2">
+                    <div className="min-w-0">
+                      <span className="font-medium">{r.description}</span>
+                      <span className="ml-2 text-xs text-gray-400">{fmtDate(r.date)} · from Bookkeeping</span>
+                    </div>
+                    <span className="font-semibold flex-shrink-0">{fmt(r.amountCents)}</span>
                   </div>
                 ))}
                 <div className="flex justify-between text-sm font-semibold border-t pt-2 mt-2 px-3">
@@ -475,13 +523,17 @@ export default function EventProfitability({
   eventId,
   isAdmin,
   revenueCents,
+  invoiceRevenueCents,
+  ledger,
   currency,
 }: {
   eventId: string;
   isAdmin: boolean;
   revenueCents: number;
+  invoiceRevenueCents: number;
+  ledger: EventLedgerSummary | null;
   currency: string;
 }) {
   if (!isAdmin) return <PrintLogOnly eventId={eventId} />;
-  return <FullProfitability eventId={eventId} revenueCents={revenueCents} currency={currency} />;
+  return <FullProfitability eventId={eventId} revenueCents={revenueCents} invoiceRevenueCents={invoiceRevenueCents} ledger={ledger} currency={currency} />;
 }

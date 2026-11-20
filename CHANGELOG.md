@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.125.1] — 2026-11-20
+
+### Fixed
+- **Income and expenses you enter in Bookkeeping now show on the event they're linked to** (report #14). On the event's Profitability card, hand-entered income linked to the event counts in Revenue, hand-entered refunds lower it, and hand-entered expenses count in Total Cost. Each entry is listed on the card (date, description, amount, "from Bookkeeping"). Invoice payments, expenses added on the event page, mileage and print costs are counted as before, so nothing is counted twice. The "refund all" amount when cancelling an event still covers invoice payments only.
+
+---
+
 ## [2.125.0] — 2026-11-20
 
 ### Changed

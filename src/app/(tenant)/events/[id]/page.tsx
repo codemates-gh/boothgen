@@ -23,6 +23,7 @@ import EventAutomations, { type EventAutomationRow } from './EventAutomations';
 import { settleZeroInvoice } from '@/lib/invoices/payments';
 import { clientDisplayName } from '@/lib/clientName';
 import { assigneePayRow } from '@/lib/events/assigneePay';
+import { eventLedgerSummary } from '@/lib/events/eventLedger';
 
 
 const SC: Record<string,any> = { LEAD:'info', QUOTED:'warning', BOOKED:'brand', IN_PROGRESS:'brand', COMPLETED:'success', ARCHIVED:'default', CANCELLED:'danger', LOST:'default' };
@@ -81,6 +82,8 @@ export default async function EventDetailPage(
   const branding = await prisma.tenantBranding.findUnique({ where: { tenantId: session.tenantId }, select: { currency: true } });
   // Pay for the assigned person (admins only)
   const assigneePay = isAdmin ? await assigneePayRow(event.id) : null;
+  // Income and expenses entered by hand in Bookkeeping and linked to this event (admins; report #14)
+  const ledger = isAdmin ? await eventLedgerSummary(session.tenantId, event.id) : null;
   const genieEnabled = isAdmin && !!(await prisma.tenant.findUnique({ where: { id: session.tenantId }, select: { genieEnabled: true } }))?.genieEnabled;
   const fmt = (c: number) => fmtCents(c, branding?.currency ?? 'usd');
 
@@ -387,7 +390,9 @@ export default async function EventDetailPage(
           <EventProfitability
             eventId={event.id}
             isAdmin={isAdmin}
-            revenueCents={totalPaidCents}
+            revenueCents={totalPaidCents + (ledger?.incomeCents ?? 0)}
+            invoiceRevenueCents={totalPaidCents}
+            ledger={ledger}
             currency={branding?.currency ?? 'usd'}
           />
         </div>
