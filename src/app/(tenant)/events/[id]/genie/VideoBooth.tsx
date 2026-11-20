@@ -27,6 +27,9 @@ export function videoBoothBody(v: VideoBoothValue) {
   return { ...rest, prompts: rest.prompts.map(p => ({ id: p.id, text: p.text.trim() })), consentText: rest.consentText?.trim() || null };
 }
 
+// Recorded size per minute of video (Genie P14: H.264 30 fps, AAC mono)
+const MB_PER_MINUTE: Record<VideoSize, number> = { '720p': 15.7, '540p': 9.7, '480p': 6.5 };
+
 export const videoBoothNumbersFilled = (v: VideoBoothValue) => !Number.isNaN(v.maxSeconds) && !Number.isNaN(v.retakes);
 
 function PromptsEditor({ prompts, onChange, disabled }: { prompts: VideoBoothValue['prompts']; onChange: (p: VideoBoothValue['prompts']) => void; disabled?: boolean }) {
@@ -98,7 +101,7 @@ export function VideoBoothFields({ value, onChange, disabled }: { value: VideoBo
             <PromptsEditor prompts={value.prompts} disabled={disabled} onChange={prompts => onChange({ prompts })}/>
           </Field>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Longest video (seconds)" hint="10–120. Recording stops by itself at this length.">
+            <Field label="Longest video (seconds)" hint={`10–120. Recording stops by itself at this length. Longer videos are bigger and take longer to upload${Number.isNaN(value.maxSeconds) ? '' : `: up to about ${Math.max(1, Math.round(MB_PER_MINUTE[value.videoSize] * value.maxSeconds / 60))} MB each at ${value.videoSize}`}.`}>
               <Input type="number" min={10} max={120} className="w-24" disabled={disabled}
                 value={Number.isNaN(value.maxSeconds) ? '' : value.maxSeconds} onChange={e => onChange({ maxSeconds: parseInt(e.target.value, 10) })}/>
             </Field>

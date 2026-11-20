@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.130.1] — 2026-11-20
+
+### Changed
+- Video Booth → **Longest video**: the hint says longer videos are bigger and take longer to upload, and shows about how big a full-length video is at the chosen video size (e.g. about 8 MB for 30 seconds at 720p, 31 MB for 2 minutes).
+
+---
+
 ## [2.130.0] — 2026-11-20
 
 ### Added
