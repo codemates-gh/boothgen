@@ -2,7 +2,7 @@
 // Super Admin menu, grouped: a side menu on wide screens, a grouped dropdown on phones and tablets
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LayoutDashboard, Users, CreditCard, Mail, FileText, Settings, BookOpen, BarChart2, Star, Layout, Bug, Smile, Image as ImageIcon, Activity, HardDrive, PersonStanding, Wand2 } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, Mail, FileText, Settings, BookOpen, BarChart2, Star, Layout, Bug, Smile, Image as ImageIcon, Activity, HardDrive, PersonStanding, Wand2, RotateCw } from 'lucide-react';
 
 const GROUPS = [
   { label: 'Platform', items: [
@@ -22,6 +22,7 @@ const GROUPS = [
     { id: 'backdrops',        label: 'Backdrops',        icon: ImageIcon },
     { id: 'poses',            label: 'Poses',            icon: PersonStanding },
     { id: 'ai-themes',        label: 'AI themes',        icon: Wand2 },
+    { id: 'genie-360',        label: 'Genie 360',        icon: RotateCw },
   ] },
   { label: 'Payments & email', items: [
     { id: 'payment',         label: 'Payment Processing', icon: CreditCard },

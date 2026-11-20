@@ -62,10 +62,12 @@ export default function BackdropsManager() {
             {rows && <> <span className="font-medium text-gray-700">{on} on</span> · {rows.length - on} off.</>}
           </p>
           <p className="text-xs text-gray-400">{BACKDROP_UPLOAD_HINT}</p>
+          <p className="text-xs text-gray-400">360 panoramas (wide images, up to 6000 px) are offered only in Genie 360, first in its backdrop picker; photo booths don&apos;t list them.</p>
         </div>
         <div className="flex flex-wrap gap-2 items-start">
           <Button variant="outline" onClick={importStarter} disabled={importing}><Download className="w-4 h-4 mr-1.5"/>{importing ? 'Importing…' : 'Import starter backdrops'}</Button>
           <BackdropUploadButton scope="standard" onDone={saved}/>
+          <BackdropUploadButton scope="standard" pano label="Upload 360 Panorama" variant="outline" onDone={saved}/>
         </div>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -84,7 +86,7 @@ export default function BackdropsManager() {
               <CardContent className="pt-1 pb-3 px-3 flex-1 flex flex-col gap-1.5">
                 <div className="flex items-start justify-between gap-1">
                   <p className="font-medium text-sm leading-tight">{b.name}</p>
-                  {!b.isActive && <Badge variant="default">Off</Badge>}
+                  <span className="flex gap-1">{b.is360 && <Badge variant="info">360</Badge>}{!b.isActive && <Badge variant="default">Off</Badge>}</span>
                 </div>
                 <p className="text-xs text-gray-400">{b.width}×{b.height}</p>
                 <div className="flex flex-wrap gap-1 mt-auto">

@@ -7,7 +7,7 @@ import { BoothOffline, FadeInImg, UploadingIndicator, useWaitingFor, useWaitingP
 import { LONG_WAIT_MS } from '@/lib/genie/guestWaiting';
 import { BeforeAfter } from '@/components/genie/BeforeAfter';
 
-type Asset = { id: string; url: string; width: number | null; height: number | null; isGallery: boolean; isBoomerang?: boolean; posterUrl?: string | null; originalUrl?: string; afterLabel?: string; isVideoMessage?: boolean; promptText?: string | null; durationMs?: number | null };
+type Asset = { id: string; url: string; width: number | null; height: number | null; isGallery: boolean; isBoomerang?: boolean; posterUrl?: string | null; originalUrl?: string; afterLabel?: string; isVideoMessage?: boolean; promptText?: string | null; durationMs?: number | null; is360?: boolean };
 
 async function downloadFile(url: string, name: string) {
   try {
@@ -65,10 +65,10 @@ export default function GuestSessionPage() {
   // A Video Booth message plays with sound; a Boomerang (or PC booth clip) loops muted
   const video = assets.find(a => a.isVideoMessage);
   const boomerang = assets.find(a => a.isBoomerang && !a.isVideoMessage);
-  const videoPending = data.videoPending as { posterUrl: string; width: number | null; height: number | null } | null;
+  const videoPending = data.videoPending as { posterUrl: string; width: number | null; height: number | null; is360?: boolean } | null;
   const print = assets.find(a => a.isGallery);
   const shots = assets.filter(a => !a.isGallery && !a.isBoomerang);
-  const fileName = (a: Asset, i: number) => a.isVideoMessage ? 'video-message.mp4' : a.isBoomerang ? 'boomerang.mp4' : (a.isGallery ? 'photo-booth' : 'photo-' + (i + 1)) + '.jpg';
+  const fileName = (a: Asset, i: number) => a.is360 ? '360-video.mp4' : a.isVideoMessage ? 'video-message.mp4' : a.isBoomerang ? 'boomerang.mp4' : (a.isGallery ? 'photo-booth' : 'photo-' + (i + 1)) + '.jpg';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -103,7 +103,7 @@ export default function GuestSessionPage() {
               <div className="relative">
                 <FadeInImg src={videoPending.posterUrl} alt="Your video" className="block mx-auto w-auto h-auto max-w-full max-h-[75vh] rounded-lg bg-black"/>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/60 text-white text-sm font-medium"><Video className="w-4 h-4"/>Your video is on its way</span>
+                  <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/60 text-white text-sm font-medium"><Video className="w-4 h-4"/>Your {videoPending.is360 ? '360 ' : ''}video is on its way</span>
                 </div>
               </div>
               <p className="text-sm text-gray-500 text-center">The booth sends videos after photos, so it can take a while. This page shows it as soon as it arrives. Keep or bookmark this link to come back to it.</p>
@@ -125,7 +125,7 @@ export default function GuestSessionPage() {
         ) : (
           <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-3">
-              <h1 className="text-xl font-bold text-gray-900">{video && assets.length === 1 ? 'Your Video' : boomerang && assets.length === 1 ? 'Your Boomerang' : 'Your Photos'}</h1>
+              <h1 className="text-xl font-bold text-gray-900">{video && assets.length === 1 ? (video.is360 ? 'Your 360 Video' : 'Your Video') : boomerang && assets.length === 1 ? 'Your Boomerang' : 'Your Photos'}</h1>
               {assets.length > 1 && (
                 <button
                   onClick={async () => {
@@ -147,7 +147,8 @@ export default function GuestSessionPage() {
             </div>
 
             {video && (
-              <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+              <div className="relative bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+                {video.is360 && <span className="absolute top-6 left-6 z-10 px-2 py-1 rounded-md bg-black/60 text-white text-[11px] font-semibold pointer-events-none">360</span>}
                 {/* Sound and controls; the poster first and tap to play (phones don't autoplay with sound) */}
                 <video
                   src={video.url}

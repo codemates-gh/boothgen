@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { addOnName, addOnPrices, glamourStyleReady } from '@/lib/genie/addOns';
 import { aiBoothData } from '@/lib/genie/ai/eventConfig';
 import { videoBoothData } from '@/lib/genie/videoBooth';
+import { genie360Ready, spin360Data, storedSpin360 } from '@/lib/genie/spin360';
 import { DEFAULT_CONSENT_TEXT, DEFAULT_READY_TEXT, aiSettings } from '@/lib/genie/ai/settings';
 import { eventAllowance } from '@/lib/genie/ai/renders';
 import { NextRequest, NextResponse } from 'next/server';
@@ -90,6 +91,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     approvedDesign: approved ? { id: approved.id, version: approved.version, filename: approved.filename, approvedAt: approved.approvedAt } : null,
     briefTemplate: briefTemplate ? { id: briefTemplate.id, name: briefTemplate.name } : null,
     defaults: { saved: defaults.saved, timeZone: defaults.values.timeZone },
+    // Genie 360 (Genie P15): offered once Super Admin turns it on (an event that already has it keeps it)
+    genie360: { available: await genie360Ready() },
     // The event's props (including any Super Admin has since switched off), in the guests' order
     chosenProps: chosenProps.map(propView),
     chosenBackdrops: chosenBackdrops.map(backdropView),
@@ -178,6 +181,13 @@ export async function PATCH(req: NextRequest, props0: { params: Promise<{ id: st
     const v = await videoBoothData(parsed.data.videoBooth, s.videoBooth, auth.tenantId);
     if ('error' in v) return NextResponse.json({ error: v.error, path: v.path }, { status: 400 });
     result.data.videoBooth = v.value;
+  }
+  if (parsed.data.spin360) {
+    // Genie 360 can be turned on only once it's available (Super Admin); an event that has it can keep it
+    if (parsed.data.spin360.enabled && !storedSpin360(s.spin360)?.enabled && !(await genie360Ready())) return NextResponse.json({ error: "Genie 360 isn't available yet", path: 'spin360' }, { status: 400 });
+    const v = await spin360Data(parsed.data.spin360, s.spin360, auth.tenantId);
+    if ('error' in v) return NextResponse.json({ error: v.error, path: v.path }, { status: 400 });
+    result.data.spin360 = v.value;
   }
   if (parsed.data.poses) {
     const p = await posesData(parsed.data.poses, s.poseIds, auth.tenantId);

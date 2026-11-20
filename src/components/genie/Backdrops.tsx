@@ -10,7 +10,7 @@ import { artUrl } from './parts';
 export type Backdrop = {
   id: string; name: string; source: 'standard' | 'account';
   image: { url: string; sha256: string; bytes: number }; thumbnail: { url: string } | null;
-  width: number; height: number; isActive: boolean;
+  width: number; height: number; isActive: boolean; is360?: boolean;
 };
 
 export function BackdropThumb({ backdrop, className = 'w-full aspect-[3/2]' }: { backdrop: Pick<Backdrop, 'image' | 'thumbnail' | 'name'>; className?: string }) {
@@ -20,7 +20,7 @@ export function BackdropThumb({ backdrop, className = 'w-full aspect-[3/2]' }: {
 const MAX_MB = 25;
 
 // Presign, PUT, then process (shrunk to ≤ 1800 px, JPEG, thumbnail) and saved as a backdrop
-async function uploadBackdrop(file: File, scope: 'mine' | 'standard', onPct: (n: number) => void, replace?: { id: string; name: string }) {
+async function uploadBackdrop(file: File, scope: 'mine' | 'standard', onPct: (n: number) => void, replace?: { id: string; name: string }, pano = false) {
   if (file.type !== 'image/jpeg' && file.type !== 'image/png') throw new Error('Use a JPG or PNG image.');
   if (file.size > MAX_MB * 1024 * 1024) throw new Error(`Backdrops must be ${MAX_MB} MB or smaller.`);
   const r = await fetch('/api/genie-backdrops/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope, contentType: file.type, bytes: file.size }) });
@@ -28,15 +28,17 @@ async function uploadBackdrop(file: File, scope: 'mine' | 'standard', onPct: (n:
   if (!r.ok) throw new Error(d.error || 'Could not start the upload');
   if (!(await putWithProgress(d.uploadUrl, file, onPct))) throw new Error("The upload didn't go through. Check your connection and try again.");
   const name = replace?.name ?? (file.name.replace(/\.(jpe?g|png)$/i, '').replace(/[-_]+/g, ' ').trim().slice(0, 80) || 'Backdrop');
-  const p = await fetch('/api/genie-backdrops/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope, url: d.url, name, ...(replace ? { replaceId: replace.id } : {}) }) });
+  const p = await fetch('/api/genie-backdrops/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope, url: d.url, name, ...(replace ? { replaceId: replace.id } : {}), ...(pano ? { pano: true } : {}) }) });
   const pd = await p.json().catch(() => ({}));
   if (!p.ok) throw new Error(pd.error || "That image couldn't be converted. Try a different one.");
   return pd as { backdrop: Backdrop; warning?: string };
 }
 
 // Upload (or Replace) button; reports the saved backdrop, and any "may look soft" warning
-export function BackdropUploadButton({ scope, onDone, replace, label = 'Upload Backdrop', variant = 'default', size = 'default', disabled }: {
+export function BackdropUploadButton({ scope, onDone, replace, label = 'Upload Backdrop', variant = 'default', size = 'default', disabled, pano }: {
   scope: 'mine' | 'standard'; onDone: (b: Backdrop, warning?: string) => void; replace?: { id: string; name: string };
+  // A Genie 360 panorama (Super Admin): up to 6000 px wide, tagged 360
+  pano?: boolean;
   label?: string; variant?: 'default' | 'outline'; size?: 'default' | 'sm'; disabled?: boolean;
 }) {
   const ref = useRef<HTMLInputElement>(null);
@@ -45,7 +47,7 @@ export function BackdropUploadButton({ scope, onDone, replace, label = 'Upload B
   async function go(f: File) {
     setError(''); setBusy('Uploading…');
     try {
-      const r = await uploadBackdrop(f, scope, pct => setBusy(pct < 100 ? `Uploading ${pct}%` : 'Shrinking…'), replace);
+      const r = await uploadBackdrop(f, scope, pct => setBusy(pct < 100 ? `Uploading ${pct}%` : 'Shrinking…'), replace, pano);
       onDone(r.backdrop, r.warning);
     } catch (e) { setError((e as Error).message); }
     setBusy('');

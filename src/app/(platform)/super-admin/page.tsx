@@ -19,6 +19,7 @@ import FoundingMembersCard from './FoundingMembersCard';
 import DesignTemplatesManager from './DesignTemplatesManager';
 import PropsManager from './PropsManager';
 import BackdropsManager from './BackdropsManager';
+import Genie360Manager from './Genie360Manager';
 import GenieUsage from './GenieUsage';
 import GeniusRuleCard from './GeniusRuleCard';
 import ReportsTriage from './ReportsTriage';
@@ -28,7 +29,7 @@ import StorageUsage from './StorageUsage';
 import { DEFAULT_UPLOAD_LIMITS, getUploadLimits } from '@/lib/gallery/uploadRules';
 
 
-const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'props', 'backdrops', 'poses', 'ai-themes', 'genie-usage', 'storage', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
+const VALID_TABS = ['overview', 'analytics', 'operators', 'founding', 'design-templates', 'props', 'backdrops', 'poses', 'ai-themes', 'genie-360', 'genie-usage', 'storage', 'reports', 'payment', 'email-logs', 'email-templates', 'blog', 'settings'] as const;
 type Tab = typeof VALID_TABS[number];
 
 const TENANT_BADGE: Record<string, 'warning' | 'success' | 'danger' | 'default'> = {
@@ -328,6 +329,17 @@ export default async function SuperAdminPage(props: { searchParams: Promise<{ ta
               <p className="text-sm text-gray-500 mt-1">Virtual backdrops for Genie background removal: the iPad cuts guests out of the real background and puts them on one of these. Operators choose per event.</p>
             </div>
             <BackdropsManager />
+          </>
+        )}
+
+        {/* GENIE 360 */}
+        {tab === 'genie-360' && (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Genie 360</h1>
+              <p className="text-sm text-gray-500 mt-1">The spinner booth (Genie P15): a paid add-on per event. Styles with their Example videos, the Standard music library, royalty-free music links and animated overlays. 360 panorama backdrops are under Backdrops.</p>
+            </div>
+            <Genie360Manager />
           </>
         )}
 

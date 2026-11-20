@@ -16,6 +16,8 @@ import { PosesPatch, posesView } from './poses';
 import { AiBoothPatch, aiBoothView } from './ai/eventConfig';
 import { SharingStationPatch, sharingStationData, sharingStationView } from './sharingStation';
 import { VideoBoothPatch } from './videoBoothOptions';
+import { Spin360Patch } from './spin360Options';
+import { spin360View } from './spin360';
 import { videoBoothDesignProblem, videoBoothView } from './videoBooth';
 
 // ── Lock ────────────────────────────────────────────────────────────────────
@@ -165,6 +167,8 @@ export const SettingsPatch = z.object({
   aiBooth: AiBoothPatch,
   // Video Booth (Genie P14; account defaults + per event); saved by videoBoothData (it checks the template)
   videoBooth: VideoBoothPatch,
+  // Genie 360 (Genie P15; per event, a paid add-on); saved by spin360Data (it checks the library choices)
+  spin360: Spin360Patch,
   // Sections to put back on the account defaults (they follow default changes again)
   reset: z.array(z.enum(['timeZone', 'capture', 'sharing', 'printing', 'attract', 'poses', 'gallery', 'videoBooth'])).min(1),
 }).partial().strict();
@@ -307,6 +311,7 @@ export function settingsView(s: EventGenieSettings) {
     sharingStation: sharingStationView(s),
     aiBooth: aiBoothView(s),
     videoBooth: videoBoothView(s.videoBooth),
+    spin360: spin360View(s.spin360),
     gallery: { uploadAll: s.sharingUploadAll, autoPublish: s.galleryAutoPublish, autoPublishedAt: s.galleryAutoPublishedAt },
     // Which sections were customized for this event (false = follows the account's Genie defaults)
     custom: { timeZone: s.customTimeZone, capture: s.customCapture, sharing: s.customSharing, printing: s.customPrinting, attract: s.customAttract, poses: s.customPoses, gallery: s.customGallery, videoBooth: s.customVideoBooth },

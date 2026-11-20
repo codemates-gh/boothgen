@@ -119,6 +119,8 @@ async function deleteUnusedAttractKeys(keys: string[]): Promise<number> {
       SELECT (
         (SELECT count(*) FROM genie_defaults WHERE attract::text LIKE ${pattern})
         + (SELECT count(*) FROM event_genie_settings WHERE attract::text LIKE ${pattern})
+        -- Genie 360 intros and outros are encoded by the same pipeline
+        + (SELECT count(*) FROM event_genie_settings WHERE spin360::text LIKE ${pattern})
       ) AS n`;
     if (Number(n) > 0) continue;
     try { await deleteFromR2(key); deleted++; } catch (err) { console.error('[genie] attract cleanup failed', key, err); }

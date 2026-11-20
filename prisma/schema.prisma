@@ -246,6 +246,8 @@ model Tenant {
   genieDefaults        GenieDefaults?
   genieProps           GenieProp[]
   genieBackdrops       GenieBackdrop[]
+  genieMusicTracks     GenieMusicTrack[]
+  genieSpinOverlays    GenieSpinOverlay[]
   genieClipDesigns     GenieClipDesign[]
   geniePoses           GeniePose[]
   geniePayments        GenieEventPayment[]
@@ -761,6 +763,8 @@ model GalleryAsset {
   // Video Booth (Genie P14): the prompt the guest answered, as they saw it
   promptId       String?
   promptText     String?
+  // Genie 360 (P15): "spin360" on a 360 clip and its poster (a 360 badge, its own gallery rule)
+  genieMode      String?
   // Hidden by the host (Videos tab): left out of the public gallery and the guest's session page
   hiddenAt       DateTime?
   // Genie Sharing station (P12): photos from PC booth software. source "genie" (null) | "pcBooth", the print box
@@ -1453,6 +1457,9 @@ model EventGenieSettings {
   // Video Booth (Genie P14; StoredVideoBooth in src/lib/genie/videoBooth.ts): prompts, length, retakes, video size,
   // shape + template, consent text (null = BoothGen's default), show in gallery. null = off with BoothGen's defaults
   videoBooth                   Json?
+  // Genie 360 (Genie P15; StoredSpin360 in src/lib/genie/spin360Options.ts): the spinner booth. A paid per-event add-on;
+  // null = off. The bundle's spin360 is resolved from it (the chosen style written out, every default filled in)
+  spin360                      Json?
   // Pose ideas (PosesConfig): account Event defaults + per-event override; poseIds = GeniePose ids in the guests' order
   posesEnabled                 Boolean   @default(false)
   poseIds                      Json      @default("[]")
@@ -1521,6 +1528,9 @@ model GenieSession {
   createdAt   DateTime  @default(now())
   // The guest cancelled on review: files and images are gone, the row stays so late uploads get 410 session_deleted
   deletedAt   DateTime?
+  // Genie 360 (P15): mode "spin360" and the 360 style used; null = a photo booth session
+  mode        String?
+  styleId     String?
 
   tenant  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   event   Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -1927,6 +1937,8 @@ model GenieBackdrop {
   thumbnail Json?
   width     Int
   height    Int
+  // "360": a wide panorama for Genie 360 (up to 6000 px; offered first in the 360 backdrop picker, not to photo booths)
+  tags      String[] @default([])
   isActive  Boolean  @default(true)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
@@ -1936,6 +1948,87 @@ model GenieBackdrop {
 
   @@index([tenantId])
   @@map("genie_backdrops")
+}
+
+// Genie 360 styles (Genie P15): Standard presets managed in Super Admin. Each is a speed ramp (segments), the capture
+// frame rate, optional default song and effects, and a sample video labelled "Example". Ids are stable (classic, …).
+model GenieSpinStyle {
+  id             String   @id
+  name           String
+  description    String
+  // Bumped when the segments or capture change, so the iPhone knows the resolved style changed
+  version        Int      @default(1)
+  captureFps     Int      @default(120)
+  // [{ from, to, direction: forward | reverse, speedStart, speedEnd, transition: cut | flash | blur }]
+  segments       Json
+  defaultMusicId String?
+  // { lightTrails?: boolean, backgroundRemoval?: boolean }: effects picking the style switches on
+  defaultEffects Json     @default("{}")
+  // RemoteAsset-like { url, contentType, bytes } of the MP4 "Example" video, and its poster
+  sampleVideo    Json?
+  samplePoster   Json?
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("genie_spin_styles")
+}
+
+// Genie 360 music (Genie P15): Standard tracks (tenantId null, Super Admin) and songs each account uploads (with the
+// operator's confirmation that they have the rights). Files are the MP3 / M4A as uploaded, content-addressed in R2.
+model GenieMusicTrack {
+  id                String    @id @default(cuid())
+  tenantId          String?
+  name              String
+  moods             String[]  @default([])
+  // RemoteAsset { url, sha256, contentType: audio/mpeg | audio/mp4, bytes }
+  file              Json
+  durationMs        Int
+  credit            String?
+  // Super Admin only: which service, plan and date the track was made / licensed on
+  licenseNotes      String?   @db.Text
+  rightsConfirmedAt DateTime?
+  isActive          Boolean   @default(true)
+  sortOrder         Int       @default(0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("genie_music_tracks")
+}
+
+// Royalty-free music sites shown in the 360 Music block (affiliate links; Super Admin)
+model GenieMusicLink {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  note      String   @default("")
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("genie_music_links")
+}
+
+// Genie 360 animated overlays (Genie P15): Standard (tenantId null, Super Admin) and each account's uploads. Animated
+// PNG / WebP / GIF or MOV with transparency, ≤ 15 MB, stored as uploaded, content-addressed in R2.
+model GenieSpinOverlay {
+  id        String   @id @default(cuid())
+  tenantId  String?
+  name      String
+  // RemoteAsset { url, sha256, contentType: image/png | image/webp | image/gif | video/quicktime, bytes }
+  file      Json
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("genie_spin_overlays")
 }
 
 // Pose library (PoseAsset in the Genie repo's shared/schemas): Standard (tenantId null, switched on or off in Super

@@ -4,6 +4,27 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.131.0] — 2026-11-21
+
+### Added
+- **Genie 360 (the spinner booth), BoothGen side, hidden until it's switched on.** A paid add-on per event ($25 default, set in Super Admin). Operators don't see it until Super Admin turns on **Genie 360 available**; the plan is to turn that on with the Genie TestFlight build.
+  - **Event → Genie → Genie 360.** "Add Genie 360" puts the add-on on the event's bill; videos show a watermark until it's paid. The easy path is three steps:
+    - **Style:** six cards, each playing its "Example" video, or a speed-ramp drawing until the video is uploaded.
+    - **Music:** Standard songs with play buttons. Operators can upload an MP3 or M4A (up to 10 MB and 6 minutes) after ticking the rights box. They pick the start point on a waveform, preview 15 seconds and set the volume. A "Find royalty-free music" panel lists the music sites.
+    - **Design:** portrait, square or landscape, a template from the clip designer, and optional title text.
+
+    After those come **Intro & outro** (none, one-click logo card, image or video) and **Recording light**. A folded **Advanced** holds everything else: length, size, recording, capture fps, custom speed ramp, animated overlay, background removal with 360 backdrops, light trails, room sound, upload mode, gallery and consent.
+  - **Super Admin → Genie 360:**
+    - the available switch and add-on price;
+    - the six styles: edit them and upload each style's Example video;
+    - the Standard music library, with licence notes;
+    - royalty-free music links;
+    - Standard animated overlays.
+  - **Backdrops:** Super Admin can upload **360 panoramas** up to 6000 px wide. They're offered only in Genie 360, first in its backdrop picker; photo booth pickers leave them out.
+  - **Galleries:** 360 videos show in the event's public gallery by default (they can be turned off per event), with a 360 badge. The Videos tab gets a 360 filter, and the guest page says "Your 360 Video" with a badge.
+  - Duplicating an event copies its 360 setup.
+  - **Not done yet:** sending 360 settings to the iPhone. That waits for Genie's schemas (P15 item 2).
+  - **Needs SQL:** `docs/genie/apply-production-genie-360.sql`.
 ## [2.130.4] — 2026-11-21
 
 ### Changed

@@ -13,6 +13,9 @@ import { keyForUrl, type RemoteAsset } from './templateAssets';
 // Wire shapes: BackdropsConfig.json / BackdropAsset.json in the Genie repo's shared/schemas.
 
 export const BACKDROP_MAX_SIDE = 1800; // never bigger than the 4x6 print at 300 dpi
+// Genie 360 panoramas (tag "360"): wide images the backdrop turns across as the arm spins
+export const PANO_MAX_SIDE = 6000;
+export const PANO_TAG = '360';
 export const BACKDROP_SMALL_SIDE = 1200; // below this (long side) it may look soft: a warning, not a block
 export const BACKDROP_THUMB_WIDTH = 360;
 export const BACKDROP_SOURCE_MAX_BYTES = 25 * 1024 * 1024;
@@ -44,7 +47,8 @@ export type ProcessedBackdrop = { image: RemoteAsset; thumbnail: RemoteAsset; wi
 
 // Turns an uploaded source (JPEG/PNG under .../uploads/) into the stored backdrop: long side at most 1800 px, PNG
 // transparency flattened onto white, JPEG about quality 88, plus a 360 px wide thumbnail. The source is deleted.
-export async function processBackdropUpload(url: string, scope: BackdropScope, tenantId: string | null): Promise<ProcessedBackdrop | { error: string }> {
+export async function processBackdropUpload(url: string, scope: BackdropScope, tenantId: string | null, pano = false): Promise<ProcessedBackdrop | { error: string }> {
+  const maxSide = pano ? PANO_MAX_SIDE : BACKDROP_MAX_SIDE;
   const key = keyForUrl(url);
   if (!key || key.includes('..') || !key.startsWith(uploadPrefix(scope, tenantId))) return { error: "That upload isn't in your account's storage." };
   const { run, probe } = await import('./attractEncode');
@@ -58,7 +62,7 @@ export async function processBackdropUpload(url: string, scope: BackdropScope, t
     if (!(await probe(src))) return { error: "That image couldn't be read. Use a JPG or PNG." };
     const out = path.join(dir, 'out.jpg'), thumb = path.join(dir, 'thumb.jpg');
     // Scale down only; a white layer under the picture flattens any transparency; ffmpeg applies EXIF rotation
-    const vf = `scale=w='min(${BACKDROP_MAX_SIDE},iw)':h='min(${BACKDROP_MAX_SIDE},ih)':force_original_aspect_ratio=decrease,format=rgba,split[fg][w];[w]drawbox=x=0:y=0:w=iw:h=ih:color=white@1:t=fill[bg];[bg][fg]overlay=format=auto,format=yuvj420p`;
+    const vf = `scale=w='min(${maxSide},iw)':h='min(${maxSide},ih)':force_original_aspect_ratio=decrease,format=rgba,split[fg][w];[w]drawbox=x=0:y=0:w=iw:h=ih:color=white@1:t=fill[bg];[bg][fg]overlay=format=auto,format=yuvj420p`;
     const r = await run(['-y', '-i', src, '-filter_complex', vf, '-frames:v', '1', '-q:v', '3', out]);
     if (r.code !== 0) { console.error('[backdrop] convert failed', r.stderr.slice(-2000)); return { error: "That image couldn't be converted. Try a different file." }; }
     const t = await run(['-y', '-i', out, '-vf', `scale=${BACKDROP_THUMB_WIDTH}:-2`, '-frames:v', '1', '-q:v', '5', thumb]);
@@ -71,7 +75,8 @@ export async function processBackdropUpload(url: string, scope: BackdropScope, t
     const long = Math.max(info.width, info.height);
     return {
       image, thumbnail, width: info.width, height: info.height,
-      ...(long < BACKDROP_SMALL_SIDE ? { warning: `It's ${info.width}×${info.height}, so it may look soft in prints. 1800×1200 or larger is best.` } : {}),
+      ...(pano ? (info.width < 3000 ? { warning: `It's ${info.width}×${info.height}, so it may look soft as the backdrop turns. 6000 px wide is best.` } : {})
+        : long < BACKDROP_SMALL_SIDE ? { warning: `It's ${info.width}×${info.height}, so it may look soft in prints. 1800×1200 or larger is best.` } : {}),
     };
   } finally {
     await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
@@ -91,10 +96,11 @@ export function backdropAsset(b: GenieBackdrop) {
 }
 
 export function backdropView(b: GenieBackdrop) {
-  return { ...backdropAsset(b), thumbnail: (b.thumbnail as RemoteAsset | null) ?? null, width: b.width, height: b.height, isActive: b.isActive };
+  return { ...backdropAsset(b), thumbnail: (b.thumbnail as RemoteAsset | null) ?? null, width: b.width, height: b.height, isActive: b.isActive, is360: b.tags.includes(PANO_TAG) };
 }
 
-export const libraryBackdropsWhere = (tenantId: string) => ({ OR: [{ tenantId: null, isActive: true }, { tenantId }] });
+// Photo booth pickers leave Genie 360 panoramas out (they're offered in the 360 section)
+export const libraryBackdropsWhere = (tenantId: string) => ({ OR: [{ tenantId: null, isActive: true }, { tenantId }], NOT: { tags: { has: PANO_TAG } } });
 
 export async function eventsUsingBackdrop(id: string): Promise<number> {
   const [{ n }] = await prisma.$queryRaw<{ n: bigint }[]>`SELECT count(*) AS n FROM event_genie_settings WHERE "backdropIds" @> ${JSON.stringify([id])}::jsonb`;

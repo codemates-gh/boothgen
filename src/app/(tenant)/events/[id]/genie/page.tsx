@@ -7,7 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon, PersonStanding, Copy, Wand2, Send, Video } from 'lucide-react';
+import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon, PersonStanding, Copy, Wand2, Send, Video, RotateCw } from 'lucide-react';
 import { Field, Toggle, fmtDate, fmtDateTime } from '@/components/genie/parts';
 import { GalleryFields, type GalleryDefaults } from '@/components/genie/SettingsForms';
 import { Attract, AttractFields, Capture, CaptureFields, DefaultState, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
@@ -30,6 +30,7 @@ import { GLAMOUR_STYLE_URL } from '@/lib/genie/addOns';
 import { GeniefiedFields, type AiBoothValue, type GeniefiedInfo } from './Geniefied';
 import { SharingStationFields, type SharingStationValue } from './SharingStation';
 import { VideoBoothFields, videoBoothBody, videoBoothNumbersFilled, type VideoBoothValue } from './VideoBooth';
+import { Genie360Fields, spin360Body, spin360NumbersFilled, type Spin360Value } from './Genie360';
 
 type Settings = {
   enabled: boolean; timeZone: string; bundleVersion: number; maxDevices: number; capture: Capture;
@@ -47,10 +48,13 @@ type Settings = {
   gallery: GalleryDefaults & { autoPublishedAt: string | null };
   aiBooth: AiBoothValue;
   videoBooth: VideoBoothValue;
+  spin360: Spin360Value;
   custom: { timeZone: boolean; capture: boolean; sharing: boolean; printing: boolean; attract: boolean; poses: boolean; gallery: boolean; videoBooth: boolean };
 };
 type Dashboard = {
   geniefied: GeniefiedInfo;
+  // Genie 360 (P15): offered once Super Admin makes it available
+  genie360: { available: boolean };
   event: { id: string; title: string; eventDate: string; startTime: string | null; endTime: string | null; venueName: string | null; boothEvent: boolean };
   billing: (
     { paysPerEvent: false } | { paysPerEvent: true; paid: boolean; payments: number; ipadsCovered: number; ipadsPerPayment: number; priceCents: number }
@@ -70,7 +74,7 @@ type Dashboard = {
   chosenBackdrops: Backdrop[];
   chosenPoses: Pose[];
 };
-type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'liveView' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval' | 'poses' | 'sharingStation' | 'gallery' | 'aiBooth' | 'videoBooth'> & { filters: Omit<Settings['filters'], 'available'> };
+type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'liveView' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval' | 'poses' | 'sharingStation' | 'gallery' | 'aiBooth' | 'videoBooth' | 'spin360'> & { filters: Omit<Settings['filters'], 'available'> };
 
 
 function toForm(s: Settings): Form {
@@ -85,13 +89,14 @@ function toForm(s: Settings): Form {
     gallery: { ...s.gallery },
     aiBooth: { ...s.aiBooth, themeIds: [...s.aiBooth.themeIds] },
     videoBooth: { ...s.videoBooth, prompts: s.videoBooth.prompts.map(p => ({ ...p })) },
+    spin360: JSON.parse(JSON.stringify(s.spin360)),
   };
 }
 
 // The save body: "look at the camera" and Boomerang go only when changed, so saving other sections leaves them out
 // of the bundle (Genie's own defaults apply until the operator sets them)
 function patchBody(form: Form, saved: Settings) {
-  const { lookAtCamera, boomerang, attract, props, backgroundRemoval, poses, sharingStation, gallery, aiBooth, videoBooth, ...rest } = form;
+  const { lookAtCamera, boomerang, attract, props, backgroundRemoval, poses, sharingStation, gallery, aiBooth, videoBooth, spin360, ...rest } = form;
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const { overlay, designProblem: _p, ...b } = boomerang;
   return {
@@ -110,6 +115,8 @@ function patchBody(form: Form, saved: Settings) {
     ...(same(aiBooth, saved.aiBooth) ? {} : { aiBooth }),
     // Video Booth only when changed, so saving other sections keeps the event following the Event defaults
     ...(same(videoBooth, saved.videoBooth) ? {} : { videoBooth: videoBoothBody(videoBooth) }),
+    // Genie 360 only when changed
+    ...(same(spin360, saved.spin360) ? {} : { spin360: spin360Body(spin360) }),
     ...(same(gallery, saved.gallery) ? {} : { gallery: { uploadAll: gallery.uploadAll, autoPublish: gallery.autoPublish } }),
   };
 }
@@ -212,7 +219,7 @@ export default function EventGeniePage() {
 
   async function save() {
     if (!form) return;
-    if (!numbersFilled(form.capture, form.printing, { frames: form.boomerang.frameCount, attract: form.attract.returnAfterSeconds }) || !videoBoothNumbersFilled(form.videoBooth)) { setSaveError('Fill in every number before saving.'); return; }
+    if (!numbersFilled(form.capture, form.printing, { frames: form.boomerang.frameCount, attract: form.attract.returnAfterSeconds }) || !videoBoothNumbersFilled(form.videoBooth) || !spin360NumbersFilled(form.spin360)) { setSaveError('Fill in every number before saving.'); return; }
     setSaving(true); setSaveError('');
     const r = await fetch(`/api/events/${eventId}/genie`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patchBody(form, data!.settings!)) });
     const d = await r.json().catch(() => ({}));
@@ -490,6 +497,13 @@ export default function EventGeniePage() {
                   <Section icon={Wand2} title="Geniefied" description="The AI photo booth: guests restyle their photos in themes you choose. This event only.">
                     <GeniefiedFields value={form.aiBooth} info={data.geniefied} priceCents={data.billing.addOnPrices.geniefied ?? 0}
                       onChange={p => set('aiBooth', p)} onTopUp={() => pay(false, true)} topUpBusy={payBusy}/>
+                  </Section>
+                )}
+
+                {(data.genie360.available || form.spin360.enabled) && (
+                  <Section icon={RotateCw} title="Genie 360" description="The spinner booth: slow-motion 360 videos from an iPhone on the arm. A paid add-on for this event.">
+                    <Genie360Fields value={form.spin360} priceCents={data.billing.addOnPrices.genie360 ?? 0} eventTitle={data.event.title} eventDate={data.event.eventDate}
+                      onChange={p => set('spin360', p)}/>
                   </Section>
                 )}
 

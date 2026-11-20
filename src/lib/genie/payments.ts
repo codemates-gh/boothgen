@@ -79,7 +79,7 @@ export async function eventsBilling(tenant: BillingTenant, eventIds: string[]): 
   const [rows, settings, prices, waivers] = eventIds.length
     ? await Promise.all([
       prisma.genieEventPayment.findMany({ where: { tenantId: tenant.id, eventId: { in: eventIds }, status: 'paid' }, select: { eventId: true, ipads: true, addOns: true } }),
-      prisma.eventGenieSettings.findMany({ where: { tenantId: tenant.id, eventId: { in: eventIds } }, select: { eventId: true, processing: true, filters: true, aiEnabled: true, addOnsIncluded: true } }),
+      prisma.eventGenieSettings.findMany({ where: { tenantId: tenant.id, eventId: { in: eventIds } }, select: { eventId: true, processing: true, filters: true, aiEnabled: true, spin360: true, addOnsIncluded: true } }),
       addOnPrices(),
       // Super Admin fee waivers: a waived add-on is never charged and doesn't watermark
       prisma.tenant.findUnique({ where: { id: tenant.id }, select: { addOnWaivers: true } }).then(t => Object.keys(addOnWaivers(t?.addOnWaivers))),
@@ -200,7 +200,7 @@ export const COMP_PREFIX = 'comp_';
 export const isComp = (p: { stripeCheckoutSessionId: string }) => p.stripeCheckoutSessionId.startsWith(COMP_PREFIX);
 
 export async function compEvent(eventId: string) {
-  const event = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true, tenantId: true, genieSettings: { select: { id: true, processing: true, filters: true, aiEnabled: true } } } });
+  const event = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true, tenantId: true, genieSettings: { select: { id: true, processing: true, filters: true, aiEnabled: true, spin360: true } } } });
   if (!event?.genieSettings) return null;
   const payment = await prisma.genieEventPayment.create({
     data: {

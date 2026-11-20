@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 export type VideoMessage = {
   id: string; url: string; thumbnailUrl: string | null; promptText: string | null; durationMs: number | null;
   createdAt: string; hiddenAt: string | null; width: number | null; height: number | null;
+  // Genie 360 clips (P15) have genieMode spin360
+  genieMode?: string | null;
 };
 
 const length = (ms: number | null) => {
@@ -22,6 +24,11 @@ const when = (iso: string) => new Date(iso).toLocaleString('en-US', { month: 'sh
 export function VideosTab({ galleryId, videos, showInGallery, onChange }: { galleryId: string; videos: VideoMessage[]; showInGallery: boolean | null; onChange: () => void }) {
   const [playing, setPlaying] = useState<VideoMessage | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  // Video Booth messages and Genie 360 clips side by side; a filter once there are both
+  const [kind, setKind] = useState<'all' | 'messages' | 'spin360'>('all');
+  const spins = videos.filter(v => v.genieMode === 'spin360').length;
+  const both = spins > 0 && spins < videos.length;
+  const shown = videos.filter(v => kind === 'all' || (kind === 'spin360') === (v.genieMode === 'spin360'));
 
   async function setHidden(v: VideoMessage, hidden: boolean) {
     setBusy(v.id);
@@ -38,31 +45,39 @@ export function VideosTab({ galleryId, videos, showInGallery, onChange }: { gall
   }
 
   if (videos.length === 0) {
-    return <div className="text-center py-12 text-gray-400"><Video className="w-10 h-10 mx-auto mb-3 opacity-30"/><p>No videos yet. Video Booth messages from the iPad show here.</p></div>;
+    return <div className="text-center py-12 text-gray-400"><Video className="w-10 h-10 mx-auto mb-3 opacity-30"/><p>No videos yet. Video Booth messages and Genie 360 videos show here.</p></div>;
   }
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <p className="text-sm text-gray-500">
           {videos.length} video{videos.length === 1 ? '' : 's'}
-          {showInGallery === false && ' · not shown in the public gallery (Video Booth setting)'}
+          {showInGallery === false && ` · ${spins ? 'messages are ' : ''}not shown in the public gallery (Video Booth setting)`}
           {showInGallery && ' · shown in the public gallery unless hidden'}
         </p>
+        {both && (
+          <div className="flex gap-1">
+            {([['all', 'All'], ['messages', 'Video Booth'], ['spin360', '360']] as const).map(([v, label]) => (
+              <Button key={v} type="button" size="sm" variant={kind === v ? 'default' : 'outline'} onClick={() => setKind(v)}>{label}</Button>
+            ))}
+          </div>
+        )}
         <a href={`/api/gallery/${galleryId}/videos/zip`} download>
           <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2"/>Download all videos</Button>
         </a>
       </div>
       <div className="border border-gray-100 rounded-xl divide-y divide-gray-100 bg-white">
-        {videos.map(v => (
+        {shown.map(v => (
           <div key={v.id} className={'flex items-center gap-4 p-3 ' + (v.hiddenAt ? 'opacity-60' : '')}>
             <button type="button" onClick={() => setPlaying(v)} className="relative w-24 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-900" aria-label="Play">
               {v.thumbnailUrl && <img src={v.thumbnailUrl} alt="" className="w-full h-full object-cover"/>}
               <span className="absolute inset-0 flex items-center justify-center"><Play className="w-6 h-6 text-white fill-current drop-shadow"/></span>
             </button>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium truncate">{v.promptText ? `“${v.promptText}”` : 'Video message'}</p>
+              <p className="text-sm font-medium truncate">{v.genieMode === 'spin360' ? '360 video' : v.promptText ? `“${v.promptText}”` : 'Video message'}</p>
               <p className="text-xs text-gray-500">{when(v.createdAt)}{v.durationMs ? ` · ${length(v.durationMs)}` : ''}</p>
             </div>
+            {v.genieMode === 'spin360' && <Badge variant="info">360</Badge>}
             {v.hiddenAt && <Badge variant="default">Hidden</Badge>}
             <div className="flex items-center gap-1">
               <Button type="button" variant="ghost" size="sm" disabled={busy === v.id} onClick={() => setHidden(v, !v.hiddenAt)}>

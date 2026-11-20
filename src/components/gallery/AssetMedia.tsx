@@ -4,7 +4,7 @@ import { FadeInImg } from '@/components/genie/GuestWaiting';
 
 // Gallery photos and Genie boomerang clips (MP4, with the poster as thumbnailUrl)
 // genieKind / source tell a Video Booth message (Genie P14, plays with sound) from a Boomerang or PC booth clip
-export type MediaAsset = { url: string; assetType?: string | null; mimeType?: string | null; thumbnailUrl?: string | null; genieKind?: string | null; source?: string | null };
+export type MediaAsset = { url: string; assetType?: string | null; mimeType?: string | null; thumbnailUrl?: string | null; genieKind?: string | null; source?: string | null; genieMode?: string | null };
 
 export const isVideo = (a: MediaAsset) => a.assetType === 'VIDEO' || !!a.mimeType?.startsWith('video/');
 export const isVideoMessage = (a: MediaAsset) => a.genieKind === 'video' && a.source !== 'pcBooth';
@@ -24,7 +24,7 @@ export function AssetThumb({ asset, className, alt = '', fade }: { asset: MediaA
         ? <Img src={asset.thumbnailUrl} alt={alt} className={className}/>
         : <video src={asset.url} muted playsInline preload="metadata" className={className}/>}
       <span className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-[11px] font-medium pointer-events-none">
-        <Play className="w-3 h-3 fill-current"/>{isVideoMessage(asset) ? 'Video' : 'Boomerang'}
+        <Play className="w-3 h-3 fill-current"/>{asset.genieMode === 'spin360' ? '360' : isVideoMessage(asset) ? 'Video' : 'Boomerang'}
       </span>
     </>
   );

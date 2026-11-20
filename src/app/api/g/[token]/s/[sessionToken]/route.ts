@@ -28,7 +28,7 @@ export async function GET(
         // A video the host hid (Videos tab) isn't shown
         where: { approvalStatus: 'APPROVED', hiddenAt: null },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-        select: { id: true, url: true, width: true, height: true, genieKind: true, thumbnailUrl: true, createdAt: true, source: true, durationMs: true, promptText: true },
+        select: { id: true, url: true, width: true, height: true, genieKind: true, thumbnailUrl: true, createdAt: true, source: true, durationMs: true, promptText: true, genieMode: true },
       },
     },
   });
@@ -69,7 +69,7 @@ export async function GET(
   // internet it can come much later; until then the page shows the poster with "Your video is on its way"
   const videoPoster = expired ? undefined : session.assets.find(a => a.genieKind === 'videoPoster' && a.source !== 'pcBooth');
   const videoPending = videoPoster && !photos.some(a => a.genieKind === 'video')
-    ? { posterUrl: videoPoster.url, width: videoPoster.width, height: videoPoster.height } : null;
+    ? { posterUrl: videoPoster.url, width: videoPoster.width, height: videoPoster.height, ...(videoPoster.genieMode === 'spin360' ? { is360: true } : {}) } : null;
   // Geniefied sessions label the slider "Geniefied" (Glamour Style otherwise)
   const geniefied = !!original && (await prisma.genieAiRender.count({ where: { eventId: session.eventId, sessionClientId: session.clientId, status: 'done' } })) > 0;
   const lastSeen = session.device && !session.device.revokedAt ? session.device.lastSeenAt : session.device ? null : await eventBoothLastSeen(session.eventId);
@@ -86,6 +86,8 @@ export async function GET(
       ...(a.genieKind === 'boomerang' || a.genieKind === 'video' ? { isBoomerang: true, posterUrl: a.thumbnailUrl } : {}),
       // A Video Booth message plays with sound and controls, with the prompt under it
       ...(isVideoMessage(a) ? { isVideoMessage: true, promptText: a.promptText, durationMs: a.durationMs } : {}),
+      // A Genie 360 video (P15): the same player, with a 360 badge
+      ...(a.genieMode === 'spin360' ? { is360: true } : {}),
     })),
     videoPending,
     printSheetUrl: expired ? null : session.assets.find(a => a.genieKind === 'print')?.url ?? null,

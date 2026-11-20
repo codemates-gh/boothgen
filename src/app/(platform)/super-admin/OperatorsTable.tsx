@@ -61,7 +61,7 @@ type Mode = 'idle' | 'upgrade' | 'status' | 'delete' | 'subscription';
 type SubConfirm = 'cancel-now' | 'refund' | null;
 
 // Paid Genie add-ons Super Admin can waive (ids and names as in src/lib/genie/addOns.ts, which is server-only)
-const WAIVABLE_ADD_ONS = [{ id: 'glamourStyle', name: 'Glamour Style' }, { id: 'geniefied', name: 'Geniefied' }];
+const WAIVABLE_ADD_ONS = [{ id: 'glamourStyle', name: 'Glamour Style' }, { id: 'geniefied', name: 'Geniefied' }, { id: 'genie360', name: 'Genie 360' }];
 
 // Genie add-on switch (a paid add-on; set by hand until billing exists), and the account's product:
 // Genius (CRM) or Genie only. Genie-only accounts always have Genie on.

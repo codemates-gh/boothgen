@@ -7,9 +7,9 @@ import { prisma } from '@/lib/prisma/client';
 // (G, 2026-11-19), so an add-on reaches the iPad only on an event that pays for it or shows the watermark.
 // Prices: Super Admin → Genie Usage ($15 for Glamour Style until changed there).
 
-export type AddOnId = 'glamourStyle' | 'geniefied';
+export type AddOnId = 'glamourStyle' | 'geniefied' | 'genie360';
 
-type Settings = Pick<EventGenieSettings, 'processing' | 'filters' | 'aiEnabled'>;
+type Settings = Pick<EventGenieSettings, 'processing' | 'filters' | 'aiEnabled'> & Partial<Pick<EventGenieSettings, 'spin360'>>;
 
 export const GLAMOUR_STYLE_URL = 'https://www.glamourstylephotobooth.com';
 
@@ -32,6 +32,15 @@ export const ADD_ONS: { id: AddOnId; name: string; description: string; setting:
     setting: 'addon_price_cents_geniefied',
     defaultCents: 2900,
     inUse: s => s.aiEnabled,
+  },
+  {
+    id: 'genie360',
+    name: 'Genie 360',
+    // Genie P15: the 360 spinner booth (an iPhone on the arm). No render allowance: editing runs on the iPhone
+    description: 'Genie 360, the spinner booth: an iPhone on the arm records, edits and shares slow-motion 360 videos.',
+    setting: 'addon_price_cents_genie360',
+    defaultCents: 2500,
+    inUse: s => (s.spin360 as { enabled?: unknown } | null | undefined)?.enabled === true,
   },
 ];
 
