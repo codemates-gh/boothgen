@@ -126,20 +126,18 @@ describe('Event Genie dashboard: settings', () => {
     expect(after.updatedAt).toEqual(before.updatedAt);
   });
 
-  it('locks once the event starts', async () => {
+  it('a started event stays editable, and its bundle never tells iPads to stop downloading (G, 2026-11-19)', async () => {
     const { tenant, client } = await seedTenant();
     sessionTenantId = tenant.id;
     const event = await seedEvent(tenant.id, client.id);
     await prisma.event.update({ where: { id: event.id }, data: { eventDate: new Date(Date.now() - 3600_000), startTime: new Date(Date.now() - 600_000), endTime: new Date(Date.now() + 3600_000) } });
-    const r = await PATCH(json('/x', 'PATCH', { enabled: false }), p(event.id));
-    expect(r.status).toBe(409);
-    expect((await r.json()).code).toBe('event_locked');
+    expect((await PATCH(json('/x', 'PATCH', { timeZone: 'America/Chicago' }), p(event.id))).status).toBe(200);
     const lib = await libraryTemplate(null);
-    expect((await ADD_T(json('/x', 'POST', { libraryTemplateId: lib.id }), p(event.id))).status).toBe(409);
+    expect((await ADD_T(json('/x', 'POST', { libraryTemplateId: lib.id }), p(event.id))).status).toBe(201);
     const d = await (await DASH(req('/x'), p(event.id))).json();
-    expect(d.lockedAt).toBeTruthy();
+    expect(d.lockedAt).toBeTruthy(); // shown as "Started"
     const bundle = await (await BUNDLE_PREVIEW(req('/x'), p(event.id))).json();
-    expect(bundle.lockedAt).toBe(new Date(d.lockedAt).toISOString());
+    expect(bundle.lockedAt).toBeNull();
   });
 
   it('turning Genie off hides the event from iPads', async () => {

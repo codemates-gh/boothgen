@@ -15,7 +15,7 @@ import { CUSTOM_FLAG, SECTION_NAMES, customFlags, getDefaults, sectionValues } f
 import { latestApprovedDesign } from '@/lib/genie/approvedDesign';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { bundleValidUntil, designApprovalPending, effectiveLockedAt, eventLocksAt, isValidTimeZone } from '@/lib/genie/bundle';
-import { SettingsPatch, boomerangData, findAdminEvent, lockedError, providerWarnings, settingsUpdateData, settingsView, templateView, withBoomerangDesignProblem } from '@/lib/genie/eventAdmin';
+import { SettingsPatch, boomerangData, findAdminEvent, providerWarnings, settingsUpdateData, settingsView, templateView, withBoomerangDesignProblem } from '@/lib/genie/eventAdmin';
 import { galleryRetentionDates, getGalleryRetention } from '@/lib/gallery/retention';
 import { attractData, deleteUnusedAttractMedia, storedAttract } from '@/lib/genie/attract';
 import { countdownSoundData, deleteUnusedCountdownSounds, storedCountdownSound } from '@/lib/genie/countdownSound';
@@ -128,7 +128,6 @@ export async function PATCH(req: NextRequest, props0: { params: Promise<{ id: st
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const s = event.genieSettings;
   if (!s) return NextResponse.json({ error: 'Set up Genie for this event first', code: 'not_configured' }, { status: 409 });
-  if (effectiveLockedAt(event, s)) return lockedError();
 
   // Glamour Style can be chosen only once it's available (Genie 0.6.0+ on the iPads); an event that has it can keep it
   const storedIds = (Array.isArray(s.filters) ? s.filters as { id?: string }[] : []).map(f => f?.id);

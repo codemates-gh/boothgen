@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
-import { findAdminEvent, isLocked, lockedError, templateView } from '@/lib/genie/eventAdmin';
+import { findAdminEvent, templateView } from '@/lib/genie/eventAdmin';
 import { findLibraryTemplate } from '@/lib/genie/library';
 import { StoredLayout } from '@/lib/genie/schemas';
 import { deleteUnusedTemplateAssets, templateAssetUrls } from '@/lib/genie/templateAssets';
@@ -33,7 +33,6 @@ export async function PATCH(
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request' }, { status: 400 });
   const found = await load(auth.tenantId, params.id, params.templateId);
   if (!found) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (isLocked(found.event)) return lockedError();
 
   const data: Prisma.EventGenieTemplateUpdateInput = {};
   if (parsed.data.name !== undefined) data.name = parsed.data.name;
@@ -59,7 +58,6 @@ export async function DELETE(
   if (auth instanceof NextResponse) return auth;
   const found = await load(auth.tenantId, params.id, params.templateId);
   if (!found) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (isLocked(found.event)) return lockedError();
   await prisma.eventGenieTemplate.delete({ where: { id: found.template.id } });
   // Designer images only this event copy used (e.g. its library template was deleted or changed since)
   await deleteUnusedTemplateAssets(templateAssetUrls({ layout: found.template.layout, alternateLayout: found.template.alternateLayout, genieThumbnail: found.template.thumbnail }));

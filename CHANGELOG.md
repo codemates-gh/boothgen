@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.123.0] — 2026-11-19
+
+### Changed
+- **A started event stays editable.** Templates, template text, capture, sharing, printing, filters, Geniefied and every other Genie setting can still change once the event has started, and iPads pick the changes up as they check in. Only the date and times stay fixed once guests have taken photos. The event page now says "Started" instead of "Locked". iPads that downloaded an event before this version keep their version until the event is loaded again on the iPad.
+
+---
+
 ## [2.122.1] — 2026-11-19
 
 ### Fixed

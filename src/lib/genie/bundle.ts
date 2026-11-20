@@ -149,7 +149,8 @@ function assemble(event: BundleEvent, settings: EventGenieSettings, gallery: Gal
     // Unpaid pay-per-event events: Genie draws a watermark on the booth screen and the photos. Left out when false so
     // other bundles (and their versions) don't change.
     ...(watermark ? { watermark: true } : {}),
-    lockedAt: effectiveLockedAt(event, settings)?.toISOString() ?? null,
+    // Always null: iPads stop downloading changes when it's set, and a started event stays editable (G, 2026-11-19)
+    lockedAt: null,
     capture: {
       shotCount: settings.shotCount,
       initialCountdownSeconds: settings.initialCountdownSeconds,

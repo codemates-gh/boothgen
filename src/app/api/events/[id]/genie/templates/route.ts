@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
-import { findAdminEvent, isLocked, lockedError, templateView } from '@/lib/genie/eventAdmin';
+import { findAdminEvent, templateView } from '@/lib/genie/eventAdmin';
 import { copyToEvent, findLibraryTemplate } from '@/lib/genie/library';
 
 const Add = z.object({ libraryTemplateId: z.string().min(1), alternate: z.boolean().optional() }).strict();
@@ -18,7 +18,6 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const event = await findAdminEvent(auth.tenantId, params.id);
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!event.genieSettings) return NextResponse.json({ error: 'Set up Genie for this event first', code: 'not_configured' }, { status: 409 });
-  if (isLocked(event)) return lockedError();
 
   const lib = await findLibraryTemplate(auth.tenantId, parsed.data.libraryTemplateId);
   if (!lib) return NextResponse.json({ error: 'Template not found' }, { status: 404 });
@@ -39,7 +38,6 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ id: strin
   if (!parsed.success) return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   const event = await findAdminEvent(auth.tenantId, params.id);
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (isLocked(event)) return lockedError();
 
   const current = await prisma.eventGenieTemplate.findMany({ where: { eventId: event.id, tenantId: auth.tenantId }, select: { id: true } });
   const ids = new Set(current.map(t => t.id));

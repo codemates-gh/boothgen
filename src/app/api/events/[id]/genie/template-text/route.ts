@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
-import { findAdminEvent, isLocked, lockedError } from '@/lib/genie/eventAdmin';
+import { findAdminEvent } from '@/lib/genie/eventAdmin';
 import { EventTextOptions, TemplateTextAnswers, eventAnswers, eventBrief, eventLook, hasText, templateHasText, textOptionsOf } from '@/lib/genie/eventText';
 import { TEMPLATE_CLIP_FORMAT } from '@/lib/genie/schemas';
 import { TextAdjust, labelKey, valuesFor } from '@/lib/templates/textLayer';
@@ -104,7 +104,6 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ id: strin
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request' }, { status: 400 });
   const event = await findAdminEvent(auth.tenantId, params.id);
   if (!event?.genieSettings) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (isLocked(event)) return lockedError();
 
   if (parsed.data.answers) {
     const current = TemplateTextAnswers.safeParse(event.genieSettings.templateText ?? {});

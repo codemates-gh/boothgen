@@ -163,7 +163,8 @@ export default function EventGeniePage() {
   useEffect(() => { if (!savedAt) return; const t = setTimeout(() => setSavedAt(null), 4000); return () => clearTimeout(t); }, [savedAt]);
 
   const dirty = !!(form && data?.settings && JSON.stringify(form) !== JSON.stringify(toForm(data.settings)));
-  const locked = !!data?.lockedAt;
+  // Started: everything can still change and reaches iPads between guests, except the date and times (G, 2026-11-19)
+  const started = !!data?.lockedAt;
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -265,7 +266,7 @@ export default function EventGeniePage() {
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <h2 className="text-xl sm:text-2xl font-bold">{data.event.title}</h2>
                   {data.settings && <Badge variant={data.settings.enabled ? 'success' : 'default'}>{data.settings.enabled ? 'Genie on' : 'Genie off'}</Badge>}
-                  {data.expired ? <Badge variant="default">Expired</Badge> : locked && <Badge variant="info"><Lock className="w-3 h-3 mr-1 inline"/>Locked</Badge>}
+                  {data.expired ? <Badge variant="default">Expired</Badge> : started && <Badge variant="info">Started</Badge>}
                 </div>
                 <p className="text-sm text-gray-500">{fmtDate(data.event.eventDate, 'UTC')}{data.event.boothEvent && data.event.venueName ? ` · ${data.event.venueName}` : ''}{data.settings ? ` · Bundle version ${data.settings.bundleVersion}` : ''}</p>
               </div>
@@ -336,31 +337,31 @@ export default function EventGeniePage() {
               </Card>
             ) : form && (
               <>
-                {locked && (
+                {started && (
                   <div className="flex items-start gap-2 text-sm text-[#0073E6] bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
                     <Lock className="w-4 h-4 mt-0.5 flex-shrink-0"/>
-                    <span>Locked since {fmtDateTime(data.lockedAt, tz)}. The event has started, so iPads keep the version they have and changes here are off. You can still release iPads and resend messages.</span>
+                    <span>Started {fmtDateTime(data.lockedAt, tz)}. You can still change anything here, and iPads pick it up between guests. Only the date and times can no longer change.</span>
                   </div>
                 )}
 
                 <Section icon={Settings2} title="Details">
-                  <Toggle checked={form.enabled} disabled={locked} onChange={v => setForm({ ...form, enabled: v })} label="Genie on for this event" hint="Off hides the event from your iPads."/>
+                  <Toggle checked={form.enabled} onChange={v => setForm({ ...form, enabled: v })} label="Genie on for this event" hint="Off hides the event from your iPads."/>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <Field label="Time zone" hint={<DefaultState custom={data.settings.custom.timeZone} disabled={locked} onReset={() => resetSection('timeZone', 'the time zone')}/>}>
-                      <TimeZoneSelect value={form.timeZone} disabled={locked} onChange={tz => setForm({ ...form, timeZone: tz })}/>
+                    <Field label="Time zone" hint={<DefaultState custom={data.settings.custom.timeZone} onReset={() => resetSection('timeZone', 'the time zone')}/>}>
+                      <TimeZoneSelect value={form.timeZone} onChange={tz => setForm({ ...form, timeZone: tz })}/>
                     </Field>
                     <Field label="Bundle version" hint="Goes up when anything iPads download changes.">
                       <p className="text-sm font-medium h-10 flex items-center">v{data.settings.bundleVersion}</p>
                     </Field>
-                    <Field label={locked ? 'Locked' : 'Locks'} hint="Changes stop reaching iPads once the event starts.">
-                      <p className="text-sm font-medium h-10 flex items-center gap-1.5">{locked && <Lock className="w-3.5 h-3.5"/>}{fmtDateTime(locked ? data.lockedAt : data.locksAt, tz)}</p>
+                    <Field label={started ? 'Started' : 'Starts'} hint="Once it starts, the date and times can no longer change.">
+                      <p className="text-sm font-medium h-10 flex items-center gap-1.5">{started && <Lock className="w-3.5 h-3.5"/>}{fmtDateTime(started ? data.lockedAt : data.locksAt, tz)}</p>
                     </Field>
                   </div>
                 </Section>
 
                 <Section icon={Camera} title="Capture" description="What guests go through at the booth."
-                  right={<DefaultState custom={data.settings.custom.capture} disabled={locked} onReset={() => resetSection('capture', 'Capture')}/>}>
-                  <CaptureFields value={form.capture} disabled={locked} onChange={cap}>
+                  right={<DefaultState custom={data.settings.custom.capture} onReset={() => resetSection('capture', 'Capture')}/>}>
+                  <CaptureFields value={form.capture} onChange={cap}>
                     {mismatched.length > 0 && (
                       <div className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                         <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
@@ -369,49 +370,49 @@ export default function EventGeniePage() {
                     )}
                   </CaptureFields>
                   <div className="border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Toggle checked={form.liveView.mirrorLiveView} disabled={locked} onChange={v => set('liveView', { mirrorLiveView: v })} label="Mirror the live view"
+                    <Toggle checked={form.liveView.mirrorLiveView} onChange={v => set('liveView', { mirrorLiveView: v })} label="Mirror the live view"
                       hint="Like a mirror while guests pose. The photos themselves are never mirrored."/>
-                    <Toggle checked={form.liveView.showDesignWhilePosing} disabled={locked} onChange={v => set('liveView', { showDesignWhilePosing: v })} label="Show the design while guests pose"
+                    <Toggle checked={form.liveView.showDesignWhilePosing} onChange={v => set('liveView', { showDesignWhilePosing: v })} label="Show the design while guests pose"
                       hint="Where the live view leaves room (a 2x6 strip on an iPad in portrait), the design fills in as each photo is kept."/>
                   </div>
                   <div className="border-t pt-4">
-                    <LookAtCameraFields value={form.lookAtCamera} disabled={locked} onChange={p => set('lookAtCamera', p)}/>
+                    <LookAtCameraFields value={form.lookAtCamera} onChange={p => set('lookAtCamera', p)}/>
                   </div>
                 </Section>
 
                 <Section icon={MonitorPlay} title="Attract screen" description="What the iPad shows between guests."
-                  right={<DefaultState custom={data.settings.custom.attract} disabled={locked} onReset={() => resetSection('attract', 'the attract screen')}/>}>
-                  <AttractFields value={form.attract} disabled={locked} onChange={p => set('attract', p)}/>
+                  right={<DefaultState custom={data.settings.custom.attract} onReset={() => resetSection('attract', 'the attract screen')}/>}>
+                  <AttractFields value={form.attract} onChange={p => set('attract', p)}/>
                 </Section>
 
                 <Section icon={Repeat} title="Boomerang" description="A short looping clip guests can choose instead of photos. This event only.">
-                  <BoomerangFields eventId={eventId} value={form.boomerang} disabled={locked} onChange={p => set('boomerang', p)}/>
+                  <BoomerangFields eventId={eventId} value={form.boomerang} onChange={p => set('boomerang', p)}/>
                 </Section>
 
-                <GenieTemplates eventId={eventId} templates={data.templates} shotCount={form.capture.shotCount} locked={locked} onChange={() => { setBundle(null); load(false); }} approvedDesign={data.approvedDesign} briefTemplate={data.briefTemplate}/>
-                <GenieTemplateText eventId={eventId} locked={locked} version={data.templates.map(t => t.id + ':' + (t.designId ?? '') + ':' + (t.alternateLayout ? 1 : 0)).join()} onChange={() => setBundle(null)}/>
+                <GenieTemplates eventId={eventId} templates={data.templates} shotCount={form.capture.shotCount} locked={false} onChange={() => { setBundle(null); load(false); }} approvedDesign={data.approvedDesign} briefTemplate={data.briefTemplate}/>
+                <GenieTemplateText eventId={eventId} locked={false} version={data.templates.map(t => t.id + ':' + (t.designId ?? '') + ':' + (t.alternateLayout ? 1 : 0)).join()} onChange={() => setBundle(null)}/>
 
                 <Section icon={ImageIcon} title="Virtual backdrop" description="Background removal: guests on a backdrop instead of the room. This event only.">
-                  <EventBackdropsFields value={form.backgroundRemoval} chosen={data.chosenBackdrops} disabled={locked} onChange={p => set('backgroundRemoval', p)}/>
+                  <EventBackdropsFields value={form.backgroundRemoval} chosen={data.chosenBackdrops} onChange={p => set('backgroundRemoval', p)}/>
                 </Section>
 
                 <Section icon={PersonStanding} title="Pose ideas" description="Sample poses for guests who don't know how to pose."
-                  right={<DefaultState custom={data.settings.custom.poses} disabled={locked} onReset={() => resetSection('poses', 'pose ideas')}/>}>
-                  <PoseIdeasFields value={form.poses} chosen={data.chosenPoses} disabled={locked} onChange={p => set('poses', p)}/>
+                  right={<DefaultState custom={data.settings.custom.poses} onReset={() => resetSection('poses', 'pose ideas')}/>}>
+                  <PoseIdeasFields value={form.poses} chosen={data.chosenPoses} onChange={p => set('poses', p)}/>
                 </Section>
 
                 <Section icon={Smile} title="Props" description="Virtual glasses, hats and more that follow guests' faces. This event only.">
-                  <EventPropsFields value={form.props} chosen={data.chosenProps} disabled={locked} onChange={p => set('props', p)}/>
+                  <EventPropsFields value={form.props} chosen={data.chosenProps} onChange={p => set('props', p)}/>
                 </Section>
 
                 <Section icon={Palette} title="Filters" description="Looks guests can pick on the review screen.">
-                  <Toggle checked={form.filters.guestFiltersEnabled} disabled={locked} onChange={v => set('filters', { guestFiltersEnabled: v })} label="Let guests choose a filter" hint="Off: every photo uses the default filter."/>
+                  <Toggle checked={form.filters.guestFiltersEnabled} onChange={v => set('filters', { guestFiltersEnabled: v })} label="Let guests choose a filter" hint="Off: every photo uses the default filter."/>
                   <div className="border border-gray-100 rounded-lg divide-y divide-gray-100">
                     {data.settings.filters.available.filter(f => f.id !== 'glamourStyle' || data.billing.glamourStyleReady || form.filters.filterIds.includes('glamourStyle')).map(f => {
                       const on = form.filters.filterIds.includes(f.id);
                       return (
                         <div key={f.id} className="flex items-center gap-3 px-3 py-2.5">
-                          <input type="checkbox" className="w-4 h-4 rounded" checked={on} disabled={locked || (on && form.filters.filterIds.length === 1)}
+                          <input type="checkbox" className="w-4 h-4 rounded" checked={on} disabled={(on && form.filters.filterIds.length === 1)}
                             onChange={e => {
                               const ids = e.target.checked ? data.settings!.filters.available.map(a => a.id).filter(id => id === f.id || form.filters.filterIds.includes(id)) : form.filters.filterIds.filter(id => id !== f.id);
                               set('filters', { filterIds: ids, defaultFilterId: ids.includes(form.filters.defaultFilterId) ? form.filters.defaultFilterId : ids[0] });
@@ -430,14 +431,14 @@ export default function EventGeniePage() {
                             return (
                               <label className="flex items-center gap-2 text-xs text-gray-600" title="How strong the skin retouching is">
                                 Strength
-                                <input type="range" min={0.3} max={1} step={0.05} value={form.filters[key]} disabled={locked} className="w-28 accent-brand"
+                                <input type="range" min={0.3} max={1} step={0.05} value={form.filters[key]} className="w-28 accent-brand"
                                   onChange={e => set('filters', { [key]: Number(e.target.value) })}/>
                                 <span className="w-8 tabular-nums">{Math.round(form.filters[key] * 100)}%</span>
                               </label>
                             );
                           })()}
                           <label className={'flex items-center gap-1.5 text-xs ' + (on ? 'text-gray-600 cursor-pointer' : 'text-gray-300')}>
-                            <input type="radio" name="defaultFilter" checked={form.filters.defaultFilterId === f.id} disabled={locked || !on} onChange={() => set('filters', { defaultFilterId: f.id })}/>
+                            <input type="radio" name="defaultFilter" checked={form.filters.defaultFilterId === f.id} disabled={!on} onChange={() => set('filters', { defaultFilterId: f.id })}/>
                             Default
                           </label>
                         </div>
@@ -447,13 +448,13 @@ export default function EventGeniePage() {
                 </Section>
 
                 <Section icon={Share2} title="Sharing" description="How guests get their photos from the iPad."
-                  right={<DefaultState custom={data.settings.custom.sharing} disabled={locked} onReset={() => resetSection('sharing', 'Sharing')}/>}>
+                  right={<DefaultState custom={data.settings.custom.sharing} onReset={() => resetSection('sharing', 'Sharing')}/>}>
                   {data.providerWarnings.map(w => (
                     <div key={w.channel} className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                       <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/><span>{w.message} <Link href="/genie/sharing" className="underline whitespace-nowrap">Open Genie → Sharing</Link></span>
                     </div>
                   ))}
-                  <SharingFields value={form.sharing} disabled={locked} onChange={p => set('sharing', p)}/>
+                  <SharingFields value={form.sharing} onChange={p => set('sharing', p)}/>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
                     <Field label="Photo links stop working" hint="Follows your gallery expiry setting.">
                       <p className="text-sm font-medium">{fmtDate(data.photosHiddenAt, tz)}</p>
@@ -463,26 +464,26 @@ export default function EventGeniePage() {
                     </Field>
                   </div>
                   <div className="border-t pt-4">
-                    <SharingStationFields value={form.sharingStation} disabled={locked} onChange={p => set('sharingStation', p)}/>
+                    <SharingStationFields value={form.sharingStation} onChange={p => set('sharingStation', p)}/>
                   </div>
                 </Section>
 
                 {(data.geniefied.available || form.aiBooth.enabled) && (
                   <Section icon={Wand2} title="Geniefied" description="The AI photo booth: guests restyle their photos in themes you choose. This event only.">
-                    <GeniefiedFields value={form.aiBooth} info={data.geniefied} priceCents={data.billing.addOnPrices.geniefied ?? 0} disabled={locked}
+                    <GeniefiedFields value={form.aiBooth} info={data.geniefied} priceCents={data.billing.addOnPrices.geniefied ?? 0}
                       onChange={p => set('aiBooth', p)} onTopUp={() => pay(false, true)} topUpBusy={payBusy}/>
                   </Section>
                 )}
 
                 <Section icon={ImageIcon} title="Gallery" description="The event's gallery of photos for your client."
-                  right={<DefaultState custom={data.settings.custom.gallery} disabled={locked} onReset={() => resetSection('gallery', 'Gallery')}/>}>
-                  <GalleryFields value={form.gallery} disabled={locked} onChange={p => set('gallery', p)}/>
+                  right={<DefaultState custom={data.settings.custom.gallery} onReset={() => resetSection('gallery', 'Gallery')}/>}>
+                  <GalleryFields value={form.gallery} onChange={p => set('gallery', p)}/>
                   {data.settings.gallery.autoPublishedAt && <p className="text-xs text-gray-500">Published automatically on {fmtDateTime(data.settings.gallery.autoPublishedAt, tz)}.</p>}
                 </Section>
 
                 <Section icon={Printer} title="Printing"
-                  right={<DefaultState custom={data.settings.custom.printing} disabled={locked} onReset={() => resetSection('printing', 'Printing')}/>}>
-                  <PrintingFields value={form.printing} disabled={locked} onChange={p => set('printing', p)}/>
+                  right={<DefaultState custom={data.settings.custom.printing} onReset={() => resetSection('printing', 'Printing')}/>}>
+                  <PrintingFields value={form.printing} onChange={p => set('printing', p)}/>
                 </Section>
 
                 <GenieEventDevices eventId={eventId}/>
@@ -510,7 +511,7 @@ export default function EventGeniePage() {
         )}
       </div>
 
-      {(dirty || saveError || savedAt) && data?.settings && !locked && (
+      {(dirty || saveError || savedAt) && data?.settings && (
         <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white border-t border-gray-200 pl-4 sm:pl-8 pr-20 sm:pr-24 py-3 flex items-center justify-end gap-3 z-30">
           {saveError ? <p className="text-sm text-red-600 mr-auto">{saveError}</p> : dirty ? <p className="text-sm text-gray-500 mr-auto">Unsaved changes</p> : <p className="text-sm text-green-700 mr-auto">Saved. iPads pick it up on their next sync.</p>}
           {dirty && <Button variant="outline" onClick={() => { setForm(toForm(data.settings!)); setSaveError(''); }}>Discard</Button>}
@@ -519,7 +520,7 @@ export default function EventGeniePage() {
       )}
 
       {data?.event.boothEvent && (
-        <BoothEventModal open={editing} onClose={() => setEditing(false)} eventId={eventId} lockedTimes={locked && data?.hasGuestSessions !== false}
+        <BoothEventModal open={editing} onClose={() => setEditing(false)} eventId={eventId} lockedTimes={started && data?.hasGuestSessions !== false}
           initial={{
             title: data.event.title, date: data.event.eventDate.slice(0, 10),
             startTime: localTime(data.event.startTime, tz ?? 'UTC'), endTime: localTime(data.event.endTime, tz ?? 'UTC'),
