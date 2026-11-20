@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.128.0] — 2026-11-20
+
+### Added
+- **Past Genie events no longer use up storage.** A nightly cleanup (5:35 AM UTC) deletes, whether or not the event ever took place:
+  - **Test Templates pictures** once the event is Past (or deleted). Links in test messages stop working then.
+  - **Template text pictures** (the event's words drawn onto each template) 7 days after the event is Past, unless an Upcoming or In Progress event uses the same one. A duplicated event gets them redrawn automatically when its iPads download it.
+  - Template artwork itself is shared with the template library and never copied per event, so it doesn't grow.
+
+---
+
 ## [2.127.1] — 2026-11-20
 
 ### Changed

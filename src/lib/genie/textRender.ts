@@ -64,19 +64,22 @@ export function textOverlayKey(layout: StoredLayout, values: Record<string, stri
   })).digest('hex');
 }
 
-const cache = new Map<string, RemoteAsset>();
+// Remembered for a few minutes only: the nightly cleanup (storageSweep.ts) may delete a file, and it's drawn again
+const cache = new Map<string, { asset: RemoteAsset; at: number }>();
+const CACHE_MS = 10 * 60_000;
+export const textOverlayR2Key = (tenantId: string, key: string) => `genie-templates/${tenantId}/text/${key}.png`;
 
 // The text overlay for a layout as a RemoteAsset (drawn and stored the first time), or null when no box has words
 export async function textOverlayAsset(tenantId: string, layout: StoredLayout, values: Record<string, string>, look: TextLook): Promise<RemoteAsset | null> {
   const key = textOverlayKey(layout, values, look);
   if (!key) return null;
-  const r2Key = `genie-templates/${tenantId}/text/${key}.png`;
+  const r2Key = textOverlayR2Key(tenantId, key);
   const hit = cache.get(r2Key);
-  if (hit) return hit;
+  if (hit && Date.now() - hit.at < CACHE_MS) return hit.asset;
   const head = await headR2Object(r2Key);
   if (head?.metadata?.sha256) {
     const asset: RemoteAsset = { url: r2PublicUrl(r2Key), sha256: head.metadata.sha256, contentType: 'image/png', bytes: head.bytes };
-    cache.set(r2Key, asset);
+    cache.set(r2Key, { asset, at: Date.now() });
     return asset;
   }
   const png = await renderTextOverlay(layout, values, look);
@@ -84,6 +87,6 @@ export async function textOverlayAsset(tenantId: string, layout: StoredLayout, v
   const sha256 = createHash('sha256').update(png).digest('hex');
   const url = await uploadToR2(r2Key, png, 'image/png', { sha256 });
   const asset: RemoteAsset = { url, sha256, contentType: 'image/png', bytes: png.length };
-  cache.set(r2Key, asset);
+  cache.set(r2Key, { asset, at: Date.now() });
   return asset;
 }

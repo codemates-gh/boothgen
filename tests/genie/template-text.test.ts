@@ -16,6 +16,7 @@ vi.mock('@/lib/storage/r2', async orig => ({
   headR2Object: vi.fn(async (key: string) => (files.has(key) ? { bytes: files.get(key)!.body.length, metadata: files.get(key)!.metadata } : null)),
   uploadToR2: vi.fn(async (key: string, body: Buffer, _t: string, metadata?: Record<string, string>) => { files.set(key, { body, metadata }); return BASE + key; }),
   deleteFromR2: vi.fn(async (key: string) => { files.delete(key); }),
+  listR2Objects: vi.fn(async (prefix: string) => [...files.keys()].filter(k => k.startsWith(prefix)).map(key => ({ key, lastModified: new Date(0), bytes: 1 }))),
   r2PublicUrl: (key: string) => BASE + key,
   r2KeyForPublicUrl: (url: string) => (url.startsWith(BASE) ? url.slice(BASE.length) : null),
 }));
@@ -28,6 +29,7 @@ import { GET as TEXT, PUT as SET_TEXT } from '@/app/api/events/[id]/genie/templa
 import { POST as CREATE_TEMPLATE } from '@/app/api/genie-templates/route';
 import { fitText, newTextBox, type TextBox } from '@/lib/templates/textLayer';
 import { renderTextOverlay } from '@/lib/genie/textRender';
+import { sweepTemplateTextImages } from '@/lib/genie/storageSweep';
 import { eventAnswers, eventLook, EventTextOptions } from '@/lib/genie/eventText';
 import { bundleValidator, req, resetDb, seedDevice, seedEvent, seedTenant } from './helpers';
 
@@ -184,6 +186,24 @@ describe('templates and events', () => {
     b = await bundle();
     expect(b.templates[0].layout.overlay.url).toBe(overlay.url);
     expect(b.bundleVersion).toBe(version);
+  });
+
+  it('keeps the text picture while the event needs it and deletes it a week after the event is Past', async () => {
+    const { tenant, event, bundle } = await setup();
+    await prisma.tenant.update({ where: { id: tenant.id }, data: { genieEnabled: true } });
+    await create({ ...LAYOUT, texts: [box('z-names', { y: 1500, height: 200 })] });
+    const lib = await prisma.boothDesignTemplate.findFirstOrThrow({ where: { name: 'Wedding', tenantId: tenant.id } });
+    await ADD_TO_EVENT(req('/x', { method: 'POST', body: { libraryTemplateId: lib.id } }), p(event.id));
+    await SET_TEXT(req('/x', { method: 'PUT', body: { answers: { names: 'Sam & Alex' } } }), p(event.id));
+    const key = (await bundle()).templates[0].layout.overlay.url.slice(BASE.length);
+    expect(files.has(key)).toBe(true);
+    // Upcoming (2026-12-12): kept
+    expect(await sweepTemplateTextImages(new Date('2026-12-01T00:00:00Z'))).toBe(0);
+    expect(files.has(key)).toBe(true);
+    // Past since 2026-12-15 08:00Z (Los Angeles): kept for 7 days, then deleted
+    expect(await sweepTemplateTextImages(new Date('2026-12-20T00:00:00Z'))).toBe(0);
+    expect(await sweepTemplateTextImages(new Date('2026-12-23T00:00:00Z'))).toBe(1);
+    expect(files.has(key)).toBe(false);
   });
 
   it("uses the client's brief words when the operator hasn't typed any", async () => {

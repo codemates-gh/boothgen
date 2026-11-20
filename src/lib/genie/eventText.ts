@@ -83,7 +83,10 @@ export type TextForBundle = { main?: { overlay?: RemoteAsset; backgroundColor?: 
 // For each event template with text: the overlay with the event's words drawn in, and (when the template has palettes)
 // the palette's background colour. Templates showing a client-approved design are left as they are (the design has the
 // words). Missing words are left out, never filled with samples.
-export async function eventTextForBundle(tenantId: string, eventId: string, templates: EventGenieTemplate[], typed: unknown): Promise<Map<string, TextForBundle>> {
+// Draws (or finds) one text overlay; the cleanup passes one that only notes which files an event needs
+export type OverlayFor = (tenantId: string, layout: StoredLayout, values: Record<string, string>, look: TextLook) => Promise<RemoteAsset | null>;
+
+export async function eventTextForBundle(tenantId: string, eventId: string, templates: EventGenieTemplate[], typed: unknown, overlayFor: OverlayFor = textOverlayAsset): Promise<Map<string, TextForBundle>> {
   const out = new Map<string, TextForBundle>();
   const withText = templates.filter(t => templateHasText(t) && !t.designId);
   if (withText.length === 0) return out;
@@ -97,7 +100,7 @@ export async function eventTextForBundle(tenantId: string, eventId: string, temp
     for (const [key, raw] of [['main', t.layout], ['alt', t.alternateLayout]] as const) {
       const l = raw ? StoredLayout.safeParse(raw) : null;
       if (!l?.success || !hasText(l.data)) continue;
-      const overlay = await textOverlayAsset(tenantId, l.data, values, look);
+      const overlay = await overlayFor(tenantId, l.data, values, look);
       entry[key] = { ...(overlay ? { overlay } : {}), ...(opts.colorVariants.length ? { backgroundColor: look.colors.background.toUpperCase() } : {}) };
     }
     out.set(t.id, entry);
@@ -108,7 +111,7 @@ export async function eventTextForBundle(tenantId: string, eventId: string, temp
 // A Boomerang template with text: its overlay with the event's words drawn in (palette and fonts from the client's
 // brief when it's the same template or names match, else the template's first), and the palette's background colour
 export async function boomerangDesignWithText<D extends { id: string; format: string; overlay?: RemoteAsset; backgroundColor: string }>(
-  tenantId: string, eventId: string, boomerang: unknown, design: D | undefined, typed: unknown,
+  tenantId: string, eventId: string, boomerang: unknown, design: D | undefined, typed: unknown, overlayFor: OverlayFor = textOverlayAsset,
 ): Promise<D | undefined> {
   const choice = (boomerang as { design?: { source?: string; id?: string } } | null)?.design;
   if (!design || choice?.source !== 'print') return design;
@@ -120,7 +123,7 @@ export async function boomerangDesignWithText<D extends { id: string; format: st
   const opts = EventTextOptions.parse({ textZones: list(TextZone, t.textZones), colorVariants: list(ColorVariant, t.colorVariants), fontPairings: list(FontPairing, t.fontPairings) });
   const brief = await eventBrief(eventId);
   const look = eventLook(opts, t.id, brief);
-  const overlay = await textOverlayAsset(tenantId, layout.data, valuesFor(opts.textZones, eventAnswers(brief, typed)), look);
+  const overlay = await overlayFor(tenantId, layout.data, valuesFor(opts.textZones, eventAnswers(brief, typed)), look);
   return {
     ...design,
     ...(overlay ? { overlay } : {}),

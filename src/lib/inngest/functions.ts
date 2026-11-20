@@ -1,5 +1,6 @@
 
 import { autoPublishEndedGalleries } from '@/lib/genie/autoPublish';
+import { sweepTemplateTextImages, sweepTestShareImages } from '@/lib/genie/storageSweep';
 import { deleteEventRenderResults, sweepRenderInputs } from '@/lib/genie/ai/renders';
 import { enforceGenius } from '@/lib/genius';
 import { inngest } from './client';
@@ -744,6 +745,19 @@ export const sweepAbandonedProps = inngest.createFunction(
     const poses = await sweepAbandonedPoseFiles();
     console.log(`[POSES_SWEEP] Deleted ${poses.sources} unprocessed uploads and ${poses.unsaved} unsaved pose files`);
     return { deleted, backdrops, poses };
+  }
+);
+
+// Daily at 5:35 AM UTC — files Genie events leave behind (G, 2026-11-20): Test Templates pictures once the event is
+// Past, template text pictures 7 days after (unless another event still uses them). See lib/genie/storageSweep.ts.
+export const sweepPastEventFiles = inngest.createFunction(
+  { id: 'sweep-past-event-files' },
+  { cron: '35 5 * * *' },
+  async () => {
+    const tests = await sweepTestShareImages();
+    const text = await sweepTemplateTextImages();
+    console.log(`[PAST_EVENT_SWEEP] Deleted ${tests} test pictures and ${text} template text pictures`);
+    return { tests, text };
   }
 );
 

@@ -6,6 +6,8 @@ vi.mock('@/lib/auth/config', () => ({ authOptions: {} }));
 vi.mock('@/lib/storage/r2', async orig => ({
   ...(await orig<typeof import('@/lib/storage/r2')>()),
   uploadToR2: vi.fn(async (key: string) => 'https://media.boothgen.test/' + key),
+  listR2Objects: vi.fn(async () => []),
+  deleteFromR2: vi.fn(async () => {}),
 }));
 const sent: { channel: string; to: string; body: string }[] = [];
 vi.mock('@/lib/genie/messaging', async orig => ({
@@ -65,5 +67,19 @@ describe('Test Templates', () => {
     await prisma.event.update({ where: { id: event.id }, data: { eventDate: new Date('2026-01-10'), startTime: null, endTime: null } });
     expect((await send(event.id, { channel: 'email', destination: 'me@example.com' })).status).toBe(409);
     expect(sent).toHaveLength(0);
+  });
+});
+
+describe('Test Templates pictures', () => {
+  it('are deleted once the event is Past (or gone), whether or not it took place', async () => {
+    const { sweepTestShareImages } = await import('@/lib/genie/storageSweep');
+    const r2 = await import('@/lib/storage/r2');
+    const event = await setup();
+    const keys = [`genie-tests/t/${event.id}/a.jpg`, 'genie-tests/t/no-such-event/b.jpg'];
+    vi.mocked(r2.listR2Objects).mockResolvedValue(keys.map(key => ({ key, lastModified: new Date(), bytes: 1 })));
+    // Before the event is Past: only the picture of a deleted event goes
+    expect(await sweepTestShareImages(new Date('2026-12-14T00:00:00Z'))).toBe(1);
+    expect(vi.mocked(r2.deleteFromR2).mock.calls.map(c => c[0])).toEqual([keys[1]]);
+    expect(await sweepTestShareImages(new Date('2026-12-16T00:00:00Z'))).toBe(2);
   });
 });
