@@ -22,9 +22,11 @@ import { galleryRetentionDates, getGalleryRetention, type GalleryRetention } fro
 export { appUrl, galleryUrl, sessionUrl } from './urls';
 
 export const BUNDLE_SCHEMA_VERSION = '1.0';
-// An event runs for 48 hours from its start (G, 2026-11-20): Upcoming before the start, In Progress for 48 h from it
-// (iPads can load and run it, setup editable except the date/times), Past after that (only duplicated)
-export const EVENT_WINDOW_MS = 48 * 3600 * 1000;
+// An event runs by whole days in its time zone (G, 2026-11-20): Upcoming before its day; In Progress from 12:00 AM on
+// the event day to 11:59 PM two days later (iPads can load and run it; the date is fixed, the times can change until
+// the end of the event day, the setup any time); Past after that (only duplicated). Advertised as 24 hours.
+export const EVENT_WINDOW_DAYS = 3;
+const DAY_MS = 86400_000;
 
 export const GENIE_SETTINGS_DEFAULTS = {
   smsBody: 'Hi {{firstName}}! Here are your photos from {{eventName}}: {{link}}',
@@ -54,7 +56,7 @@ export function tzOffsetMs(timeZone: string, at: Date): number {
   return Date.UTC(n('year'), n('month') - 1, n('day'), n('hour'), n('minute'), n('second')) - at.getTime();
 }
 
-// iPads may run the event (online or offline) until 48 h after it starts; then it's Past
+// iPads may run the event (online or offline) until it's Past
 export function bundleValidUntil(event: Pick<Event, 'eventDate' | 'startTime'>, timeZone: string): Date {
   return eventClosesAt(event, timeZone);
 }
@@ -65,20 +67,25 @@ export function startOfEventDay(eventDate: Date, timeZone: string): Date {
   return new Date(midnight - tzOffsetMs(timeZone, new Date(midnight)));
 }
 
-// The event's Genie setup locks when the event starts: startTime, else the start of the event day
-export function eventLocksAt(event: Pick<Event, 'eventDate' | 'startTime'>, timeZone: string): Date {
-  return event.startTime ?? startOfEventDay(event.eventDate, timeZone);
+// In Progress from the start of the event day: its date can no longer change
+export function eventLocksAt(event: Pick<Event, 'eventDate'>, timeZone: string): Date {
+  return startOfEventDay(event.eventDate, timeZone);
 }
 
-// The 48 h window from the start is over: the event is Past
-export function eventClosesAt(event: Pick<Event, 'eventDate' | 'startTime'>, timeZone: string): Date {
-  return new Date(eventLocksAt(event, timeZone).getTime() + EVENT_WINDOW_MS);
+// The end of the event day: after it, the start and end times can no longer change either
+export function eventTimesLockAt(event: Pick<Event, 'eventDate'>, timeZone: string): Date {
+  return startOfEventDay(new Date(event.eventDate.getTime() + DAY_MS), timeZone);
+}
+
+// 12:00 AM three days after the event day's start: the event is Past
+export function eventClosesAt(event: Pick<Event, 'eventDate'>, timeZone: string): Date {
+  return startOfEventDay(new Date(event.eventDate.getTime() + EVENT_WINDOW_DAYS * DAY_MS), timeZone);
 }
 
 // When the party itself is over (e.g. publishing the gallery): its end time, else the end of the event day in its time zone
 export function eventEndsAt(event: Pick<Event, 'eventDate' | 'startTime' | 'endTime'>, timeZone: string): Date {
   if (event.endTime && (!event.startTime || event.endTime > event.startTime)) return event.endTime;
-  return startOfEventDay(new Date(event.eventDate.getTime() + 86400_000), timeZone);
+  return eventTimesLockAt(event, timeZone);
 }
 
 export function effectiveLockedAt(event: Pick<Event, 'eventDate' | 'startTime'>, settings: Pick<EventGenieSettings, 'lockedAt' | 'timeZone'>, now = new Date()): Date | null {

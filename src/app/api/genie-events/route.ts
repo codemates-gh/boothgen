@@ -7,9 +7,9 @@ import { getDefaults } from '@/lib/genie/defaults';
 import { eventsBilling } from '@/lib/genie/payments';
 import { BoothEventInput, boothEventFields, boothEventsClient, isBoothClient, setUpGenie } from '@/lib/genie/boothEvents';
 
-// Events for the Genie → Events overview, by tab (G, 2026-11-20): ?tab=upcoming (before the start), ?tab=current (In
-// Progress: from the start for 48 h) or ?tab=past (48 h after the start). A start without a time is the start of the
-// event day in its time zone. ?past=1 is the older spelling of tab=past.
+// Events for the Genie → Events overview, by tab (G, 2026-11-20): ?tab=upcoming (before the event day), ?tab=current
+// (In Progress: 12:00 AM on the event day to 11:59 PM two days later, in its time zone) or ?tab=past. ?past=1 is the
+// older spelling of tab=past.
 export async function GET(req: NextRequest) {
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
@@ -72,6 +72,7 @@ export async function GET(req: NextRequest) {
           ended: past,
           locksAt: eventLocksAt(e, s.timeZone),
           closesAt: eventClosesAt(e, s.timeZone),
+          startsAt: e.startTime ?? eventLocksAt(e, s.timeZone),
           timeZone: s.timeZone,
           followsDefaults: !s.customCapture || !s.customSharing || !s.customPrinting || !s.customTimeZone || !s.customAttract,
           shares: { total: sh.reduce((n, x) => n + x._count._all, 0), failed: sh.find(x => x.status === 'failed')?._count._all ?? 0 },

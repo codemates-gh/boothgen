@@ -32,7 +32,7 @@ export function isLocked(event: Pick<Event, 'eventDate' | 'startTime'> & { genie
   return !!event.genieSettings && effectiveLockedAt(event, event.genieSettings) !== null;
 }
 
-// Over at its end time (else the end of its day in its time zone). An ended event can only be duplicated (G 2026-11-20)
+// Past: 12:00 AM three days after the event day (see eventClosesAt). A Past event can only be duplicated (G 2026-11-20)
 export function hasEnded(event: Pick<Event, 'eventDate' | 'startTime'> & { genieSettings: Pick<EventGenieSettings, 'timeZone'> | null }, now = new Date()): boolean {
   return eventClosesAt(event, event.genieSettings?.timeZone ?? 'UTC') <= now;
 }

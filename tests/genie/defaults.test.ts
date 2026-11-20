@@ -65,6 +65,8 @@ describe('Genie event defaults', () => {
     const following = await newEvent(tenant.id, client.id);
     const customized = await newEvent(tenant.id, client.id);
     const started = await newEvent(tenant.id, client.id, new Date(Date.now() - 600_000));
+    // In Progress from 12:00 AM on its day (Los Angeles): yesterday's date is surely under way
+    await prisma.event.update({ where: { id: started.id }, data: { eventDate: new Date(new Date(Date.now() - 86400_000).toISOString().slice(0, 10)) } });
     for (const e of [following, customized, started]) await SETUP(json({}, 'POST'), p(e.id));
     const preExisting = await seedEvent(tenant.id, client.id); // settings created before defaults existed
 
@@ -189,25 +191,24 @@ describe('Genie → Events overview', () => {
     expect((await (await EVENTS(req('/api/genie-events?past=1'))).json()).events).toHaveLength(0);
   });
 
-  it('sorts events into Upcoming, In Progress (48 h from the start) and Past', async () => {
+  it('sorts events into Upcoming, In Progress (the event day plus two days) and Past', async () => {
     const { tenant, client } = await setup();
     const day = 86400_000, hour = 3600_000, now = Date.now();
-    const utcDay = (at: number) => { const d = new Date(at); return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())); };
-    const at = async (start: number | null, end: number | null, date = start ?? now) => {
+    // Event days (Los Angeles), with margins that hold whatever the time of day
+    const utcDay = (offset: number) => { const d = new Date(now + offset * day); return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())); };
+    const at = async (offset: number, start: number | null = null) => {
       const e = await seedEvent(tenant.id, client.id);
-      await prisma.event.update({ where: { id: e.id }, data: { eventDate: utcDay(date), startTime: start ? new Date(start) : null, endTime: end ? new Date(end) : null } });
+      await prisma.event.update({ where: { id: e.id }, data: { eventDate: utcDay(offset), startTime: start ? new Date(start) : null, endTime: null } });
       return e.id;
     };
-    const soon = await at(now + hour, now + 5 * hour);
-    const live = await at(now - hour, now + hour);
-    const endedToday = await at(now - 5 * hour, now - hour); // its end time passed, but still within 48 h of the start
-    const over = await at(now - 49 * hour, now - 45 * hour);
-    const noTimes = await at(null, null, now - 4 * day); // starts at the start of its day: long over
+    const soon = await at(3);
+    const yesterday = await at(-1, now - 20 * hour); // its party is over, but still within its three days
+    const over = await at(-5);
 
     const tab = async (t: string) => (await (await EVENTS(req('/api/genie-events?tab=' + t))).json()).events.map((r: any) => r.id).sort();
     expect(await tab('upcoming')).toEqual([soon]);
-    expect(await tab('current')).toEqual([live, endedToday].sort());
-    expect(await tab('past')).toEqual([over, noTimes].sort());
+    expect(await tab('current')).toEqual([yesterday]);
+    expect(await tab('past')).toEqual([over]);
     // The older spelling still works
     expect((await (await EVENTS(req('/api/genie-events?past=1'))).json()).events.every((r: any) => r.genie.ended)).toBe(true);
   });

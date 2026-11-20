@@ -12,10 +12,10 @@ import { guestSession, resetDb, seedEvent, seedTenant } from './helpers';
 beforeEach(resetDb);
 afterAll(async () => { await resetDb(); await prisma.$disconnect(); });
 
-async function seedGallery(opts: { scope?: 'own' | 'all'; published?: boolean; accessCode?: string; startTime?: Date; endTime?: Date } = {}) {
+async function seedGallery(opts: { scope?: 'own' | 'all'; published?: boolean; accessCode?: string; eventDate?: Date; endTime?: Date } = {}) {
   const { tenant, client } = await seedTenant();
   const event = await seedEvent(tenant.id, client.id);
-  await prisma.event.update({ where: { id: event.id }, data: { ...(opts.startTime ? { startTime: opts.startTime } : {}), endTime: opts.endTime ?? new Date(Date.now() + 3600000) } });
+  await prisma.event.update({ where: { id: event.id }, data: { ...(opts.eventDate ? { eventDate: opts.eventDate, startTime: opts.eventDate } : {}), endTime: opts.endTime ?? new Date(Date.now() + 3600000) } });
   await prisma.eventGenieSettings.update({ where: { eventId: event.id }, data: { guestLinkScope: opts.scope ?? 'own' } });
   const gallery = await prisma.gallery.create({
     data: { tenantId: tenant.id, eventId: event.id, title: 'G', isPublished: opts.published ?? false, accessCode: opts.accessCode ?? null },
@@ -104,8 +104,9 @@ describe('live event gallery (guestLinkScope all)', () => {
     expect((await (await galleryReq(g.gallery.clientToken, 'RIVERA')).json()).assets).toHaveLength(3);
   });
 
-  it('ends 48 h after the event starts and returns to the publish flow', async () => {
-    const g = await seedGallery({ scope: 'all', startTime: new Date(Date.now() - 49 * 3600000), endTime: new Date(Date.now() - 45 * 3600000) });
+  it('ends when the event is Past (two days after its day) and returns to the publish flow', async () => {
+    const d = new Date(Date.now() - 4 * 86400000);
+    const g = await seedGallery({ scope: 'all', eventDate: new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())), endTime: new Date(Date.now() - 80 * 3600000) });
     const json = await (await galleryReq(g.gallery.clientToken)).json();
     expect(json.gallery.isLive).toBe(false);
     expect(json.assets).toEqual([]);

@@ -4,6 +4,20 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.126.0] — 2026-11-20
+
+### Changed
+- **Genie events now run by whole days.** Everything follows the event date, in the event's time zone:
+  - **Upcoming** (before the event day): everything is editable. iPads can download the event and test it, but **no guest photos are saved or shared**. BoothGen refuses them, so paying early doesn't give extra days of use.
+  - **In Progress**: from 12:00 AM on the event day to 11:59 PM two days later. Guests can use the booth. The date is fixed from 12:00 AM; the start and end times can still change until the end of the event day. Settings and templates stay editable.
+  - **Past**: from 12:00 AM on the third day after the event day. iPads can't list, load or run it, and the page is read-only (Duplicate and Delete only).
+  - Example: an event on Nov 30 (any start time) takes guests from Nov 30, 12:00 AM to Dec 2, 11:59 PM.
+- The watermark is unchanged: an unpaid event keeps it until it's paid.
+- **Duplicate** now always dates the copy tomorrow, since a copy dated today would have its date fixed already. Edit Details can move it to today.
+- The Upcoming tab shows each event's start time; the event page shows when guests can use the booth.
+
+---
+
 ## [2.125.1] — 2026-11-20
 
 ### Fixed

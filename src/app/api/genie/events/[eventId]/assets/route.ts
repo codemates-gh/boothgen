@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma/client';
 import { deleteFromR2, headR2Object, r2PublicUrl } from '@/lib/storage/r2';
 import { authenticateDevice, findDeviceEvent, genieError, isUniqueViolation, readJson } from '@/lib/genie/auth';
 import { ensureGallery, sessionUrl } from '@/lib/genie/bundle';
-import { dispatchReadyShares, ensureGenieSession } from '@/lib/genie/sessions';
+import { NOT_STARTED_MESSAGE, beforeEventDay, dispatchReadyShares, ensureGenieSession } from '@/lib/genie/sessions';
 import { GalleryUpload, firstIssue } from '@/lib/genie/schemas';
 
 function registered(asset: GalleryAsset, gallery: Gallery, session: Pick<GenieSession, 'publicToken'>, status: 200 | 201) {
@@ -54,6 +54,11 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
   if (!object) return genieError(422, 'object_missing', 'The file was not found in storage');
   if (object.bytes !== body.bytes) return genieError(422, 'size_mismatch', `Stored object is ${object.bytes} bytes, expected ${body.bytes}`);
 
+  // A new guest session before the event day: test-only, nothing is saved or sent
+  if (!(await prisma.genieSession.findUnique({ where: { clientId: body.session.id }, select: { id: true } })) && await beforeEventDay(event.id, body.session.startedAt)) {
+    await deleteFromR2(body.storageKey).catch(err => console.error('[genie] early upload cleanup failed', body.storageKey, err));
+    return genieError(409, 'event_not_started', NOT_STARTED_MESSAGE);
+  }
   const session = await ensureGenieSession(event, gallery, auth.device.id, body.session);
   if (!session) return genieError(422, 'session_conflict', 'This session id or token belongs to another event');
   // The guest cancelled on review: an upload still in the iPad's outbox doesn't bring the session back

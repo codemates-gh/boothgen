@@ -217,8 +217,8 @@ describe('bundle', () => {
     expect(bundle.sharing.photosHiddenAt).toBe('2027-01-11T12:00:00.000Z');
     expect(bundle.sharing.photosDeletedAt).toBe('2027-02-10T12:00:00.000Z');
     expect(bundle.templates.map((t: any) => t.name)).toEqual(['Template 1', 'Landscape']);
-    // 48 hours after the start (2026-12-12 23:00Z)
-    expect(bundle.validUntil).toBe('2026-12-14T23:00:00.000Z');
+    // 12:00 AM three days after the event day (2026-12-12) in Los Angeles
+    expect(bundle.validUntil).toBe('2026-12-15T08:00:00.000Z');
     expect(bundle.sharing.sessionUrlTemplate).toMatch(/^https:\/\/boothgen\.test\/g\/[^/]+\/s\/\{token\}$/);
   });
 });

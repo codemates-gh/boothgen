@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { authenticateDevice, findDeviceEvent, genieError, isUniqueViolation, readJson } from '@/lib/genie/auth';
 import { ensureGallery } from '@/lib/genie/bundle';
-import { dispatchReadyShares, ensureGenieSession } from '@/lib/genie/sessions';
+import { NOT_STARTED_MESSAGE, beforeEventDay, dispatchReadyShares, ensureGenieSession } from '@/lib/genie/sessions';
 import { ShareJob, firstIssue } from '@/lib/genie/schemas';
 import { getMessaging } from '@/lib/genie/messaging';
 import { normalizePhone } from '@/lib/sms/phone';
@@ -46,6 +46,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
   }
 
   const gallery = await ensureGallery(event);
+  // A new guest session before the event day: test-only, nothing is saved or sent
+  if (!(await prisma.genieSession.findUnique({ where: { clientId: body.session.id }, select: { id: true } })) && await beforeEventDay(event.id, body.session.startedAt)) {
+    return genieError(409, 'event_not_started', NOT_STARTED_MESSAGE);
+  }
   const session = await ensureGenieSession(event, gallery, auth.device.id, body.session);
   if (!session) return genieError(422, 'session_conflict', 'This session id or token belongs to another event');
   if (session.deletedAt) return genieError(410, 'session_deleted', 'This session was deleted');

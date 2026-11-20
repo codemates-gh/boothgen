@@ -14,7 +14,7 @@ import { IPADS_PER_PAYMENT, eventBilling, isComp } from '@/lib/genie/payments';
 import { CUSTOM_FLAG, SECTION_NAMES, customFlags, getDefaults, sectionValues } from '@/lib/genie/defaults';
 import { latestApprovedDesign } from '@/lib/genie/approvedDesign';
 import { requireGenieAdmin } from '@/lib/genie/admin';
-import { bundleValidUntil, designApprovalPending, eventClosesAt, effectiveLockedAt, eventLocksAt, isValidTimeZone } from '@/lib/genie/bundle';
+import { bundleValidUntil, designApprovalPending, eventClosesAt, eventTimesLockAt, effectiveLockedAt, eventLocksAt, isValidTimeZone } from '@/lib/genie/bundle';
 import { SettingsPatch, boomerangData, endedResponse, findAdminEvent, hasEnded, providerWarnings, settingsUpdateData, settingsView, templateView, withBoomerangDesignProblem } from '@/lib/genie/eventAdmin';
 import { galleryRetentionDates, getGalleryRetention } from '@/lib/gallery/retention';
 import { attractData, deleteUnusedAttractMedia, storedAttract } from '@/lib/genie/attract';
@@ -76,6 +76,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     hasGuestSessions: (await prisma.genieSession.count({ where: { eventId: event.id, deletedAt: null } })) > 0,
     locksAt: eventLocksAt(event, s?.timeZone ?? 'America/New_York'),
     closesAt: eventClosesAt(event, s?.timeZone ?? 'America/New_York'),
+    // After the event day the start and end times are fixed too (before that, only the date is)
+    timesLocked: eventTimesLockAt(event, s?.timeZone ?? 'America/New_York').getTime() <= Date.now(),
     // 48 hours after the event ends iPads can no longer run it; it can still be viewed and duplicated
     ended: !!s && hasEnded(event),
     expired: !!s && bundleValidUntil(event, s.timeZone).getTime() <= Date.now(),

@@ -16,7 +16,8 @@ import { GET as DASH, PATCH as PATCH_GENIE } from '@/app/api/events/[id]/genie/r
 import { POST as ADD_TEMPLATE } from '@/app/api/events/[id]/genie/templates/route';
 import { PUT as TEMPLATE_TEXT } from '@/app/api/events/[id]/genie/template-text/route';
 import { PATCH as PATCH_BOOTH } from '@/app/api/genie-events/[id]/route';
-import { ensureGallery } from '@/lib/genie/bundle';
+import { ensureGallery, eventClosesAt } from '@/lib/genie/bundle';
+import { beforeEventDay } from '@/lib/genie/sessions';
 import { eventSpan, moveEventTo, todayIn } from '@/lib/eventTimes';
 import { zonedTime as zonedForTest } from '@/lib/genie/boothEvents';
 import { req, resetDb, seedDevice, seedEvent, seedTenant } from './helpers';
@@ -69,7 +70,7 @@ describe('expired events', () => {
     expect(list.events.map((e: any) => [e.id, e.status])).toEqual([[running.id, 'IN_PROGRESS']]);
   });
 
-  it('48 hours after its start an event drops off the iPad list and no iPad can download it, even one running it', async () => {
+  it('two days after its event day an event is Past: off the iPad list, and no iPad can download it, even one running it', async () => {
     const { tenant, client } = await seedTenant();
     session = { tenantId: tenant.id, tenantRole: 'HOST_ADMIN', userId: 'u1' };
     const { token, device } = await seedDevice(tenant.id);
@@ -77,21 +78,38 @@ describe('expired events', () => {
     const recent = await seedEvent(tenant.id, client.id);
     const old = await seedEvent(tenant.id, client.id);
     const now = Date.now();
-    // Its end time passed, but it started 34 h ago: still In Progress
-    await prisma.event.update({ where: { id: recent.id }, data: { title: 'Recent', eventDate: new Date(new Date(now - 34 * HOURS).toISOString().slice(0, 10)), startTime: new Date(now - 34 * HOURS), endTime: new Date(now - 30 * HOURS) } });
-    await prisma.event.update({ where: { id: old.id }, data: { title: 'Old', eventDate: new Date(new Date(now - 54 * HOURS).toISOString().slice(0, 10)), startTime: new Date(now - 54 * HOURS), endTime: new Date(now - 49 * HOURS) } });
+    const utcDay = (at: number) => new Date(new Date(at).toISOString().slice(0, 10));
+    // Yesterday (its party is over, but still within its three days) and four days ago (Past)
+    await prisma.event.update({ where: { id: recent.id }, data: { title: 'Recent', eventDate: utcDay(now - 24 * HOURS), startTime: null, endTime: null } });
+    await prisma.event.update({ where: { id: old.id }, data: { title: 'Old', eventDate: utcDay(now - 96 * HOURS), startTime: null, endTime: null } });
     await prisma.genieEventDevice.create({ data: { tenantId: tenant.id, eventId: old.id, deviceId: device.id } });
 
     expect((await (await DEVICE_EVENTS(req('/x', { token }))).json()).events.map((e: any) => e.id)).toEqual([recent.id]);
     const ok = await DEVICE_BUNDLE(req('/x', { token: other.token }), { params: Promise.resolve({ eventId: recent.id }) });
     expect(ok.status).toBe(200);
-    expect(Date.parse((await ok.json()).validUntil)).toBe(now - 34 * HOURS + 48 * HOURS);
+    expect(Date.parse((await ok.json()).validUntil)).toBe(eventClosesAt({ eventDate: utcDay(now - 24 * HOURS) }, 'America/Los_Angeles').getTime());
     const refused = await DEVICE_BUNDLE(req('/x', { token }), { params: Promise.resolve({ eventId: old.id }) });
     expect([refused.status, (await refused.json()).code]).toEqual([409, 'event_expired']);
 
     const d = await (await DASH(req('/x'), ev(old.id))).json();
     expect([d.expired, d.ended, !!d.settings]).toEqual([true, true, true]);
     expect(await (await DASH(req('/x'), ev(recent.id))).json()).toMatchObject({ expired: false, ended: false });
+  });
+
+  it('before the event day a new guest session is refused (test only); from 12:00 AM on the day it is accepted', async () => {
+    const { tenant, client } = await seedTenant();
+    const e = await seedEvent(tenant.id, client.id); // 2026-12-12, Los Angeles: opens 2026-12-12T08:00Z
+    (globalThis as { __eventDayGate?: boolean }).__eventDayGate = true;
+    try {
+      expect(await beforeEventDay(e.id, '2026-12-11T20:00:00Z', new Date('2026-12-11T20:00:00Z'))).toBe(true);
+      // Taken the day before, uploaded on the day: still refused
+      expect(await beforeEventDay(e.id, '2026-12-11T20:00:00Z', new Date('2026-12-12T10:00:00Z'))).toBe(true);
+      expect(await beforeEventDay(e.id, '2026-12-12T08:30:00Z', new Date('2026-12-12T09:00:00Z'))).toBe(false);
+      // An iPad clock a little fast or slow is fine
+      expect(await beforeEventDay(e.id, '2026-12-12T07:30:00Z', new Date('2026-12-12T09:00:00Z'))).toBe(false);
+    } finally {
+      (globalThis as { __eventDayGate?: boolean }).__eventDayGate = false;
+    }
   });
 
   it("a Past event's setup and details can't change at all", async () => {
@@ -107,19 +125,25 @@ describe('expired events', () => {
     expect([moved.status, (await moved.json()).code]).toEqual([409, 'ended']);
   });
 
-  it('an In Progress event keeps its setup editable, but not its date and times', async () => {
-    const { tenant, client } = await seedTenant();
+  it('In Progress: the setup stays editable; the date is fixed; the times change until the end of the event day', async () => {
+    const { tenant } = await seedTenant();
     session = { tenantId: tenant.id, tenantRole: 'HOST_ADMIN', userId: 'u1' };
     const today = new Date().toISOString().slice(0, 10);
-    const booth = await CREATE_BOOTH(req('/x', { body: { title: 'Tonight', date: today, startTime: '00:00', timeZone: 'UTC' } }));
+    const booth = await CREATE_BOOTH(req('/x', { body: { title: 'Tonight', date: today, startTime: '20:00', timeZone: 'UTC' } }));
     const id = (await booth.json()).id;
     expect((await PATCH_GENIE(req('/x', { method: 'PATCH', body: { timeZone: 'UTC' } }), ev(id))).status).toBe(200);
     const moved = await PATCH_BOOTH(req('/x', { method: 'PATCH', body: { title: 'Tonight', date: '2099-12-20', startTime: '18:00' } }), ev(id));
     expect([moved.status, (await moved.json()).code]).toEqual([409, 'locked']);
-    expect((await PATCH_BOOTH(req('/x', { method: 'PATCH', body: { title: 'Renamed', date: today, startTime: '00:00' } }), ev(id))).status).toBe(200);
+    expect((await PATCH_BOOTH(req('/x', { method: 'PATCH', body: { title: 'Renamed', date: today, startTime: '21:00' } }), ev(id))).status).toBe(200);
+
+    // Yesterday's event: the day is over, so the times are fixed too
+    const yesterday = new Date(Date.now() - 24 * HOURS).toISOString().slice(0, 10);
+    await prisma.event.update({ where: { id }, data: { eventDate: new Date(yesterday), startTime: new Date(yesterday + 'T21:00:00Z') } });
+    const retimed = await PATCH_BOOTH(req('/x', { method: 'PATCH', body: { title: 'Renamed', date: yesterday, startTime: '22:00' } }), ev(id));
+    expect([retimed.status, (await retimed.json()).code]).toEqual([409, 'locked']);
   });
 
-  it('Duplicate starts the copy today with the same times and length, also from an expired event; booth copies are booked', async () => {
+  it('Duplicate starts the copy tomorrow with the same times and length, also from an expired event; booth copies are booked', async () => {
     const { tenant, client } = await seedTenant();
     session = { tenantId: tenant.id, tenantRole: 'HOST_ADMIN', userId: 'u1' };
     // CRM event (clock times): 20:00 to 01:00 the next day, long ago
@@ -127,9 +151,8 @@ describe('expired events', () => {
     await prisma.event.update({ where: { id: crm.id }, data: { eventDate: new Date('2026-01-10'), startTime: new Date('2026-01-10T20:00:00Z'), endTime: new Date('2026-01-11T01:00:00Z') } });
     const copy = await prisma.event.findUniqueOrThrow({ where: { id: (await (await DUPLICATE(req('/x', { method: 'POST' }), ev(crm.id))).json()).id } });
     const nextDay = (d: string) => new Date(Date.parse(d + 'T00:00:00Z') + 24 * HOURS).toISOString().slice(0, 10);
-    // Today, unless today's start time already passed: then tomorrow, so the copy can still be moved
-    const nyToday = todayIn('America/New_York');
-    const today = Date.parse(`${nyToday}T20:00:00Z`) > Date.now() ? nyToday : nextDay(nyToday);
+    // Tomorrow: a copy dated today would have its date fixed already
+    const today = nextDay(todayIn('America/New_York'));
     expect(copy.eventDate.toISOString().slice(0, 10)).toBe(today);
     expect(copy.startTime!.toISOString()).toBe(`${today}T20:00:00.000Z`);
     expect(copy.endTime!.getTime() - copy.startTime!.getTime()).toBe(5 * HOURS);
@@ -142,8 +165,7 @@ describe('expired events', () => {
     const r = await DUPLICATE(req('/x', { method: 'POST' }), ev(boothId));
     expect(r.status).toBe(201);
     const bc = await prisma.event.findUniqueOrThrow({ where: { id: (await r.json()).id }, include: { genieSettings: true } });
-    const laNow = todayIn('America/Los_Angeles');
-    const laToday = zonedForTest(laNow, '18:00', 'America/Los_Angeles').getTime() > Date.now() ? laNow : nextDay(laNow);
+    const laToday = nextDay(todayIn('America/Los_Angeles'));
     expect(bc.eventDate.toISOString().slice(0, 10)).toBe(laToday);
     expect(bc.startTime).toEqual(zonedForTest(laToday, '18:00', 'America/Los_Angeles'));
     expect(bc.endTime).toEqual(zonedForTest(laToday, '23:30', 'America/Los_Angeles'));

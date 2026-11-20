@@ -59,7 +59,7 @@ type Dashboard = {
     // Glamour Style is offered only once Super Admin makes it available (Genie 0.6.0+)
     glamourStyleReady: boolean;
   };
-  settings: Settings | null; lockedAt: string | null; hasGuestSessions?: boolean; locksAt: string; closesAt: string; ended?: boolean; expired: boolean; templates: EventTemplate[];
+  settings: Settings | null; lockedAt: string | null; hasGuestSessions?: boolean; locksAt: string; closesAt: string; timesLocked?: boolean; ended?: boolean; expired: boolean; templates: EventTemplate[];
   providerWarnings: { channel: 'sms' | 'email'; message: string }[]; photosHiddenAt: string; photosDeletedAt: string; designApprovalPending: boolean;
   approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
   defaults: { saved: boolean; timeZone: string };
@@ -163,7 +163,8 @@ export default function EventGeniePage() {
   useEffect(() => { if (!savedAt) return; const t = setTimeout(() => setSavedAt(null), 4000); return () => clearTimeout(t); }, [savedAt]);
 
   const dirty = !!(form && data?.settings && JSON.stringify(form) !== JSON.stringify(toForm(data.settings)));
-  // Started: everything can still change and reaches iPads between guests, except the date and times (G, 2026-11-19)
+  // In Progress (from 12:00 AM on the event day): the setup still changes and reaches iPads between guests; the date is
+  // fixed, and the times too once the event day is over (G, 2026-11-20)
   const started = !!data?.lockedAt;
   // Past (48 h after its start, G 2026-11-20): only Duplicate and Delete
   const ended = !!data?.ended || !!data?.expired;
@@ -342,7 +343,7 @@ export default function EventGeniePage() {
                 {started && !ended && (
                   <div className="flex items-start gap-2 text-sm text-[#0073E6] bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
                     <Lock className="w-4 h-4 mt-0.5 flex-shrink-0"/>
-                    <span>In progress since {fmtDateTime(data.lockedAt, tz)}. iPads can run it until {fmtDateTime(data.closesAt, tz)} (48 hours after the start). You can still change anything here, and iPads pick it up between guests. Only the date and times can no longer change.</span>
+                    <span>In progress: guests can use the booth until {fmtDateTime(data.closesAt, tz)}. You can still change anything here, and iPads pick it up between guests. The date can no longer change{data.timesLocked ? ', nor the times.' : '; the times can until the end of the event day.'}</span>
                   </div>
                 )}
 
@@ -357,8 +358,8 @@ export default function EventGeniePage() {
                     <Field label="Bundle version" hint="Goes up when anything iPads download changes.">
                       <p className="text-sm font-medium h-10 flex items-center">v{data.settings.bundleVersion}</p>
                     </Field>
-                    <Field label={started ? 'Started' : 'Starts'} hint={`iPads can run it until ${fmtDateTime(data.closesAt, tz)}. Once it starts, the date and times can no longer change.`}>
-                      <p className="text-sm font-medium h-10 flex items-center gap-1.5">{started && <Lock className="w-3.5 h-3.5"/>}{fmtDateTime(started ? data.lockedAt : data.locksAt, tz)}</p>
+                    <Field label="Guests" hint="Before this, iPads can only run tests. From 12:00 AM on the event day, its date can no longer change.">
+                      <p className="text-sm font-medium h-10 flex items-center gap-1.5">{started && <Lock className="w-3.5 h-3.5"/>}{fmtDateTime(data.locksAt, tz)} – {fmtDateTime(new Date(new Date(data.closesAt).getTime() - 60_000).toISOString(), tz)}</p>
                     </Field>
                   </div>
                 </Section>
@@ -525,7 +526,7 @@ export default function EventGeniePage() {
       )}
 
       {data?.event.boothEvent && (
-        <BoothEventModal open={editing} onClose={() => setEditing(false)} eventId={eventId} lockedTimes={started}
+        <BoothEventModal open={editing} onClose={() => setEditing(false)} eventId={eventId} lockedDate={started} lockedTimes={!!data?.timesLocked}
           initial={{
             title: data.event.title, date: data.event.eventDate.slice(0, 10),
             startTime: localTime(data.event.startTime, tz ?? 'UTC'), endTime: localTime(data.event.endTime, tz ?? 'UTC'),

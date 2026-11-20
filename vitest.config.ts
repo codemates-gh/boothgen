@@ -10,6 +10,7 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.test.ts'],
     globalSetup: ['tests/global-setup.ts'],
+    setupFiles: ['tests/setup-event-day.ts'],
     env: { DATABASE_URL: TEST_DATABASE_URL, NEXT_PUBLIC_APP_URL: 'https://boothgen.test', R2_PUBLIC_URL: 'https://media.boothgen.test',
       SECRETS_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64') },
     fileParallelism: false,

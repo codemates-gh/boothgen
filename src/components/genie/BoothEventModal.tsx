@@ -24,10 +24,11 @@ export function localTime(iso: string | null, timeZone: string): string {
   return `${p.find(x => x.type === 'hour')?.value}:${p.find(x => x.type === 'minute')?.value}`;
 }
 
-export function BoothEventModal({ open, onClose, initial, eventId, lockedTimes, onSaved }: {
+export function BoothEventModal({ open, onClose, initial, eventId, lockedDate, lockedTimes, onSaved }: {
   open: boolean; onClose: () => void; initial: BoothEventValues;
   eventId?: string; // editing when set
-  lockedTimes?: boolean; // the event has started: date and times can't change
+  lockedDate?: boolean; // the event day has started: the date can't change
+  lockedTimes?: boolean; // the event day is over: the times can't change either
   onSaved: (id: string) => void;
 }) {
   const [v, setV] = useState(initial);
@@ -66,9 +67,9 @@ export function BoothEventModal({ open, onClose, initial, eventId, lockedTimes, 
             <label className="block text-sm font-medium text-gray-700 mb-1">Start date</label>
             {/* The browser's own calendar icon isn't shown everywhere (Safari), so the field has its own button */}
             <div className="relative">
-              <Input ref={dateRef} type="date" value={v.date} onChange={e => set('date', e.target.value)} disabled={lockedTimes}
+              <Input ref={dateRef} type="date" value={v.date} onChange={e => set('date', e.target.value)} disabled={lockedDate || lockedTimes}
                 onClick={() => openDatePicker()} className="!pr-9 [&::-webkit-calendar-picker-indicator]:hidden"/>
-              <button type="button" aria-label="Pick a date" disabled={lockedTimes} onClick={() => openDatePicker()}
+              <button type="button" aria-label="Pick a date" disabled={lockedDate || lockedTimes} onClick={() => openDatePicker()}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-800 disabled:opacity-50">
                 <Calendar className="w-4 h-4"/>
               </button>
@@ -88,7 +89,9 @@ export function BoothEventModal({ open, onClose, initial, eventId, lockedTimes, 
           </div>
         </div>
         <p className="text-xs text-gray-400 -mt-2">
-          {lockedTimes ? 'The event has started, so its date and times can no longer change.' : 'The start time is required: iPads can run the event for 48 hours from it, and its date and times lock once it starts. An end time earlier than the start means the next day; it can be at most 48 hours after the start.'}
+          {lockedTimes ? 'The event day is over, so its date and times can no longer change.'
+            : lockedDate ? 'The event day has started, so its date can no longer change. The times can until the end of the day.'
+            : 'Guests can use the booth from 12:00 AM on the start date until 11:59 PM two days later; before that, iPads can only run tests. The date locks at 12:00 AM on the event day. An end time earlier than the start means the next day; it can be at most 48 hours after the start.'}
         </p>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Venue <span className="text-gray-400 font-normal">(optional)</span></label>

@@ -1,8 +1,20 @@
 import type { Event, Gallery, GenieSession } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { inngest } from '@/lib/inngest/client';
+import { eventLocksAt } from '@/lib/genie/bundle';
 
 type GuestSessionInput = { id: string; publicToken: string; startedAt: string };
+
+// Before the event day (12:00 AM in its time zone) an event is test-only (G, 2026-11-20): paying early doesn't buy extra
+// days, so a new guest session (its photos and shares) is refused until the day starts. The iPad's own clock may be a
+// little off, so a session it started up to an hour early is accepted once the day has begun.
+const CLOCK_SKEW_MS = 3600_000;
+export async function beforeEventDay(eventId: string, startedAt: string, now = new Date()): Promise<boolean> {
+  const e = await prisma.event.findUniqueOrThrow({ where: { id: eventId }, select: { eventDate: true, genieSettings: { select: { timeZone: true } } } });
+  const opens = eventLocksAt(e, e.genieSettings?.timeZone ?? 'UTC');
+  return now < opens || Date.parse(startedAt) < opens.getTime() - CLOCK_SKEW_MS;
+}
+export const NOT_STARTED_MESSAGE = "The event day hasn't started yet, so guest photos can't be saved or shared. Before the event day the booth is for testing only.";
 
 // The guest session for a device session id, created on first sight. Returns null when the id or
 // public token already belongs to a different event (possibly another tenant).

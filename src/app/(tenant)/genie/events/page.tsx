@@ -14,7 +14,7 @@ type Row = {
   id: string; title: string; eventDate: string; status: string; venueName: string | null; clientName: string | null; boothEvent: boolean; paysPerEvent: boolean; paid: boolean;
   genie: {
     enabled: boolean; templates: number; ipads: number; maxDevices: number; sessions: number;
-    lockedAt: string | null; ended: boolean; locksAt: string; closesAt: string; timeZone: string; followsDefaults: boolean; shares: { total: number; failed: number };
+    lockedAt: string | null; ended: boolean; locksAt: string; closesAt: string; startsAt: string; timeZone: string; followsDefaults: boolean; shares: { total: number; failed: number };
   } | null;
 };
 
@@ -27,7 +27,8 @@ function GenieStatus({ g }: { g: Row['genie'] }) {
   return <Badge variant="success">Ready</Badge>;
 }
 
-// Upcoming until the start, In Progress for 48 h from the start (iPads can run it), then Past (only duplicated)
+// Upcoming before the event day (iPads: testing only), In Progress from 12:00 AM on the event day to 11:59 PM two days
+// later (guests), then Past (only duplicated)
 type Tab = 'upcoming' | 'current' | 'past';
 const TABS: [Tab, string][] = [['upcoming', 'Upcoming'], ['current', 'In Progress'], ['past', 'Past']];
 
@@ -136,7 +137,7 @@ export default function GenieEventsPage() {
                             <td className="px-6 py-3 text-sm text-gray-600">{e.genie ? e.genie.templates : '—'}</td>
                             <td className="px-6 py-3 text-sm text-gray-600">{e.genie ? `${e.genie.ipads} of ${e.genie.maxDevices}` : '—'}</td>
                             <td className="px-6 py-3 text-sm text-gray-600 whitespace-nowrap">
-                              {!e.genie ? '—' : tab === 'upcoming' ? fmtDateTime(e.genie.locksAt, e.genie.timeZone) : e.genie.sessions}
+                              {!e.genie ? '—' : tab === 'upcoming' ? fmtDateTime(e.genie.startsAt, e.genie.timeZone) : e.genie.sessions}
                             </td>
                             {tab === 'current' && <td className="px-6 py-3 text-sm text-gray-600 whitespace-nowrap">{e.genie ? fmtDateTime(e.genie.closesAt, e.genie.timeZone) : '—'}</td>}
                             <td className="px-6 py-3 text-sm text-gray-600">

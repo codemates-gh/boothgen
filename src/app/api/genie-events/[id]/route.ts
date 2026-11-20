@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { BoothEventInput, boothEventFields, isBoothClient } from '@/lib/genie/boothEvents';
-import { effectiveLockedAt } from '@/lib/genie/bundle';
+import { effectiveLockedAt, eventTimesLockAt } from '@/lib/genie/bundle';
 import { endedResponse, hasEnded } from '@/lib/genie/eventAdmin';
 
 // A booth event's details (name, date, times, venue). CRM events are edited from the CRM event page.
@@ -25,16 +25,20 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   }
   const event = await findBoothEvent(auth.tenantId, params.id);
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  // A Past event (48 h after its start) can only be duplicated
+  // A Past event can only be duplicated
   if (hasEnded(event)) return endedResponse();
   const timeZone = event.genieSettings?.timeZone ?? 'UTC';
   const fields = boothEventFields({ ...parsed.data, timeZone });
   if ('error' in fields) return NextResponse.json({ error: fields.error }, { status: 400 });
-  // Once the event has started (photos or not), the name and venue can change but not when it happens (G, 2026-11-20)
+  // In Progress (from 12:00 AM on the event day, photos or not): the date can't change; the times can until the end of
+  // the event day, then they're fixed too. The name and venue can always change (G, 2026-11-20)
   if (event.genieSettings && effectiveLockedAt(event, event.genieSettings)) {
     const same = (a: Date | null, b: Date | null) => (a?.getTime() ?? null) === (b?.getTime() ?? null);
-    if (!same(fields.eventDate, event.eventDate) || !same(fields.startTime, event.startTime) || !same(fields.endTime, event.endTime)) {
-      return NextResponse.json({ error: 'The event has started, so its date and times can no longer change', code: 'locked' }, { status: 409 });
+    if (!same(fields.eventDate, event.eventDate)) {
+      return NextResponse.json({ error: 'The event day has started, so its date can no longer change. Its times can change until the end of the day.', code: 'locked' }, { status: 409 });
+    }
+    if (eventTimesLockAt(event, timeZone) <= new Date() && (!same(fields.startTime, event.startTime) || !same(fields.endTime, event.endTime))) {
+      return NextResponse.json({ error: 'The event day is over, so its times can no longer change', code: 'locked' }, { status: 409 });
     }
   }
   await prisma.event.update({ where: { id: event.id }, data: fields });

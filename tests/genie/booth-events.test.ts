@@ -107,23 +107,24 @@ describe('editing and deleting a booth event', () => {
     expect(e.endTime!.toISOString()).toBe('2027-03-21T06:00:00.000Z');
   });
 
-  it('a started event can\'t be moved, even without guest photos', async () => {
+  it('an In Progress event can\'t move to another date, even without guest photos; its times can still change on the day', async () => {
     await setup();
     const { id } = await (await create()).json();
     await prisma.eventGenieSettings.update({ where: { eventId: id }, data: { lockedAt: new Date() } });
-    const res = await edit(id, { ...editBody, startTime: '20:00' });
+    const res = await edit(id, { ...editBody, date: '2027-03-27' });
     expect(res.status).toBe(409);
     expect((await res.json()).code).toBe('locked');
+    expect((await edit(id, { ...editBody, startTime: '20:00' })).status).toBe(200);
   });
 
-  it('keeps the date and times once the event has started and guests took photos, but allows a new name', async () => {
+  it('keeps the date once the event day has started and guests took photos, but allows a new name', async () => {
     const { tenant } = await setup();
     const { id } = await (await create()).json();
     await prisma.eventGenieSettings.update({ where: { eventId: id }, data: { lockedAt: new Date() } });
     const event = await prisma.event.findUniqueOrThrow({ where: { id } });
     const gallery = await ensureGallery(event);
     await prisma.genieSession.create({ data: { tenantId: tenant.id, eventId: id, galleryId: gallery.id, clientId: randomUUID(), publicToken: randomUUID(), startedAt: new Date() } });
-    const res = await edit(id, { ...editBody, startTime: '20:00' });
+    const res = await edit(id, { ...editBody, date: '2027-03-27' });
     expect(res.status).toBe(409);
     expect((await res.json()).code).toBe('locked');
     expect((await edit(id, { ...editBody, title: 'Renamed' })).status).toBe(200);
