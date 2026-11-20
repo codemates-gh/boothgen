@@ -33,7 +33,10 @@ type Tab = 'upcoming' | 'current' | 'past';
 const TABS: [Tab, string][] = [['upcoming', 'Upcoming'], ['current', 'In Progress'], ['past', 'Past']];
 
 export default function GenieEventsPage() {
-  const [tab, setTab] = useState<Tab>('upcoming');
+  // Opens on In Progress (G, 2026-11-20)
+  const [tab, setTab] = useState<Tab>('current');
+  // Past shows the last 12 months; Older shows the events before that
+  const [older, setOlder] = useState(false);
   const past = tab === 'past';
   const [rows, setRows] = useState<Row[] | null>(null);
   const [notEnabled, setNotEnabled] = useState(false);
@@ -45,10 +48,10 @@ export default function GenieEventsPage() {
 
   const load = useCallback(async () => {
     setRows(null);
-    const r = await fetch('/api/genie-events?tab=' + tab);
+    const r = await fetch('/api/genie-events?tab=' + tab + (tab === 'past' && older ? '&older=1' : ''));
     if (r.status === 403) { setNotEnabled(true); return; }
     if (r.ok) setRows((await r.json()).events);
-  }, [tab]);
+  }, [tab, older]);
   useEffect(() => { load(); }, [load]);
 
   return (
@@ -73,7 +76,7 @@ export default function GenieEventsPage() {
 
             <div className="flex border-b border-gray-200">
               {TABS.map(([t, label]) => (
-                <button key={t} onClick={() => setTab(t)} className={'px-4 py-2.5 text-[13px] font-medium border-b-2 -mb-px ' + (tab === t ? 'border-[#0085FF] text-[#1F1F3D]' : 'border-transparent text-[#676879] hover:text-[#1F1F3D]')}>
+                <button key={t} onClick={() => { setTab(t); setOlder(false); }} className={'px-4 py-2.5 text-[13px] font-medium border-b-2 -mb-px ' + (tab === t ? 'border-[#0085FF] text-[#1F1F3D]' : 'border-transparent text-[#676879] hover:text-[#1F1F3D]')}>
                   {label}
                 </button>
               ))}
@@ -83,7 +86,7 @@ export default function GenieEventsPage() {
               <CardContent className="p-0">
                 {!rows ? <p className="text-sm text-gray-400 p-6">Loading…</p> : rows.length === 0 ? (
                   <div className="text-center py-12 text-gray-500">
-                    {tab === 'upcoming' && (
+                    {!past && (
                       // New accounts: the few things to do before the first event
                       <div className="max-w-xl mx-auto text-left mb-8">
                         <p className="text-sm font-semibold text-gray-800 mb-3">Get started</p>
@@ -106,8 +109,9 @@ export default function GenieEventsPage() {
                       </div>
                     )}
                     <Calendar className="w-10 h-10 mx-auto mb-3 text-gray-300"/>
-                    <p className="text-sm">{past ? 'No past events.' : tab === 'current' ? 'No events in progress.' : 'No upcoming events.'}</p>
-                    {tab === 'upcoming' && <Button variant="outline" size="sm" className="mt-4" onClick={() => setCreating(true)} disabled={!defaultTz}><Plus className="w-4 h-4 mr-1"/>New Booth Event</Button>}
+                    <p className="text-sm">{past ? (older ? 'No events older than 12 months.' : 'No past events in the last 12 months.') : tab === 'current' ? 'No events in progress.' : 'No upcoming events.'}</p>
+                    {past && <Button variant="outline" size="sm" className="mt-4" onClick={() => setOlder(!older)}>{older ? 'Last 12 Months' : 'Older'}</Button>}
+                    {!past && <Button variant="outline" size="sm" className="mt-4" onClick={() => setCreating(true)} disabled={!defaultTz}><Plus className="w-4 h-4 mr-1"/>New Booth Event</Button>}
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -149,6 +153,12 @@ export default function GenieEventsPage() {
                         ))}
                       </tbody>
                     </table>
+                    {past && (
+                      <div className="flex items-center justify-between gap-3 px-6 py-3 border-t text-xs text-gray-500">
+                        <span>{older ? 'Events older than 12 months.' : 'Events from the last 12 months.'}</span>
+                        <Button variant="outline" size="sm" onClick={() => setOlder(!older)}>{older ? 'Last 12 Months' : 'Older'}</Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

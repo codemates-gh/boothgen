@@ -9,7 +9,7 @@ import { BoothEventInput, boothEventFields, boothEventsClient, isBoothClient, se
 
 // Events for the Genie → Events overview, by tab (G, 2026-11-20): ?tab=upcoming (before the event day), ?tab=current
 // (In Progress: 12:00 AM on the event day to 11:59 PM two days later, in its time zone) or ?tab=past. ?past=1 is the
-// older spelling of tab=past.
+// older spelling of tab=past. Past shows the last 12 months; &older=1 shows events before that (the "Older" button).
 export async function GET(req: NextRequest) {
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
@@ -19,7 +19,8 @@ export async function GET(req: NextRequest) {
   const now = new Date();
   // Event dates are stored as UTC midnight; a day's margin either side covers every time zone, plus the 48 h window
   const day = 86400_000;
-  const dateRange = tab === 'past' ? { lt: new Date(now.getTime() + day) }
+  const yearAgo = new Date(now.getTime() - 365 * day);
+  const dateRange = tab === 'past' ? (q.get('older') === '1' ? { lt: yearAgo } : { gte: yearAgo, lt: new Date(now.getTime() + day) })
     : tab === 'current' ? { gte: new Date(now.getTime() - 4 * day), lt: new Date(now.getTime() + 2 * day) }
     : { gte: new Date(now.getTime() - 2 * day) };
   const found = await prisma.event.findMany({

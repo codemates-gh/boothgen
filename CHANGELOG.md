@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.127.1] — 2026-11-20
+
+### Changed
+- **Genie → Events opens on In Progress.** "Get started" and New Booth Event also show when that tab is empty.
+- **The Past tab shows the last 12 months.** An **Older** button below the list shows events from before that, and **Last 12 Months** goes back.
+
+---
+
 ## [2.127.0] — 2026-11-20
 
 ### Added

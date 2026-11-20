@@ -209,6 +209,10 @@ describe('Genie → Events overview', () => {
     expect(await tab('upcoming')).toEqual([soon]);
     expect(await tab('current')).toEqual([yesterday]);
     expect(await tab('past')).toEqual([over]);
+    // Past shows the last 12 months; older ones behind "Older"
+    const ancient = await at(-400);
+    expect(await tab('past')).toEqual([over]);
+    expect((await (await EVENTS(req('/api/genie-events?tab=past&older=1'))).json()).events.map((r: any) => r.id)).toEqual([ancient]);
     // The older spelling still works
     expect((await (await EVENTS(req('/api/genie-events?past=1'))).json()).events.every((r: any) => r.genie.ended)).toBe(true);
   });
