@@ -131,7 +131,7 @@ export function VideoBoothFields({ value, onChange, disabled }: { value: VideoBo
               </Select>
             </Field>
           )}
-          <Field label="Consent text" hint={`Shown before recording. Leave empty to use: "${defaultVideoConsent(value.showInGallery)}"`}>
+          <Field label="Consent text" hint="Shown before recording. Leave it empty to use the wording shown in the box.">
             <textarea rows={2} maxLength={300} disabled={disabled} value={value.consentText ?? ''} placeholder={defaultVideoConsent(value.showInGallery)}
               onChange={e => onChange({ consentText: e.target.value || null })}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand disabled:bg-gray-50"/>

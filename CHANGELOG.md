@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.130.2] — 2026-11-20
+
+### Changed
+- Video Booth → **Consent text**: the default wording shows only in the box (no longer repeated underneath).
+
+---
+
 ## [2.130.1] — 2026-11-20
 
 ### Changed
