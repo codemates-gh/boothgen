@@ -22,10 +22,10 @@ import { galleryRetentionDates, getGalleryRetention, type GalleryRetention } fro
 export { appUrl, galleryUrl, sessionUrl } from './urls';
 
 export const BUNDLE_SCHEMA_VERSION = '1.0';
-// iPads keep running an event offline until 48 hours after it ends (G, 2026-11-18); after that it has expired
-export const VALID_AFTER_END_MS = 48 * 3600 * 1000;
+// An event runs for 48 hours from its start (G, 2026-11-20): Upcoming before the start, In Progress for 48 h from it
+// (iPads can load and run it, setup editable except the date/times), Past after that (only duplicated)
+export const EVENT_WINDOW_MS = 48 * 3600 * 1000;
 
-// Copy used when an event's Genie settings are first created
 export const GENIE_SETTINGS_DEFAULTS = {
   smsBody: 'Hi {{firstName}}! Here are your photos from {{eventName}}: {{link}}',
   emailSubject: 'Your photos from {{eventName}}',
@@ -54,13 +54,9 @@ export function tzOffsetMs(timeZone: string, at: Date): number {
   return Date.UTC(n('year'), n('month') - 1, n('day'), n('hour'), n('minute'), n('second')) - at.getTime();
 }
 
-// Device may run the event offline until endTime (or the end of the event day in its time zone) + 48 h
-export function bundleValidUntil(event: Pick<Event, 'eventDate' | 'endTime'>, timeZone: string): Date {
-  if (event.endTime) return new Date(event.endTime.getTime() + VALID_AFTER_END_MS);
-  const d = event.eventDate;
-  const localMidnightNext = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
-  const endOfDay = localMidnightNext - tzOffsetMs(timeZone, new Date(localMidnightNext));
-  return new Date(endOfDay + VALID_AFTER_END_MS);
+// iPads may run the event (online or offline) until 48 h after it starts; then it's Past
+export function bundleValidUntil(event: Pick<Event, 'eventDate' | 'startTime'>, timeZone: string): Date {
+  return eventClosesAt(event, timeZone);
 }
 
 // Midnight at the start of the event day in the event's time zone (eventDate is stored at UTC midnight)
@@ -74,7 +70,12 @@ export function eventLocksAt(event: Pick<Event, 'eventDate' | 'startTime'>, time
   return event.startTime ?? startOfEventDay(event.eventDate, timeZone);
 }
 
-// When the event is over: its end time, else the end of the event day in its time zone
+// The 48 h window from the start is over: the event is Past
+export function eventClosesAt(event: Pick<Event, 'eventDate' | 'startTime'>, timeZone: string): Date {
+  return new Date(eventLocksAt(event, timeZone).getTime() + EVENT_WINDOW_MS);
+}
+
+// When the party itself is over (e.g. publishing the gallery): its end time, else the end of the event day in its time zone
 export function eventEndsAt(event: Pick<Event, 'eventDate' | 'startTime' | 'endTime'>, timeZone: string): Date {
   if (event.endTime && (!event.startTime || event.endTime > event.startTime)) return event.endTime;
   return startOfEventDay(new Date(event.eventDate.getTime() + 86400_000), timeZone);

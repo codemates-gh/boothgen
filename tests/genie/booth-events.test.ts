@@ -52,11 +52,14 @@ describe('new booth event', () => {
     expect(e.endTime!.toISOString()).toBe('2027-03-21T07:30:00.000Z'); // ends after midnight: next day
     expect(e.genieSettings).toMatchObject({ enabled: true, timeZone: 'America/Los_Angeles' });
 
+    // The start time is required: it starts the 48 h window
+    const noStart = await create({ ...body, title: 'Second', startTime: null, endTime: null, venueName: null });
+    expect(noStart.status).toBe(400);
+    expect((await noStart.json()).error).toBe('Add a start time');
     // A second event reuses the same client
-    const { id: id2 } = await (await create({ ...body, title: 'Second', startTime: null, endTime: null, venueName: null })).json();
+    const { id: id2 } = await (await create({ ...body, title: 'Second', endTime: null, venueName: null })).json();
     const e2 = await prisma.event.findUniqueOrThrow({ where: { id: id2 } });
     expect(e2.clientId).toBe(e.clientId);
-    expect(e2.startTime).toBeNull();
     expect(await prisma.client.count({ where: { tenantId: tenant.id, email: BOOTH_CLIENT_EMAIL } })).toBe(1);
   });
 
@@ -104,11 +107,13 @@ describe('editing and deleting a booth event', () => {
     expect(e.endTime!.toISOString()).toBe('2027-03-21T06:00:00.000Z');
   });
 
-  it('a started event without guest photos (e.g. a copy that kept today\'s date) can still be moved', async () => {
+  it('a started event can\'t be moved, even without guest photos', async () => {
     await setup();
     const { id } = await (await create()).json();
     await prisma.eventGenieSettings.update({ where: { eventId: id }, data: { lockedAt: new Date() } });
-    expect((await edit(id, { ...editBody, startTime: '20:00' })).status).toBe(200);
+    const res = await edit(id, { ...editBody, startTime: '20:00' });
+    expect(res.status).toBe(409);
+    expect((await res.json()).code).toBe('locked');
   });
 
   it('keeps the date and times once the event has started and guests took photos, but allows a new name', async () => {

@@ -4,6 +4,20 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.125.0] — 2026-11-20
+
+### Changed
+- **A Genie event now runs for 48 hours from its start.** One clock decides everything:
+  - **Upcoming** (before the start): everything is editable, including the date and times. iPads can load it early.
+  - **In Progress** (from the start, for 48 hours): the date and times lock at the start, whether or not guests have taken photos. Settings, templates and template text stay editable and reach iPads between guests. iPads can load and run it.
+  - **Past** (48 hours after the start): iPads no longer list it and can't load or run it, including one that was already running it. Its setup and details are read-only; only Duplicate and Delete remain.
+- **Genie → Events has three tabs:** Upcoming, In Progress and Past. In Progress shows when iPads stop running each event.
+- **A start time is required** for booth events, because it starts the 48 hours. The end time can still be at most 48 hours after the start.
+- **Duplicate** starts the copy tomorrow when today's start time has already passed, so the copy isn't locked as soon as it's made.
+- The live guest gallery ("all photos" link) now stays live until 48 hours after the start. Publishing the gallery when the event ends still uses the end time.
+
+---
+
 ## [2.124.0] — 2026-11-20
 
 ### Changed

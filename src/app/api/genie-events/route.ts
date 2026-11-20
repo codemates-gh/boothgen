@@ -2,25 +2,31 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
-import { effectiveLockedAt, eventEndsAt, eventLocksAt } from '@/lib/genie/bundle';
+import { effectiveLockedAt, eventClosesAt, eventLocksAt } from '@/lib/genie/bundle';
 import { getDefaults } from '@/lib/genie/defaults';
 import { eventsBilling } from '@/lib/genie/payments';
 import { BoothEventInput, boothEventFields, boothEventsClient, isBoothClient, setUpGenie } from '@/lib/genie/boothEvents';
 
-// Events for the Genie → Events overview: upcoming (not over yet) or past ones with ?past=1. An event is over at its
-// end time, else at the end of its day in its time zone.
+// Events for the Genie → Events overview, by tab (G, 2026-11-20): ?tab=upcoming (before the start), ?tab=current (In
+// Progress: from the start for 48 h) or ?tab=past (48 h after the start). A start without a time is the start of the
+// event day in its time zone. ?past=1 is the older spelling of tab=past.
 export async function GET(req: NextRequest) {
   const auth = await requireGenieAdmin();
   if (auth instanceof NextResponse) return auth;
-  const past = req.nextUrl.searchParams.get('past') === '1';
+  const q = req.nextUrl.searchParams;
+  const tab = q.get('past') === '1' ? 'past' : q.get('tab') === 'past' ? 'past' : q.get('tab') === 'current' ? 'current' : 'upcoming';
+  const past = tab === 'past';
   const now = new Date();
-  // Event dates are stored as UTC midnight; two days' margin covers every time zone and late end times
-  const edge = new Date(now.getTime() - 2 * 86400_000);
+  // Event dates are stored as UTC midnight; a day's margin either side covers every time zone, plus the 48 h window
+  const day = 86400_000;
+  const dateRange = tab === 'past' ? { lt: new Date(now.getTime() + day) }
+    : tab === 'current' ? { gte: new Date(now.getTime() - 4 * day), lt: new Date(now.getTime() + 2 * day) }
+    : { gte: new Date(now.getTime() - 2 * day) };
   const found = await prisma.event.findMany({
     where: {
       tenantId: auth.tenantId,
       status: { notIn: ['CANCELLED', 'LOST'] },
-      ...(past ? { eventDate: { lt: new Date(now.getTime() + 86400_000) } } : { eventDate: { gte: edge } }),
+      eventDate: dateRange,
     },
     orderBy: { eventDate: past ? 'desc' : 'asc' },
     take: 150,
@@ -32,8 +38,11 @@ export async function GET(req: NextRequest) {
     },
   });
   const defaultTz = (await getDefaults(auth.tenantId)).values.timeZone;
-  const isOver = (e: typeof found[number]) => eventEndsAt(e, e.genieSettings?.timeZone ?? defaultTz) <= now;
-  const events = found.filter(e => isOver(e) === past).slice(0, 100);
+  const tabOf = (e: typeof found[number]) => {
+    const tz = e.genieSettings?.timeZone ?? defaultTz;
+    return eventClosesAt(e, tz) <= now ? 'past' : eventLocksAt(e, tz) <= now ? 'current' : 'upcoming';
+  };
+  const events = found.filter(e => tabOf(e) === tab).slice(0, 100);
   const ids = events.map(e => e.id);
   const [slots, shares] = await Promise.all([
     prisma.genieEventDevice.groupBy({ by: ['eventId'], where: { eventId: { in: ids }, releasedAt: null }, _count: { _all: true } }),
@@ -62,6 +71,7 @@ export async function GET(req: NextRequest) {
           lockedAt: effectiveLockedAt(e, s),
           ended: past,
           locksAt: eventLocksAt(e, s.timeZone),
+          closesAt: eventClosesAt(e, s.timeZone),
           timeZone: s.timeZone,
           followsDefaults: !s.customCapture || !s.customSharing || !s.customPrinting || !s.customTimeZone || !s.customAttract,
           shares: { total: sh.reduce((n, x) => n + x._count._all, 0), failed: sh.find(x => x.status === 'failed')?._count._all ?? 0 },

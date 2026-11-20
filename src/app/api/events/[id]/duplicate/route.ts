@@ -7,9 +7,10 @@ import { copyGenieSetup } from '@/lib/genie/duplicate';
 import { clockTime, moveEventTo, todayIn } from '@/lib/eventTimes';
 import { isBoothClient, zonedTime } from '@/lib/genie/boothEvents';
 import { getDefaults } from '@/lib/genie/defaults';
+import { eventLocksAt } from '@/lib/genie/bundle';
 
 // Copy an event as a new Lead for the same client: venue, package, guest count, estimated value, and its Genie setup
-// (settings and templates; see copyGenieSetup). The copy starts today (in the event's time zone) with the same times
+// (settings and templates; see copyGenieSetup). The copy starts today (tomorrow when today's start time has passed; in the event's time zone) with the same times
 // and length, so even an expired event can be run again. Quotes, invoices, contracts, notes, checklist, photos, Genie
 // iPads and payments aren't copied, and no automations run (the client isn't emailed); the host adjusts the date on
 // the edit page.
@@ -26,7 +27,12 @@ export async function POST(_: NextRequest, props: { params: Promise<{ id: string
   // CRM events keep clock times (UTC), so they move as they are.
   const timeZone = e.genieSettings?.timeZone ?? (await getDefaults(e.tenantId)).values.timeZone;
   const booth = isBoothClient(e.client);
-  const when = moveEventTo(e, todayIn(timeZone), booth ? timeZone : 'UTC', booth ? (d, t) => zonedTime(d, t, timeZone) : clockTime);
+  const moveTo = (date: string) => moveEventTo(e, date, booth ? timeZone : 'UTC', booth ? (d, t) => zonedTime(d, t, timeZone) : clockTime);
+  const today = todayIn(timeZone);
+  let when = moveTo(today);
+  // A started event's date and times can't change (G, 2026-11-20): when today's start has already passed, the copy
+  // starts tomorrow instead, so it can still be moved
+  if (eventLocksAt(when, timeZone) <= new Date()) when = moveTo(new Date(Date.parse(today + 'T00:00:00Z') + 86400_000).toISOString().slice(0, 10));
 
   const title = `${e.title} (copy)`;
   const copy = await prisma.$transaction(async tx => {

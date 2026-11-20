@@ -25,16 +25,13 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   }
   const event = await findBoothEvent(auth.tenantId, params.id);
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  const guestSessions = await prisma.genieSession.count({ where: { eventId: event.id, deletedAt: null } });
-  // An ended event can only be duplicated. One that never had guests (e.g. a copy whose times today already passed)
-  // can still be moved to a later date
-  if (guestSessions && hasEnded(event)) return endedResponse();
+  // A Past event (48 h after its start) can only be duplicated
+  if (hasEnded(event)) return endedResponse();
   const timeZone = event.genieSettings?.timeZone ?? 'UTC';
   const fields = boothEventFields({ ...parsed.data, timeZone });
   if ('error' in fields) return NextResponse.json({ error: fields.error }, { status: 400 });
-  // Once the event has started and guests took photos, the name and venue can change but not when it happens. Before
-  // any photos (e.g. a copy that kept a date that's already here), it can still be moved; a later date unlocks it.
-  if (event.genieSettings && effectiveLockedAt(event, event.genieSettings) && guestSessions) {
+  // Once the event has started (photos or not), the name and venue can change but not when it happens (G, 2026-11-20)
+  if (event.genieSettings && effectiveLockedAt(event, event.genieSettings)) {
     const same = (a: Date | null, b: Date | null) => (a?.getTime() ?? null) === (b?.getTime() ?? null);
     if (!same(fields.eventDate, event.eventDate) || !same(fields.startTime, event.startTime) || !same(fields.endTime, event.endTime)) {
       return NextResponse.json({ error: 'The event has started, so its date and times can no longer change', code: 'locked' }, { status: 409 });

@@ -14,7 +14,7 @@ type Row = {
   id: string; title: string; eventDate: string; status: string; venueName: string | null; clientName: string | null; boothEvent: boolean; paysPerEvent: boolean; paid: boolean;
   genie: {
     enabled: boolean; templates: number; ipads: number; maxDevices: number; sessions: number;
-    lockedAt: string | null; ended: boolean; locksAt: string; timeZone: string; followsDefaults: boolean; shares: { total: number; failed: number };
+    lockedAt: string | null; ended: boolean; locksAt: string; closesAt: string; timeZone: string; followsDefaults: boolean; shares: { total: number; failed: number };
   } | null;
 };
 
@@ -23,12 +23,17 @@ function GenieStatus({ g }: { g: Row['genie'] }) {
   if (!g.enabled) return <Badge variant="default">Off</Badge>;
   if (g.ended) return <Badge variant="default">Ended</Badge>;
   if (g.templates === 0) return <Badge variant="warning">No templates</Badge>;
-  if (g.lockedAt) return <Badge variant="info"><Lock className="w-3 h-3 mr-1 inline"/>Running</Badge>;
+  if (g.lockedAt) return <Badge variant="info"><Lock className="w-3 h-3 mr-1 inline"/>In progress</Badge>;
   return <Badge variant="success">Ready</Badge>;
 }
 
+// Upcoming until the start, In Progress for 48 h from the start (iPads can run it), then Past (only duplicated)
+type Tab = 'upcoming' | 'current' | 'past';
+const TABS: [Tab, string][] = [['upcoming', 'Upcoming'], ['current', 'In Progress'], ['past', 'Past']];
+
 export default function GenieEventsPage() {
-  const [past, setPast] = useState(false);
+  const [tab, setTab] = useState<Tab>('upcoming');
+  const past = tab === 'past';
   const [rows, setRows] = useState<Row[] | null>(null);
   const [notEnabled, setNotEnabled] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -39,10 +44,10 @@ export default function GenieEventsPage() {
 
   const load = useCallback(async () => {
     setRows(null);
-    const r = await fetch('/api/genie-events' + (past ? '?past=1' : ''));
+    const r = await fetch('/api/genie-events?tab=' + tab);
     if (r.status === 403) { setNotEnabled(true); return; }
     if (r.ok) setRows((await r.json()).events);
-  }, [past]);
+  }, [tab]);
   useEffect(() => { load(); }, [load]);
 
   return (
@@ -66,9 +71,9 @@ export default function GenieEventsPage() {
             </div>
 
             <div className="flex border-b border-gray-200">
-              {[[false, 'Upcoming'], [true, 'Past']].map(([p, label]) => (
-                <button key={String(p)} onClick={() => setPast(p as boolean)} className={'px-4 py-2.5 text-[13px] font-medium border-b-2 -mb-px ' + (past === p ? 'border-[#0085FF] text-[#1F1F3D]' : 'border-transparent text-[#676879] hover:text-[#1F1F3D]')}>
-                  {label as string}
+              {TABS.map(([t, label]) => (
+                <button key={t} onClick={() => setTab(t)} className={'px-4 py-2.5 text-[13px] font-medium border-b-2 -mb-px ' + (tab === t ? 'border-[#0085FF] text-[#1F1F3D]' : 'border-transparent text-[#676879] hover:text-[#1F1F3D]')}>
+                  {label}
                 </button>
               ))}
             </div>
@@ -77,7 +82,7 @@ export default function GenieEventsPage() {
               <CardContent className="p-0">
                 {!rows ? <p className="text-sm text-gray-400 p-6">Loading…</p> : rows.length === 0 ? (
                   <div className="text-center py-12 text-gray-500">
-                    {!past && (
+                    {tab === 'upcoming' && (
                       // New accounts: the few things to do before the first event
                       <div className="max-w-xl mx-auto text-left mb-8">
                         <p className="text-sm font-semibold text-gray-800 mb-3">Get started</p>
@@ -100,8 +105,8 @@ export default function GenieEventsPage() {
                       </div>
                     )}
                     <Calendar className="w-10 h-10 mx-auto mb-3 text-gray-300"/>
-                    <p className="text-sm">{past ? 'No past events.' : 'No upcoming events.'}</p>
-                    {!past && <Button variant="outline" size="sm" className="mt-4" onClick={() => setCreating(true)} disabled={!defaultTz}><Plus className="w-4 h-4 mr-1"/>New Booth Event</Button>}
+                    <p className="text-sm">{past ? 'No past events.' : tab === 'current' ? 'No events in progress.' : 'No upcoming events.'}</p>
+                    {tab === 'upcoming' && <Button variant="outline" size="sm" className="mt-4" onClick={() => setCreating(true)} disabled={!defaultTz}><Plus className="w-4 h-4 mr-1"/>New Booth Event</Button>}
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -111,7 +116,8 @@ export default function GenieEventsPage() {
                         <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Genie</th>
                         <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Templates</th>
                         <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Devices</th>
-                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">{past ? 'Sessions' : 'Locks'}</th>
+                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">{tab === 'upcoming' ? 'Starts' : 'Sessions'}</th>
+                        {tab === 'current' && <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">iPads stop</th>}
                         <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Texts &amp; emails</th>
                       </tr></thead>
                       <tbody>
@@ -130,8 +136,9 @@ export default function GenieEventsPage() {
                             <td className="px-6 py-3 text-sm text-gray-600">{e.genie ? e.genie.templates : '—'}</td>
                             <td className="px-6 py-3 text-sm text-gray-600">{e.genie ? `${e.genie.ipads} of ${e.genie.maxDevices}` : '—'}</td>
                             <td className="px-6 py-3 text-sm text-gray-600 whitespace-nowrap">
-                              {!e.genie ? '—' : past ? e.genie.sessions : e.genie.lockedAt ? 'Started' : fmtDateTime(e.genie.locksAt, e.genie.timeZone)}
+                              {!e.genie ? '—' : tab === 'upcoming' ? fmtDateTime(e.genie.locksAt, e.genie.timeZone) : e.genie.sessions}
                             </td>
+                            {tab === 'current' && <td className="px-6 py-3 text-sm text-gray-600 whitespace-nowrap">{e.genie ? fmtDateTime(e.genie.closesAt, e.genie.timeZone) : '—'}</td>}
                             <td className="px-6 py-3 text-sm text-gray-600">
                               {!e.genie || e.genie.shares.total === 0 ? '—' : (
                                 <>{e.genie.shares.total}{e.genie.shares.failed > 0 && <span className="ml-2 inline-flex items-center gap-1 text-xs text-[#E2445C] font-medium"><AlertTriangle className="w-3 h-3"/>{e.genie.shares.failed} failed</span>}</>

@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma/client';
 import { notifyGalleryPublished } from '@/lib/gallery/publish';
-import { VALID_AFTER_END_MS, bundleValidUntil } from '@/lib/genie/bundle';
+import { eventEndsAt } from '@/lib/genie/bundle';
 
 // "Publish the gallery when the event ends" (Gallery section of the Genie settings, 2.119.0; on by default for Genius
 // accounts): once a Genie event has ended (its end time, or the end of the event day in its time zone), its gallery is
@@ -15,12 +15,12 @@ export async function autoPublishEndedGalleries(now = new Date()): Promise<{ pub
     },
     select: {
       id: true, timeZone: true,
-      event: { select: { eventDate: true, endTime: true, gallery: { select: { id: true, isPublished: true, isExpired: true, _count: { select: { assets: true } } } } } },
+      event: { select: { eventDate: true, startTime: true, endTime: true, gallery: { select: { id: true, isPublished: true, isExpired: true, _count: { select: { assets: true } } } } } },
     },
   });
   let published = 0;
   for (const s of candidates) {
-    const endedAt = bundleValidUntil(s.event, s.timeZone).getTime() - VALID_AFTER_END_MS;
+    const endedAt = eventEndsAt(s.event, s.timeZone).getTime();
     if (endedAt > now.getTime()) continue;
     const g = s.event.gallery;
     // No photos yet (or no gallery): try again on the next run

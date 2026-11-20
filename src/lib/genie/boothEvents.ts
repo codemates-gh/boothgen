@@ -45,9 +45,11 @@ export const BoothEventInput = z.object({
 }).strict();
 export type BoothEventInput = z.infer<typeof BoothEventInput>;
 
-// Event fields from the form: Start Date/Time to End Date/Time in the event's time zone, at most 48 hours. Without an
+// Event fields from the form: Start Date/Time (required) to End Date/Time in the event's time zone, at most 48 hours. Without an
 // End Date, an end time earlier than the start runs past midnight (next day).
 export function boothEventFields(input: BoothEventInput) {
+  // The start time starts the event's 48 h window (G, 2026-11-20)
+  if (!input.startTime) return { error: 'Add a start time' };
   const span = eventSpan({ date: input.date, startTime: input.startTime, endDate: input.endDate, endTime: input.endTime }, (d, t) => zonedTime(d, t, input.timeZone));
   if ('error' in span) return span;
   return {

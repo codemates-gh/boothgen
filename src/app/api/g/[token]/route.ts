@@ -23,7 +23,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
   const gallery = await prisma.gallery.findFirst({
     where: { clientToken: params.token },
     include: {
-      event: { select: { title: true, eventDate: true, endTime: true, genieSettings: { select: { guestLinkScope: true, timeZone: true } } } },
+      event: { select: { title: true, eventDate: true, startTime: true, endTime: true, genieSettings: { select: { guestLinkScope: true, timeZone: true } } } },
       tenant: { include: { branding: { select: { companyName: true, logoUrl: true, primaryColor: true } } } },
       assets: { where: { approvalStatus: 'APPROVED', ...NOT_PRINT_SHEET }, orderBy: [{ createdAt: 'asc' }] },
     },
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
   const galleryUnlocked = !requiresAccessCode || (galleryCode !== null && galleryCode === gallery.accessCode);
 
   // Genie guest link scope "all": while the gallery is unpublished, show Genie photos live until the
-  // event's offline window ends. Publishing (or the window ending) returns to the normal behaviour.
+  // event's 48 h window (from its start) closes. Publishing (or the window ending) returns to the normal behaviour.
   const genie = gallery.event.genieSettings;
   const isLive = !gallery.isPublished && !gallery.isExpired && genie?.guestLinkScope === 'all'
     && Date.now() <= bundleValidUntil(gallery.event, genie.timeZone).getTime();

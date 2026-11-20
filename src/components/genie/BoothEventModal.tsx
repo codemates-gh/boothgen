@@ -88,7 +88,7 @@ export function BoothEventModal({ open, onClose, initial, eventId, lockedTimes, 
           </div>
         </div>
         <p className="text-xs text-gray-400 -mt-2">
-          {lockedTimes ? 'The event has started, so its date and times can no longer change.' : 'Times are optional. An end time earlier than the start means the next day; an event lasts at most 48 hours. The booth setup locks when the event starts (or at the start of the day).'}
+          {lockedTimes ? 'The event has started, so its date and times can no longer change.' : 'The start time is required: iPads can run the event for 48 hours from it, and its date and times lock once it starts. An end time earlier than the start means the next day; it can be at most 48 hours after the start.'}
         </p>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Venue <span className="text-gray-400 font-normal">(optional)</span></label>
@@ -103,7 +103,7 @@ export function BoothEventModal({ open, onClose, initial, eventId, lockedTimes, 
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={busy || !v.title.trim() || !v.date || !v.timeZone}>{busy ? 'Saving…' : eventId ? 'Save' : 'Create Event'}</Button>
+          <Button type="submit" disabled={busy || !v.title.trim() || !v.date || !v.startTime || !v.timeZone}>{busy ? 'Saving…' : eventId ? 'Save' : 'Create Event'}</Button>
         </div>
       </form>
     </Modal>
