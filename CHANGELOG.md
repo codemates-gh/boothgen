@@ -4,6 +4,11 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.130.3] — 2026-11-20
+
+### Changed
+- Genie → Test Templates now draws the templates with a real booth photo (two guests with props) instead of the drawn placeholder figures, in the preview and in the texts/emails it sends.
+
 ## [2.130.2] — 2026-11-20
 
 ### Changed

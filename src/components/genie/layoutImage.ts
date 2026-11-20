@@ -27,6 +27,16 @@ export function makeSample(i: number): HTMLCanvasElement {
   return c;
 }
 
+// Test Templates: a real booth photo in every slot (falls back to the drawn samples if it can't load)
+export const TEST_PHOTO_URL = '/genie-samples/test-photo.jpg';
+export async function testSamples(): Promise<HTMLCanvasElement[]> {
+  const img = await loadImage(TEST_PHOTO_URL).catch(() => null);
+  if (!img) return [0, 1, 2, 3].map(makeSample);
+  const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+  c.getContext('2d')!.drawImage(img, 0, 0);
+  return [c];
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image(); img.crossOrigin = 'anonymous';

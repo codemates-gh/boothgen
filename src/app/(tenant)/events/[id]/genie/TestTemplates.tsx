@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { makeSample, renderComposite } from '@/components/genie/layoutImage';
+import { renderComposite, testSamples } from '@/components/genie/layoutImage';
 import type { Layout } from '@/components/genie/parts';
 
 type BundleTemplate = { id: string; name: string; layout: Layout };
@@ -35,7 +35,7 @@ export default function TestTemplates({ eventId, open, onClose }: { eventId: str
       const list: BundleTemplate[] = d.templates ?? [];
       setTemplates(list);
       setPicked(list.map(t => t.id));
-      const samples = [0, 1, 2, 3].map(makeSample);
+      const samples = await testSamples();
       for (const t of list) {
         const url = await renderComposite(t.layout, samples, 480).catch(() => '');
         setPreviews(p => ({ ...p, [t.id]: url }));
@@ -48,7 +48,7 @@ export default function TestTemplates({ eventId, open, onClose }: { eventId: str
 
   async function share() {
     setBusy(true); setError(''); setDone('');
-    const samples = [0, 1, 2, 3].map(makeSample);
+    const samples = await testSamples();
     let sent = 0;
     try {
       for (const t of (templates ?? []).filter(t => picked.includes(t.id))) {
@@ -75,7 +75,7 @@ export default function TestTemplates({ eventId, open, onClose }: { eventId: str
 
   return (
     <Modal open={open} onClose={onClose} title="Test Templates">
-      <p className="text-sm text-gray-600 mb-4">Sends the templates you pick, drawn with sample photos, with this event&apos;s text or email message. Use it to check the design and sharing before the event day; nothing is added to the gallery.</p>
+      <p className="text-sm text-gray-600 mb-4">Sends the templates you pick, drawn with a sample booth photo, with this event&apos;s text or email message. Use it to check the design and sharing before the event day; nothing is added to the gallery.</p>
       {!templates ? <p className="text-sm text-gray-400">Loading templates…</p> : templates.length === 0 && !error ? <p className="text-sm text-gray-500">This event has no templates yet.</p> : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
           {templates.map(t => (
