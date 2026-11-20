@@ -10,7 +10,7 @@ export async function generateMetadata(props: { params: Promise<{ token: string;
     select: {
       deletedAt: true,
       gallery: { select: { clientToken: true, isExpired: true, event: { select: { title: true } } } },
-      assets: { where: { approvalStatus: 'APPROVED', genieKind: { in: ['boomerangPoster', 'videoPoster', 'gallery', 'gif'] } }, select: { url: true, genieKind: true, width: true, height: true } },
+      assets: { where: { approvalStatus: 'APPROVED', hiddenAt: null, genieKind: { in: ['boomerangPoster', 'videoPoster', 'gallery', 'gif'] } }, select: { url: true, genieKind: true, width: true, height: true } },
     },
   }).catch(() => null);
   if (!session || session.deletedAt || session.gallery.clientToken !== params.token) return {};

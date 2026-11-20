@@ -67,7 +67,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
     return genieError(410, 'session_deleted', 'This session was deleted');
   }
 
-  // A boomerang's (or PC video's) poster is its thumbnail (gallery grid, link previews); either may arrive first
+  // A boomerang's (or video's: Video Booth or PC booth) poster is its thumbnail (gallery grid, link previews); either may arrive first
   const posterKind = body.kind === 'boomerang' ? 'boomerangPoster' : body.kind === 'video' ? 'videoPoster' : null;
   const poster = posterKind
     ? await prisma.galleryAsset.findFirst({ where: { genieSessionId: session.id, genieKind: posterKind }, select: { url: true } })
@@ -94,6 +94,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
         ...(pc ? { source: 'pcBooth', boothId: body.boothId ?? null, boothName: body.boothName?.trim() || null } : {}),
         ...(body.sourceSha256 ? { sourceSha256: body.sourceSha256 } : {}),
         ...(body.sourceFileName ? { sourceFileName: body.sourceFileName } : {}),
+        // Video Booth (P14): the prompt the guest answered, as they saw it (kept if the prompt is edited later)
+        ...(body.promptId ? { promptId: body.promptId } : {}),
+        ...(body.promptText ? { promptText: body.promptText.trim() } : {}),
         // Boomerang clip / gallery copy first, then shots in order; the printer sheet (archive only) and the
         // boomerang poster (thumbnail only) last
         sortOrder: ['gallery', 'boomerang', 'video', 'gif'].includes(body.kind) ? 0 : body.kind === 'shot' ? (body.shotIndex ?? 0) + 1 : body.kind === 'print' ? 1000 : body.kind === 'galleryOriginal' ? 1002 : 1001,

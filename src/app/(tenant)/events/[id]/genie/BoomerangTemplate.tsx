@@ -39,9 +39,10 @@ function chosenLayout(t: PickerTemplate | undefined, format: BoomerangFormat): L
 
 const SIZE_FOR: Partial<Record<BoomerangFormat, string>> = { square: 'square', portrait9x16: '9x16-portrait', landscape16x9: '9x16-landscape', portrait4x6: '4x6-portrait', landscape6x4: '4x6-landscape' };
 
-export function BoomerangTemplateField({ format, design, designProblem, overlay, disabled, onChange }: {
+// noun: what plays in the frame ("Boomerang", or "video" for Video Booth, which reuses this picker)
+export function BoomerangTemplateField({ format, design, designProblem, overlay, disabled, onChange, noun = 'Boomerang' }: {
   format: BoomerangFormat; design: DesignChoice | null; designProblem: 'deleted' | 'shape' | null;
-  overlay: { url: string } | null; disabled?: boolean;
+  overlay: { url: string } | null; disabled?: boolean; noun?: string;
   onChange: (p: { format?: BoomerangFormat; design?: DesignChoice | null; overlay?: null; designProblem?: null }) => void;
 }) {
   const lib = useLibrary();
@@ -62,7 +63,7 @@ export function BoomerangTemplateField({ format, design, designProblem, overlay,
     <div className="space-y-3">
       {designProblem && (
         <p className="text-sm text-amber-700 flex items-start gap-1.5"><AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
-          {designProblem === 'deleted' ? 'The template chosen for this Boomerang was deleted' : `The template chosen for this Boomerang no longer has a single-photo ${CLIP_CANVAS[format].label} layout`}, so iPads get the plain Boomerang. Choose another template and save.
+          {designProblem === 'deleted' ? `The template chosen for this ${noun} was deleted` : `The template chosen for this ${noun} no longer has a single-photo ${CLIP_CANVAS[format].label} layout`}, so iPads get the plain {noun}. Choose another template and save.
         </p>
       )}
       <div className="flex items-center gap-3 p-3 border border-gray-100 rounded-lg">
@@ -74,7 +75,7 @@ export function BoomerangTemplateField({ format, design, designProblem, overlay,
         <div className="min-w-0 flex-1">
           {layout && template ? <>
             <p className="text-sm font-medium truncate">{template.name}</p>
-            <p className="text-xs text-gray-500">{templateSizeLabel(layout)} · the Boomerang plays in the photo frame</p>
+            <p className="text-xs text-gray-500">{templateSizeLabel(layout)} · the {noun} plays in the photo frame</p>
           </> : design ? <>
             <p className="text-sm font-medium">{design.source === 'clip' ? 'Boomerang design' : lib ? 'Template not available' : 'Loading…'}</p>
             <p className="text-xs text-gray-500">{CLIP_CANVAS[format].label}{design.source === 'clip' ? ' · chosen before Boomerang used templates' : ''}</p>
@@ -83,7 +84,7 @@ export function BoomerangTemplateField({ format, design, designProblem, overlay,
             <p className="text-xs text-gray-500">{CLIP_CANVAS[format].label} · kept until you choose a template</p>
           </> : <>
             <p className="text-sm font-medium">None</p>
-            <p className="text-xs text-gray-500">Plain square clip</p>
+            <p className="text-xs text-gray-500">{noun === 'Boomerang' ? 'Plain square clip' : `Plain ${CLIP_CANVAS[format].label} ${noun}`}</p>
           </>}
         </div>
         {!disabled && (

@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { addOnName, addOnPrices, glamourStyleReady } from '@/lib/genie/addOns';
 import { aiBoothData } from '@/lib/genie/ai/eventConfig';
+import { videoBoothData } from '@/lib/genie/videoBooth';
 import { DEFAULT_CONSENT_TEXT, DEFAULT_READY_TEXT, aiSettings } from '@/lib/genie/ai/settings';
 import { eventAllowance } from '@/lib/genie/ai/renders';
 import { NextRequest, NextResponse } from 'next/server';
@@ -172,6 +173,11 @@ export async function PATCH(req: NextRequest, props0: { params: Promise<{ id: st
     const a = await aiBoothData(parsed.data.aiBooth, auth.tenantId);
     if ('error' in a) return NextResponse.json({ error: a.error, path: 'aiBooth' }, { status: 400 });
     Object.assign(result.data, a.data);
+  }
+  if (parsed.data.videoBooth) {
+    const v = await videoBoothData(parsed.data.videoBooth, s.videoBooth, auth.tenantId);
+    if ('error' in v) return NextResponse.json({ error: v.error, path: v.path }, { status: 400 });
+    result.data.videoBooth = v.value;
   }
   if (parsed.data.poses) {
     const p = await posesData(parsed.data.poses, s.poseIds, auth.tenantId);

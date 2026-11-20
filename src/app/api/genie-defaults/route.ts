@@ -10,6 +10,7 @@ import { findLibraryTemplate, libraryView } from '@/lib/genie/library';
 import { attractData, attractView, deleteUnusedAttractMedia, storedAttract } from '@/lib/genie/attract';
 import { countdownSoundData, countdownSoundView, deleteUnusedCountdownSounds, storedCountdownSound } from '@/lib/genie/countdownSound';
 import { chosenPoses, poseView, posesData, posesView } from '@/lib/genie/poses';
+import { videoBoothData, videoBoothDesignProblem, videoBoothView } from '@/lib/genie/videoBooth';
 
 function view(d: Awaited<ReturnType<typeof getDefaults>>) {
   const v = d.values;
@@ -33,6 +34,7 @@ function view(d: Awaited<ReturnType<typeof getDefaults>>) {
     attract: attractView(v.attract, v.attractReturnAfterSeconds),
     poses: posesView(v),
     gallery: { uploadAll: v.sharingUploadAll, autoPublish: v.galleryAutoPublish },
+    videoBooth: videoBoothView(v.videoBooth),
     templateIds: d.templateIds,
   };
 }
@@ -44,11 +46,12 @@ export async function GET() {
   const templates = (await Promise.all(d.templateIds.map(id => findLibraryTemplate(auth.tenantId, id)))).filter(Boolean).map(t => libraryView(t!));
   // Events that follow at least one default section
   const eventsFollowing = await prisma.eventGenieSettings.count({
-    where: { tenantId: auth.tenantId, OR: [{ customTimeZone: false }, { customCapture: false }, { customSharing: false }, { customPrinting: false }, { customAttract: false }, { customPoses: false }] },
+    where: { tenantId: auth.tenantId, OR: [{ customTimeZone: false }, { customCapture: false }, { customSharing: false }, { customPrinting: false }, { customAttract: false }, { customPoses: false }, { customGallery: false }, { customVideoBooth: false }] },
   });
   // The default poses (including Standard ones switched off since), in the guests' order
   const poses = (await chosenPoses(d.values.poseIds, auth.tenantId)).map(poseView);
-  return NextResponse.json({ ...view(d), templates, eventsFollowing, chosenPoses: poses });
+  const v = view(d);
+  return NextResponse.json({ ...v, videoBooth: { ...v.videoBooth, designProblem: await videoBoothDesignProblem(d.values.videoBooth, auth.tenantId) }, templates, eventsFollowing, chosenPoses: poses });
 }
 
 const shape = SettingsPatch.shape;
@@ -60,6 +63,7 @@ const Body = z.object({
   attract: shape.attract.unwrap(),
   poses: shape.poses.unwrap(),
   gallery: shape.gallery.unwrap(),
+  videoBooth: shape.videoBooth.unwrap(),
   templateIds: z.array(z.string().min(1)).max(20),
 }).partial().strict();
 
@@ -99,7 +103,14 @@ export async function PUT(req: NextRequest) {
     if ('error' in p) return NextResponse.json({ error: p.error, path: 'poses' }, { status: 400 });
     poses = p.data;
   }
+  let videoBooth = {};
+  if (b.videoBooth) {
+    const v = await videoBoothData(b.videoBooth, before.values.videoBooth, auth.tenantId);
+    if ('error' in v) return NextResponse.json({ error: v.error, path: v.path }, { status: 400 });
+    videoBooth = { videoBooth: v.value };
+  }
   const data = {
+    ...videoBooth,
     ...(b.timeZone ? { timeZone: b.timeZone } : {}),
     ...capture,
     ...countdown,
@@ -112,7 +123,7 @@ export async function PUT(req: NextRequest) {
   };
   await prisma.genieDefaults.upsert({
     where: { tenantId: auth.tenantId },
-    create: { tenantId: auth.tenantId, ...before.values, attract: before.values.attract ?? Prisma.DbNull, countdownSound: before.values.countdownSound ?? Prisma.DbNull, poseIds: (before.values.poseIds ?? []) as Prisma.InputJsonValue, ...data },
+    create: { tenantId: auth.tenantId, ...before.values, attract: before.values.attract ?? Prisma.DbNull, countdownSound: before.values.countdownSound ?? Prisma.DbNull, videoBooth: before.values.videoBooth ?? Prisma.DbNull, poseIds: (before.values.poseIds ?? []) as Prisma.InputJsonValue, ...data },
     update: data,
   });
   const after = await getDefaults(auth.tenantId);

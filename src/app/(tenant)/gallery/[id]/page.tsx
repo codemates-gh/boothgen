@@ -7,15 +7,19 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Upload, Image, Trash2, Globe, EyeOff, X, CheckCircle2, Lock, LockOpen, Link2 } from 'lucide-react';
 import Link from 'next/link';
-import { AssetThumb } from '@/components/gallery/AssetMedia';
+import { AssetThumb, isVideoMessage } from '@/components/gallery/AssetMedia';
+import { VideosTab } from '@/components/gallery/VideosTab';
 import { WEB_UPLOAD_TYPES, DEFAULT_UPLOAD_LIMITS, galleryRules, maxBytesFor, isMotion, formatBytes, type UploadLimits } from '@/lib/gallery/uploadLimits';
 
 export default function GalleryDetailPage(props: { params: Promise<{ id: string }> }) {
   const params = use(props.params);
   const [gallery, setGallery] = useState<any>(null);
   const [assets, setAssets] = useState<any[]>([]);
+  const [videos, setVideos] = useState<any[]>([]);
   // Filter by where photos came from: the Genie booth, PC booth software (Sharing station) or uploaded here
   const [source, setSource] = useState<'' | 'genie' | 'pcBooth' | 'upload'>('');
+  // Photos, or the Video Booth messages (Genie P14), which have their own tab
+  const [tab, setTab] = useState<'photos' | 'videos'>('photos');
   const [uploading, setUploading] = useState(false);
   const [uploadCount, setUploadCount] = useState({ done: 0, total: 0, failed: 0 });
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -33,7 +37,7 @@ export default function GalleryDetailPage(props: { params: Promise<{ id: string 
       fetch('/api/gallery/' + params.id).then(r => r.json()),
       fetch('/api/gallery/' + params.id + '/assets').then(r => r.json()),
     ]);
-    setGallery(gr); setAssets(ar);
+    setGallery(gr); setAssets(ar.filter((a: any) => !isVideoMessage(a))); setVideos(ar.filter((a: any) => isVideoMessage(a)));
     setAccessCode(gr.accessCode ?? '');
   }
 
@@ -139,7 +143,7 @@ export default function GalleryDetailPage(props: { params: Promise<{ id: string 
   }
 
   async function deleteAllPhotos() {
-    if (!confirm(`Delete all ${assets.length} photos? This cannot be undone.`)) return;
+    if (!confirm(`Delete all ${assets.length} photos${videos.length ? ` and ${videos.length} video${videos.length === 1 ? '' : 's'}` : ''}? This cannot be undone.`)) return;
     setDeletingAll(true);
     await fetch('/api/gallery/' + params.id + '/assets', { method: 'DELETE' });
     setDeletingAll(false);
@@ -297,8 +301,23 @@ export default function GalleryDetailPage(props: { params: Promise<{ id: string 
           </CardContent></Card>
         )}
 
+        {videos.length > 0 && (
+          <div className="flex gap-1 border-b border-gray-200">
+            {([['photos', `Photos (${assets.length})`], ['videos', `Videos (${videos.length})`]] as const).map(([v, label]) => (
+              <button key={v} onClick={() => setTab(v)}
+                className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === v ? 'border-brand text-brand' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {tab === 'videos' && videos.length > 0 && (
+          <VideosTab galleryId={params.id} videos={videos} showInGallery={gallery?.videosInGallery ?? null} onChange={load}/>
+        )}
+
         {/* Photo grid */}
-        {assets.length > 0 && (
+        {(tab === 'photos' || videos.length === 0) && assets.length > 0 && (
           <>
             <div className="flex justify-end">
               <Button variant="outline" size="sm" onClick={deleteAllPhotos} disabled={deletingAll} className="text-red-600 border-red-200 hover:bg-red-50">
@@ -336,7 +355,7 @@ export default function GalleryDetailPage(props: { params: Promise<{ id: string 
           </>
         )}
 
-        {assets.length === 0 && !uploading && (
+        {(tab === 'photos' || videos.length === 0) && assets.length === 0 && !uploading && (
           <div className="text-center py-12 text-gray-400"><Image className="w-10 h-10 mx-auto mb-3 opacity-30"/><p>No photos yet. Upload photos above.</p></div>
         )}
       </div>

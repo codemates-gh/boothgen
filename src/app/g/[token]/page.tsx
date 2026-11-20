@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Camera, Download, Lock, Image, X, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { PoweredByBadge } from '@/components/brand/PoweredByBadge';
-import { AssetFull, AssetThumb, assetExt, isVideo } from '@/components/gallery/AssetMedia';
+import { AssetFull, AssetThumb, assetExt, isVideo, isVideoMessage } from '@/components/gallery/AssetMedia';
 import { BoothOffline, FadeInImg, UploadingIndicator, useWaitingPoll } from '@/components/genie/GuestWaiting';
 
 export default function GallerySharePage() {
@@ -147,7 +147,7 @@ export default function GallerySharePage() {
                       try {
                         const res = await fetch(a.url);
                         const blob = await res.blob();
-                        folder.file(`${isVideo(a) ? 'boomerang' : 'photo'}-${i + 1}.${assetExt(a)}`, blob);
+                        folder.file(`${isVideoMessage(a) ? 'video' : isVideo(a) ? 'boomerang' : 'photo'}-${i + 1}.${assetExt(a)}`, blob);
                       } catch {}
                     }));
                     const content = await zip.generateAsync({ type: 'blob' });
@@ -237,6 +237,9 @@ export default function GallerySharePage() {
             className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
             onClick={e => e.stopPropagation()}
           />
+          {isVideoMessage(assets[lightboxIndex]) && assets[lightboxIndex].promptText && (
+            <p className="absolute bottom-16 left-1/2 -translate-x-1/2 max-w-[80vw] text-center text-white/80 text-sm" onClick={e => e.stopPropagation()}>&ldquo;{assets[lightboxIndex].promptText}&rdquo;</p>
+          )}
           {lightboxIndex < assets.length - 1 && (
             <button
               className="absolute right-4 text-white/70 hover:text-white p-3 rounded-full hover:bg-white/10"
@@ -247,7 +250,7 @@ export default function GallerySharePage() {
           )}
           <a
             href={assets[lightboxIndex].url}
-            download={`${isVideo(assets[lightboxIndex]) ? 'boomerang' : 'photo'}-${lightboxIndex + 1}.${assetExt(assets[lightboxIndex])}`}
+            download={`${isVideoMessage(assets[lightboxIndex]) ? 'video' : isVideo(assets[lightboxIndex]) ? 'boomerang' : 'photo'}-${lightboxIndex + 1}.${assetExt(assets[lightboxIndex])}`}
             className="absolute bottom-5 right-1/2 translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium"
             onClick={e => e.stopPropagation()}
           >

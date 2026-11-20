@@ -1,13 +1,13 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Camera, Download, AlertCircle } from 'lucide-react';
+import { Camera, Download, AlertCircle, Video } from 'lucide-react';
 import { PoweredByBadge } from '@/components/brand/PoweredByBadge';
 import { BoothOffline, FadeInImg, UploadingIndicator, useWaitingFor, useWaitingPoll } from '@/components/genie/GuestWaiting';
 import { LONG_WAIT_MS } from '@/lib/genie/guestWaiting';
 import { BeforeAfter } from '@/components/genie/BeforeAfter';
 
-type Asset = { id: string; url: string; width: number | null; height: number | null; isGallery: boolean; isBoomerang?: boolean; posterUrl?: string | null; originalUrl?: string; afterLabel?: string };
+type Asset = { id: string; url: string; width: number | null; height: number | null; isGallery: boolean; isBoomerang?: boolean; posterUrl?: string | null; originalUrl?: string; afterLabel?: string; isVideoMessage?: boolean; promptText?: string | null; durationMs?: number | null };
 
 async function downloadFile(url: string, name: string) {
   try {
@@ -62,10 +62,13 @@ export default function GuestSessionPage() {
   const { event, branding, assets, isExpired, printSheetUrl } = data as { event: any; branding: any; assets: Asset[]; isExpired: boolean; printSheetUrl: string | null };
   const pc = branding?.primaryColor || '#F97316';
   const companyName = branding?.companyName || 'Photo Booth Co.';
-  const boomerang = assets.find(a => a.isBoomerang);
+  // A Video Booth message plays with sound; a Boomerang (or PC booth clip) loops muted
+  const video = assets.find(a => a.isVideoMessage);
+  const boomerang = assets.find(a => a.isBoomerang && !a.isVideoMessage);
+  const videoPending = data.videoPending as { posterUrl: string; width: number | null; height: number | null } | null;
   const print = assets.find(a => a.isGallery);
   const shots = assets.filter(a => !a.isGallery && !a.isBoomerang);
-  const fileName = (a: Asset, i: number) => a.isBoomerang ? 'boomerang.mp4' : (a.isGallery ? 'photo-booth' : 'photo-' + (i + 1)) + '.jpg';
+  const fileName = (a: Asset, i: number) => a.isVideoMessage ? 'video-message.mp4' : a.isBoomerang ? 'boomerang.mp4' : (a.isGallery ? 'photo-booth' : 'photo-' + (i + 1)) + '.jpg';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -93,6 +96,19 @@ export default function GuestSessionPage() {
             <p className="text-lg font-bold text-gray-800 mb-2">Photos Expired</p>
             <p className="text-sm text-gray-500">The access period for these photos has ended.</p>
           </div>
+        ) : assets.length === 0 && videoPending ? (
+          <div className="space-y-6">
+            <h1 className="text-xl font-bold text-gray-900">Your Video</h1>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+              <div className="relative">
+                <FadeInImg src={videoPending.posterUrl} alt="Your video" className="block mx-auto w-auto h-auto max-w-full max-h-[75vh] rounded-lg bg-black"/>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/60 text-white text-sm font-medium"><Video className="w-4 h-4"/>Your video is on its way</span>
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 text-center">The booth sends videos after photos, so it can take a while. This page shows it as soon as it arrives. Keep or bookmark this link to come back to it.</p>
+            </div>
+          </div>
         ) : assets.length === 0 && data.boothOffline ? (
           <div className="text-center py-20 max-w-sm mx-auto">
             <BoothOffline/>
@@ -109,7 +125,7 @@ export default function GuestSessionPage() {
         ) : (
           <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-3">
-              <h1 className="text-xl font-bold text-gray-900">{boomerang && assets.length === 1 ? 'Your Boomerang' : 'Your Photos'}</h1>
+              <h1 className="text-xl font-bold text-gray-900">{video && assets.length === 1 ? 'Your Video' : boomerang && assets.length === 1 ? 'Your Boomerang' : 'Your Photos'}</h1>
               {assets.length > 1 && (
                 <button
                   onClick={async () => {
@@ -129,6 +145,28 @@ export default function GuestSessionPage() {
                 </button>
               )}
             </div>
+
+            {video && (
+              <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+                {/* Sound and controls; the poster first and tap to play (phones don't autoplay with sound) */}
+                <video
+                  src={video.url}
+                  poster={video.posterUrl ?? undefined}
+                  width={video.width ?? undefined}
+                  height={video.height ?? undefined}
+                  controls playsInline preload="metadata"
+                  className="block mx-auto w-auto h-auto max-w-full max-h-[75vh] rounded-lg bg-black"
+                />
+                {video.promptText && <p className="text-sm text-gray-600 text-center">&ldquo;{video.promptText}&rdquo;</p>}
+                <button
+                  onClick={() => downloadFile(video.url, fileName(video, 0))}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm"
+                  style={{ backgroundColor: pc }}
+                >
+                  <Download className="w-4 h-4"/>Download
+                </button>
+              </div>
+            )}
 
             {boomerang && (
               <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">

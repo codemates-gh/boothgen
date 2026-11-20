@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma/client';
 // iPads and device spots (back to the default number), payments, the bundle version and lock, and the link to the
 // original event's approved client design (that design belongs to the other event), and the template text typed for
 // the original (names and dates belong to that event).
-const JSON_FIELDS = ['countdownSound', 'lookAtCamera', 'boomerang', 'attract', 'processing', 'filters', 'propIds', 'backdropIds', 'poseIds'] as const;
+const JSON_FIELDS = ['countdownSound', 'lookAtCamera', 'boomerang', 'attract', 'processing', 'filters', 'propIds', 'backdropIds', 'poseIds', 'videoBooth'] as const;
 
 export async function copyGenieSetup(tx: Prisma.TransactionClient, fromEventId: string, toEventId: string, tenantId: string): Promise<boolean> {
   const s = await tx.eventGenieSettings.findFirst({ where: { eventId: fromEventId, tenantId } });

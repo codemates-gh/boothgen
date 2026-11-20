@@ -108,3 +108,14 @@ export async function getR2Object(key: string): Promise<{ body: Buffer; contentT
 export async function getPresignedDownloadUrl(key: string, expiresIn = 600): Promise<string> {
   return getSignedUrl(r2, new GetObjectCommand({ Bucket: BUCKET, Key: key }), { expiresIn });
 }
+
+// An object as a stream (large files, e.g. zipping an event's videos), or null when it does not exist
+export async function getR2ObjectStream(key: string): Promise<{ body: ReadableStream<Uint8Array>; bytes: number | null; lastModified: Date | null } | null> {
+  try {
+    const res = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+    return { body: res.Body!.transformToWebStream() as ReadableStream<Uint8Array>, bytes: res.ContentLength ?? null, lastModified: res.LastModified ?? null };
+  } catch (err: any) {
+    if (err?.name === 'NoSuchKey' || err?.$metadata?.httpStatusCode === 404) return null;
+    throw err;
+  }
+}

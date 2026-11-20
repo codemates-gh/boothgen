@@ -17,6 +17,7 @@ import { eventBilling } from './payments';
 import { glamourStyleReady, withoutGlamourStyle } from './addOns';
 import { bundleAiBooth } from './ai/eventConfig';
 import { aiSettings } from './ai/settings';
+import { bundleVideoBooth } from './videoBooth';
 import { galleryRetentionDates, getGalleryRetention, type GalleryRetention } from '@/lib/gallery/retention';
 
 export { appUrl, galleryUrl, sessionUrl } from './urls';
@@ -263,11 +264,15 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
     glamourStyleReady(),
     aiSettings().then(a => bundleAiBooth(current, tenantId, a.ready)),
   ]);
-  const [text, designWithText] = await Promise.all([
+  const [text, designWithText, videoBooth] = await Promise.all([
     eventTextForBundle(tenantId, event.id, event.genieTemplates, settings.templateText),
     boomerangDesignWithText(tenantId, event.id, settings.boomerang, design, settings.templateText),
+    bundleVideoBooth(settings.videoBooth, tenantId, event.id, settings.templateText),
   ]);
   let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props, backdrops, billing.watermark, designWithText, poses, glamourReady, aiBooth, text);
+  // Optional; Video Booth (guests record a video message) when it's on for the event (Genie P14). Absent = off, so
+  // older iPads and events without it are unchanged.
+  if (videoBooth) bundle = { ...bundle, videoBooth } as typeof bundle;
   const hash = contentHash(bundle);
 
   for (let attempt = 0; settings.bundleHash !== hash && attempt < 3; attempt++) {

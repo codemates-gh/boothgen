@@ -15,6 +15,8 @@ import { BackdropsPatch, backdropsView } from './backdrops';
 import { PosesPatch, posesView } from './poses';
 import { AiBoothPatch, aiBoothView } from './ai/eventConfig';
 import { SharingStationPatch, sharingStationData, sharingStationView } from './sharingStation';
+import { VideoBoothPatch } from './videoBoothOptions';
+import { videoBoothDesignProblem, videoBoothView } from './videoBooth';
 
 // ── Lock ────────────────────────────────────────────────────────────────────
 // Locks when the event starts (see effectiveLockedAt in bundle.ts); iPads ignore newer bundle versions after that,
@@ -161,8 +163,10 @@ export const SettingsPatch = z.object({
   gallery: z.object({ uploadAll: z.boolean(), autoPublish: z.boolean() }).strict(),
   // Geniefied (AI photo booth, per event only); saved by aiBoothData (it checks the themes)
   aiBooth: AiBoothPatch,
+  // Video Booth (Genie P14; account defaults + per event); saved by videoBoothData (it checks the template)
+  videoBooth: VideoBoothPatch,
   // Sections to put back on the account defaults (they follow default changes again)
-  reset: z.array(z.enum(['timeZone', 'capture', 'sharing', 'printing', 'attract', 'poses', 'gallery'])).min(1),
+  reset: z.array(z.enum(['timeZone', 'capture', 'sharing', 'printing', 'attract', 'poses', 'gallery', 'videoBooth'])).min(1),
 }).partial().strict();
 
 export type SettingsPatch = z.infer<typeof SettingsPatch>;
@@ -239,8 +243,9 @@ export async function boomerangData(patch: NonNullable<SettingsPatch['boomerang'
 
 // The chosen Boomerang design is checked when the editor loads: deleted, or no longer at the Boomerang's shape
 export async function withBoomerangDesignProblem<T extends { boomerang: object }>(view: T, s: EventGenieSettings): Promise<T> {
-  const problem = await boomerangDesignProblem(s.boomerang, s.tenantId);
-  return { ...view, boomerang: { ...view.boomerang, designProblem: problem } };
+  const [problem, videoProblem] = await Promise.all([boomerangDesignProblem(s.boomerang, s.tenantId), videoBoothDesignProblem(s.videoBooth, s.tenantId)]);
+  const out = { ...view, boomerang: { ...view.boomerang, designProblem: problem } };
+  return 'videoBooth' in view ? { ...out, videoBooth: { ...(view.videoBooth as object), designProblem: videoProblem } } : out;
 }
 
 // ── Views ───────────────────────────────────────────────────────────────────
@@ -301,9 +306,10 @@ export function settingsView(s: EventGenieSettings) {
     poses: posesView(s),
     sharingStation: sharingStationView(s),
     aiBooth: aiBoothView(s),
+    videoBooth: videoBoothView(s.videoBooth),
     gallery: { uploadAll: s.sharingUploadAll, autoPublish: s.galleryAutoPublish, autoPublishedAt: s.galleryAutoPublishedAt },
     // Which sections were customized for this event (false = follows the account's Genie defaults)
-    custom: { timeZone: s.customTimeZone, capture: s.customCapture, sharing: s.customSharing, printing: s.customPrinting, attract: s.customAttract, poses: s.customPoses, gallery: s.customGallery },
+    custom: { timeZone: s.customTimeZone, capture: s.customCapture, sharing: s.customSharing, printing: s.customPrinting, attract: s.customAttract, poses: s.customPoses, gallery: s.customGallery, videoBooth: s.customVideoBooth },
   };
 }
 

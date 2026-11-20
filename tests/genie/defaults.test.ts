@@ -97,7 +97,7 @@ describe('Genie event defaults', () => {
 
     await PATCH(json({ printing: { enabled: true, maxCopies: 5, defaultCopies: 1 } }, 'PATCH'), p(e.id));
     let d = await (await DASH(req('/x'), p(e.id))).json();
-    expect(d.settings.custom).toEqual({ timeZone: false, capture: false, sharing: false, printing: true, attract: false, poses: false, gallery: false });
+    expect(d.settings.custom).toEqual({ timeZone: false, capture: false, sharing: false, printing: true, attract: false, poses: false, gallery: false, videoBooth: false });
 
     // Saving the same values as the defaults isn't custom
     await PATCH(json({ printing: PRINTING }, 'PATCH'), p(e.id));

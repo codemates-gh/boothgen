@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma/client';
 import { isBoothOffline, expectedShots, morePhotosPending } from '@/lib/genie/guestWaiting';
 import { eventBoothLastSeen } from '@/lib/genie/boothStatus';
+import { isVideoMessage } from '@/lib/genie/videoBooth';
 
 // One guest's Genie session: only that session's photos, independent of the gallery's publish state
 const SESSION_TOKEN = /^[A-Za-z0-9_-]{22,}$/;
@@ -24,9 +25,10 @@ export async function GET(
         },
       },
       assets: {
-        where: { approvalStatus: 'APPROVED' },
+        // A video the host hid (Videos tab) isn't shown
+        where: { approvalStatus: 'APPROVED', hiddenAt: null },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-        select: { id: true, url: true, width: true, height: true, genieKind: true, thumbnailUrl: true, createdAt: true, source: true },
+        select: { id: true, url: true, width: true, height: true, genieKind: true, thumbnailUrl: true, createdAt: true, source: true, durationMs: true, promptText: true },
       },
     },
   });
@@ -63,6 +65,11 @@ export async function GET(
   const boomerang = photos.find(a => a.genieKind === 'boomerang' || a.genieKind === 'video');
   // A PC booth (Sharing station) session is one photo, GIF or video: nothing more to wait for
   const single = photos.some(a => a.source === 'pcBooth' || a.genieKind === 'gif' || a.genieKind === 'video');
+  // Video Booth (P14): the iPad sends the poster right away but the video after other guests' photos, so on slow
+  // internet it can come much later; until then the page shows the poster with "Your video is on its way"
+  const videoPoster = expired ? undefined : session.assets.find(a => a.genieKind === 'videoPoster' && a.source !== 'pcBooth');
+  const videoPending = videoPoster && !photos.some(a => a.genieKind === 'video')
+    ? { posterUrl: videoPoster.url, width: videoPoster.width, height: videoPoster.height } : null;
   // Geniefied sessions label the slider "Geniefied" (Glamour Style otherwise)
   const geniefied = !!original && (await prisma.genieAiRender.count({ where: { eventId: session.eventId, sessionClientId: session.clientId, status: 'done' } })) > 0;
   const lastSeen = session.device && !session.device.revokedAt ? session.device.lastSeenAt : session.device ? null : await eventBoothLastSeen(session.eventId);
@@ -77,7 +84,10 @@ export async function GET(
       // Glamour Style was used: the same design without it, for the before/after
       ...(a.genieKind === 'gallery' && original ? { originalUrl: original.url, afterLabel: geniefied ? 'Geniefied' : 'Glamour Style' } : {}),
       ...(a.genieKind === 'boomerang' || a.genieKind === 'video' ? { isBoomerang: true, posterUrl: a.thumbnailUrl } : {}),
+      // A Video Booth message plays with sound and controls, with the prompt under it
+      ...(isVideoMessage(a) ? { isVideoMessage: true, promptText: a.promptText, durationMs: a.durationMs } : {}),
     })),
+    videoPending,
     printSheetUrl: expired ? null : session.assets.find(a => a.genieKind === 'print')?.url ?? null,
     // A boomerang session uploads only the clip (and its poster)
     morePending: !expired && !boomerang && !single && morePhotosPending({
@@ -86,6 +96,6 @@ export async function GET(
       expectedShots: expectedShots(session.gallery.event.genieTemplates.map(t => t.layout), session.gallery.event.genieSettings?.shotCount ?? 1),
       lastPhotoAt: photos.length ? new Date(Math.max(...photos.map(a => a.createdAt.getTime()))) : null,
     }),
-    boothOffline: !expired && isBoothOffline({ photoCount: photos.length, lastSeenAt: lastSeen }),
+    boothOffline: !expired && !videoPending && isBoothOffline({ photoCount: photos.length, lastSeenAt: lastSeen }),
   });
 }

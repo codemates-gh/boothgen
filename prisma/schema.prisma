@@ -757,7 +757,12 @@ model GalleryAsset {
   // Genie uploads: device-generated id (idempotency key) and the guest session
   clientId       String?
   genieSessionId String?
-  genieKind      String? // "gallery" | "shot" | "print" (printer sheet, archive only) | "boomerang" (MP4) | "boomerangPoster" (its first frame; thumbnail only) | "gif" | "video" (PC booth MP4) | "videoPoster" | "galleryOriginal" (the gallery design without Glamour Style; session page before/after only)
+  genieKind      String? // "gallery" | "shot" | "print" (printer sheet, archive only) | "boomerang" (MP4) | "boomerangPoster" (its first frame; thumbnail only) | "gif" | "video" (PC booth MP4, or a Video Booth message when source is null) | "videoPoster" | "galleryOriginal" (the gallery design without Glamour Style; session page before/after only)
+  // Video Booth (Genie P14): the prompt the guest answered, as they saw it
+  promptId       String?
+  promptText     String?
+  // Hidden by the host (Videos tab): left out of the public gallery and the guest's session page
+  hiddenAt       DateTime?
   // Genie Sharing station (P12): photos from PC booth software. source "genie" (null) | "pcBooth", the print box
   // (boothId, boothName) and the original file's SHA-256 and name (sourceSha256 is unique per gallery and kind)
   source         String?
@@ -1368,23 +1373,25 @@ model GeniePairingCode {
 
 // One row per event: everything in the Genie EventBundle except the templates
 model EventGenieSettings {
-  id             String  @id @default(cuid())
-  tenantId       String
-  eventId        String  @unique
-  timeZone       String  @default("America/New_York")
+  id               String  @id @default(cuid())
+  tenantId         String
+  eventId          String  @unique
+  timeZone         String  @default("America/New_York")
   // Genie on/off for this event; off hides it from iPads and the bundle returns 409
-  enabled        Boolean @default(true)
+  enabled          Boolean @default(true)
   // Section follows the account's Genie defaults (false) or was customized for this event (true). Existing rows
   // default to custom so adding defaults never changes an event someone already set up.
-  customTimeZone Boolean @default(true)
-  customCapture  Boolean @default(true)
-  customSharing  Boolean @default(true)
-  customPrinting Boolean @default(true)
+  customTimeZone   Boolean @default(true)
+  customCapture    Boolean @default(true)
+  customSharing    Boolean @default(true)
+  customPrinting   Boolean @default(true)
   // Attract screen; existing events follow the defaults (they had none to customize)
-  customAttract  Boolean @default(false)
+  customAttract    Boolean @default(false)
   // Pose ideas; existing events follow the defaults (off unless the account turns them on)
-  customPoses    Boolean @default(false)
-  customGallery  Boolean @default(false)
+  customPoses      Boolean @default(false)
+  customGallery    Boolean @default(false)
+  // Video Booth follows the account's defaults until changed for this event (Genie P14)
+  customVideoBooth Boolean @default(false)
 
   // CaptureConfig
   shotCount                    Int       @default(3)
@@ -1443,6 +1450,9 @@ model EventGenieSettings {
   aiConsentText                String?   @db.Text
   aiWaitSeconds                Int       @default(45)
   aiReadyText                  String?   @db.Text
+  // Video Booth (Genie P14; StoredVideoBooth in src/lib/genie/videoBooth.ts): prompts, length, retakes, video size,
+  // shape + template, consent text (null = BoothGen's default), show in gallery. null = off with BoothGen's defaults
+  videoBooth                   Json?
   // Pose ideas (PosesConfig): account Event defaults + per-event override; poseIds = GeniePose ids in the guests' order
   posesEnabled                 Boolean   @default(false)
   poseIds                      Json      @default("[]")
@@ -1500,15 +1510,15 @@ model EventGenieSettings {
 }
 
 model GenieSession {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   tenantId    String
   eventId     String
   galleryId   String
   deviceId    String?
-  clientId    String   @unique // session uuid generated on the device
-  publicToken String   @unique // generated on the device; forms the session page link
+  clientId    String    @unique // session uuid generated on the device
+  publicToken String    @unique // generated on the device; forms the session page link
   startedAt   DateTime
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
   // The guest cancelled on review: files and images are gone, the row stays so late uploads get 410 session_deleted
   deletedAt   DateTime?
 
@@ -1723,6 +1733,8 @@ model GenieDefaults {
   // Genius accounts, off for Genie-only (see BUILT_IN_DEFAULTS in src/lib/genie/defaults.ts)
   sharingUploadAll   Boolean @default(false)
   galleryAutoPublish Boolean @default(false)
+  // Video Booth (Genie P14): the account's starting settings for new events (StoredVideoBooth; null = BoothGen's)
+  videoBooth         Json?
 
   // BoothDesignTemplate ids added (in this order) when Genie is set up for an event
   templateIds Json @default("[]")

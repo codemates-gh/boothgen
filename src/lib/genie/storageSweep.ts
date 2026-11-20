@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma/client';
 import { deleteFromR2, listR2Objects } from '@/lib/storage/r2';
 import { eventClosesAt } from './bundle';
 import { boomerangDesign } from './boomerang';
+import { storedVideoBooth } from './videoBooth';
+import { resolveDesign } from './clipDesigns';
 import { boomerangDesignWithText, eventTextForBundle, type OverlayFor } from './eventText';
 import { textOverlayKey, textOverlayR2Key } from './textRender';
 
@@ -46,6 +48,12 @@ async function textKeysInUse(tenantId: string, now: Date): Promise<Set<string>> 
     if (eventClosesAt(e, s.timeZone).getTime() + TEXT_KEEP_AFTER_PAST_MS <= now.getTime()) continue;
     await eventTextForBundle(tenantId, e.id, e.genieTemplates, s.templateText, note);
     await boomerangDesignWithText(tenantId, e.id, s.boomerang, await boomerangDesign(s.boomerang, tenantId), s.templateText, note);
+    // Video Booth's template (Genie P14) has the event's words too
+    const vb = storedVideoBooth(s.videoBooth);
+    if (vb?.enabled && vb.design) {
+      const r = await resolveDesign(vb.design, tenantId, vb.format);
+      if ('design' in r) await boomerangDesignWithText(tenantId, e.id, vb, r.design, s.templateText, note);
+    }
   }
   return keep;
 }

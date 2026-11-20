@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { prisma } from '@/lib/prisma/client';
 import { notifyGalleryPublished } from '@/lib/gallery/publish';
+import { showsVideosInGallery } from '@/lib/genie/videoBooth';
 
 export async function GET(_: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -14,12 +15,15 @@ export async function GET(_: NextRequest, props: { params: Promise<{ id: string 
   const [gallery, { expireDays, deleteDays }] = await Promise.all([
     prisma.gallery.findFirst({
       where: { id: params.id, tenantId: session.tenantId },
-      include: { event: { select: { title: true, eventDate: true, portalToken: true } }, _count: { select: { assets: true } } },
+      include: { event: { select: { title: true, eventDate: true, portalToken: true, genieSettings: { select: { videoBooth: true } } } }, _count: { select: { assets: true } } },
     }),
     getGalleryRetention(),
   ]);
   if (!gallery) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  return NextResponse.json({ ...gallery, expireDays, deleteDays, uploadLimits: await getUploadLimits() });
+  // Video Booth (Genie P14): whether the event shows its video messages in the public gallery (null: not a Genie event)
+  const { genieSettings, ...event } = gallery.event ?? { genieSettings: null };
+  const videosInGallery = genieSettings ? showsVideosInGallery(genieSettings.videoBooth) : null;
+  return NextResponse.json({ ...gallery, event: gallery.event ? event : null, videosInGallery, expireDays, deleteDays, uploadLimits: await getUploadLimits() });
 }
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {

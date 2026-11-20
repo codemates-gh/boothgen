@@ -4,6 +4,25 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.130.0] — 2026-11-20
+
+### Added
+- **Video Booth (Genie P14), included with Genie at no extra cost.** Guests record a short video message to a prompt you choose (a toast, a greeting, a confession), watch it back, and keep it or record again. They get it by text, email or QR like photos. Videos are never printed, and only videos guests keep are uploaded. The iPad side comes in a later Genie build; until then nothing changes on iPads.
+  - **Event → Genie → Video Booth** (also in **Genie → Defaults**, which events follow until you change it on the event):
+    - on or off; photos and video, or video only;
+    - 1 to 8 prompts: add, edit, reorder, delete, or pick from starter prompts for weddings, birthdays and corporate events;
+    - longest video (10–120 s, default 30) and re-records (0–5, default 2);
+    - video size: 720p (default), 540p or 480p, each with help text on when to use it;
+    - a template (any single-photo layout, chosen with the same picker as Boomerang), or a plain video in the shape you choose;
+    - consent text (BoothGen's wording unless you change it);
+    - "Show videos in the event gallery" (off by default).
+  - **Guest page:** a video player with sound and controls, the prompt under it, and Download. The booth sends videos after photos, so until a video arrives the page shows its picture with "Your video is on its way" and updates when it lands.
+  - **Event gallery → Videos tab:** every video with its prompt, time and length. You can play, hide (from the public gallery and the guest's page) or delete each one. **Download all videos** gives you one ZIP. Videos follow the gallery's expiry and deletion dates, like photos.
+  - The public gallery shows videos only when "Show videos in the event gallery" is on. Videos you hide never show there.
+- Needs `docs/genie/apply-production-video-booth.sql` run in Neon (production) before deploying.
+
+---
+
 ## [2.129.0] — 2026-11-20
 
 ### Added

@@ -4,18 +4,19 @@ import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Camera, Share2, Printer, Settings2, LayoutTemplate, ChevronUp, ChevronDown, X, MonitorPlay, Plus, PersonStanding, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, Camera, Share2, Printer, Settings2, LayoutTemplate, ChevronUp, ChevronDown, X, MonitorPlay, Plus, PersonStanding, Image as ImageIcon, Video } from 'lucide-react';
 import { TemplatePicker, thumbWidth, type PickerLibrary } from '@/components/genie/TemplatePicker';
 import { Field, LayoutPreview } from '@/components/genie/parts';
 import { Attract, AttractFields, Capture, CaptureFields, GalleryDefaults, GalleryFields, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
 import { PoseIdeasFields, type PoseIdeasValue } from '@/components/genie/PoseIdeas';
 import type { Pose } from '@/components/genie/Poses';
+import { VideoBoothFields, videoBoothBody, videoBoothNumbersFilled, type VideoBoothValue } from '@/app/(tenant)/events/[id]/genie/VideoBooth';
 
-type Defaults = { saved: boolean; timeZone: string; capture: Capture; sharing: Sharing; printing: Printing; attract: Attract; poses: PoseIdeasValue; gallery: GalleryDefaults; templateIds: string[] };
+type Defaults = { saved: boolean; timeZone: string; capture: Capture; sharing: Sharing; printing: Printing; attract: Attract; poses: PoseIdeasValue; gallery: GalleryDefaults; videoBooth: VideoBoothValue; templateIds: string[] };
 type Form = Omit<Defaults, 'saved'>;
 
 // Only the editable settings: the GET also returns read-only extras (templates, eventsFollowing) the PUT rejects
-const toForm = (d: Defaults): Form => JSON.parse(JSON.stringify({ timeZone: d.timeZone, capture: d.capture, sharing: d.sharing, printing: d.printing, attract: d.attract, poses: d.poses, gallery: d.gallery, templateIds: d.templateIds }));
+const toForm = (d: Defaults): Form => JSON.parse(JSON.stringify({ timeZone: d.timeZone, capture: d.capture, sharing: d.sharing, printing: d.printing, attract: d.attract, poses: d.poses, gallery: d.gallery, videoBooth: d.videoBooth, templateIds: d.templateIds }));
 
 export default function GenieDefaultsPage() {
   const [data, setData] = useState<Defaults & { eventsFollowing: number; chosenPoses: Pose[] } | null>(null);
@@ -45,9 +46,13 @@ export default function GenieDefaultsPage() {
 
   async function save() {
     if (!form) return;
-    if (!numbersFilled(form.capture, form.printing, { n: form.attract.returnAfterSeconds })) { setError('Fill in every number before saving.'); return; }
+    if (!numbersFilled(form.capture, form.printing, { n: form.attract.returnAfterSeconds }) || !videoBoothNumbersFilled(form.videoBooth)) { setError('Fill in every number before saving.'); return; }
     setSaving(true); setError(''); setNotice('');
-    const r = await fetch('/api/genie-defaults', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, attract: attractBody(form.attract) }) });
+    const r = await fetch('/api/genie-defaults', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify((() => {
+      // Video Booth only when changed, so saving other sections doesn't touch events' Video Booth
+      const { videoBooth, ...rest } = form;
+      return { ...rest, attract: attractBody(form.attract), ...(JSON.stringify(videoBooth) === JSON.stringify(data?.videoBooth) ? {} : { videoBooth: videoBoothBody(videoBooth) }) };
+    })()) });
     const d = await r.json().catch(() => ({}));
     setSaving(false);
     if (!r.ok) { setError(d.error || 'Could not save'); return; }
@@ -133,6 +138,10 @@ export default function GenieDefaultsPage() {
 
             <Section icon={Printer} title="Printing">
               <PrintingFields value={form.printing} onChange={p => set('printing', p)}/>
+            </Section>
+
+            <Section icon={Video} title="Video Booth" description="Guests record a short video message to a prompt. Included with Genie. Off for new accounts. Events follow this until you change Video Booth on the event.">
+              <VideoBoothFields value={form.videoBooth} onChange={p => set('videoBooth', p)}/>
             </Section>
 
             <Section icon={ImageIcon} title="Gallery" description="The event's gallery of photos for your client. Events follow this until you change Gallery on the event.">

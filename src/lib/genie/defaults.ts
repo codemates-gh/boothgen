@@ -12,13 +12,14 @@ export const DEFAULT_SECTIONS = {
   attract: ['attract', 'attractReturnAfterSeconds'],
   poses: ['posesEnabled', 'poseIds'],
   gallery: ['sharingUploadAll', 'galleryAutoPublish'],
+  videoBooth: ['videoBooth'],
 } as const;
 export type DefaultSection = keyof typeof DEFAULT_SECTIONS;
 export const SECTION_NAMES = Object.keys(DEFAULT_SECTIONS) as DefaultSection[];
 
-export const CUSTOM_FLAG: Record<DefaultSection, 'customTimeZone' | 'customCapture' | 'customSharing' | 'customPrinting' | 'customAttract' | 'customPoses' | 'customGallery'> = {
+export const CUSTOM_FLAG: Record<DefaultSection, 'customTimeZone' | 'customCapture' | 'customSharing' | 'customPrinting' | 'customAttract' | 'customPoses' | 'customGallery' | 'customVideoBooth'> = {
   timeZone: 'customTimeZone', capture: 'customCapture', sharing: 'customSharing', printing: 'customPrinting', attract: 'customAttract', poses: 'customPoses',
-  gallery: 'customGallery',
+  gallery: 'customGallery', videoBooth: 'customVideoBooth',
 };
 
 type DefaultsValues = Omit<GenieDefaults, 'id' | 'tenantId' | 'templateIds' | 'createdAt' | 'updatedAt'>;
@@ -37,6 +38,8 @@ export const BUILT_IN_DEFAULTS: DefaultsValues = {
   posesEnabled: false, poseIds: [],
   // Gallery: off here; on for Genius accounts (defaultsFor)
   sharingUploadAll: false, galleryAutoPublish: false,
+  // Video Booth: off, with BoothGen's settings (VIDEO_BOOTH_DEFAULT)
+  videoBooth: null,
 };
 
 // Built-in defaults for an account: Genius accounts upload every Sharing station photo and publish the event gallery
@@ -57,7 +60,7 @@ export async function getDefaults(tenantId: string): Promise<{ values: DefaultsV
 
 // Values to write (a JSON column's null is written as SQL NULL)
 export function sectionValues(src: Record<string, unknown>, section: DefaultSection): Record<string, unknown> {
-  return Object.fromEntries(DEFAULT_SECTIONS[section].map(k => [k, src[k] === null && (k === 'attract' || k === 'countdownSound') ? Prisma.DbNull : src[k]]));
+  return Object.fromEntries(DEFAULT_SECTIONS[section].map(k => [k, src[k] === null && (k === 'attract' || k === 'countdownSound' || k === 'videoBooth') ? Prisma.DbNull : src[k]]));
 }
 
 // Key order doesn't matter for JSON columns (Postgres jsonb reorders keys)
@@ -77,10 +80,11 @@ export function newEventSettingsData(defaults: DefaultsValues, timeZone?: string
     ...defaults,
     attract: defaults.attract ?? Prisma.DbNull,
     countdownSound: defaults.countdownSound ?? Prisma.DbNull,
+    videoBooth: defaults.videoBooth ?? Prisma.DbNull,
     poseIds: (defaults.poseIds ?? []) as Prisma.InputJsonValue,
     ...(timeZone ? { timeZone } : {}),
     customTimeZone: !!timeZone && timeZone !== defaults.timeZone,
-    customCapture: false, customSharing: false, customPrinting: false, customAttract: false, customPoses: false, customGallery: false,
+    customCapture: false, customSharing: false, customPrinting: false, customAttract: false, customPoses: false, customGallery: false, customVideoBooth: false,
   };
 }
 

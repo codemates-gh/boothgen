@@ -53,6 +53,9 @@ export const GalleryUpload = z.object({
   sha256,
   capturedAt: dateTime,
   durationMs: z.number().int().min(1).optional(),
+  // Video Booth (P14): the prompt the guest answered (kind video from a Genie session)
+  promptId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).optional(),
+  promptText: z.string().min(1).max(120).optional(),
   // Sharing station (P12): photos from PC booth software, the print box that sent them, and the original file
   source: z.enum(['genie', 'pcBooth']).optional(),
   boothId: z.string().min(1).max(100).optional(),
@@ -64,7 +67,11 @@ export const GalleryUpload = z.object({
   .refine(u => (u.contentType === 'video/mp4') === (u.kind === 'boomerang' || u.kind === 'video'), { message: 'video/mp4 is only for kinds boomerang and video, and they must be video/mp4', path: ['contentType'] })
   .refine(u => (u.contentType === 'image/gif') === (u.kind === 'gif'), { message: 'image/gif is only for kind gif, and a gif must be image/gif', path: ['contentType'] })
   .refine(u => u.durationMs === undefined || u.kind === 'boomerang' || u.kind === 'video', { message: 'durationMs is only for kinds boomerang and video', path: ['durationMs'] })
-  .refine(u => u.bytes <= GENIE_FILE_MAX_BYTES || u.kind === 'video', { message: 'Files are at most 15 MB (videos 50 MB)', path: ['bytes'] });
+  .refine(u => u.bytes <= GENIE_FILE_MAX_BYTES || u.kind === 'video', { message: 'Files are at most 15 MB (videos 50 MB)', path: ['bytes'] })
+  // A Video Booth video always says how long it is (required for every video by the schema; PC booth videos aren't
+  // held to it here so an older Sharing station iPad's upload isn't refused)
+  .refine(u => u.kind !== 'video' || u.source === 'pcBooth' || u.durationMs !== undefined, { message: 'durationMs is required for kind video', path: ['durationMs'] })
+  .refine(u => (u.promptId === undefined && u.promptText === undefined) || u.kind === 'video', { message: 'promptId and promptText are only for kind video', path: ['promptId'] });
 
 export const ShareJob = z.object({
   id: uuid,

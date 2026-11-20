@@ -5,6 +5,7 @@ import { bundleValidUntil } from '@/lib/genie/bundle';
 import { NOT_PRINT_SHEET } from '@/lib/genie/urls';
 import { isBoothOffline } from '@/lib/genie/guestWaiting';
 import { eventBoothLastSeen } from '@/lib/genie/boothStatus';
+import { isVideoMessage, showsVideosInGallery } from '@/lib/genie/videoBooth';
 
 // Live view: guests' sessions in the order they arrived, each with its gallery image first, then shots
 function liveOrder<T extends { genieSessionId: string | null; sortOrder: number; createdAt: Date }>(assets: T[]): T[] {
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
   const gallery = await prisma.gallery.findFirst({
     where: { clientToken: params.token },
     include: {
-      event: { select: { title: true, eventDate: true, startTime: true, endTime: true, genieSettings: { select: { guestLinkScope: true, timeZone: true } } } },
+      event: { select: { title: true, eventDate: true, startTime: true, endTime: true, genieSettings: { select: { guestLinkScope: true, timeZone: true, videoBooth: true } } } },
       tenant: { include: { branding: { select: { companyName: true, logoUrl: true, primaryColor: true } } } },
       assets: { where: { approvalStatus: 'APPROVED', ...NOT_PRINT_SHEET }, orderBy: [{ createdAt: 'asc' }] },
     },
@@ -43,9 +44,12 @@ export async function GET(req: NextRequest, props: { params: Promise<{ token: st
   const retentionSetting = await prisma.systemSetting.findUnique({ where: { key: 'gallery_expire_days' } });
   const expireDays = parseInt(retentionSetting?.value ?? '30', 10);
 
+  // Video Booth messages (Genie P14) only when the event shows them in its gallery; nothing the host hid
+  const showVideos = showsVideosInGallery(genie?.videoBooth);
+  const shown = gallery.assets.filter(a => !a.hiddenAt && (showVideos || !isVideoMessage(a)));
   const assets = !galleryUnlocked || gallery.isExpired ? []
-    : gallery.isPublished ? gallery.assets
-    : isLive ? liveOrder(gallery.assets.filter(a => a.genieSessionId))
+    : gallery.isPublished ? shown
+    : isLive ? liveOrder(shown.filter(a => a.genieSessionId))
     : [];
   // Live gallery still empty: is the booth reachable?
   const boothOffline = isLive && galleryUnlocked && assets.length === 0

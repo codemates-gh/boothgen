@@ -7,7 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon, PersonStanding, Copy, Wand2, Send } from 'lucide-react';
+import { CreditCard, CheckCircle2, Pencil, Trash2, ArrowLeft, Sparkles, Lock, AlertTriangle, Camera, Palette, Share2, Printer, Settings2, Code2, ChevronDown, ChevronRight, Repeat, MonitorPlay, Smile, Image as ImageIcon, PersonStanding, Copy, Wand2, Send, Video } from 'lucide-react';
 import { Field, Toggle, fmtDate, fmtDateTime } from '@/components/genie/parts';
 import { GalleryFields, type GalleryDefaults } from '@/components/genie/SettingsForms';
 import { Attract, AttractFields, Capture, CaptureFields, DefaultState, Printing, PrintingFields, Section, Sharing, SharingFields, TimeZoneSelect, attractBody, numbersFilled } from '@/components/genie/SettingsForms';
@@ -29,6 +29,7 @@ import type { Pose } from '@/components/genie/Poses';
 import { GLAMOUR_STYLE_URL } from '@/lib/genie/addOns';
 import { GeniefiedFields, type AiBoothValue, type GeniefiedInfo } from './Geniefied';
 import { SharingStationFields, type SharingStationValue } from './SharingStation';
+import { VideoBoothFields, videoBoothBody, videoBoothNumbersFilled, type VideoBoothValue } from './VideoBooth';
 
 type Settings = {
   enabled: boolean; timeZone: string; bundleVersion: number; maxDevices: number; capture: Capture;
@@ -45,7 +46,8 @@ type Settings = {
   sharingStation: SharingStationValue;
   gallery: GalleryDefaults & { autoPublishedAt: string | null };
   aiBooth: AiBoothValue;
-  custom: { timeZone: boolean; capture: boolean; sharing: boolean; printing: boolean; attract: boolean; poses: boolean; gallery: boolean };
+  videoBooth: VideoBoothValue;
+  custom: { timeZone: boolean; capture: boolean; sharing: boolean; printing: boolean; attract: boolean; poses: boolean; gallery: boolean; videoBooth: boolean };
 };
 type Dashboard = {
   geniefied: GeniefiedInfo;
@@ -68,7 +70,7 @@ type Dashboard = {
   chosenBackdrops: Backdrop[];
   chosenPoses: Pose[];
 };
-type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'liveView' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval' | 'poses' | 'sharingStation' | 'gallery' | 'aiBooth'> & { filters: Omit<Settings['filters'], 'available'> };
+type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'liveView' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval' | 'poses' | 'sharingStation' | 'gallery' | 'aiBooth' | 'videoBooth'> & { filters: Omit<Settings['filters'], 'available'> };
 
 
 function toForm(s: Settings): Form {
@@ -82,13 +84,14 @@ function toForm(s: Settings): Form {
     sharingStation: { ...s.sharingStation },
     gallery: { ...s.gallery },
     aiBooth: { ...s.aiBooth, themeIds: [...s.aiBooth.themeIds] },
+    videoBooth: { ...s.videoBooth, prompts: s.videoBooth.prompts.map(p => ({ ...p })) },
   };
 }
 
 // The save body: "look at the camera" and Boomerang go only when changed, so saving other sections leaves them out
 // of the bundle (Genie's own defaults apply until the operator sets them)
 function patchBody(form: Form, saved: Settings) {
-  const { lookAtCamera, boomerang, attract, props, backgroundRemoval, poses, sharingStation, gallery, aiBooth, ...rest } = form;
+  const { lookAtCamera, boomerang, attract, props, backgroundRemoval, poses, sharingStation, gallery, aiBooth, videoBooth, ...rest } = form;
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const { overlay, designProblem: _p, ...b } = boomerang;
   return {
@@ -105,6 +108,8 @@ function patchBody(form: Form, saved: Settings) {
     // Gallery only when changed, so saving other sections keeps the event following the Event defaults
     // Geniefied only when changed
     ...(same(aiBooth, saved.aiBooth) ? {} : { aiBooth }),
+    // Video Booth only when changed, so saving other sections keeps the event following the Event defaults
+    ...(same(videoBooth, saved.videoBooth) ? {} : { videoBooth: videoBoothBody(videoBooth) }),
     ...(same(gallery, saved.gallery) ? {} : { gallery: { uploadAll: gallery.uploadAll, autoPublish: gallery.autoPublish } }),
   };
 }
@@ -207,7 +212,7 @@ export default function EventGeniePage() {
 
   async function save() {
     if (!form) return;
-    if (!numbersFilled(form.capture, form.printing, { frames: form.boomerang.frameCount, attract: form.attract.returnAfterSeconds })) { setSaveError('Fill in every number before saving.'); return; }
+    if (!numbersFilled(form.capture, form.printing, { frames: form.boomerang.frameCount, attract: form.attract.returnAfterSeconds }) || !videoBoothNumbersFilled(form.videoBooth)) { setSaveError('Fill in every number before saving.'); return; }
     setSaving(true); setSaveError('');
     const r = await fetch(`/api/events/${eventId}/genie`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patchBody(form, data!.settings!)) });
     const d = await r.json().catch(() => ({}));
@@ -219,7 +224,7 @@ export default function EventGeniePage() {
   }
 
   // Puts a section back on the account's Genie defaults
-  async function resetSection(section: 'timeZone' | 'capture' | 'sharing' | 'printing' | 'attract' | 'poses' | 'gallery', label: string) {
+  async function resetSection(section: 'timeZone' | 'capture' | 'sharing' | 'printing' | 'attract' | 'poses' | 'gallery' | 'videoBooth', label: string) {
     if (!confirm(`Use your Genie defaults for ${label} on this event? Changes you made here for ${label} are replaced, and it follows your defaults from now on.`)) return;
     setSaveError('');
     const r = await fetch(`/api/events/${eventId}/genie`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reset: [section] }) });
@@ -395,6 +400,11 @@ export default function EventGeniePage() {
 
                 <Section icon={Repeat} title="Boomerang" description="A short looping clip guests can choose instead of photos. This event only.">
                   <BoomerangFields eventId={eventId} value={form.boomerang} onChange={p => set('boomerang', p)}/>
+                </Section>
+
+                <Section icon={Video} title="Video Booth" description="Guests record a short video message to a prompt you choose. Included with Genie."
+                  right={<DefaultState custom={data.settings.custom.videoBooth} onReset={() => resetSection('videoBooth', 'Video Booth')}/>}>
+                  <VideoBoothFields value={form.videoBooth} onChange={p => set('videoBooth', p)}/>
                 </Section>
 
                 <GenieTemplates eventId={eventId} templates={data.templates} shotCount={form.capture.shotCount} locked={ended} onChange={() => { setBundle(null); load(false); }} approvedDesign={data.approvedDesign} briefTemplate={data.briefTemplate}/>
