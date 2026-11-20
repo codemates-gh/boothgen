@@ -15,7 +15,7 @@ import { CUSTOM_FLAG, SECTION_NAMES, customFlags, getDefaults, sectionValues } f
 import { latestApprovedDesign } from '@/lib/genie/approvedDesign';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { bundleValidUntil, designApprovalPending, effectiveLockedAt, eventLocksAt, isValidTimeZone } from '@/lib/genie/bundle';
-import { SettingsPatch, boomerangData, findAdminEvent, providerWarnings, settingsUpdateData, settingsView, templateView, withBoomerangDesignProblem } from '@/lib/genie/eventAdmin';
+import { SettingsPatch, boomerangData, endedResponse, findAdminEvent, hasEnded, providerWarnings, settingsUpdateData, settingsView, templateView, withBoomerangDesignProblem } from '@/lib/genie/eventAdmin';
 import { galleryRetentionDates, getGalleryRetention } from '@/lib/gallery/retention';
 import { attractData, deleteUnusedAttractMedia, storedAttract } from '@/lib/genie/attract';
 import { countdownSoundData, deleteUnusedCountdownSounds, storedCountdownSound } from '@/lib/genie/countdownSound';
@@ -76,6 +76,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     hasGuestSessions: (await prisma.genieSession.count({ where: { eventId: event.id, deletedAt: null } })) > 0,
     locksAt: eventLocksAt(event, s?.timeZone ?? 'America/New_York'),
     // 48 hours after the event ends iPads can no longer run it; it can still be viewed and duplicated
+    ended: !!s && hasEnded(event),
     expired: !!s && bundleValidUntil(event, s.timeZone).getTime() <= Date.now(),
     templates: templates.map(t => ({ ...templateView(t), alternateAvailable: !!t.libraryTemplateId && withAlternate.has(t.libraryTemplateId) })),
     providerWarnings: s ? providerWarnings(messaging, s, messagingRoutes(messaging, tenant)) : [],
@@ -126,6 +127,7 @@ export async function PATCH(req: NextRequest, props0: { params: Promise<{ id: st
   }
   const event = await findAdminEvent(auth.tenantId, params.id);
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (hasEnded(event)) return endedResponse();
   const s = event.genieSettings;
   if (!s) return NextResponse.json({ error: 'Set up Genie for this event first', code: 'not_configured' }, { status: 409 });
 

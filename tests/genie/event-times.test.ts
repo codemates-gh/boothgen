@@ -12,7 +12,11 @@ import { POST as CREATE_BOOTH } from '@/app/api/genie-events/route';
 import { POST as DUPLICATE } from '@/app/api/events/[id]/duplicate/route';
 import { GET as DEVICE_EVENTS } from '@/app/api/genie/events/route';
 import { GET as DEVICE_BUNDLE } from '@/app/api/genie/events/[eventId]/bundle/route';
-import { GET as DASH } from '@/app/api/events/[id]/genie/route';
+import { GET as DASH, PATCH as PATCH_GENIE } from '@/app/api/events/[id]/genie/route';
+import { POST as ADD_TEMPLATE } from '@/app/api/events/[id]/genie/templates/route';
+import { PUT as TEMPLATE_TEXT } from '@/app/api/events/[id]/genie/template-text/route';
+import { PATCH as PATCH_BOOTH } from '@/app/api/genie-events/[id]/route';
+import { ensureGallery } from '@/lib/genie/bundle';
 import { eventSpan, moveEventTo, todayIn } from '@/lib/eventTimes';
 import { zonedTime as zonedForTest } from '@/lib/genie/boothEvents';
 import { req, resetDb, seedDevice, seedEvent, seedTenant } from './helpers';
@@ -65,28 +69,54 @@ describe('expired events', () => {
     expect(list.events.map((e: any) => [e.id, e.status])).toEqual([[running.id, 'IN_PROGRESS']]);
   });
 
-  it('iPads keep an event until 48 hours after it ends, then it drops off and its bundle is refused; operators still see it', async () => {
+  it('an ended event drops off the iPad list; only an iPad already running it can still download it, until 48 hours after', async () => {
     const { tenant, client } = await seedTenant();
     session = { tenantId: tenant.id, tenantRole: 'HOST_ADMIN', userId: 'u1' };
-    const { token } = await seedDevice(tenant.id);
+    const { token, device } = await seedDevice(tenant.id);
+    const other = await seedDevice(tenant.id);
     const recent = await seedEvent(tenant.id, client.id);
     const old = await seedEvent(tenant.id, client.id);
     const now = Date.now();
     await prisma.event.update({ where: { id: recent.id }, data: { title: 'Recent', eventDate: new Date(new Date(now - 30 * HOURS).toISOString().slice(0, 10)), startTime: new Date(now - 34 * HOURS), endTime: new Date(now - 30 * HOURS) } });
     await prisma.event.update({ where: { id: old.id }, data: { title: 'Old', eventDate: new Date(new Date(now - 60 * HOURS).toISOString().slice(0, 10)), startTime: new Date(now - 54 * HOURS), endTime: new Date(now - 49 * HOURS) } });
+    await prisma.genieEventDevice.create({ data: { tenantId: tenant.id, eventId: recent.id, deviceId: device.id } });
 
-    const list = await (await DEVICE_EVENTS(req('/x', { token }))).json();
-    expect(list.events.map((e: any) => e.title)).toEqual(['Recent']);
+    expect((await (await DEVICE_EVENTS(req('/x', { token }))).json()).events).toEqual([]);
     const ok = await DEVICE_BUNDLE(req('/x', { token }), { params: Promise.resolve({ eventId: recent.id }) });
     expect(ok.status).toBe(200);
     expect(Date.parse((await ok.json()).validUntil)).toBe(now - 30 * HOURS + 48 * HOURS);
+    const newIpad = await DEVICE_BUNDLE(req('/x', { token: other.token }), { params: Promise.resolve({ eventId: recent.id }) });
+    expect([newIpad.status, (await newIpad.json()).code]).toEqual([409, 'event_expired']);
     const refused = await DEVICE_BUNDLE(req('/x', { token }), { params: Promise.resolve({ eventId: old.id }) });
     expect(refused.status).toBe(409);
     expect((await refused.json()).code).toBe('event_expired');
 
     const d = await (await DASH(req('/x'), ev(old.id))).json();
-    expect([d.expired, !!d.settings]).toEqual([true, true]);
-    expect((await (await DASH(req('/x'), ev(recent.id))).json()).expired).toBe(false);
+    expect([d.expired, d.ended, !!d.settings]).toEqual([true, true, true]);
+    expect(await (await DASH(req('/x'), ev(recent.id))).json()).toMatchObject({ expired: false, ended: true });
+  });
+
+  it("an ended event's setup can't change; Edit Details can only move one that never had guests", async () => {
+    const { tenant, client } = await seedTenant();
+    session = { tenantId: tenant.id, tenantRole: 'HOST_ADMIN', userId: 'u1' };
+    const booth = await CREATE_BOOTH(req('/x', { body: { title: 'Last night', date: '2026-01-10', startTime: '18:00', endTime: '23:00', timeZone: 'UTC' } }));
+    const id = (await booth.json()).id;
+    const ended = await PATCH_GENIE(req('/x', { method: 'PATCH', body: { timeZone: 'America/Chicago' } }), ev(id));
+    expect([ended.status, (await ended.json()).code]).toEqual([409, 'ended']);
+    expect((await ADD_TEMPLATE(req('/x', { body: { libraryTemplateId: 'x' } }), ev(id))).status).toBe(409);
+    expect((await TEMPLATE_TEXT(req('/x', { method: 'PUT', body: { answers: { Names: 'A & B' } } }), ev(id))).status).toBe(409);
+
+    // No guests yet: it can still be moved to a later date, and then it's editable again
+    const details = { title: 'Last night', date: '2026-12-20', startTime: '18:00', endTime: '23:00' };
+    expect((await PATCH_BOOTH(req('/x', { method: 'PATCH', body: details }), ev(id))).status).toBe(200);
+    expect((await PATCH_GENIE(req('/x', { method: 'PATCH', body: { timeZone: 'America/Chicago' } }), ev(id))).status).toBe(200);
+
+    // With guest photos, an ended event can't be edited at all
+    await prisma.event.update({ where: { id }, data: { eventDate: new Date('2026-01-10'), startTime: new Date('2026-01-10T18:00:00Z'), endTime: new Date('2026-01-10T23:00:00Z') } });
+    const gallery = await ensureGallery(await prisma.event.findUniqueOrThrow({ where: { id } }));
+    await prisma.genieSession.create({ data: { tenantId: tenant.id, eventId: id, galleryId: gallery.id, clientId: crypto.randomUUID(), publicToken: crypto.randomUUID(), startedAt: new Date() } });
+    const moved = await PATCH_BOOTH(req('/x', { method: 'PATCH', body: details }), ev(id));
+    expect([moved.status, (await moved.json()).code]).toEqual([409, 'ended']);
   });
 
   it('Duplicate starts the copy today with the same times and length, also from an expired event; booth copies are booked', async () => {

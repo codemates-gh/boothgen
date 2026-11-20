@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.124.0] — 2026-11-20
+
+### Changed
+- **An ended Genie event can only be duplicated.** Once an event is past its end time (or the end of its day when it has no end time):
+  - iPads no longer list it, and an iPad that isn't already running it can't load it. An iPad that was running it keeps it, so a party that runs late isn't cut off.
+  - Its page says Ended. Settings, templates and template text are read-only, and payment buttons are hidden. Duplicate and Delete stay.
+  - Edit Details stays only for an event no guest ever used (e.g. a copy whose times today already passed), so it can be moved to a later date.
+
+---
+
 ## [2.123.1] — 2026-11-19
 
 ### Fixed

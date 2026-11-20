@@ -59,7 +59,7 @@ type Dashboard = {
     // Glamour Style is offered only once Super Admin makes it available (Genie 0.6.0+)
     glamourStyleReady: boolean;
   };
-  settings: Settings | null; lockedAt: string | null; hasGuestSessions?: boolean; locksAt: string; expired: boolean; templates: EventTemplate[];
+  settings: Settings | null; lockedAt: string | null; hasGuestSessions?: boolean; locksAt: string; ended?: boolean; expired: boolean; templates: EventTemplate[];
   providerWarnings: { channel: 'sms' | 'email'; message: string }[]; photosHiddenAt: string; photosDeletedAt: string; designApprovalPending: boolean;
   approvedDesign: ApprovedDesign | null; briefTemplate: { id: string; name: string } | null;
   defaults: { saved: boolean; timeZone: string };
@@ -165,6 +165,8 @@ export default function EventGeniePage() {
   const dirty = !!(form && data?.settings && JSON.stringify(form) !== JSON.stringify(toForm(data.settings)));
   // Started: everything can still change and reaches iPads between guests, except the date and times (G, 2026-11-19)
   const started = !!data?.lockedAt;
+  // Ended (past its end time): only Duplicate and Delete; Edit Details stays only to move a copy with no photos yet
+  const ended = !!data?.ended || !!data?.expired;
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -266,18 +268,25 @@ export default function EventGeniePage() {
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <h2 className="text-xl sm:text-2xl font-bold">{data.event.title}</h2>
                   {data.settings && <Badge variant={data.settings.enabled ? 'success' : 'default'}>{data.settings.enabled ? 'Genie on' : 'Genie off'}</Badge>}
-                  {data.expired ? <Badge variant="default">Expired</Badge> : started && <Badge variant="info">Started</Badge>}
+                  {data.expired ? <Badge variant="default">Expired</Badge> : ended ? <Badge variant="default">Ended</Badge> : started && <Badge variant="info">Started</Badge>}
                 </div>
                 <p className="text-sm text-gray-500">{fmtDate(data.event.eventDate, 'UTC')}{data.event.boothEvent && data.event.venueName ? ` · ${data.event.venueName}` : ''}{data.settings ? ` · Bundle version ${data.settings.bundleVersion}` : ''}</p>
               </div>
               {data.event.boothEvent && (
                 <div className="flex gap-2">
-                  {!data.expired && <Button variant="outline" size="sm" onClick={() => setEditing(true)}><Pencil className="w-3.5 h-3.5 mr-1"/>Edit Details</Button>}
+                  {!(ended && data.hasGuestSessions !== false) && <Button variant="outline" size="sm" onClick={() => setEditing(true)}><Pencil className="w-3.5 h-3.5 mr-1"/>Edit Details</Button>}
                   <Button variant="outline" size="sm" onClick={() => { setDuplicateError(''); setDuplicating(true); }}><Copy className="w-3.5 h-3.5 mr-1"/>Duplicate</Button>
                   <Button variant="ghost" size="sm" onClick={() => { setDeleteError(''); setDeleting(true); }}><Trash2 className="w-3.5 h-3.5 mr-1"/>Delete</Button>
                 </div>
               )}
             </div>
+
+            {ended && !data.expired && (
+              <div className="flex items-start gap-2 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                <Lock className="w-4 h-4 mt-0.5 flex-shrink-0 text-gray-400"/>
+                <span>This event has ended, so its setup can no longer change and iPads can&apos;t load it. {data.event.boothEvent ? 'Duplicate makes a copy starting today with the same setup.' : 'Duplicate it from the event page (•••) to run it again, starting today with the same setup.'}</span>
+              </div>
+            )}
 
             {data.expired && (
               <div className="flex items-start gap-2 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
@@ -286,7 +295,7 @@ export default function EventGeniePage() {
               </div>
             )}
 
-            {data.settings && !data.expired && (data.billing.amountDueCents > 0 ? (
+            {data.settings && !ended && (data.billing.amountDueCents > 0 ? (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                 <span className="flex items-start gap-2 flex-1"><AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
                   <span>
@@ -337,13 +346,15 @@ export default function EventGeniePage() {
               </Card>
             ) : form && (
               <>
-                {started && (
+                {started && !ended && (
                   <div className="flex items-start gap-2 text-sm text-[#0073E6] bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
                     <Lock className="w-4 h-4 mt-0.5 flex-shrink-0"/>
                     <span>Started {fmtDateTime(data.lockedAt, tz)}. You can still change anything here, and iPads pick it up between guests. Only the date and times can no longer change.</span>
                   </div>
                 )}
 
+                {/* An ended event can only be duplicated: its setup is read-only (G, 2026-11-20) */}
+                <fieldset disabled={ended} className="space-y-6 min-w-0">
                 <Section icon={Settings2} title="Details">
                   <Toggle checked={form.enabled} onChange={v => setForm({ ...form, enabled: v })} label="Genie on for this event" hint="Off hides the event from your iPads."/>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -389,8 +400,8 @@ export default function EventGeniePage() {
                   <BoomerangFields eventId={eventId} value={form.boomerang} onChange={p => set('boomerang', p)}/>
                 </Section>
 
-                <GenieTemplates eventId={eventId} templates={data.templates} shotCount={form.capture.shotCount} locked={false} onChange={() => { setBundle(null); load(false); }} approvedDesign={data.approvedDesign} briefTemplate={data.briefTemplate}/>
-                <GenieTemplateText eventId={eventId} locked={false} version={data.templates.map(t => t.id + ':' + (t.designId ?? '') + ':' + (t.alternateLayout ? 1 : 0)).join()} onChange={() => setBundle(null)}/>
+                <GenieTemplates eventId={eventId} templates={data.templates} shotCount={form.capture.shotCount} locked={ended} onChange={() => { setBundle(null); load(false); }} approvedDesign={data.approvedDesign} briefTemplate={data.briefTemplate}/>
+                <GenieTemplateText eventId={eventId} locked={ended} version={data.templates.map(t => t.id + ':' + (t.designId ?? '') + ':' + (t.alternateLayout ? 1 : 0)).join()} onChange={() => setBundle(null)}/>
 
                 <Section icon={ImageIcon} title="Virtual backdrop" description="Background removal: guests on a backdrop instead of the room. This event only.">
                   <EventBackdropsFields value={form.backgroundRemoval} chosen={data.chosenBackdrops} onChange={p => set('backgroundRemoval', p)}/>
@@ -485,6 +496,7 @@ export default function EventGeniePage() {
                   right={<DefaultState custom={data.settings.custom.printing} onReset={() => resetSection('printing', 'Printing')}/>}>
                   <PrintingFields value={form.printing} onChange={p => set('printing', p)}/>
                 </Section>
+                </fieldset>
 
                 <GenieEventDevices eventId={eventId}/>
                 <GenieShares eventId={eventId} timeZone={form.timeZone}/>
@@ -511,7 +523,7 @@ export default function EventGeniePage() {
         )}
       </div>
 
-      {(dirty || saveError || savedAt) && data?.settings && (
+      {(dirty || saveError || savedAt) && data?.settings && !ended && (
         <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white border-t border-gray-200 pl-4 sm:pl-8 pr-20 sm:pr-24 py-3 flex items-center justify-end gap-3 z-30">
           {saveError ? <p className="text-sm text-red-600 mr-auto">{saveError}</p> : dirty ? <p className="text-sm text-gray-500 mr-auto">Unsaved changes</p> : <p className="text-sm text-green-700 mr-auto">Saved. iPads pick it up on their next sync.</p>}
           {dirty && <Button variant="outline" onClick={() => { setForm(toForm(data.settings!)); setSaveError(''); }}>Discard</Button>}

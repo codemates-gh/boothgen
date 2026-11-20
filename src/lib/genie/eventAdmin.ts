@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { Event, EventGenieSettings, EventGenieTemplate, GenieMessagingConfig } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { emailConfigured, platformDomainError, smsConfigured, type MessagingRoutes } from './messaging';
-import { effectiveLockedAt, isValidTimeZone } from './bundle';
+import { effectiveLockedAt, eventEndsAt, isValidTimeZone } from './bundle';
 import { BOOMERANG_ASPECT, BOOMERANG_DEFAULT, BoomerangSettings, LOOK_AT_CAMERA_DEFAULT, LookAtCamera, StoredLayout } from './schemas';
 import { verifyAsset } from './templateAssets';
 import { boomerangDesignProblem, storedBoomerang, type StoredBoomerang } from './boomerang';
@@ -30,6 +30,15 @@ export async function findAdminEvent(tenantId: string, eventId: string) {
 
 export function isLocked(event: Pick<Event, 'eventDate' | 'startTime'> & { genieSettings: EventGenieSettings | null }): boolean {
   return !!event.genieSettings && effectiveLockedAt(event, event.genieSettings) !== null;
+}
+
+// Over at its end time (else the end of its day in its time zone). An ended event can only be duplicated (G 2026-11-20)
+export function hasEnded(event: Pick<Event, 'eventDate' | 'startTime' | 'endTime'> & { genieSettings: Pick<EventGenieSettings, 'timeZone'> | null }, now = new Date()): boolean {
+  return eventEndsAt(event, event.genieSettings?.timeZone ?? 'UTC') <= now;
+}
+
+export function endedResponse() {
+  return NextResponse.json({ error: 'This event has ended, so it can no longer change. Duplicate it to run it again.', code: 'ended' }, { status: 409 });
 }
 
 // ── Filters ─────────────────────────────────────────────────────────────────

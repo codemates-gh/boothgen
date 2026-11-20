@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
 import { BoothEventInput, boothEventFields, isBoothClient } from '@/lib/genie/boothEvents';
 import { effectiveLockedAt } from '@/lib/genie/bundle';
+import { endedResponse, hasEnded } from '@/lib/genie/eventAdmin';
 
 // A booth event's details (name, date, times, venue). CRM events are edited from the CRM event page.
 async function findBoothEvent(tenantId: string, id: string) {
@@ -24,12 +25,16 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   }
   const event = await findBoothEvent(auth.tenantId, params.id);
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  const guestSessions = await prisma.genieSession.count({ where: { eventId: event.id, deletedAt: null } });
+  // An ended event can only be duplicated. One that never had guests (e.g. a copy whose times today already passed)
+  // can still be moved to a later date
+  if (guestSessions && hasEnded(event)) return endedResponse();
   const timeZone = event.genieSettings?.timeZone ?? 'UTC';
   const fields = boothEventFields({ ...parsed.data, timeZone });
   if ('error' in fields) return NextResponse.json({ error: fields.error }, { status: 400 });
   // Once the event has started and guests took photos, the name and venue can change but not when it happens. Before
   // any photos (e.g. a copy that kept a date that's already here), it can still be moved; a later date unlocks it.
-  if (event.genieSettings && effectiveLockedAt(event, event.genieSettings) && await prisma.genieSession.count({ where: { eventId: event.id, deletedAt: null } })) {
+  if (event.genieSettings && effectiveLockedAt(event, event.genieSettings) && guestSessions) {
     const same = (a: Date | null, b: Date | null) => (a?.getTime() ?? null) === (b?.getTime() ?? null);
     if (!same(fields.eventDate, event.eventDate) || !same(fields.startTime, event.startTime) || !same(fields.endTime, event.endTime)) {
       return NextResponse.json({ error: 'The event has started, so its date and times can no longer change', code: 'locked' }, { status: 409 });

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { requireGenieAdmin } from '@/lib/genie/admin';
-import { findAdminEvent, templateView } from '@/lib/genie/eventAdmin';
+import { endedResponse, findAdminEvent, hasEnded, templateView } from '@/lib/genie/eventAdmin';
 import { applyArtwork, latestApprovedDesign, loadDesignArtwork } from '@/lib/genie/approvedDesign';
 import type { StoredLayout } from '@/lib/genie/schemas';
 
@@ -22,6 +22,7 @@ export async function POST(
   if (!parsed.success) return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   const event = await findAdminEvent(auth.tenantId, params.id);
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (hasEnded(event)) return endedResponse();
   const template = await prisma.eventGenieTemplate.findFirst({ where: { id: params.templateId, eventId: event.id, tenantId: auth.tenantId } });
   if (!template) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
