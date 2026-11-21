@@ -288,8 +288,10 @@ export const TITLE_TOKENS = { event: '{event}', date: '{date}' };
 
 // The 360 blocks. mode "setup": everything (Genie → Genie 360, what new 360 events start from). mode "event": the
 // quick tweaks an event changes (style, song, design and title, recording light, length, background removal).
-export function Spin360Editor({ value, onChange, lib, onLibrary, mode, eventTitle, eventDate, disabled }: {
+export function Spin360Editor({ value, onChange, lib, onLibrary, mode, eventTitle, eventDate, disabled, onCopyStyle }: {
   value: Spin360Value; onChange: (p: Partial<Spin360Value>) => void; lib: Library; onLibrary: () => Promise<unknown> | void; mode: 'setup' | 'event';
+  // Genie 360 page: "Copy to My styles" for the chosen style
+  onCopyStyle?: (id: string) => void;
   eventTitle?: string; eventDate?: string | null; disabled?: boolean;
 }) {
   const setup = mode === 'setup';
@@ -336,6 +338,9 @@ export function Spin360Editor({ value, onChange, lib, onLibrary, mode, eventTitl
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {lib.styles.map(s => <StyleCard key={s.id} style={s} selected={s.id === value.styleId} disabled={disabled} onPick={() => pickStyle(s)}/>)}
         </div>
+        {onCopyStyle && style && (
+          <Button type="button" variant="outline" size="sm" className="mt-2" disabled={disabled} onClick={() => onCopyStyle(style.id)}>Copy {style.name} to My styles</Button>
+        )}
       </Field>
 
       <Field label="2. Music">
@@ -540,6 +545,94 @@ function BackgroundRemovalField({ value, lib, onChange, disabled }: { value: Spi
   );
 }
 
+// The event's quick changes: one compact row each, picking from what's set up on the Genie 360 page
+function QuickTweaks({ value, onChange, lib, eventTitle, eventDate, disabled }: {
+  value: Spin360Value; onChange: (p: Partial<Spin360Value>) => void; lib: Library; eventTitle: string; eventDate: string | null; disabled?: boolean;
+}) {
+  const [designError, setDesignError] = useState('');
+  const track = value.music ? lib.music.find(t => t.id === value.music!.trackId) : undefined;
+  function pickStyle(id: string) {
+    const st = lib.styles.find(x => x.id === id);
+    if (!st) return;
+    onChange({
+      styleId: st.id, segments: null, captureFps: null,
+      ...(st.defaultEffects.lightTrails !== undefined ? { lightTrails: { ...value.lightTrails, enabled: st.defaultEffects.lightTrails } } : {}),
+      ...(st.defaultEffects.backgroundRemoval !== undefined ? { backgroundRemoval: { ...value.backgroundRemoval, enabled: st.defaultEffects.backgroundRemoval, backdropId: value.backgroundRemoval.backdropId ?? (st.defaultEffects.backgroundRemoval ? lib.backdrops[0]?.id ?? null : null) } } : {}),
+    });
+  }
+  const date = eventDate ? new Date(eventDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+      <Field label="Style">
+        <Select value={value.styleId} disabled={disabled} onChange={e => pickStyle(e.target.value)}>
+          {lib.styles.map(st => <option key={st.id} value={st.id}>{st.name}{st.source === 'account' ? ' (my style)' : ''}: {st.description}</option>)}
+        </Select>
+        {value.segments && <p className="text-xs text-gray-500 mt-1">This event has its own speed ramp (from the Genie 360 setup).</p>}
+      </Field>
+      <Field label="Song">
+        <div className="flex gap-2 items-center">
+          <Select value={value.music?.trackId ?? ''} disabled={disabled} onChange={e => onChange({ music: e.target.value ? { trackId: e.target.value, startMs: 0, volume: value.music?.volume ?? 0.8 } : null })}>
+            <option value="">No music</option>
+            {lib.music.map(t => <option key={t.id} value={t.id}>{t.name} ({mmss(t.durationMs)})</option>)}
+          </Select>
+          {track && value.music && (
+            <label className="flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap">from
+              <Input type="number" className="w-20" min={0} max={Math.floor(track.durationMs / 1000) - 1} disabled={disabled} value={Math.round(value.music.startMs / 1000)}
+                onChange={e => onChange({ music: { ...value.music!, startMs: Math.max(0, (parseInt(e.target.value, 10) || 0) * 1000) } })}/>s
+            </label>
+          )}
+        </div>
+      </Field>
+      <Field label="Shape">
+        <Select value={value.format} disabled={disabled} onChange={e => { setDesignError(''); const f = e.target.value as SpinFormat; onChange({ format: f, ...(value.design && f !== value.format ? { design: null } : {}) }); }}>
+          {SPIN_FORMATS.map(f => <option key={f} value={f}>{SPIN_FORMAT_LABELS[f]}</option>)}
+        </Select>
+        <p className="text-xs text-gray-500 mt-1">{SPIN_MOUNT_HINT}</p>
+      </Field>
+      <Field label="Recording light">
+        <Select value={value.recordingLight.mode} disabled={disabled} onChange={e => onChange({ recordingLight: { ...value.recordingLight, mode: e.target.value as Spin360Value['recordingLight']['mode'] } })}>
+          {LIGHT_MODE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </Select>
+      </Field>
+      <div className="sm:col-span-2">
+        <Field label="Design">
+          <BoomerangTemplateField noun="360 video" format={value.format} design={value.design} designProblem={null} overlay={null} disabled={disabled}
+            onChange={p => {
+              if (p.design && p.format && !(SPIN_FORMATS as readonly string[]).includes(p.format)) { setDesignError('Genie 360 videos are portrait 9:16, square or landscape 16:9. Pick a layout at one of those shapes.'); return; }
+              setDesignError('');
+              onChange({ ...(p.design !== undefined ? { design: p.design } : {}), ...(p.format && p.design ? { format: p.format as SpinFormat } : {}) });
+            }}/>
+          {designError && <p className="text-xs text-red-600 mt-1">{designError}</p>}
+        </Field>
+      </div>
+      <Field label="Title text">
+        <div className="space-y-2">
+          <Toggle checked={!!value.title} disabled={disabled} label="Words over the video"
+            onChange={on => onChange({ title: on ? { lines: [eventTitle.slice(0, 40), date].filter(Boolean), color: '#FFFFFF', font: 'montserrat', animation: 'fade', position: 'bottom' } : null })}/>
+          {value.title && [0, 1].map(i => (
+            <Input key={i} maxLength={40} disabled={disabled} placeholder={i === 0 ? 'Line 1' : 'Line 2 (optional)'} value={value.title!.lines[i] ?? ''}
+              onChange={e => { const lines = [...value.title!.lines]; lines[i] = e.target.value; onChange({ title: { ...value.title!, lines: lines.slice(0, 2).filter((l, j) => j === 0 || l !== '') } }); }}/>
+          ))}
+        </div>
+      </Field>
+      <Field label="Video length (seconds)" hint="8–30, with any intro and outro.">
+        <Input type="number" className="w-24" min={8} max={30} disabled={disabled} value={Number.isNaN(value.videoSeconds) ? '' : value.videoSeconds} onChange={e => onChange({ videoSeconds: parseInt(e.target.value, 10) })}/>
+      </Field>
+      <div className="sm:col-span-2 space-y-2">
+        <Toggle checked={value.backgroundRemoval.enabled} disabled={disabled} label="Background removal" hint="Guests on a backdrop instead of the room."
+          onChange={enabled => onChange({ backgroundRemoval: { ...value.backgroundRemoval, enabled, backdropId: value.backgroundRemoval.backdropId ?? (enabled ? lib.backdrops[0]?.id ?? null : null) } })}/>
+        {value.backgroundRemoval.enabled && (
+          <div className="ml-[52px] max-w-sm">
+            <Select value={value.backgroundRemoval.backdropId ?? ''} disabled={disabled} onChange={e => onChange({ backgroundRemoval: { ...value.backgroundRemoval, backdropId: e.target.value || null } })}>
+              {lib.backdrops.map(b => <option key={b.id} value={b.id}>{b.name}{b.is360 ? ' (360)' : ''}</option>)}
+            </Select>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // The event's Genie 360 section: on/off (the add-on), a link to the Genie 360 page, and the quick tweaks. Turning it on
 // copies the account's Genie 360 setup onto the event; the event's own changes stay on the event.
 export function Genie360Fields({ value, onChange, priceCents, eventTitle, eventDate, disabled }: {
@@ -596,7 +689,7 @@ export function Genie360Fields({ value, onChange, priceCents, eventTitle, eventD
           <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={() => { if (confirm('Turn Genie 360 off for this event? Its 360 choices are kept if you add it again.')) onChange({ enabled: false }); }}>Turn off</Button>
         </div>
       </div>
-      {lib ? <Spin360Editor mode="event" value={value} onChange={onChange} lib={lib} onLibrary={loadLib} eventTitle={eventTitle} eventDate={eventDate} disabled={disabled}/>
+      {lib ? <QuickTweaks value={value} onChange={onChange} lib={lib} eventTitle={eventTitle} eventDate={eventDate} disabled={disabled}/>
         : <p className="text-sm text-gray-400">Loading…</p>}
     </div>
   );

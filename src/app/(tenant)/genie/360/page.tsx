@@ -108,7 +108,6 @@ export default function Genie360Page() {
   }
 
   const mine = lib?.styles.filter(s => s.source === 'account') ?? [];
-  const standard = lib?.styles.filter(s => s.source !== 'account') ?? [];
   const songs = lib?.music.filter(t => t.source === 'account') ?? [];
   const overlays = lib?.overlays.filter(o => o.source === 'account') ?? [];
   const dirty = !!setup && JSON.stringify(setup) !== saved;
@@ -139,10 +138,10 @@ export default function Genie360Page() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><RotateCw className="w-4 h-4"/>My styles</CardTitle>
-                <p className="text-sm text-gray-500 mt-1">Your own speed ramps. Copy a style to start one, then change its pieces: forward or rewind, how fast, and how they join.</p>
+                <p className="text-sm text-gray-500 mt-1">Your own speed ramps, next to the Standard styles everywhere you pick one. Change their pieces: forward or rewind, how fast, and how they join.</p>
               </CardHeader>
               <CardContent className="space-y-3">
-                {mine.length === 0 ? <p className="text-sm text-gray-500">None yet. Use Copy on any style below.</p> : (
+                {mine.length === 0 ? <p className="text-sm text-gray-500">None yet. Pick a style in the setup below and use &ldquo;Copy to My styles&rdquo;.</p> : (
                   <div className="border border-gray-100 rounded-lg divide-y divide-gray-100">
                     {mine.map(s => (
                       <div key={s.id} className="flex items-center gap-3 p-3">
@@ -155,31 +154,13 @@ export default function Genie360Page() {
                     ))}
                   </div>
                 )}
-                <p className="text-sm font-medium pt-2">Standard styles</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                  {standard.map(s => (
-                    <div key={s.id} className="rounded-xl border border-gray-100 overflow-hidden">
-                      <div className="relative aspect-[9/16] max-h-48 w-full bg-gray-900 flex items-center justify-center">
-                        {s.sampleVideo
-                          ? <video src={artUrl(s.sampleVideo)} poster={s.samplePoster ? artUrl(s.samplePoster) : undefined} muted loop autoPlay playsInline className="w-full h-full object-cover"/>
-                          : <div className="w-full px-3"><RampDrawing segments={s.segments} className="h-14"/></div>}
-                        {s.sampleVideo && <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px] font-medium">Example</span>}
-                      </div>
-                      <div className="p-2 space-y-1">
-                        <p className="text-sm font-semibold">{s.name}</p>
-                        <p className="text-xs text-gray-500 leading-snug">{s.description}</p>
-                        <Button variant="outline" size="sm" onClick={() => call('/api/genie-360/styles', json('POST', { fromId: s.id }))}><Copy className="w-3.5 h-3.5 mr-1"/>Copy</Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>My songs and animated overlays</CardTitle>
-                <p className="text-sm text-gray-500 mt-1">Songs you upload (with the rights box) are in the Music list below and on every event. Animated overlays move on top of every frame.</p>
+                <CardTitle>My songs and overlays</CardTitle>
+                <p className="text-sm text-gray-500 mt-1">Rename or delete the songs you uploaded (upload new ones in Music below). Animated overlays move on top of every frame; pick one under Advanced.</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 {songs.length > 0 && (
@@ -236,7 +217,11 @@ export default function Genie360Page() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Spin360Editor mode="setup" value={setup} lib={lib} onLibrary={loadLib} onChange={p => setSetup(s => s && ({ ...s, ...p }))}/>
+                <Spin360Editor mode="setup" value={setup} lib={lib} onLibrary={loadLib} onChange={p => setSetup(s => s && ({ ...s, ...p }))}
+                  onCopyStyle={async id => { const d = await call('/api/genie-360/styles', json('POST', { fromId: id })); if (d?.style) setEditing(d.style); }}/>
+                <div className="flex justify-end pt-4 border-t mt-6">
+                  <Button onClick={saveSetup} disabled={saving || !dirty}>{saving ? 'Saving…' : savedAt && !dirty ? '✓ Saved' : 'Save setup'}</Button>
+                </div>
               </CardContent>
             </Card>
           </>

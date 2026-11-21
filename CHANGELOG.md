@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.134.1] — 2026-11-21
+
+### Changed
+- **Genie 360: less repetition between the page and the event.**
+  - **The event's section** is now a short form of dropdowns, with no big style cards or music list: style, song and start time, shape, recording light, design, title text, video length, and background removal with its backdrop.
+  - **The Genie 360 page** shows the style cards once, in the setup. "Copy *style* to My styles" makes your own copy and opens it for editing.
+  - **Save setup** is now also at the bottom of the setup.
+
 ## [2.134.0] — 2026-11-21
 
 ### Changed
