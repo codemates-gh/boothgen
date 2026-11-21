@@ -84,6 +84,30 @@ export function FeatureSection({ feature, usedBy, right, children }: { feature: 
   );
 }
 
+// A section without an on/off switch that can still be folded from its header (open by default; remembered per browser)
+export function FoldSection({ id, icon: Icon, title, description, right, children }: { id: string; icon: any; title: string; description?: string; right?: React.ReactNode; children: React.ReactNode }) {
+  const [folded, setFolded] = useState(false);
+  useEffect(() => { try { setFolded(localStorage.getItem(foldKey(id)) === '1'); } catch { /* private mode */ } }, [id]);
+  const fold = (v: boolean) => { setFolded(v); try { v ? localStorage.setItem(foldKey(id), '1') : localStorage.removeItem(foldKey(id)); } catch { /* ignore */ } };
+  return (
+    <Card id={id} className="scroll-mt-20">
+      <CardHeader className={folded ? 'pb-6' : undefined}>
+        <div className="flex items-start gap-3">
+          <button type="button" onClick={() => fold(!folded)} className="flex-1 min-w-0 text-left" aria-expanded={!folded}>
+            <CardTitle className="flex items-center gap-2">
+              {folded ? <ChevronRight className="w-4 h-4 text-gray-400"/> : <ChevronDown className="w-4 h-4 text-gray-400"/>}
+              <Icon className="w-4 h-4"/>{title}
+            </CardTitle>
+            {description && <p className="text-sm text-gray-500 mt-1 ml-6">{description}</p>}
+          </button>
+          {!folded && right}
+        </div>
+      </CardHeader>
+      {!folded && <CardContent className="space-y-4">{children}</CardContent>}
+    </Card>
+  );
+}
+
 // A heading between groups of sections
 export function GroupHeading({ title, hint }: { title: string; hint?: string }) {
   return (

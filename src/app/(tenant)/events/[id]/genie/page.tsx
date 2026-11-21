@@ -31,7 +31,7 @@ import { GeniefiedFields, type AiBoothValue, type GeniefiedInfo } from './Genief
 import { SharingStationFields, type SharingStationValue } from './SharingStation';
 import { VideoBoothFields, videoBoothBody, videoBoothNumbersFilled, type VideoBoothValue } from './VideoBooth';
 import { Genie360Fields, spin360Body, spin360FromSetupFor, spin360NumbersFilled, type Spin360Value } from './Genie360';
-import { FeaturePanel, FeatureSection, GroupHeading, type Feature } from './Features';
+import { FeaturePanel, FeatureSection, FoldSection, GroupHeading, type Feature } from './Features';
 
 type Settings = {
   enabled: boolean; photosEnabled: boolean; timeZone: string; bundleVersion: number; maxDevices: number; capture: Capture;
@@ -403,12 +403,12 @@ export default function EventGeniePage() {
                   </div>
                 </Section>
 
-                <Section icon={MonitorPlay} title="Attract screen" description="What the iPad shows between guests."
+                <FoldSection id="attract" icon={MonitorPlay} title="Attract screen" description="What the iPad shows between guests."
                   right={<DefaultState custom={data.settings.custom.attract} onReset={() => resetSection('attract', 'the attract screen')}/>}>
                   <AttractFields value={form.attract} onChange={p => set('attract', p)}/>
-                </Section>
+                </FoldSection>
 
-                <Section icon={Share2} title="Sharing" description="How guests get their photos from the iPad."
+                <FoldSection id="sharing" icon={Share2} title="Sharing" description="How guests get their photos from the iPad."
                   right={<DefaultState custom={data.settings.custom.sharing} onReset={() => resetSection('sharing', 'Sharing')}/>}>
                   {data.providerWarnings.map(w => (
                     <div key={w.channel} className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
@@ -427,13 +427,13 @@ export default function EventGeniePage() {
                   <div className="border-t pt-4">
                     <SharingStationFields value={form.sharingStation} onChange={p => set('sharingStation', p)}/>
                   </div>
-                </Section>
+                </FoldSection>
 
-                <Section icon={ImageIcon} title="Gallery" description="The event's gallery of photos for your client."
+                <FoldSection id="gallery" icon={ImageIcon} title="Gallery" description="The event's gallery of photos for your client."
                   right={<DefaultState custom={data.settings.custom.gallery} onReset={() => resetSection('gallery', 'Gallery')}/>}>
                   <GalleryFields value={form.gallery} onChange={p => set('gallery', p)}/>
                   {data.settings.gallery.autoPublishedAt && <p className="text-xs text-gray-500">Published automatically on {fmtDateTime(data.settings.gallery.autoPublishedAt, tz)}.</p>}
-                </Section>
+                </FoldSection>
 
                 <FeaturePanel features={features} disabled={ended}/>
 
@@ -488,7 +488,7 @@ export default function EventGeniePage() {
                   </>
                 )}
                 {(form.photosEnabled || form.boomerang.enabled) && (
-                <Section icon={Camera} title="Capture" description="Countdowns, previews and retakes for photos and Boomerangs."
+                <FoldSection id="capture" icon={Camera} title="Capture" description="Countdowns, previews and retakes for photos and Boomerangs."
                   right={<DefaultState custom={data.settings.custom.capture} onReset={() => resetSection('capture', 'Capture')}/>}>
                   <CaptureFields value={form.capture} onChange={cap}>
                     {mismatched.length > 0 && (
@@ -507,7 +507,7 @@ export default function EventGeniePage() {
                   <div className="border-t pt-4">
                     <LookAtCameraFields value={form.lookAtCamera} onChange={p => set('lookAtCamera', p)}/>
                   </div>
-                </Section>
+                </FoldSection>
                 )}
 
                 <GroupHeading title="More ways to use the booth"/>

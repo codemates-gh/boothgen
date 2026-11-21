@@ -4,6 +4,11 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.135.1] — 2026-11-21
+
+### Changed
+- **Event → Genie:** Attract screen, Sharing, Gallery and Capture can now be folded and opened from their headers, like the feature sections. Details stays open. Each browser remembers which sections are folded.
+
 ## [2.135.0] — 2026-11-21
 
 ### Changed
