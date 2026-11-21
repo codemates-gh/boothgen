@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.135.5] — 2026-11-21
+
+### Added
+- **iPad label from the iPad:** new `PATCH /api/genie/device` (Genie `renameDevice`, schema DeviceRename) lets the iPad set its own name (e.g. "Booth 1"), the same name BoothGen's Rename sets on the Genie devices page. Trimmed, 1–80 characters; the config then answers it as `deviceName`.
+
+---
+
 ## [2.135.4] — 2026-11-21
 
 ### Added
