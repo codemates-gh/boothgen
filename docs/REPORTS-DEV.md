@@ -68,3 +68,17 @@ node --env-file=.env scripts/dev-roadmap.mjs move animated-gif --top | --before 
 ```
 
 Linking suggestions to items is done by G in Super Admin (a suggestion's panel → **Add to roadmap**).
+
+## Production SQL (for every session)
+
+Schema changes reach production by hand: G runs a `docs/genie/apply-production-*.sql` file in the Neon SQL Editor
+(production branch) before the code that needs it deploys.
+
+- **Adding or changing an apply-production file:** in the same commit, regenerate the check with
+  `node scripts/genie-sql-check.mjs`. It rewrites `docs/genie/check-production-sql.sql` from every apply-production
+  file's `ADD COLUMN` / `CREATE TABLE` lines. `tests/genie/sql-check.test.ts` fails while the check is out of date.
+  Don't edit the check by hand. Data fixes that aren't schema changes go in `EXTRA_ROWS` in the script.
+- **Handing SQL to G:** name the file and what its own check returns, and always end with:
+  "Then run docs/genie/check-production-sql.sql to confirm."
+- **The check** is read-only. It lists one row per file (applied / NOT RUN / PARTIAL), with not-run files first.
+  Run anything NOT RUN or PARTIAL; each apply file is safe to re-run.

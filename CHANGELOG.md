@@ -12,6 +12,12 @@ All notable changes to BoothGen (Booth Genius) are documented here.
   - **Needs SQL:** `docs/genie/apply-production-geniefied-title.sql`.
   - **Needs the Genie build** that reads it. Older iPads keep showing the title.
 
+### Changed
+- **Production SQL check is now generated.** `docs/genie/check-production-sql.sql` is built from every `apply-production-*.sql` file by `node scripts/genie-sql-check.mjs`:
+  - one row per file, applied / NOT RUN / PARTIAL, not-run files first, plus the early-completed-events data check;
+  - a test fails whenever the check is out of date;
+  - the rule for sessions is in docs/REPORTS-DEV.md → Production SQL.
+
 ## [2.132.0] — 2026-11-21
 
 ### Added
