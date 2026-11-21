@@ -46,7 +46,7 @@ async function setup(opts: { genieSetUp?: boolean; started?: boolean; size?: [nu
   const { tenant, client } = await seedTenant();
   tenantId = tenant.id;
   const event = await seedEvent(tenant.id, client.id, { settings: opts.genieSetUp ?? true, templates: opts.genieSetUp === false ? 0 : 1 });
-  if (opts.started) await prisma.event.update({ where: { id: event.id }, data: { startTime: new Date(Date.now() - 3600_000), eventDate: new Date(Date.now() - 3600_000) } });
+  if (opts.started) await prisma.event.update({ where: { id: event.id }, data: { startTime: new Date(Date.now() - 3600_000), eventDate: new Date(new Date(Date.now() - 86400_000).toISOString().slice(0, 10)) } });
   const lib = await prisma.boothDesignTemplate.create({ data: { tenantId: null, name: PREFIX + randomUUID().slice(0, 6), format: '2x6', orientation: 'portrait', isPublished: true, layout: STRIP } });
   await prisma.eventDesignBrief.create({ data: { tenantId: tenant.id, eventId: event.id, templateId: lib.id, status: 'SUBMITTED' } });
   const key = `templates/${tenant.id}/${randomUUID()}.png`;

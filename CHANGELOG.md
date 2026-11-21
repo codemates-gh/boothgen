@@ -4,6 +4,18 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.131.1] — 2026-11-21
+
+### Fixed
+- **Geniefied themes missing on the iPad.** An event with 12 themes showed only 9. The iPad drops any theme whose sample or thumbnail doesn't match what the bundle says it is (fingerprint, size, JPEG/PNG), or that won't download. Each time an event's bundle is built, BoothGen now checks every theme's files against storage, at most every 10 minutes per theme, and fixes whatever's off:
+  - wrong fingerprint or size: corrected;
+  - a file that isn't JPEG or PNG: stored again as a JPEG;
+  - a file that won't open at its public address: written again;
+  - a missing thumbnail: remade from the sample;
+  - a missing sample: replaced by a placeholder.
+
+  A fix changes the bundle, so iPads download the theme again by themselves. Each fix is logged with what was wrong.
+
 ## [2.131.0] — 2026-11-21
 
 ### Added

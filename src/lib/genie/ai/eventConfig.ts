@@ -3,6 +3,7 @@ import type { EventGenieSettings } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
 import { DEFAULT_CONSENT_TEXT, DEFAULT_READY_TEXT } from './settings';
 import { eventThemes, storedThemeIds, themeAsset } from './themes';
+import { verifyThemeFiles } from './themeFiles';
 
 // The event's Geniefied section (Genie P13) and EventBundle.aiBooth (Genie shared/schemas/AiBoothConfig.json)
 
@@ -53,7 +54,7 @@ export const readyTextFor = (s: Pick<EventGenieSettings, 'aiReadyText'>) => s.ai
 // render and would change the bundle version (the render answer carries it).
 export async function bundleAiBooth(s: EventGenieSettings, tenantId: string, available: boolean) {
   if (!available || !s.aiEnabled) return undefined;
-  const themes = (await eventThemes(s.aiThemeIds, tenantId)).map(themeAsset).filter((t): t is NonNullable<ReturnType<typeof themeAsset>> => !!t);
+  const themes = (await Promise.all((await eventThemes(s.aiThemeIds, tenantId)).map(t => verifyThemeFiles(t)))).map(themeAsset).filter((t): t is NonNullable<ReturnType<typeof themeAsset>> => !!t);
   if (!themes.length) return undefined;
   const fixed = s.aiMode === 'fixedTheme' && themes.some(t => t.id === s.aiFixedThemeId) ? s.aiFixedThemeId! : null;
   const mode = s.aiMode === 'fixedTheme' && !fixed ? 'beforeStart' : s.aiMode as AiMode;
