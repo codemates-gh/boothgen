@@ -8,7 +8,7 @@ import { Modal } from '@/components/ui/modal';
 import { Field, artUrl } from './parts';
 import { putWithProgress } from './SettingsForms';
 
-// Geniefied themes: shared pieces for Super Admin → AI themes and Genie → Themes
+// Geniefied themes: shared pieces for Super Admin → AI themes and Genie → Geniefied Themes
 
 type RemoteAsset = { url: string; sha256: string; contentType: string; bytes: number };
 export type AiTheme = {

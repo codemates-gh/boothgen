@@ -7,7 +7,7 @@ import { Modal } from '@/components/ui/modal';
 import { Pencil, Trash2, Plus, Sparkles, Wand2 } from 'lucide-react';
 import { THEME_NO_SAMPLE_NOTE, ThemeFormModal, ThemeThumb, ThemeTryModal, type AiTheme } from '@/components/genie/AiThemes';
 
-// Genie → Themes: the account's own Geniefied themes next to the Standard ones. Chosen per event on its Genie page.
+// Genie → Geniefied Themes: the account's own Geniefied themes next to the Standard ones. Chosen per event on its Genie page.
 export default function GenieThemesPage() {
   const [data, setData] = useState<{ standard: AiTheme[]; mine: AiTheme[] } | null>(null);
   const [notEnabled, setNotEnabled] = useState(false);
@@ -44,7 +44,7 @@ export default function GenieThemesPage() {
 
   return (
     <>
-      <TopBar title="Themes"/>
+      <TopBar title="Geniefied Themes"/>
       <div className="p-4 sm:p-8 space-y-6 max-w-6xl">
         {notEnabled ? (
           <Card><CardContent className="text-center py-12 text-gray-500">

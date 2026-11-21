@@ -4,6 +4,11 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.130.4] — 2026-11-21
+
+### Changed
+- Genie → **Themes** is now **Geniefied Themes** (sidebar, page title, and the event's Geniefied section link), so it says what the themes are for and matches "Get Geniefied" on the iPad.
+
 ## [2.130.3] — 2026-11-20
 
 ### Changed

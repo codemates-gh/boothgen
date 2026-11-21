@@ -6,7 +6,7 @@ import { keyForUrl, type RemoteAsset } from '../templateAssets';
 import { readImageInfo } from '../image';
 import { placeholderJpeg, toJpeg } from './image';
 
-// Geniefied themes (Genie P13): Standard (Super Admin → AI themes) and My themes (Genie → Themes). The prompt stays in
+// Geniefied themes (Genie P13): Standard (Super Admin → AI themes) and My themes (Genie → Geniefied Themes). The prompt stays in
 // BoothGen; the bundle gets AiThemeAsset (id, name, source, sample, thumbnail). Samples are JPEGs ≤ 1200 px with a
 // 360 px thumbnail, stored content-addressed like pose pictures; until a real one is made, a placeholder (ensurePlaceholders).
 

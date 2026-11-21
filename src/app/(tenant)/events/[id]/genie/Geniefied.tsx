@@ -25,7 +25,7 @@ const MODES = [
 ] as const;
 
 // Event → Genie → Geniefied (Genie P13): the AI photo booth. A paid add-on per event with a render allowance; before it's
-// paid the event has a few trial renders and the watermark. Themes come from Genie → Themes (and BoothGen's Standard set).
+// paid the event has a few trial renders and the watermark. Themes come from Genie → Geniefied Themes (and BoothGen's Standard set).
 export function GeniefiedFields({ value, info, priceCents, disabled, onChange, onTopUp, topUpBusy }: {
   value: AiBoothValue; info: GeniefiedInfo; priceCents: number; disabled?: boolean;
   onChange: (v: Partial<AiBoothValue>) => void; onTopUp: () => void; topUpBusy: boolean;
@@ -93,7 +93,7 @@ export function GeniefiedFields({ value, info, priceCents, disabled, onChange, o
                     ))}
                   </div>
                 )}
-                <p className="text-xs text-gray-500">Make your own in <Link href="/genie/themes" className="text-brand hover:underline">Genie → Themes</Link>.</p>
+                <p className="text-xs text-gray-500">Make your own in <Link href="/genie/themes" className="text-brand hover:underline">Genie → Geniefied Themes</Link>.</p>
               </>
             )}
           </div>
