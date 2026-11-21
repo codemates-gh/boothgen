@@ -4,6 +4,13 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.135.4] — 2026-11-21
+
+### Added
+- **Glamour Style in "What's in this event?"**
+  - **Where:** a switch with its add-on price, shown once Super Admin makes Glamour Style available. Its strength is still set in the Photo booth's filter list.
+  - **Needs:** the Photo booth. Switching photos off removes it, so it isn't charged.
+
 ## [2.135.3] — 2026-11-21
 
 ### Changed

@@ -262,8 +262,14 @@ export default function EventGeniePage() {
         ...(on ? {} : {
           printing: { ...f.printing, enabled: false }, aiBooth: { ...f.aiBooth, enabled: false }, poses: { ...f.poses, enabled: false },
           backgroundRemoval: { ...f.backgroundRemoval, enabled: false }, ...(f.videoBooth.enabled ? {} : { props: { ...f.props, enabled: false } }),
+          filters: withoutGlamour(f.filters),
         }),
       })) },
+    // Glamour Style: the partner filter (a paid add-on), offered once Super Admin makes it available
+    ...(data.billing.glamourStyleReady || form.filters.filterIds.includes('glamourStyle') ? [{ id: 'glamourStyle', icon: Sparkles, title: 'Glamour Style',
+      line: 'The partner skin-retouching filter, on the photos.', badge: fmtPrice(data.billing.addOnPrices.glamourStyle),
+      on: form.filters.filterIds.includes('glamourStyle'), blocked: form.photosEnabled ? undefined : 'Needs the Photo booth.',
+      onToggle: (on: boolean) => setForm(f => f && ({ ...f, filters: on ? withGlamour(f.filters, data.settings!.filters.available.map(a => a.id)) : withoutGlamour(f.filters) })) }] : []),
     { id: 'boomerang', icon: Repeat, title: 'Boomerang', line: 'A short looping clip instead of photos.', on: form.boomerang.enabled, onToggle: on => set('boomerang', { enabled: on }) },
     { id: 'videoBooth', icon: Video, title: 'Video Booth', line: 'Guests record a video message to a prompt.', on: form.videoBooth.enabled,
       onToggle: on => setForm(f => f && ({ ...f, videoBooth: { ...f.videoBooth, enabled: on, offer: f.photosEnabled ? 'alongsidePhotos' : 'videoOnly' }, ...(!on && !f.photosEnabled ? { props: { ...f.props, enabled: false } } : {}) })) },
@@ -282,6 +288,17 @@ export default function EventGeniePage() {
     { id: 'printing', icon: Printer, title: 'Printing', line: 'Prints at the booth.', on: form.printing.enabled, blocked: form.photosEnabled ? undefined : 'Needs the Photo booth.', onToggle: on => set('printing', { enabled: on }) },
   ];
   const feature = (id: string) => features.find(f => f.id === id)!;
+  // Glamour Style is one of the event's filters: switching it on adds it (in the filters' order), off removes it
+  function withGlamour(fl: Form['filters'], order: string[]): Form['filters'] {
+    const ids = order.filter(id => id === 'glamourStyle' || fl.filterIds.includes(id));
+    return { ...fl, filterIds: ids };
+  }
+  function withoutGlamour(fl: Form['filters']): Form['filters'] {
+    const ids = fl.filterIds.filter(id => id !== 'glamourStyle');
+    if (ids.length === fl.filterIds.length) return fl;
+    const keep = ids.length ? ids : ['original'];
+    return { ...fl, filterIds: keep, defaultFilterId: keep.includes(fl.defaultFilterId) ? fl.defaultFilterId : keep[0] };
+  }
   const cap = (patch: Partial<Capture>) => set('capture', patch);
   // Genie-only accounts have no CRM event page or client design approval
   const genieOnly = session?.tenant?.product === 'genie';
