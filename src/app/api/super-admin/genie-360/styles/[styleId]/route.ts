@@ -26,7 +26,7 @@ export async function PATCH(req: NextRequest, props: Ctx) {
   const { styleId } = await props.params;
   const auth = await requireSuperAdminApi();
   if (auth instanceof NextResponse) return auth;
-  const style = await prisma.genieSpinStyle.findUnique({ where: { id: styleId } });
+  const style = await prisma.genieSpinStyle.findFirst({ where: { id: styleId, tenantId: null } });
   if (!style) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid request', path: parsed.error.issues[0]?.path.join('.') }, { status: 400 });

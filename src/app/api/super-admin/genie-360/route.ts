@@ -11,7 +11,7 @@ export async function GET() {
   const auth = await requireSuperAdminApi();
   if (auth instanceof NextResponse) return auth;
   const [ready, prices, styles, music, links, overlays] = await Promise.all([
-    genie360Ready(), addOnPrices(), spinStyles(true),
+    genie360Ready(), addOnPrices(), spinStyles(null, true),
     prisma.genieMusicTrack.findMany({ where: { tenantId: null }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
     prisma.genieMusicLink.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
     prisma.genieSpinOverlay.findMany({ where: { tenantId: null }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),

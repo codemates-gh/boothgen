@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { ChevronDown, ChevronRight, ExternalLink, Music, Pause, Play, Upload, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -21,11 +22,11 @@ import { RampDrawing, RampEditor } from '@/components/genie/SpinRamp';
 // blocks (style, music, design); everything else is under Advanced with good defaults.
 
 export type Spin360Value = StoredSpin360;
-type Style = { id: string; name: string; description: string; captureFps: 120 | 240; segments: Segment[]; defaultMusicId: string | null; defaultEffects: { lightTrails?: boolean; backgroundRemoval?: boolean }; sampleVideo: string | null; samplePoster: string | null };
+type Style = { source?: 'standard' | 'account'; id: string; name: string; description: string; captureFps: 120 | 240; segments: Segment[]; defaultMusicId: string | null; defaultEffects: { lightTrails?: boolean; backgroundRemoval?: boolean }; sampleVideo: string | null; samplePoster: string | null };
 type Track = { id: string; name: string; moods: string[]; url: string; durationMs: number; credit: string | null; source: 'standard' | 'account' };
 type Overlay = { id: string; name: string; url: string; contentType: string; source: 'standard' | 'account' };
 type LibBackdrop = { id: string; name: string; is360: boolean; thumbnail: string };
-type Library = { styles: Style[]; music: Track[]; links: { id: string; name: string; url: string; note: string }[]; overlays: Overlay[]; backdrops: LibBackdrop[] };
+export type Library = { available?: boolean;  styles: Style[]; music: Track[]; links: { id: string; name: string; url: string; note: string }[]; overlays: Overlay[]; backdrops: LibBackdrop[] };
 
 const fmtCents = (c: number) => '$' + (c / 100).toFixed(c % 100 ? 2 : 0);
 const mmss = (ms: number) => { const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
@@ -121,7 +122,8 @@ async function uploadSpinFile(kind: 'music' | 'overlay', file: File, onPct: (n: 
   return sd;
 }
 
-function MusicBlock({ value, lib, onChange, onLibrary, disabled }: { value: Spin360Value; lib: Library; onChange: (p: Partial<Spin360Value>) => void; onLibrary: () => void; disabled?: boolean }) {
+// canUpload: the Genie 360 page (uploads and the royalty-free links); events pick from what's there
+function MusicBlock({ value, lib, onChange, onLibrary, disabled, canUpload = true }: { value: Spin360Value; lib: Library; onChange: (p: Partial<Spin360Value>) => void; onLibrary: () => void; disabled?: boolean; canUpload?: boolean }) {
   const player = usePlayer();
   const [rights, setRights] = useState(false);
   const [busy, setBusy] = useState('');
@@ -169,7 +171,7 @@ function MusicBlock({ value, lib, onChange, onLibrary, disabled }: { value: Spin
             <span className="text-xs text-gray-400 w-10 text-right">{mmss(t.durationMs)}</span>
           </label>
         ))}
-        {lib.music.length === 0 && <p className="px-3 py-2 text-xs text-gray-400">No Standard songs yet. Upload your own below.</p>}
+        {lib.music.length === 0 && <p className="px-3 py-2 text-xs text-gray-400">{canUpload ? 'No Standard songs yet. Upload your own below.' : 'No songs yet. Upload yours on the Genie 360 page.'}</p>}
       </div>
 
       {track && value.music && (
@@ -188,7 +190,7 @@ function MusicBlock({ value, lib, onChange, onLibrary, disabled }: { value: Spin
         </div>
       )}
 
-      {!disabled && (
+      {!disabled && canUpload && (
         <div className="p-3 border border-dashed border-gray-200 rounded-lg space-y-2">
           <p className="text-sm font-medium">Upload a song</p>
           <label className="flex items-start gap-2 text-sm text-gray-700">
@@ -201,7 +203,7 @@ function MusicBlock({ value, lib, onChange, onLibrary, disabled }: { value: Spin
         </div>
       )}
 
-      {lib.links.length > 0 && (
+      {canUpload && lib.links.length > 0 && (
         <div>
           <button type="button" className="text-sm text-brand inline-flex items-center gap-1" onClick={() => setLinks(o => !o)}>
             {links ? <ChevronDown className="w-4 h-4"/> : <ChevronRight className="w-4 h-4"/>}<Music className="w-3.5 h-3.5"/>Find royalty-free music
@@ -281,30 +283,21 @@ function EndField({ label, value, onChange, disabled }: { label: 'intro' | 'outr
   );
 }
 
-export function Genie360Fields({ value, onChange, priceCents, eventTitle, eventDate, disabled }: {
-  value: Spin360Value; onChange: (p: Partial<Spin360Value>) => void; priceCents: number; eventTitle: string; eventDate: string | null; disabled?: boolean;
+// Title text on the Genie 360 page: {event} and {date} become the event's name and date when an event turns 360 on
+export const TITLE_TOKENS = { event: '{event}', date: '{date}' };
+
+// The 360 blocks. mode "setup": everything (Genie → Genie 360, what new 360 events start from). mode "event": the
+// quick tweaks an event changes (style, song, design and title, recording light, length, background removal).
+export function Spin360Editor({ value, onChange, lib, onLibrary, mode, eventTitle, eventDate, disabled }: {
+  value: Spin360Value; onChange: (p: Partial<Spin360Value>) => void; lib: Library; onLibrary: () => Promise<unknown> | void; mode: 'setup' | 'event';
+  eventTitle?: string; eventDate?: string | null; disabled?: boolean;
 }) {
-  const [lib, setLib] = useState<Library | null>(null);
+  const setup = mode === 'setup';
   const [advanced, setAdvanced] = useState(false);
   const [overlayBusy, setOverlayBusy] = useState('');
   const [overlayError, setOverlayError] = useState('');
   const [designError, setDesignError] = useState('');
   const overlayRef = useRef<HTMLInputElement>(null);
-  const loadLib = () => fetch('/api/genie-360/library').then(r => (r.ok ? r.json() : null)).then(d => d && setLib(d));
-  useEffect(() => { if (value.enabled && !lib) loadLib(); }, [value.enabled]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (!value.enabled) {
-    return (
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-dashed border-gray-200">
-        <div className="flex-1">
-          <p className="text-sm font-medium">Add Genie 360</p>
-          <p className="text-sm text-gray-500">The spinner booth: an iPhone on the arm records guests as it turns, edits a slow-motion video with your music and design, and sends it to the iPad Sharing station. {STABILIZATION_NOTE} Add-on: {fmtCents(priceCents)} for this event, paid with the event; until it&apos;s paid the videos show a watermark.</p>
-        </div>
-        <Button type="button" disabled={disabled} onClick={() => onChange({ enabled: true })}>Add Genie 360</Button>
-      </div>
-    );
-  }
-  if (!lib) return <p className="text-sm text-gray-400">Loading…</p>;
 
   const style = lib.styles.find(s => s.id === value.styleId);
   const segments = value.segments ?? style?.segments ?? [];
@@ -328,22 +321,17 @@ export function Genie360Fields({ value, onChange, priceCents, eventTitle, eventD
     try {
       const file = OVERLAY_TYPES[f.type] ? f : new File([f], f.name, { type: 'video/quicktime' });
       const d = await uploadSpinFile('overlay', file, pct => setOverlayBusy(pct < 100 ? `Uploading ${pct}%` : 'Saving…'), {});
-      await loadLib();
+      await onLibrary();
       onChange({ animatedOverlay: { id: d.overlay.id, loop: true } });
     } catch (e) { setOverlayError((e as Error).message); }
     setOverlayBusy('');
   }
 
-  const defaultTitle = [eventTitle.slice(0, 40), eventDate ? new Date(eventDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : ''].filter(Boolean);
+  const defaultTitle = setup ? [TITLE_TOKENS.event, TITLE_TOKENS.date] : [(eventTitle ?? '').slice(0, 40), eventDate ? new Date(eventDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : ''].filter(Boolean);
   const size = SPIN_VIDEO_SIZE_OPTIONS.find(o => o.value === value.videoSize);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-sm text-gray-500">Pick a style, a song and a design, and you&apos;re done. {STABILIZATION_NOTE} Add-on: {fmtCents(priceCents)} for this event.</p>
-        <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={() => { if (confirm('Turn Genie 360 off for this event? Your 360 choices are kept if you add it again.')) onChange({ enabled: false }); }}>Turn off</Button>
-      </div>
-
       <Field label="1. Style" hint="Each card plays an Example of the style. Picking one may also pick its song or effect, which you can change.">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {lib.styles.map(s => <StyleCard key={s.id} style={s} selected={s.id === value.styleId} disabled={disabled} onPick={() => pickStyle(s)}/>)}
@@ -351,7 +339,7 @@ export function Genie360Fields({ value, onChange, priceCents, eventTitle, eventD
       </Field>
 
       <Field label="2. Music">
-        <MusicBlock value={value} lib={lib} disabled={disabled} onChange={onChange} onLibrary={loadLib}/>
+        <MusicBlock value={value} lib={lib} disabled={disabled} onChange={onChange} onLibrary={() => { onLibrary(); }} canUpload={setup}/>
       </Field>
 
       <Field label="3. Design" hint={SPIN_MOUNT_HINT}>
@@ -370,7 +358,7 @@ export function Genie360Fields({ value, onChange, priceCents, eventTitle, eventD
             }}/>
           {designError && <p className="text-xs text-red-600">{designError}</p>}
           <Toggle checked={!!value.title} disabled={disabled} label="Title text"
-            hint="Words over the video, e.g. the event name and date."
+            hint={setup ? 'Words over the video. {event} and {date} become each event\'s name and date.' : 'Words over the video, e.g. the event name and date.'}
             onChange={on => onChange({ title: on ? { lines: defaultTitle, color: '#FFFFFF', font: 'montserrat', animation: 'fade', position: 'bottom' } : null })}/>
           {value.title && (
             <div className="ml-[52px] grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -395,14 +383,14 @@ export function Genie360Fields({ value, onChange, priceCents, eventTitle, eventD
         </div>
       </Field>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {setup && <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Intro" hint="Plays before the spin.">
           <EndField label="intro" value={value.intro} disabled={disabled} onChange={intro => onChange({ intro })}/>
         </Field>
         <Field label="Outro" hint="Plays after the spin.">
           <EndField label="outro" value={value.outro} disabled={disabled} onChange={outro => onChange({ outro })}/>
         </Field>
-      </div>
+      </div>}
 
       <Field label="Recording light" hint="The iPhone's light, facing the guests on the arm.">
         <div className="space-y-1.5">
@@ -423,7 +411,16 @@ export function Genie360Fields({ value, onChange, priceCents, eventTitle, eventD
         </div>
       </Field>
 
-      <div className="border-t pt-4">
+      {!setup && (
+        <>
+          <Field label="Video length (seconds)" hint="8–30. The finished video, with any intro and outro.">
+            <Input type="number" className="w-24" min={8} max={30} disabled={disabled} value={Number.isNaN(value.videoSeconds) ? '' : value.videoSeconds} onChange={e => onChange({ videoSeconds: parseInt(e.target.value, 10) })}/>
+          </Field>
+          <BackgroundRemovalField value={value} lib={lib} onChange={onChange} disabled={disabled}/>
+        </>
+      )}
+
+      {setup && <div className="border-t pt-4">
         <button type="button" className="text-sm font-medium inline-flex items-center gap-1" onClick={() => setAdvanced(a => !a)}>
           {advanced ? <ChevronDown className="w-4 h-4"/> : <ChevronRight className="w-4 h-4"/>}Advanced
         </button>
@@ -470,22 +467,7 @@ export function Genie360Fields({ value, onChange, priceCents, eventTitle, eventD
                 {overlayError && <p className="text-xs text-red-600">{overlayError}</p>}
               </div>
             </Field>
-            <Toggle checked={value.backgroundRemoval.enabled} disabled={disabled} label="Background removal" hint="Guests on a backdrop instead of the room (AI, on the iPhone)."
-              onChange={enabled => onChange({ backgroundRemoval: { ...value.backgroundRemoval, enabled, backdropId: value.backgroundRemoval.backdropId ?? (enabled ? lib.backdrops[0]?.id ?? null : null) } })}/>
-            {value.backgroundRemoval.enabled && (
-              <div className="ml-[52px] space-y-3">
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-64 overflow-y-auto">
-                  {lib.backdrops.map(b => (
-                    <button key={b.id} type="button" disabled={disabled} onClick={() => onChange({ backgroundRemoval: { ...value.backgroundRemoval, backdropId: b.id } })}
-                      className={'relative rounded-lg overflow-hidden border-2 ' + (value.backgroundRemoval.backdropId === b.id ? 'border-brand' : 'border-transparent')}>
-                      <img src={artUrl(b.thumbnail)} alt={b.name} className="w-full aspect-[3/2] object-cover"/>
-                      {b.is360 && <span className="absolute top-1 left-1 px-1 rounded bg-black/60 text-white text-[10px]">360</span>}
-                    </button>
-                  ))}
-                </div>
-                <Toggle checked={value.backgroundRemoval.followSpin} disabled={disabled} onChange={followSpin => onChange({ backgroundRemoval: { ...value.backgroundRemoval, followSpin } })} label="Backdrop turns with the spin"/>
-              </div>
-            )}
+            <BackgroundRemovalField value={value} lib={lib} onChange={onChange} disabled={disabled}/>
             <Toggle checked={value.lightTrails.enabled} disabled={disabled} label="Light trails" hint="Neon streaks that follow the guests as the arm turns."
               onChange={enabled => onChange({ lightTrails: { ...value.lightTrails, enabled } })}/>
             {value.lightTrails.enabled && (
@@ -529,7 +511,93 @@ export function Genie360Fields({ value, onChange, priceCents, eventTitle, eventD
             </Field>
           </div>
         )}
+      </div>}
+    </div>
+  );
+}
+
+// Background removal and the backdrop (360 panoramas first)
+function BackgroundRemovalField({ value, lib, onChange, disabled }: { value: Spin360Value; lib: Library; onChange: (p: Partial<Spin360Value>) => void; disabled?: boolean }) {
+  return (
+    <>
+      <Toggle checked={value.backgroundRemoval.enabled} disabled={disabled} label="Background removal" hint="Guests on a backdrop instead of the room (AI, on the iPhone)."
+        onChange={enabled => onChange({ backgroundRemoval: { ...value.backgroundRemoval, enabled, backdropId: value.backgroundRemoval.backdropId ?? (enabled ? lib.backdrops[0]?.id ?? null : null) } })}/>
+      {value.backgroundRemoval.enabled && (
+        <div className="ml-[52px] space-y-3">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-64 overflow-y-auto">
+            {lib.backdrops.map(b => (
+              <button key={b.id} type="button" disabled={disabled} onClick={() => onChange({ backgroundRemoval: { ...value.backgroundRemoval, backdropId: b.id } })}
+                className={'relative rounded-lg overflow-hidden border-2 ' + (value.backgroundRemoval.backdropId === b.id ? 'border-brand' : 'border-transparent')}>
+                <img src={artUrl(b.thumbnail)} alt={b.name} className="w-full aspect-[3/2] object-cover"/>
+                {b.is360 && <span className="absolute top-1 left-1 px-1 rounded bg-black/60 text-white text-[10px]">360</span>}
+              </button>
+            ))}
+          </div>
+          <Toggle checked={value.backgroundRemoval.followSpin} disabled={disabled} onChange={followSpin => onChange({ backgroundRemoval: { ...value.backgroundRemoval, followSpin } })} label="Backdrop turns with the spin"/>
+        </div>
+      )}
+    </>
+  );
+}
+
+// The event's Genie 360 section: on/off (the add-on), a link to the Genie 360 page, and the quick tweaks. Turning it on
+// copies the account's Genie 360 setup onto the event; the event's own changes stay on the event.
+export function Genie360Fields({ value, onChange, priceCents, eventTitle, eventDate, disabled }: {
+  value: Spin360Value; onChange: (p: Partial<Spin360Value>) => void; priceCents: number; eventTitle: string; eventDate: string | null; disabled?: boolean;
+}) {
+  const [lib, setLib] = useState<Library | null>(null);
+  const [busy, setBusy] = useState(false);
+  const loadLib = () => fetch('/api/genie-360/library').then(r => (r.ok ? r.json() : null)).then(d => d && setLib(d));
+  useEffect(() => { if (value.enabled && !lib) loadLib(); }, [value.enabled]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The Genie 360 setup, with {event} / {date} in the title text filled in for this event
+  async function fromSetup(): Promise<Spin360Value | null> {
+    const r = await fetch('/api/genie-360/setup');
+    if (!r.ok) return null;
+    const setup = (await r.json()).setup as Spin360Value;
+    const date = eventDate ? new Date(eventDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
+    const fill = (l: string) => l.replaceAll(TITLE_TOKENS.event, eventTitle).replaceAll(TITLE_TOKENS.date, date).trim().slice(0, 40);
+    const lines = setup.title?.lines.map(fill).filter(Boolean) ?? [];
+    return { ...setup, title: setup.title && lines.length ? { ...setup.title, lines } : null };
+  }
+  async function turnOn() {
+    setBusy(true);
+    const s = await fromSetup();
+    setBusy(false);
+    onChange({ ...(s ?? {}), enabled: true });
+  }
+  async function useSetup() {
+    if (!confirm("Replace this event's 360 choices with your Genie 360 setup?")) return;
+    setBusy(true);
+    const s = await fromSetup();
+    setBusy(false);
+    if (s) onChange({ ...s, enabled: true });
+  }
+
+  if (!value.enabled) {
+    return (
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-dashed border-gray-200">
+        <div className="flex-1">
+          <p className="text-sm font-medium">Add Genie 360</p>
+          <p className="text-sm text-gray-500">The spinner booth: an iPhone on the arm records guests as it turns, edits a slow-motion video with your music and design, and sends it to the iPad Sharing station. {STABILIZATION_NOTE} Add-on: {fmtCents(priceCents)} for this event, paid with the event; until it&apos;s paid the videos show a watermark. It starts from your <Link href="/genie/360" className="text-brand hover:underline">Genie 360</Link> setup.</p>
+        </div>
+        <Button type="button" disabled={disabled || busy} onClick={turnOn}>{busy ? 'Adding…' : 'Add Genie 360'}</Button>
       </div>
+    );
+  }
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <p className="text-sm text-gray-500">
+          Styles, music, designs and the rest are set up in <Link href="/genie/360" className="text-brand hover:underline">Genie 360 →</Link>. Change this event&apos;s choices below. Add-on: {fmtCents(priceCents)} for this event.
+        </p>
+        <div className="flex gap-1">
+          <Button type="button" variant="ghost" size="sm" disabled={disabled || busy} onClick={useSetup}>Use my Genie 360 setup again</Button>
+          <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={() => { if (confirm('Turn Genie 360 off for this event? Its 360 choices are kept if you add it again.')) onChange({ enabled: false }); }}>Turn off</Button>
+        </div>
+      </div>
+      {lib ? <Spin360Editor mode="event" value={value} onChange={onChange} lib={lib} onLibrary={loadLib} eventTitle={eventTitle} eventDate={eventDate} disabled={disabled}/>
+        : <p className="text-sm text-gray-400">Loading…</p>}
     </div>
   );
 }

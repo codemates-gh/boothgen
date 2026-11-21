@@ -51,6 +51,8 @@ WITH expected(sql_file, tbl, col) AS (VALUES
   ('apply-production-gallery-defaults.sql', 'event_genie_settings', 'galleryAutoPublish'),
   ('apply-production-gallery-defaults.sql', 'event_genie_settings', 'galleryAutoPublishedAt'),
   ('apply-production-gallery-defaults.sql', 'event_genie_settings', 'customGallery'),
+  ('apply-production-genie-360-page.sql', 'genie_spin_styles', 'tenantId'),
+  ('apply-production-genie-360-page.sql', 'genie_defaults', 'spin360'),
   ('apply-production-genie-360.sql', 'event_genie_settings', 'spin360'),
   ('apply-production-genie-360.sql', 'genie_sessions', 'mode'),
   ('apply-production-genie-360.sql', 'genie_sessions', 'styleId'),

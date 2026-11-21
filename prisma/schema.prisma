@@ -248,6 +248,7 @@ model Tenant {
   genieBackdrops       GenieBackdrop[]
   genieMusicTracks     GenieMusicTrack[]
   genieSpinOverlays    GenieSpinOverlay[]
+  genieSpinStyles      GenieSpinStyle[]
   genieClipDesigns     GenieClipDesign[]
   geniePoses           GeniePose[]
   geniePayments        GenieEventPayment[]
@@ -1749,6 +1750,8 @@ model GenieDefaults {
   galleryAutoPublish Boolean @default(false)
   // Video Booth (Genie P14): the account's starting settings for new events (StoredVideoBooth; null = BoothGen's)
   videoBooth         Json?
+  // Genie 360 (P15): the operator's setup for new 360 events (Genie → Genie 360); copied when an event turns 360 on
+  spin360            Json?
 
   // BoothDesignTemplate ids added (in this order) when Genie is set up for an event
   templateIds Json @default("[]")
@@ -1958,6 +1961,8 @@ model GenieBackdrop {
 // frame rate, optional default song and effects, and a sample video labelled "Example". Ids are stable (classic, …).
 model GenieSpinStyle {
   id             String   @id
+  // null = Standard (Super Admin); set = one of the account's own styles (My styles, made from a Standard one)
+  tenantId       String?
   name           String
   description    String
   // Bumped when the segments or capture change, so the iPhone knows the resolved style changed
@@ -1976,6 +1981,9 @@ model GenieSpinStyle {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
   @@map("genie_spin_styles")
 }
 

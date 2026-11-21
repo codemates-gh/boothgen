@@ -40,23 +40,27 @@ export const showsSpinInGallery = (v: unknown) => storedSpin360(v)?.showInGaller
 // ── Styles ────────────────────────────────────────────────────────────────
 // The Standard styles, added the first time the library is read (Super Admin edits them from there)
 async function seedStyles() {
-  if ((await prisma.genieSpinStyle.count()) > 0) return;
+  if ((await prisma.genieSpinStyle.count({ where: { tenantId: null } })) > 0) return;
   await prisma.genieSpinStyle.createMany({
     data: STANDARD_SPIN_STYLES.map((s, i) => ({ id: s.id, name: s.name, description: s.description, captureFps: s.captureFps, segments: s.segments, defaultEffects: s.defaultEffects, sortOrder: i })),
     skipDuplicates: true,
   });
 }
-export async function spinStyles(all = false): Promise<GenieSpinStyle[]> {
+// Standard styles (switched on, or all for Super Admin), then the account's own (My styles)
+export async function spinStyles(tenantId: string | null, all = false): Promise<GenieSpinStyle[]> {
   await seedStyles();
-  return prisma.genieSpinStyle.findMany({ where: all ? {} : { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
+  const standard = await prisma.genieSpinStyle.findMany({ where: { tenantId: null, ...(all ? {} : { isActive: true }) }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
+  const mine = tenantId ? await prisma.genieSpinStyle.findMany({ where: { tenantId }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] }) : [];
+  return [...standard, ...mine];
 }
+export const styleWhere = (tenantId: string) => ({ OR: [{ tenantId: null }, { tenantId }] });
 export function styleView(s: GenieSpinStyle) {
   return {
     id: s.id, name: s.name, description: s.description, version: s.version, captureFps: s.captureFps as 120 | 240,
     segments: (Segments.safeParse(s.segments).data ?? []) as Segment[], defaultMusicId: s.defaultMusicId,
     defaultEffects: (s.defaultEffects ?? {}) as { lightTrails?: boolean; backgroundRemoval?: boolean },
     sampleVideo: (s.sampleVideo as { url: string } | null)?.url ?? null, samplePoster: (s.samplePoster as { url: string } | null)?.url ?? null,
-    isActive: s.isActive,
+    isActive: s.isActive, source: s.tenantId ? 'account' as const : 'standard' as const,
   };
 }
 
@@ -74,7 +78,7 @@ export function overlayView(o: GenieSpinOverlay) {
 // What the event's 360 section needs to show its pickers
 export async function spin360Library(tenantId: string) {
   const [styles, music, links, overlays, backdrops] = await Promise.all([
-    spinStyles(),
+    spinStyles(tenantId),
     prisma.genieMusicTrack.findMany({ where: musicWhere(tenantId), orderBy: [{ tenantId: 'asc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }] }),
     prisma.genieMusicLink.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
     prisma.genieSpinOverlay.findMany({ where: overlaysWhere(tenantId), orderBy: [{ tenantId: 'asc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }] }),
@@ -83,6 +87,7 @@ export async function spin360Library(tenantId: string) {
   ]);
   const pano = (b: { tags: string[] }) => b.tags.includes('360');
   return {
+    available: await genie360Ready(),
     styles: styles.map(styleView),
     music: music.map(trackView),
     links: links.map(l => ({ id: l.id, name: l.name, url: l.url, note: l.note })),
@@ -98,8 +103,8 @@ export async function spin360Library(tenantId: string) {
 export async function spin360Data(patch: Spin360Patch, current: unknown, tenantId: string): Promise<{ value: Prisma.InputJsonValue } | { error: string; path: string }> {
   const prev = storedSpin360(current);
   await seedStyles();
-  const style = await prisma.genieSpinStyle.findUnique({ where: { id: patch.styleId } });
-  if (!style || (!style.isActive && prev?.styleId !== patch.styleId)) return { error: "That 360 style isn't available. Pick another.", path: 'spin360.styleId' };
+  const style = await prisma.genieSpinStyle.findFirst({ where: { id: patch.styleId, ...styleWhere(tenantId) } });
+  if (!style || (!style.tenantId && !style.isActive && prev?.styleId !== patch.styleId)) return { error: "That 360 style isn't available. Pick another.", path: 'spin360.styleId' };
 
   if (patch.music && patch.music.trackId !== prev?.music?.trackId) {
     const t = await prisma.genieMusicTrack.findFirst({ where: { id: patch.music.trackId, ...musicWhere(tenantId) } });
@@ -231,8 +236,33 @@ export async function deleteUnusedSpinFile(url: string | null | undefined): Prom
 }
 
 // Events whose 360 section uses this song / overlay (stored ids in EventGenieSettings.spin360)
-export async function eventsUsingSpin(kind: 'music' | 'overlay', id: string): Promise<number> {
-  const json = kind === 'music' ? { music: { trackId: id } } : { animatedOverlay: { id } };
+export async function eventsUsingSpin(kind: 'music' | 'overlay' | 'style', id: string): Promise<number> {
+  const json = kind === 'music' ? { music: { trackId: id } } : kind === 'style' ? { styleId: id } : { animatedOverlay: { id } };
   const [{ n }] = await prisma.$queryRaw<{ n: bigint }[]>`SELECT count(*) AS n FROM event_genie_settings WHERE spin360 @> ${JSON.stringify(json)}::jsonb`;
   return Number(n);
+}
+
+// ── The account's Genie 360 setup (Genie → Genie 360) ────────────────────
+// What a new 360 event starts from: everything in the event's 360 section (its quick tweaks included). Turning 360 on
+// for an event copies it; the event's own changes stay on the event. Stored on GenieDefaults.spin360.
+export async function spinSetup(tenantId: string): Promise<StoredSpin360> {
+  const row = await prisma.genieDefaults.findUnique({ where: { tenantId }, select: { spin360: true } });
+  return { ...spin360View(row?.spin360), enabled: false };
+}
+
+export async function saveSpinSetup(patch: Spin360Patch, tenantId: string): Promise<{ value: StoredSpin360 } | { error: string; path: string }> {
+  const current = await prisma.genieDefaults.findUnique({ where: { tenantId }, select: { spin360: true } });
+  const v = await spin360Data({ ...patch, enabled: false }, current?.spin360 ?? null, tenantId);
+  if ('error' in v) return v;
+  const { defaultsFor } = await import('./defaults');
+  const exists = !!(await prisma.genieDefaults.findUnique({ where: { tenantId }, select: { id: true } }));
+  if (exists) await prisma.genieDefaults.update({ where: { tenantId }, data: { spin360: v.value } });
+  else {
+    // First save of any defaults: the built-in Event defaults with this setup
+    const t = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { product: true } });
+    const d = defaultsFor(t?.product ?? 'crm') as Record<string, unknown>;
+    const json = (x: unknown) => (x === null ? Prisma.DbNull : x);
+    await prisma.genieDefaults.create({ data: { ...d, attract: json(d.attract), countdownSound: json(d.countdownSound), videoBooth: json(d.videoBooth), tenantId, spin360: v.value } as Prisma.GenieDefaultsUncheckedCreateInput });
+  }
+  return { value: v.value as unknown as StoredSpin360 };
 }

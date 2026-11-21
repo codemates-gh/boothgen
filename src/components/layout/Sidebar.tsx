@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Users, FileText, Receipt, Camera, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send, CalendarCheck, SlidersHorizontal, Smile, Image as ImageIcon, Sparkles, BookOpen, PersonStanding, Wand2 } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileText, Receipt, Camera, Menu, X, Inbox, BarChart2, CalendarDays, MessageSquare, Star, Tablet, LayoutTemplate, Send, CalendarCheck, SlidersHorizontal, Smile, Image as ImageIcon, Sparkles, BookOpen, PersonStanding, Wand2, RotateCw } from 'lucide-react';
 import { BoothGenIcon } from '@/components/brand/BoothGenLogo';
 import { APP_VERSION } from '@/lib/version';
 
@@ -57,6 +57,7 @@ const genieSection: NavSection = {
     { href: '/genie/backdrops', label: 'Backdrops', icon: ImageIcon },
     { href: '/genie/poses', label: 'Poses', icon: PersonStanding },
     { href: '/genie/themes', label: 'Geniefied Themes', icon: Wand2 },
+    { href: '/genie/360', label: 'Genie 360', icon: RotateCw },
     { href: '/genie/devices', label: 'Devices', icon: Tablet },
     { href: '/genie/sharing', label: 'Guest Sharing', icon: Send },
   ],
@@ -83,6 +84,7 @@ const genieOnlySections: NavSection[] = [
       { href: '/genie/backdrops', label: 'Backdrops', icon: ImageIcon },
       { href: '/genie/poses', label: 'Poses', icon: PersonStanding },
       { href: '/genie/themes', label: 'Geniefied Themes', icon: Wand2 },
+      { href: '/genie/360', label: 'Genie 360', icon: RotateCw },
       { href: '/genie/devices', label: 'Devices', icon: Tablet },
       { href: '/genie/sharing', label: 'Guest Sharing', icon: Send },
     ],
@@ -125,7 +127,8 @@ function NavLink({ href, label, Icon, pro, active, close, count }: { href: strin
   );
 }
 
-export function Sidebar({ isFoundingMember, genieEnabled, genieOnly }: { isFoundingMember?: boolean; genieEnabled?: boolean; genieOnly?: boolean }) {
+// genie360: Super Admin's "Genie 360 available" switch (the Genie 360 item is hidden while it's off)
+export function Sidebar({ isFoundingMember, genieEnabled, genieOnly, genie360 }: { isFoundingMember?: boolean; genieEnabled?: boolean; genieOnly?: boolean; genie360?: boolean }) {
   const rawPath = usePathname();
   // Quotes, Contracts and Invoices live under Events (tabs on the Events page), so Events stays highlighted there
   // Quotes, Contracts, Invoices and Gallery are tabs under Events, so Events stays highlighted there
@@ -207,7 +210,7 @@ export function Sidebar({ isFoundingMember, genieEnabled, genieOnly }: { isFound
             (genieOnly ? genieOnlySections : genieEnabled ? [...adminSections, genieSection, insightsSection] : [...adminSections, insightsSection]).map((section, si) => (
               <div key={section.label} className={si > 0 ? 'mt-4' : ''}>
                 <p className="pl-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/25">{section.label}</p>
-                {section.items.map(({ href, label, icon: Icon, pro }) => {
+                {section.items.filter(i => genie360 || i.href !== '/genie/360').map(({ href, label, icon: Icon, pro }) => {
                   const allItems = genieOnly ? genieOnlyNav : adminNav;
                   const active = path === href || (path.startsWith(href + '/') && !allItems.some(item => item.href !== href && (path === item.href || path.startsWith(item.href + '/'))));
                   return (

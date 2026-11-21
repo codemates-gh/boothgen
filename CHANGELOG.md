@@ -4,6 +4,23 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.134.0] — 2026-11-21
+
+### Changed
+- **Genie 360 has its own page: Genie → Genie 360.** It sits in the sidebar next to Geniefied Themes and is shown while Super Admin's "Genie 360 available" switch is on.
+  - **The page** holds the full setup:
+    - **My styles:** copy any style, then edit its speed ramp and capture.
+    - Your songs and animated overlays.
+    - **Setup for new 360 events:** style, music with uploads and royalty-free links, shape/design/title, intro & outro, recording light, and all of Advanced. In the title, {event} and {date} become each event's name and date.
+  - **The event's Genie 360 section** is now:
+    - an on/off switch, with the add-on price;
+    - a link to the page;
+    - quick changes: style, song, shape/design/title, recording light, video length, background removal and backdrop;
+    - "Use my Genie 360 setup again".
+
+    Turning 360 on copies the setup onto the event. Duplicated events keep their 360 choices.
+  - **Needs SQL:** `docs/genie/apply-production-genie-360-page.sql`.
+
 ## [2.133.0] — 2026-11-21
 
 ### Added

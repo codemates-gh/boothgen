@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { requireTenantSession } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma/client';
+import { genie360Ready } from '@/lib/genie/spin360';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { SupportChat } from '@/app/support/SupportChat';
 import Link from 'next/link';
@@ -39,7 +40,7 @@ export default async function TenantLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-screen bg-[#F5F6F8]">
-      <Sidebar isFoundingMember={isFoundingMember} genieEnabled={session.tenantRole === 'HOST_ADMIN' && !!tenant?.genieEnabled} genieOnly={genieOnly} />
+      <Sidebar isFoundingMember={isFoundingMember} genieEnabled={session.tenantRole === 'HOST_ADMIN' && !!tenant?.genieEnabled} genieOnly={genieOnly} genie360={!!tenant?.genieEnabled && await genie360Ready()} />
       <main className="lg:pl-64 pt-14 lg:pt-16 print:p-0">
         {isCancelled && (
           <div className="bg-red-600 text-white px-4 py-3 text-sm flex flex-wrap items-center justify-between gap-2">

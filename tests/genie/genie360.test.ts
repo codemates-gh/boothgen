@@ -16,6 +16,9 @@ vi.mock('@/lib/storage/r2', async orig => ({
 import { prisma } from '@/lib/prisma/client';
 import { GET as DASH, PATCH } from '@/app/api/events/[id]/genie/route';
 import { GET as LIBRARY } from '@/app/api/genie-360/library/route';
+import { POST as COPY_STYLE } from '@/app/api/genie-360/styles/route';
+import { DELETE as DELETE_STYLE, PATCH as EDIT_STYLE } from '@/app/api/genie-360/styles/[styleId]/route';
+import { GET as GET_SETUP, PUT as PUT_SETUP } from '@/app/api/genie-360/setup/route';
 import { POST as UPLOAD } from '@/app/api/genie-360/upload/route';
 import { GET as BACKDROPS } from '@/app/api/genie-backdrops/route';
 import { GET as publicGallery } from '@/app/api/g/[token]/route';
@@ -159,5 +162,47 @@ describe('Genie 360 videos', () => {
 
     const page = await (await sessionPage(req('/x'), { params: Promise.resolve({ token: gallery.clientToken!, sessionToken: s.publicToken }) })).json();
     expect(page.assets).toEqual([expect.objectContaining({ id: clip.id, isVideoMessage: true, is360: true })]);
+  });
+});
+
+describe('Genie 360 page', () => {
+  it('My styles: copy a Standard style, edit its ramp (version bumps), use it on an event; another account can\'t; in use can\'t be deleted', async () => {
+    const { tenant, patch } = await setup();
+    await ready(true);
+    await LIBRARY();
+    const r = await COPY_STYLE(req('/x', { method: 'POST', body: { fromId: 'classic', name: 'Our classic' } }));
+    expect(r.status).toBe(201);
+    const mine = (await r.json()).style;
+    expect(mine).toMatchObject({ name: 'Our classic', source: 'account', sampleVideo: null });
+    const sp = { params: Promise.resolve({ styleId: mine.id }) };
+    const edited = await (await EDIT_STYLE(req('/x', { method: 'PATCH', body: { segments: [{ from: 0, to: 1, direction: 'forward', speedStart: 0.25, speedEnd: 0.25, transition: 'cut' }] } }), sp)).json();
+    expect(edited.style.version).toBe(2);
+    expect((await (await LIBRARY()).json()).styles.at(-1).id).toBe(mine.id);
+
+    expect((await patch({ styleId: mine.id })).status).toBe(200);
+    expect((await DELETE_STYLE(req('/x', { method: 'DELETE' }), sp)).status).toBe(409);
+
+    // Another account can't use or edit it
+    const other = await seedTenant();
+    sessionTenantId = other.tenant.id;
+    expect((await EDIT_STYLE(req('/x', { method: 'PATCH', body: { name: 'x' } }), sp)).status).toBe(404);
+    sessionTenantId = tenant.id;
+    expect((await patch({ styleId: 'classic' })).status).toBe(200);
+    expect((await DELETE_STYLE(req('/x', { method: 'DELETE' }), sp)).status).toBe(200);
+  });
+
+  it('the setup for new 360 events is saved per account (never on), checked like an event\'s, and leaves Event defaults alone', async () => {
+    const { tenant } = await setup();
+    const start = (await (await GET_SETUP()).json()).setup;
+    expect(start).toMatchObject({ enabled: false, styleId: 'classic', videoSize: '1080p' });
+    const put = (v: Record<string, unknown>) => PUT_SETUP(req('/x', { method: 'PUT', body: { ...SPIN360_DEFAULT, ...v } }));
+    expect((await put({ styleId: 'nope' })).status).toBe(400);
+    const r = await put({ enabled: true, styleId: 'hype', videoSeconds: 20, title: { lines: ['{event}', '{date}'], color: '#FFFFFF', font: 'montserrat', animation: 'fade', position: 'bottom' } });
+    expect(r.status).toBe(200);
+    expect((await r.json()).setup).toMatchObject({ enabled: false, styleId: 'hype', videoSeconds: 20, title: { lines: ['{event}', '{date}'] } });
+    expect((await (await GET_SETUP()).json()).setup.styleId).toBe('hype');
+    // The Event defaults row it created reads like the built-in defaults
+    const { getDefaults } = await import('@/lib/genie/defaults');
+    expect('spin360' in (await getDefaults(tenant.id)).values).toBe(false);
   });
 });

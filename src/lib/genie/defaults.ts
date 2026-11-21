@@ -22,7 +22,8 @@ export const CUSTOM_FLAG: Record<DefaultSection, 'customTimeZone' | 'customCaptu
   gallery: 'customGallery', videoBooth: 'customVideoBooth',
 };
 
-type DefaultsValues = Omit<GenieDefaults, 'id' | 'tenantId' | 'templateIds' | 'createdAt' | 'updatedAt'>;
+// spin360 is the Genie 360 page's setup (spin360.ts), not an Event defaults section
+type DefaultsValues = Omit<GenieDefaults, 'id' | 'tenantId' | 'templateIds' | 'createdAt' | 'updatedAt' | 'spin360'>;
 
 // Built-in values used until the account saves its own defaults
 export const BUILT_IN_DEFAULTS: DefaultsValues = {
@@ -54,7 +55,7 @@ export async function getDefaults(tenantId: string): Promise<{ values: DefaultsV
     const t = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { product: true } });
     return { values: defaultsFor(t?.product ?? 'crm'), templateIds: [], saved: false };
   }
-  const { id: _i, tenantId: _t, templateIds, createdAt: _c, updatedAt: _u, ...values } = row;
+  const { id: _i, tenantId: _t, templateIds, createdAt: _c, updatedAt: _u, spin360: _s, ...values } = row;
   return { values, templateIds: Array.isArray(templateIds) ? (templateIds as string[]) : [], saved: true };
 }
 
