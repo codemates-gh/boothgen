@@ -9,6 +9,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 ### Changed
 - Genie → Test Templates now draws the templates with a real booth photo (two guests with props) instead of the drawn placeholder figures, in the preview and in the texts/emails it sends.
 
+## [2.130.3] — 2026-11-20
+
+### Changed
+- **iPads show by model until you name them.** iPadOS only tells apps a device is an "iPad", so iPads paired without a name showed as plain "iPad". They now show their model, e.g. "iPad (6th generation)" or "iPad Air (5th generation)". Name one and its name shows instead.
+- **Rename iPads from the event.** Devices on This Event has a Rename button next to each iPad (the same as Genie → Devices → Rename). The new name shows on the iPad too.
+
+---
+
 ## [2.130.2] — 2026-11-20
 
 ### Changed

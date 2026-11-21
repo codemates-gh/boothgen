@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import { deviceLabel, ipadModelName, isGenericName } from '@/lib/genie/ipadModels';
 import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -150,8 +151,8 @@ export default function GenieDevicesPage() {
                         {data.devices.map(d => (
                           <tr key={d.id} className="border-b last:border-0 align-top">
                             <td className="px-6 py-3 text-sm">
-                              <p className="font-medium flex items-center gap-2">{d.name}{d.lowStorage && <Badge variant="warning">Low storage</Badge>}</p>
-                              <p className="text-xs text-gray-500">{d.model ?? 'iPad'}</p>
+                              <p className="font-medium flex items-center gap-2">{deviceLabel(d)}{d.lowStorage && <Badge variant="warning">Low storage</Badge>}</p>
+                              <p className="text-xs text-gray-500">{isGenericName(d.name) ? 'Not named yet · Rename to tell iPads apart' : ipadModelName(d.model) ?? 'iPad'}</p>
                               {d.storageFreeBytes !== null && (
                                 <p className={'text-xs flex items-center gap-1 mt-0.5 ' + (d.lowStorage ? 'text-amber-600' : 'text-gray-400')}>
                                   <HardDrive className="w-3 h-3"/>{fmtGB(d.storageFreeBytes)} free{d.storageTotalBytes ? ' of ' + fmtGB(d.storageTotalBytes) : ''}
@@ -167,7 +168,7 @@ export default function GenieDevicesPage() {
                               {d.eventCount > 1 && <p className="text-xs text-gray-400">+{d.eventCount - 1} more</p>}
                             </td>
                             <td className="px-6 py-3 text-right whitespace-nowrap">
-                              <Button variant="ghost" size="sm" onClick={() => { setRenaming(d); setNewName(d.name); setModalError(''); }}><Pencil className="w-3.5 h-3.5 mr-1"/>Rename</Button>
+                              <Button variant="ghost" size="sm" onClick={() => { setRenaming(d); setNewName(isGenericName(d.name) ? '' : d.name); setModalError(''); }}><Pencil className="w-3.5 h-3.5 mr-1"/>Rename</Button>
                               <Button variant="ghost" size="sm" className="text-[#E2445C] hover:text-[#CC3A52] hover:bg-red-50" onClick={() => { setRemoving(d); setModalError(''); }}><Trash2 className="w-3.5 h-3.5 mr-1"/>Remove</Button>
                             </td>
                           </tr>
@@ -218,7 +219,7 @@ export default function GenieDevicesPage() {
       </Modal>
 
       <Modal open={!!removing} onClose={() => setRemoving(null)} title="Remove iPad">
-        <p className="text-sm text-gray-600 mb-2">Remove <span className="font-medium text-gray-800">{removing?.name}</span>? It stops syncing right away and frees its spot on any events.</p>
+        <p className="text-sm text-gray-600 mb-2">Remove <span className="font-medium text-gray-800">{removing && deviceLabel(removing)}</span>? It stops syncing right away and frees its spot on any events.</p>
         <p className="text-sm text-gray-600 mb-5">Photos it already uploaded stay in your galleries. Photos still waiting on the iPad won&apos;t upload. To use it again, pair it with a new code.</p>
         {modalError && <p className="text-sm text-red-600 mb-3">{modalError}</p>}
         <div className="flex justify-end gap-2">
