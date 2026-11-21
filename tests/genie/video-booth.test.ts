@@ -94,6 +94,17 @@ describe('Video Booth settings and bundle', () => {
     expect((await bundle()).videoBooth).toBeUndefined();
   });
 
+  it('the Photo booth switch off makes iPads offer video only; on again, alongside photos', async () => {
+    const { event, bundle, patch } = await setup();
+    await patch({});
+    expect((await bundle()).videoBooth.offer).toBe('alongsidePhotos');
+    expect((await PATCH(req('/x', { method: 'PATCH', body: { photosEnabled: false } }), ev(event.id))).status).toBe(200);
+    expect((await (await DASH(req('/x'), ev(event.id))).json()).settings.photosEnabled).toBe(false);
+    expect((await bundle()).videoBooth.offer).toBe('videoOnly');
+    await PATCH(req('/x', { method: 'PATCH', body: { photosEnabled: true } }), ev(event.id));
+    expect((await bundle()).videoBooth.offer).toBe('alongsidePhotos');
+  });
+
   it('checks prompts, length, re-records and size', async () => {
     const { patch } = await setup();
     const bad = async (v: Record<string, unknown>) => { const r = await patch(v); expect(r.status).toBe(400); return (await r.json()).error as string; };

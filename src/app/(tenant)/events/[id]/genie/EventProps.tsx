@@ -11,7 +11,7 @@ import { PROPS_RECOMMENDED_MAX, PropBrowser, PropOnFace, PropThumb, type Categor
 export type EventPropsValue = { enabled: boolean; propIds: string[] };
 
 // Event → Genie → Props: on/off and the props guests pick from, in their order
-export function EventPropsFields({ value, chosen, disabled, onChange }: { value: EventPropsValue; chosen: Prop[]; disabled?: boolean; onChange: (v: Partial<EventPropsValue>) => void }) {
+export function EventPropsFields({ value, chosen, disabled, onChange, bare }: { value: EventPropsValue; chosen: Prop[]; disabled?: boolean; onChange: (v: Partial<EventPropsValue>) => void; bare?: boolean }) {
   const [library, setLibrary] = useState<{ categories: Category[]; props: Prop[] } | null>(null);
   const [error, setError] = useState('');
   const [picking, setPicking] = useState(false);
@@ -38,8 +38,8 @@ export function EventPropsFields({ value, chosen, disabled, onChange }: { value:
 
   return (
     <div className="space-y-4">
-      <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Offer props to guests"
-        hint="After picking a design, guests choose one prop (or none). It follows every face and is drawn into the photos, not Boomerangs."/>
+      {!bare && <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Offer props to guests"
+        hint="After picking a design, guests choose one prop (or none). It follows every face and is drawn into the photos, not Boomerangs."/>}
       {value.enabled && (
         <>
           {error && <p className="text-sm text-red-600">{error}</p>}

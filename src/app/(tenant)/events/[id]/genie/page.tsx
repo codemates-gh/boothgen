@@ -30,10 +30,11 @@ import { GLAMOUR_STYLE_URL } from '@/lib/genie/addOns';
 import { GeniefiedFields, type AiBoothValue, type GeniefiedInfo } from './Geniefied';
 import { SharingStationFields, type SharingStationValue } from './SharingStation';
 import { VideoBoothFields, videoBoothBody, videoBoothNumbersFilled, type VideoBoothValue } from './VideoBooth';
-import { Genie360Fields, spin360Body, spin360NumbersFilled, type Spin360Value } from './Genie360';
+import { Genie360Fields, spin360Body, spin360FromSetupFor, spin360NumbersFilled, type Spin360Value } from './Genie360';
+import { FeaturePanel, FeatureSection, GroupHeading, type Feature } from './Features';
 
 type Settings = {
-  enabled: boolean; timeZone: string; bundleVersion: number; maxDevices: number; capture: Capture;
+  enabled: boolean; photosEnabled: boolean; timeZone: string; bundleVersion: number; maxDevices: number; capture: Capture;
   filters: { guestFiltersEnabled: boolean; defaultFilterId: string; filterIds: string[]; available: { id: string; name: string }[]; glamourIntensity: number; glamourStyleIntensity: number };
   sharing: Sharing;
   printing: Printing;
@@ -74,13 +75,13 @@ type Dashboard = {
   chosenBackdrops: Backdrop[];
   chosenPoses: Pose[];
 };
-type Form = Pick<Settings, 'enabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'liveView' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval' | 'poses' | 'sharingStation' | 'gallery' | 'aiBooth' | 'videoBooth' | 'spin360'> & { filters: Omit<Settings['filters'], 'available'> };
+type Form = Pick<Settings, 'enabled' | 'photosEnabled' | 'timeZone' | 'capture' | 'sharing' | 'printing' | 'lookAtCamera' | 'liveView' | 'boomerang' | 'attract' | 'props' | 'backgroundRemoval' | 'poses' | 'sharingStation' | 'gallery' | 'aiBooth' | 'videoBooth' | 'spin360'> & { filters: Omit<Settings['filters'], 'available'> };
 
 
 function toForm(s: Settings): Form {
   const { available: _a, ...filters } = s.filters;
   return {
-    enabled: s.enabled, timeZone: s.timeZone, capture: { ...s.capture }, filters, sharing: { ...s.sharing }, printing: { ...s.printing },
+    enabled: s.enabled, photosEnabled: s.photosEnabled, timeZone: s.timeZone, capture: { ...s.capture }, filters, sharing: { ...s.sharing }, printing: { ...s.printing },
     lookAtCamera: { ...s.lookAtCamera }, liveView: { ...s.liveView }, boomerang: { ...s.boomerang }, attract: { ...s.attract },
     props: { enabled: s.props.enabled, propIds: [...s.props.propIds] },
     backgroundRemoval: { ...s.backgroundRemoval, backdropIds: [...s.backgroundRemoval.backdropIds] },
@@ -249,6 +250,29 @@ export default function EventGeniePage() {
   }
 
   const set = <K extends keyof Form>(key: K, patch: Partial<Form[K]>) => setForm(f => f && ({ ...f, [key]: typeof f[key] === 'object' ? { ...(f[key] as object), ...patch } : patch }));
+
+  // "What's in this event?" switches (each also heads its section)
+  const fmtPrice = (c?: number) => (c ? '$' + (c / 100).toFixed(c % 100 ? 2 : 0) + ' add-on' : 'Add-on');
+  const features: Feature[] = !form || !data ? [] : [
+    { id: 'photos', icon: Camera, title: 'Photo booth', line: 'Photos in your template designs, with filters.', on: form.photosEnabled,
+      // The Photo booth switch also tells Video Booth whether it runs alongside photos or on its own
+      onToggle: on => setForm(f => f && ({ ...f, photosEnabled: on, videoBooth: { ...f.videoBooth, offer: on ? 'alongsidePhotos' : 'videoOnly' } })) },
+    { id: 'boomerang', icon: Repeat, title: 'Boomerang', line: 'A short looping clip instead of photos.', on: form.boomerang.enabled, onToggle: on => set('boomerang', { enabled: on }) },
+    { id: 'videoBooth', icon: Video, title: 'Video Booth', line: 'Guests record a video message to a prompt.', on: form.videoBooth.enabled, onToggle: on => set('videoBooth', { enabled: on, offer: form.photosEnabled ? 'alongsidePhotos' : 'videoOnly' }) },
+    ...(data.geniefied.available || form.aiBooth.enabled ? [{ id: 'geniefied', icon: Wand2, title: 'Geniefied', line: 'The AI photo booth: photos restyled in themes.', badge: fmtPrice(data.billing.addOnPrices.geniefied),
+      on: form.aiBooth.enabled, blocked: form.photosEnabled ? undefined : 'Needs the Photo booth.', onToggle: (on: boolean) => set('aiBooth', { enabled: on }) }] : []),
+    ...(data.genie360.available || form.spin360.enabled ? [{ id: 'genie360', icon: RotateCw, title: 'Genie 360', line: 'Slow-motion 360 videos from the spinner.', badge: fmtPrice(data.billing.addOnPrices.genie360),
+      on: form.spin360.enabled, onToggle: async (on: boolean) => {
+        if (!on) { set('spin360', { enabled: false }); return; }
+        const s = await spin360FromSetupFor(data.event.title, data.event.eventDate);
+        set('spin360', { ...(s ?? {}), enabled: true });
+      } }] : []),
+    { id: 'props', icon: Smile, title: 'Props', line: 'Virtual glasses, hats and more on guests\' faces.', on: form.props.enabled, onToggle: on => set('props', { enabled: on }) },
+    { id: 'poses', icon: PersonStanding, title: 'Pose ideas', line: 'Sample poses for guests who need ideas.', on: form.poses.enabled, onToggle: on => set('poses', { enabled: on }) },
+    { id: 'backdrop', icon: ImageIcon, title: 'Virtual backdrop', line: 'Guests on a backdrop instead of the room.', on: form.backgroundRemoval.enabled, onToggle: on => set('backgroundRemoval', { enabled: on }) },
+    { id: 'printing', icon: Printer, title: 'Printing', line: 'Prints at the booth.', on: form.printing.enabled, blocked: form.photosEnabled ? undefined : 'Needs the Photo booth.', onToggle: on => set('printing', { enabled: on }) },
+  ];
+  const feature = (id: string) => features.find(f => f.id === id)!;
   const cap = (patch: Partial<Capture>) => set('capture', patch);
   // Genie-only accounts have no CRM event page or client design approval
   const genieOnly = session?.tenant?.product === 'genie';
@@ -379,58 +403,43 @@ export default function EventGeniePage() {
                   </div>
                 </Section>
 
-                <Section icon={Camera} title="Capture" description="What guests go through at the booth."
-                  right={<DefaultState custom={data.settings.custom.capture} onReset={() => resetSection('capture', 'Capture')}/>}>
-                  <CaptureFields value={form.capture} onChange={cap}>
-                    {mismatched.length > 0 && (
-                      <div className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
-                        <span>{mismatched.map(t => t.name).join(', ')}: frames skip a photo number, so guests take a photo that never prints. Renumber the frames in the designer.</span>
-                      </div>
-                    )}
-                  </CaptureFields>
-                  <div className="border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Toggle checked={form.liveView.mirrorLiveView} onChange={v => set('liveView', { mirrorLiveView: v })} label="Mirror the live view"
-                      hint="Like a mirror while guests pose. The photos themselves are never mirrored."/>
-                    <Toggle checked={form.liveView.showDesignWhilePosing} onChange={v => set('liveView', { showDesignWhilePosing: v })} label="Show the design while guests pose"
-                      hint="Where the live view leaves room (a 2x6 strip on an iPad in portrait), the design fills in as each photo is kept."/>
-                  </div>
-                  <div className="border-t pt-4">
-                    <LookAtCameraFields value={form.lookAtCamera} onChange={p => set('lookAtCamera', p)}/>
-                  </div>
-                </Section>
-
                 <Section icon={MonitorPlay} title="Attract screen" description="What the iPad shows between guests."
                   right={<DefaultState custom={data.settings.custom.attract} onReset={() => resetSection('attract', 'the attract screen')}/>}>
                   <AttractFields value={form.attract} onChange={p => set('attract', p)}/>
                 </Section>
 
-                <Section icon={Repeat} title="Boomerang" description="A short looping clip guests can choose instead of photos. This event only.">
-                  <BoomerangFields eventId={eventId} value={form.boomerang} onChange={p => set('boomerang', p)}/>
+                <Section icon={Share2} title="Sharing" description="How guests get their photos from the iPad."
+                  right={<DefaultState custom={data.settings.custom.sharing} onReset={() => resetSection('sharing', 'Sharing')}/>}>
+                  {data.providerWarnings.map(w => (
+                    <div key={w.channel} className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/><span>{w.message} <Link href="/genie/sharing" className="underline whitespace-nowrap">Open Genie → Sharing</Link></span>
+                    </div>
+                  ))}
+                  <SharingFields value={form.sharing} onChange={p => set('sharing', p)}/>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
+                    <Field label="Photo links stop working" hint="Follows your gallery expiry setting.">
+                      <p className="text-sm font-medium">{fmtDate(data.photosHiddenAt, tz)}</p>
+                    </Field>
+                    <Field label="Photos deleted" hint="Removed from storage and from the iPads.">
+                      <p className="text-sm font-medium">{fmtDate(data.photosDeletedAt, tz)}</p>
+                    </Field>
+                  </div>
+                  <div className="border-t pt-4">
+                    <SharingStationFields value={form.sharingStation} onChange={p => set('sharingStation', p)}/>
+                  </div>
                 </Section>
 
-                <Section icon={Video} title="Video Booth" description="Guests record a short video message to a prompt you choose. Included with Genie."
-                  right={<DefaultState custom={data.settings.custom.videoBooth} onReset={() => resetSection('videoBooth', 'Video Booth')}/>}>
-                  <VideoBoothFields value={form.videoBooth} propsOn={form.props.enabled} onChange={p => set('videoBooth', p)}/>
+                <Section icon={ImageIcon} title="Gallery" description="The event's gallery of photos for your client."
+                  right={<DefaultState custom={data.settings.custom.gallery} onReset={() => resetSection('gallery', 'Gallery')}/>}>
+                  <GalleryFields value={form.gallery} onChange={p => set('gallery', p)}/>
+                  {data.settings.gallery.autoPublishedAt && <p className="text-xs text-gray-500">Published automatically on {fmtDateTime(data.settings.gallery.autoPublishedAt, tz)}.</p>}
                 </Section>
 
-                <GenieTemplates eventId={eventId} templates={data.templates} shotCount={form.capture.shotCount} locked={ended} onChange={() => { setBundle(null); load(false); }} approvedDesign={data.approvedDesign} briefTemplate={data.briefTemplate}/>
-                <GenieTemplateText eventId={eventId} locked={ended} version={data.templates.map(t => t.id + ':' + (t.designId ?? '') + ':' + (t.alternateLayout ? 1 : 0)).join()} onChange={() => setBundle(null)}/>
+                <FeaturePanel features={features} disabled={ended}/>
 
-                <Section icon={ImageIcon} title="Virtual backdrop" description="Background removal: guests on a backdrop instead of the room. This event only.">
-                  <EventBackdropsFields value={form.backgroundRemoval} chosen={data.chosenBackdrops} onChange={p => set('backgroundRemoval', p)}/>
-                </Section>
-
-                <Section icon={PersonStanding} title="Pose ideas" description="Sample poses for guests who don't know how to pose."
-                  right={<DefaultState custom={data.settings.custom.poses} onReset={() => resetSection('poses', 'pose ideas')}/>}>
-                  <PoseIdeasFields value={form.poses} chosen={data.chosenPoses} onChange={p => set('poses', p)}/>
-                </Section>
-
-                <Section icon={Smile} title="Props" description="Virtual glasses, hats and more that follow guests' faces. This event only.">
-                  <EventPropsFields value={form.props} chosen={data.chosenProps} onChange={p => set('props', p)}/>
-                </Section>
-
-                <Section icon={Palette} title="Filters" description="Looks guests can pick on the review screen.">
+                <GroupHeading title="Photo booth"/>
+                <FeatureSection feature={feature('photos')}>
+                  <p className="text-sm font-medium">Filters</p>
                   <Toggle checked={form.filters.guestFiltersEnabled} onChange={v => set('filters', { guestFiltersEnabled: v })} label="Let guests choose a filter" hint="Off: every photo uses the default filter."/>
                   <div className="border border-gray-100 rounded-lg divide-y divide-gray-100">
                     {data.settings.filters.available.filter(f => f.id !== 'glamourStyle' || data.billing.glamourStyleReady || form.filters.filterIds.includes('glamourStyle')).map(f => {
@@ -470,53 +479,73 @@ export default function EventGeniePage() {
                       );
                     })}
                   </div>
-                </Section>
+                </FeatureSection>
+                {form.photosEnabled && (
+                  <>
+                <GenieTemplates eventId={eventId} templates={data.templates} shotCount={form.capture.shotCount} locked={ended} onChange={() => { setBundle(null); load(false); }} approvedDesign={data.approvedDesign} briefTemplate={data.briefTemplate}/>
+                <GenieTemplateText eventId={eventId} locked={ended} version={data.templates.map(t => t.id + ':' + (t.designId ?? '') + ':' + (t.alternateLayout ? 1 : 0)).join()} onChange={() => setBundle(null)}/>
 
-                <Section icon={Share2} title="Sharing" description="How guests get their photos from the iPad."
-                  right={<DefaultState custom={data.settings.custom.sharing} onReset={() => resetSection('sharing', 'Sharing')}/>}>
-                  {data.providerWarnings.map(w => (
-                    <div key={w.channel} className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/><span>{w.message} <Link href="/genie/sharing" className="underline whitespace-nowrap">Open Genie → Sharing</Link></span>
-                    </div>
-                  ))}
-                  <SharingFields value={form.sharing} onChange={p => set('sharing', p)}/>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
-                    <Field label="Photo links stop working" hint="Follows your gallery expiry setting.">
-                      <p className="text-sm font-medium">{fmtDate(data.photosHiddenAt, tz)}</p>
-                    </Field>
-                    <Field label="Photos deleted" hint="Removed from storage and from the iPads.">
-                      <p className="text-sm font-medium">{fmtDate(data.photosDeletedAt, tz)}</p>
-                    </Field>
+                  </>
+                )}
+                {(form.photosEnabled || form.boomerang.enabled) && (
+                <Section icon={Camera} title="Capture" description="Countdowns, previews and retakes for photos and Boomerangs."
+                  right={<DefaultState custom={data.settings.custom.capture} onReset={() => resetSection('capture', 'Capture')}/>}>
+                  <CaptureFields value={form.capture} onChange={cap}>
+                    {mismatched.length > 0 && (
+                      <div className="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0"/>
+                        <span>{mismatched.map(t => t.name).join(', ')}: frames skip a photo number, so guests take a photo that never prints. Renumber the frames in the designer.</span>
+                      </div>
+                    )}
+                  </CaptureFields>
+                  <div className="border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Toggle checked={form.liveView.mirrorLiveView} onChange={v => set('liveView', { mirrorLiveView: v })} label="Mirror the live view"
+                      hint="Like a mirror while guests pose. The photos themselves are never mirrored."/>
+                    <Toggle checked={form.liveView.showDesignWhilePosing} onChange={v => set('liveView', { showDesignWhilePosing: v })} label="Show the design while guests pose"
+                      hint="Where the live view leaves room (a 2x6 strip on an iPad in portrait), the design fills in as each photo is kept."/>
                   </div>
                   <div className="border-t pt-4">
-                    <SharingStationFields value={form.sharingStation} onChange={p => set('sharingStation', p)}/>
+                    <LookAtCameraFields value={form.lookAtCamera} onChange={p => set('lookAtCamera', p)}/>
                   </div>
                 </Section>
+                )}
 
+                <GroupHeading title="More ways to use the booth"/>
+                <FeatureSection feature={feature('boomerang')}>
+                  <BoomerangFields bare eventId={eventId} value={form.boomerang} onChange={p => set('boomerang', p)}/>
+                </FeatureSection>
+                <FeatureSection feature={feature('videoBooth')}
+                  right={<DefaultState custom={data.settings.custom.videoBooth} onReset={() => resetSection('videoBooth', 'Video Booth')}/>}>
+                  <VideoBoothFields bare value={form.videoBooth} propsOn={form.props.enabled} onChange={p => set('videoBooth', p)}/>
+                </FeatureSection>
                 {(data.geniefied.available || form.aiBooth.enabled) && (
-                  <Section icon={Wand2} title="Geniefied" description="The AI photo booth: guests restyle their photos in themes you choose. This event only.">
-                    <GeniefiedFields value={form.aiBooth} info={data.geniefied} priceCents={data.billing.addOnPrices.geniefied ?? 0}
+                  <FeatureSection feature={feature('geniefied')}>
+                    <GeniefiedFields bare value={form.aiBooth} info={data.geniefied} priceCents={data.billing.addOnPrices.geniefied ?? 0}
                       onChange={p => set('aiBooth', p)} onTopUp={() => pay(false, true)} topUpBusy={payBusy}/>
-                  </Section>
+                  </FeatureSection>
                 )}
-
                 {(data.genie360.available || form.spin360.enabled) && (
-                  <Section icon={RotateCw} title="Genie 360" description="The spinner booth: slow-motion 360 videos from an iPhone on the arm. A paid add-on for this event.">
-                    <Genie360Fields value={form.spin360} priceCents={data.billing.addOnPrices.genie360 ?? 0} eventTitle={data.event.title} eventDate={data.event.eventDate}
+                  <FeatureSection feature={feature('genie360')}>
+                    <Genie360Fields bare value={form.spin360} priceCents={data.billing.addOnPrices.genie360 ?? 0} eventTitle={data.event.title} eventDate={data.event.eventDate}
                       onChange={p => set('spin360', p)}/>
-                  </Section>
+                  </FeatureSection>
                 )}
 
-                <Section icon={ImageIcon} title="Gallery" description="The event's gallery of photos for your client."
-                  right={<DefaultState custom={data.settings.custom.gallery} onReset={() => resetSection('gallery', 'Gallery')}/>}>
-                  <GalleryFields value={form.gallery} onChange={p => set('gallery', p)}/>
-                  {data.settings.gallery.autoPublishedAt && <p className="text-xs text-gray-500">Published automatically on {fmtDateTime(data.settings.gallery.autoPublishedAt, tz)}.</p>}
-                </Section>
-
-                <Section icon={Printer} title="Printing"
+                <GroupHeading title="Extras" hint="Used by the photo booth and other modes."/>
+                <FeatureSection feature={feature('props')} usedBy="Photos and Video Booth">
+                  <EventPropsFields bare value={form.props} chosen={data.chosenProps} onChange={p => set('props', p)}/>
+                </FeatureSection>
+                <FeatureSection feature={feature('poses')} usedBy="Photos"
+                  right={<DefaultState custom={data.settings.custom.poses} onReset={() => resetSection('poses', 'pose ideas')}/>}>
+                  <PoseIdeasFields bare value={form.poses} chosen={data.chosenPoses} onChange={p => set('poses', p)}/>
+                </FeatureSection>
+                <FeatureSection feature={feature('backdrop')} usedBy="Photos">
+                  <EventBackdropsFields bare value={form.backgroundRemoval} chosen={data.chosenBackdrops} onChange={p => set('backgroundRemoval', p)}/>
+                </FeatureSection>
+                <FeatureSection feature={feature('printing')} usedBy="Photos"
                   right={<DefaultState custom={data.settings.custom.printing} onReset={() => resetSection('printing', 'Printing')}/>}>
-                  <PrintingFields value={form.printing} onChange={p => set('printing', p)}/>
-                </Section>
+                  <PrintingFields bare value={form.printing} onChange={p => set('printing', p)}/>
+                </FeatureSection>
                 </fieldset>
 
                 <GenieEventDevices eventId={eventId}/>

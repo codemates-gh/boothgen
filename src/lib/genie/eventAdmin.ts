@@ -96,6 +96,8 @@ const int = (min: number, max: number) => z.number().int().min(min).max(max);
 
 export const SettingsPatch = z.object({
   enabled: z.boolean(),
+  // Photo booth (stills) on / off for the event
+  photosEnabled: z.boolean(),
   timeZone: z.string().refine(isValidTimeZone, 'Unknown time zone'),
   capture: z.object({
     shotCount: int(1, 10),
@@ -178,6 +180,7 @@ export type SettingsPatch = z.infer<typeof SettingsPatch>;
 export function settingsUpdateData(patch: SettingsPatch, current: EventGenieSettings): { data: Record<string, unknown> } | { error: string } {
   const data: Record<string, unknown> = {};
   if (patch.enabled !== undefined) data.enabled = patch.enabled;
+  if (patch.photosEnabled !== undefined) data.photosEnabled = patch.photosEnabled;
   if (patch.timeZone !== undefined) data.timeZone = patch.timeZone;
   if (patch.capture) { const { countdownSound: _cs, ...capture } = patch.capture; Object.assign(data, capture); }
   if (patch.filters) {
@@ -256,6 +259,7 @@ export async function withBoomerangDesignProblem<T extends { boomerang: object }
 export function settingsView(s: EventGenieSettings) {
   return {
     enabled: s.enabled,
+    photosEnabled: s.photosEnabled,
     timeZone: s.timeZone,
     bundleVersion: s.bundleVersion,
     maxDevices: s.maxDevices,

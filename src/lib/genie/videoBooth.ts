@@ -48,7 +48,8 @@ export const videoConsentFor = (s: Pick<StoredVideoBooth, 'consentText' | 'showI
 // EventBundle.videoBooth: only while Video Booth is on. The template is sent as a ClipDesign at the video's shape, with
 // the event's words drawn in; one that's gone or no longer at that shape is left out (the plain picture).
 // propsOn: the event's props are on (with at least one prop); props on video is sent only then
-export async function bundleVideoBooth(v: unknown, tenantId: string, eventId: string, templateText: unknown, propsOn = false) {
+// photosOn: the event's Photo booth switch; off makes the iPads offer video only
+export async function bundleVideoBooth(v: unknown, tenantId: string, eventId: string, templateText: unknown, propsOn = false, photosOn = true) {
   const s = storedVideoBooth(v);
   if (!s?.enabled) return undefined;
   let design;
@@ -58,7 +59,7 @@ export async function bundleVideoBooth(v: unknown, tenantId: string, eventId: st
   }
   return {
     enabled: true,
-    offer: s.offer,
+    offer: photosOn ? s.offer : 'videoOnly' as const,
     prompts: s.prompts.map(p => ({ id: p.id, text: p.text })),
     maxSeconds: s.maxSeconds,
     retakes: s.retakes,

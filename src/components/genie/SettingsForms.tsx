@@ -222,10 +222,10 @@ export function GalleryFields({ value, onChange, disabled }: { value: GalleryDef
   );
 }
 
-export function PrintingFields({ value, onChange, disabled }: { value: Printing; onChange: (p: Partial<Printing>) => void; disabled?: boolean }) {
+export function PrintingFields({ value, onChange, disabled, bare }: { value: Printing; onChange: (p: Partial<Printing>) => void; disabled?: boolean; bare?: boolean }) {
   return (
     <>
-      <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Printing on"/>
+      {!bare && <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Printing on"/>}
       {value.enabled && (
         <>
         <Toggle checked={value.copiesMatchPeople} disabled={disabled} onChange={v => onChange({ copiesMatchPeople: v })} label="Copies match the number of people"

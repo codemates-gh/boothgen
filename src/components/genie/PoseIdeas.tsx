@@ -11,7 +11,7 @@ import { POSES_PER_CATEGORY_HINT, POSE_CATEGORIES, PoseThumb, PoseUploadButton, 
 export type PoseIdeasValue = { enabled: boolean; poseIds: string[] };
 
 // "Pose ideas" (account Event defaults, or an event's own): on/off and the poses guests see, per category, in order
-export function PoseIdeasFields({ value, chosen, disabled, onChange }: { value: PoseIdeasValue; chosen: Pose[]; disabled?: boolean; onChange: (v: Partial<PoseIdeasValue>) => void }) {
+export function PoseIdeasFields({ value, chosen, disabled, onChange, bare }: { value: PoseIdeasValue; chosen: Pose[]; disabled?: boolean; onChange: (v: Partial<PoseIdeasValue>) => void; bare?: boolean }) {
   const [library, setLibrary] = useState<Pose[] | null>(null);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<PoseCategory>('her');
@@ -50,8 +50,8 @@ export function PoseIdeasFields({ value, chosen, disabled, onChange }: { value: 
 
   return (
     <div className="space-y-4">
-      <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Show pose ideas"
-        hint="Before Start, guests choose Solo (Her, Him or All) or Group (For two or For groups) and see sample poses; during each countdown a card shows one. Photos only, never Boomerangs, and the poses are never in the photos."/>
+      {!bare && <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Show pose ideas"
+        hint="Before Start, guests choose Solo (Her, Him or All) or Group (For two or For groups) and see sample poses; during each countdown a card shows one. Photos only, never Boomerangs, and the poses are never in the photos."/>}
       {value.enabled && (
         <>
           {error && <p className="text-sm text-red-600">{error}</p>}

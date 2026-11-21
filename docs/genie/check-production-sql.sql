@@ -79,6 +79,7 @@ WITH expected(sql_file, tbl, col) AS (VALUES
   ('apply-production-glamour-style.sql', 'genie_event_payments', 'addOns'),
   ('apply-production-live-view.sql', 'event_genie_settings', 'mirrorLiveView'),
   ('apply-production-live-view.sql', 'event_genie_settings', 'showDesignWhilePosing'),
+  ('apply-production-photo-booth-switch.sql', 'event_genie_settings', 'photosEnabled'),
   ('apply-production-poses.sql', 'event_genie_settings', 'customPoses'),
   ('apply-production-poses.sql', 'event_genie_settings', 'poseIds'),
   ('apply-production-poses.sql', 'event_genie_settings', 'posesEnabled'),

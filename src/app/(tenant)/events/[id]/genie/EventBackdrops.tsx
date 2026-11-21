@@ -12,7 +12,7 @@ import { BackdropThumb, BackdropUploadButton, type Backdrop } from '@/components
 export type EventBackdropsValue = { enabled: boolean; backdropIds: string[]; defaultId: string | null; guestPicks: boolean; edgeSoftness: 'soft' | 'medium' | 'sharp' };
 
 // Event → Genie → Virtual backdrop: on/off, the backdrops (guests' order), the default, guest choice and edge softness
-export function EventBackdropsFields({ value, chosen, disabled, onChange }: { value: EventBackdropsValue; chosen: Backdrop[]; disabled?: boolean; onChange: (v: Partial<EventBackdropsValue>) => void }) {
+export function EventBackdropsFields({ value, chosen, disabled, onChange, bare }: { value: EventBackdropsValue; chosen: Backdrop[]; disabled?: boolean; onChange: (v: Partial<EventBackdropsValue>) => void; bare?: boolean }) {
   const [library, setLibrary] = useState<Backdrop[] | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -42,8 +42,8 @@ export function EventBackdropsFields({ value, chosen, disabled, onChange }: { va
 
   return (
     <div className="space-y-4">
-      <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Remove the background"
-        hint="The iPad cuts guests out of the real background and puts them on a backdrop, in every photo (not Boomerangs). It runs on the iPad, so it works offline."/>
+      {!bare && <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Remove the background"
+        hint="The iPad cuts guests out of the real background and puts them on a backdrop, in every photo (not Boomerangs). It runs on the iPad, so it works offline."/>}
       {value.enabled && (
         <>
           {error && <p className="text-sm text-red-600">{error}</p>}

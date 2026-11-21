@@ -26,8 +26,8 @@ const MODES = [
 
 // Event → Genie → Geniefied (Genie P13): the AI photo booth. A paid add-on per event with a render allowance; before it's
 // paid the event has a few trial renders and the watermark. Themes come from Genie → Geniefied Themes (and BoothGen's Standard set).
-export function GeniefiedFields({ value, info, priceCents, disabled, onChange, onTopUp, topUpBusy }: {
-  value: AiBoothValue; info: GeniefiedInfo; priceCents: number; disabled?: boolean;
+export function GeniefiedFields({ value, info, priceCents, disabled, onChange, onTopUp, topUpBusy, bare }: {
+  value: AiBoothValue; info: GeniefiedInfo; priceCents: number; disabled?: boolean; bare?: boolean;
   onChange: (v: Partial<AiBoothValue>) => void; onTopUp: () => void; topUpBusy: boolean;
 }) {
   const [themes, setThemes] = useState<AiTheme[] | null>(null);
@@ -42,8 +42,8 @@ export function GeniefiedFields({ value, info, priceCents, disabled, onChange, o
 
   return (
     <div className="space-y-4">
-      <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Use Geniefied at this event"
-        hint={`Guests restyle their photos in themes you choose. Add-on: ${fmtCents(priceCents)} for this event with ${info.rendersIncluded} renders (each photo is one render), paid with the event. Until it's paid you get ${info.trialRenders} trial renders and the photos show a watermark.`}/>
+      {!bare && <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Use Geniefied at this event"
+        hint={`Guests restyle their photos in themes you choose. Add-on: ${fmtCents(priceCents)} for this event with ${info.rendersIncluded} renders (each photo is one render), paid with the event. Until it's paid you get ${info.trialRenders} trial renders and the photos show a watermark.`}/>}
       {value.enabled && (
         <>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">

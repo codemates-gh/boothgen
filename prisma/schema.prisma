@@ -1462,6 +1462,8 @@ model EventGenieSettings {
   // Video Booth (Genie P14; StoredVideoBooth in src/lib/genie/videoBooth.ts): prompts, length, retakes, video size,
   // shape + template, consent text (null = BoothGen's default), show in gallery. null = off with BoothGen's defaults
   videoBooth                   Json?
+  // Photo booth (stills) offered at the event; off = no photo designs (with Video Booth on, iPads offer video only)
+  photosEnabled                Boolean   @default(true)
   // Genie 360 (Genie P15; StoredSpin360 in src/lib/genie/spin360Options.ts): the spinner booth. A paid per-event add-on;
   // null = off. The bundle's spin360 is resolved from it (the chosen style written out, every default filled in)
   spin360                      Json?

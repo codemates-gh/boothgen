@@ -46,11 +46,11 @@ export function LookAtCameraFields({ value, onChange, disabled }: { value: LookA
 }
 
 // The Boomerang's shape comes from its template's layout (Square, 9:16, 16:9, 4x6, 6x4); none = a plain square clip
-export function BoomerangFields({ value, onChange, disabled }: { eventId?: string; value: Boomerang; onChange: (p: Partial<Boomerang>) => void; disabled?: boolean }) {
+export function BoomerangFields({ value, onChange, disabled, bare }: { eventId?: string; value: Boomerang; onChange: (p: Partial<Boomerang>) => void; disabled?: boolean; bare?: boolean }) {
   return (
     <>
-      <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Offer Boomerang"
-        hint="Adds a Boomerang tile next to the photo designs on the iPad's start screen: a short looping clip, shared by text, email and QR. Boomerangs are never printed."/>
+      {!bare && <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Offer Boomerang"
+        hint="Adds a Boomerang tile next to the photo designs on the iPad's start screen: a short looping clip, shared by text, email and QR. Boomerangs are never printed."/>}
       {value.enabled && (
         <div className="ml-[52px] space-y-4">
           <Field label="Template" hint="Any single-photo layout from Templates. The Boomerang is filmed at the photo frame's shape and plays in it, with the layout's background and artwork around it. Guests see it while they pose (with 'Show the frame on the live view' on).">

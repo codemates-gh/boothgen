@@ -84,20 +84,20 @@ function PromptsEditor({ prompts, onChange, disabled }: { prompts: VideoBoothVal
 }
 
 // propsOn: the event's props are on (the switch shows only then); undefined on Event defaults (shown, applies where props are on)
-export function VideoBoothFields({ value, onChange, disabled, propsOn }: { value: VideoBoothValue; onChange: (p: Partial<VideoBoothValue>) => void; disabled?: boolean; propsOn?: boolean }) {
+export function VideoBoothFields({ value, onChange, disabled, propsOn, bare }: { value: VideoBoothValue; onChange: (p: Partial<VideoBoothValue>) => void; disabled?: boolean; propsOn?: boolean; bare?: boolean }) {
   const size = VIDEO_SIZE_OPTIONS.find(o => o.value === value.videoSize);
   return (
     <>
-      <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Offer Video Booth"
-        hint="Guests record a short video message to a prompt (a toast, a greeting, a confession), watch it back, and keep it or record again. Shared by text, email and QR like photos; never printed. Only videos guests keep are uploaded. Included with Genie."/>
+      {!bare && <Toggle checked={value.enabled} disabled={disabled} onChange={v => onChange({ enabled: v })} label="Offer Video Booth"
+        hint="Guests record a short video message to a prompt (a toast, a greeting, a confession), watch it back, and keep it or record again. Shared by text, email and QR like photos; never printed. Only videos guests keep are uploaded. Included with Genie."/>}
       {value.enabled && (
         <div className="ml-[52px] space-y-5">
-          <Field label="On the start screen">
+          {!bare && <Field label="On the start screen">
             <Select value={value.offer} disabled={disabled} onChange={e => onChange({ offer: e.target.value as VideoBoothOffer })}>
               <option value="alongsidePhotos">Photos and video: a Video tile next to the photo designs</option>
               <option value="videoOnly">Video only: the booth records only video messages</option>
             </Select>
-          </Field>
+          </Field>}
           <Field label="Prompts" hint="What guests answer, in this order. With one prompt guests go straight to recording; with more they pick one. 1 to 8.">
             <PromptsEditor prompts={value.prompts} disabled={disabled} onChange={prompts => onChange({ prompts })}/>
           </Field>

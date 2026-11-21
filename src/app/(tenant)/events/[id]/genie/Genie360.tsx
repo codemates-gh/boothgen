@@ -633,26 +633,30 @@ function QuickTweaks({ value, onChange, lib, eventTitle, eventDate, disabled }: 
   );
 }
 
+// The account's Genie 360 setup for this event, with {event} / {date} in the title text filled in (turning 360 on)
+export async function spin360FromSetupFor(eventTitle: string, eventDate: string | null): Promise<Spin360Value | null> {
+  const r = await fetch('/api/genie-360/setup');
+  if (!r.ok) return null;
+  const setup = (await r.json()).setup as Spin360Value;
+  const date = eventDate ? new Date(eventDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
+  const fill = (l: string) => l.replaceAll(TITLE_TOKENS.event, eventTitle).replaceAll(TITLE_TOKENS.date, date).trim().slice(0, 40);
+  const lines = setup.title?.lines.map(fill).filter(Boolean) ?? [];
+  return { ...setup, title: setup.title && lines.length ? { ...setup.title, lines } : null };
+}
+
 // The event's Genie 360 section: on/off (the add-on), a link to the Genie 360 page, and the quick tweaks. Turning it on
 // copies the account's Genie 360 setup onto the event; the event's own changes stay on the event.
-export function Genie360Fields({ value, onChange, priceCents, eventTitle, eventDate, disabled }: {
+export function Genie360Fields({ value, onChange, priceCents, eventTitle, eventDate, disabled, bare }: {
   value: Spin360Value; onChange: (p: Partial<Spin360Value>) => void; priceCents: number; eventTitle: string; eventDate: string | null; disabled?: boolean;
+  // On the event page the section's own switch turns 360 on and off
+  bare?: boolean;
 }) {
   const [lib, setLib] = useState<Library | null>(null);
   const [busy, setBusy] = useState(false);
   const loadLib = () => fetch('/api/genie-360/library').then(r => (r.ok ? r.json() : null)).then(d => d && setLib(d));
   useEffect(() => { if (value.enabled && !lib) loadLib(); }, [value.enabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // The Genie 360 setup, with {event} / {date} in the title text filled in for this event
-  async function fromSetup(): Promise<Spin360Value | null> {
-    const r = await fetch('/api/genie-360/setup');
-    if (!r.ok) return null;
-    const setup = (await r.json()).setup as Spin360Value;
-    const date = eventDate ? new Date(eventDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
-    const fill = (l: string) => l.replaceAll(TITLE_TOKENS.event, eventTitle).replaceAll(TITLE_TOKENS.date, date).trim().slice(0, 40);
-    const lines = setup.title?.lines.map(fill).filter(Boolean) ?? [];
-    return { ...setup, title: setup.title && lines.length ? { ...setup.title, lines } : null };
-  }
+  const fromSetup = () => spin360FromSetupFor(eventTitle, eventDate);
   async function turnOn() {
     setBusy(true);
     const s = await fromSetup();
@@ -686,7 +690,7 @@ export function Genie360Fields({ value, onChange, priceCents, eventTitle, eventD
         </p>
         <div className="flex gap-1">
           <Button type="button" variant="ghost" size="sm" disabled={disabled || busy} onClick={useSetup}>Use my Genie 360 setup again</Button>
-          <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={() => { if (confirm('Turn Genie 360 off for this event? Its 360 choices are kept if you add it again.')) onChange({ enabled: false }); }}>Turn off</Button>
+          {!bare && <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={() => { if (confirm('Turn Genie 360 off for this event? Its 360 choices are kept if you add it again.')) onChange({ enabled: false }); }}>Turn off</Button>}
         </div>
       </div>
       {lib ? <QuickTweaks value={value} onChange={onChange} lib={lib} eventTitle={eventTitle} eventDate={eventDate} disabled={disabled}/>

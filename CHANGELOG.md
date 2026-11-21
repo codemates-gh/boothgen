@@ -4,6 +4,16 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.135.0] — 2026-11-21
+
+### Changed
+- **Event → Genie is organized by feature.**
+  - **Always open at the top:** Details, Attract screen, Sharing and Gallery.
+  - **"What's in this event?"** follows: switches for Photo booth, Boomerang, Video Booth, Geniefied, Genie 360, Props, Pose ideas, Virtual backdrop and Printing. Paid add-ons show their price.
+  - **Feature sections:** each is grouped under Photo booth (filters, templates, template text, capture), More ways to use the booth, or Extras ("Used by …"). A section that's off is one line; switching it on opens it, and an open section can be folded.
+  - **New Photo booth switch:** turning it off makes the iPads offer Video Booth only. It replaces Video Booth's "On the start screen" choice on the event page. Geniefied and Printing need the Photo booth.
+  - **Needs SQL:** `docs/genie/apply-production-photo-booth-switch.sql`.
+
 ## [2.134.1] — 2026-11-21
 
 ### Changed
