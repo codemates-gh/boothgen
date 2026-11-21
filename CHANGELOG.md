@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.135.3] — 2026-11-21
+
+### Changed
+- **Event → Genie, "What's in this event?": the switches follow what each feature needs.**
+  - **Printing, Geniefied, Pose ideas and Virtual backdrop** need the Photo booth.
+  - **Props** need the Photo booth or Video Booth.
+  - **Switching a feature off** also switches off what depended on it.
+
 ## [2.135.2] — 2026-11-21
 
 ### Added

@@ -256,9 +256,17 @@ export default function EventGeniePage() {
   const features: Feature[] = !form || !data ? [] : [
     { id: 'photos', icon: Camera, title: 'Photo booth', line: form.photosEnabled ? 'Photos in your template designs, with filters.' : (form.boomerang.enabled || form.videoBooth.enabled ? 'Off: iPads offer only the modes switched on below.' : 'Off: with nothing else on, iPads work as a Sharing station for this event.'), on: form.photosEnabled,
       // The Photo booth switch also tells Video Booth whether it runs alongside photos or on its own
-      onToggle: on => setForm(f => f && ({ ...f, photosEnabled: on, videoBooth: { ...f.videoBooth, offer: on ? 'alongsidePhotos' : 'videoOnly' } })) },
+      // Off also switches off what only works with photos (and Props when Video Booth isn't on either)
+      onToggle: on => setForm(f => f && ({
+        ...f, photosEnabled: on, videoBooth: { ...f.videoBooth, offer: on ? 'alongsidePhotos' : 'videoOnly' },
+        ...(on ? {} : {
+          printing: { ...f.printing, enabled: false }, aiBooth: { ...f.aiBooth, enabled: false }, poses: { ...f.poses, enabled: false },
+          backgroundRemoval: { ...f.backgroundRemoval, enabled: false }, ...(f.videoBooth.enabled ? {} : { props: { ...f.props, enabled: false } }),
+        }),
+      })) },
     { id: 'boomerang', icon: Repeat, title: 'Boomerang', line: 'A short looping clip instead of photos.', on: form.boomerang.enabled, onToggle: on => set('boomerang', { enabled: on }) },
-    { id: 'videoBooth', icon: Video, title: 'Video Booth', line: 'Guests record a video message to a prompt.', on: form.videoBooth.enabled, onToggle: on => set('videoBooth', { enabled: on, offer: form.photosEnabled ? 'alongsidePhotos' : 'videoOnly' }) },
+    { id: 'videoBooth', icon: Video, title: 'Video Booth', line: 'Guests record a video message to a prompt.', on: form.videoBooth.enabled,
+      onToggle: on => setForm(f => f && ({ ...f, videoBooth: { ...f.videoBooth, enabled: on, offer: f.photosEnabled ? 'alongsidePhotos' : 'videoOnly' }, ...(!on && !f.photosEnabled ? { props: { ...f.props, enabled: false } } : {}) })) },
     ...(data.geniefied.available || form.aiBooth.enabled ? [{ id: 'geniefied', icon: Wand2, title: 'Geniefied', line: 'The AI photo booth: photos restyled in themes.', badge: fmtPrice(data.billing.addOnPrices.geniefied),
       on: form.aiBooth.enabled, blocked: form.photosEnabled ? undefined : 'Needs the Photo booth.', onToggle: (on: boolean) => set('aiBooth', { enabled: on }) }] : []),
     ...(data.genie360.available || form.spin360.enabled ? [{ id: 'genie360', icon: RotateCw, title: 'Genie 360', line: 'Slow-motion 360 videos from the spinner.', badge: fmtPrice(data.billing.addOnPrices.genie360),
@@ -267,9 +275,10 @@ export default function EventGeniePage() {
         const s = await spin360FromSetupFor(data.event.title, data.event.eventDate);
         set('spin360', { ...(s ?? {}), enabled: true });
       } }] : []),
-    { id: 'props', icon: Smile, title: 'Props', line: 'Virtual glasses, hats and more on guests\' faces.', on: form.props.enabled, onToggle: on => set('props', { enabled: on }) },
-    { id: 'poses', icon: PersonStanding, title: 'Pose ideas', line: 'Sample poses for guests who need ideas.', on: form.poses.enabled, onToggle: on => set('poses', { enabled: on }) },
-    { id: 'backdrop', icon: ImageIcon, title: 'Virtual backdrop', line: 'Guests on a backdrop instead of the room.', on: form.backgroundRemoval.enabled, onToggle: on => set('backgroundRemoval', { enabled: on }) },
+    { id: 'props', icon: Smile, title: 'Props', line: 'Virtual glasses, hats and more on guests\' faces.', on: form.props.enabled,
+      blocked: form.photosEnabled || form.videoBooth.enabled ? undefined : 'Needs the Photo booth or Video Booth.', onToggle: on => set('props', { enabled: on }) },
+    { id: 'poses', icon: PersonStanding, title: 'Pose ideas', line: 'Sample poses for guests who need ideas.', on: form.poses.enabled, blocked: form.photosEnabled ? undefined : 'Needs the Photo booth.', onToggle: on => set('poses', { enabled: on }) },
+    { id: 'backdrop', icon: ImageIcon, title: 'Virtual backdrop', line: 'Guests on a backdrop instead of the room.', on: form.backgroundRemoval.enabled, blocked: form.photosEnabled ? undefined : 'Needs the Photo booth.', onToggle: on => set('backgroundRemoval', { enabled: on }) },
     { id: 'printing', icon: Printer, title: 'Printing', line: 'Prints at the booth.', on: form.printing.enabled, blocked: form.photosEnabled ? undefined : 'Needs the Photo booth.', onToggle: on => set('printing', { enabled: on }) },
   ];
   const feature = (id: string) => features.find(f => f.id === id)!;
