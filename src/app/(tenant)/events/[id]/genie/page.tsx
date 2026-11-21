@@ -411,7 +411,7 @@ export default function EventGeniePage() {
 
                 <Section icon={Video} title="Video Booth" description="Guests record a short video message to a prompt you choose. Included with Genie."
                   right={<DefaultState custom={data.settings.custom.videoBooth} onReset={() => resetSection('videoBooth', 'Video Booth')}/>}>
-                  <VideoBoothFields value={form.videoBooth} onChange={p => set('videoBooth', p)}/>
+                  <VideoBoothFields value={form.videoBooth} propsOn={form.props.enabled} onChange={p => set('videoBooth', p)}/>
                 </Section>
 
                 <GenieTemplates eventId={eventId} templates={data.templates} shotCount={form.capture.shotCount} locked={ended} onChange={() => { setBundle(null); load(false); }} approvedDesign={data.approvedDesign} briefTemplate={data.briefTemplate}/>

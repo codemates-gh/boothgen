@@ -4,6 +4,15 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.132.0] — 2026-11-21
+
+### Added
+- **Video Booth → Props on video (Genie P14.1).**
+  - **The switch:** a "Props on video" switch, shown when the event's props are on. Guests can wear a prop in their video; the video without the prop stays on the booth iPad for 30 days. It reaches the iPads only while the event's props are on.
+  - **Uploads:** they record which prop the guest wore. It's accepted on videos only.
+  - **Videos tab:** each such video shows the prop's name and the note "Original kept on the booth iPad".
+  - **Needs SQL:** `docs/genie/apply-production-props-on-video.sql`.
+
 ## [2.131.1] — 2026-11-21
 
 ### Fixed

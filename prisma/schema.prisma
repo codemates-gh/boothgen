@@ -763,6 +763,8 @@ model GalleryAsset {
   // Video Booth (Genie P14): the prompt the guest answered, as they saw it
   promptId       String?
   promptText     String?
+  // Video Booth with props on video (P14.1): the PropAsset.id the guest wore (kind video only)
+  propId         String?
   // Genie 360 (P15): "spin360" on a 360 clip and its poster (a 360 badge, its own gallery rule)
   genieMode      String?
   // Hidden by the host (Videos tab): left out of the public gallery and the guest's session page

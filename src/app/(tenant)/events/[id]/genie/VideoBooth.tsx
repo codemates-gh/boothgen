@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Field, Toggle } from '@/components/genie/parts';
 import { BOOMERANG_FORMATS, CLIP_CANVAS, type BoomerangFormat } from '@/lib/genie/schemas';
 import {
-  MAX_PROMPTS, STARTER_PROMPTS, VIDEO_SIZE_OPTIONS, WHY_NOT_1080P, defaultVideoConsent, newPromptId,
+  MAX_PROMPTS, PROPS_ON_VIDEO_HINT, STARTER_PROMPTS, VIDEO_SIZE_OPTIONS, WHY_NOT_1080P, defaultVideoConsent, newPromptId,
   type VideoBoothOffer, type VideoSize,
 } from '@/lib/genie/videoBoothOptions';
 import { BoomerangTemplateField, type DesignChoice } from './BoomerangTemplate';
@@ -17,7 +17,7 @@ import { BoomerangTemplateField, type DesignChoice } from './BoomerangTemplate';
 
 export type VideoBoothValue = {
   enabled: boolean; offer: VideoBoothOffer; prompts: { id: string; text: string }[]; maxSeconds: number; retakes: number;
-  videoSize: VideoSize; format: BoomerangFormat; design: DesignChoice | null; consentText: string | null; showInGallery: boolean;
+  videoSize: VideoSize; format: BoomerangFormat; design: DesignChoice | null; consentText: string | null; showInGallery: boolean; props: boolean;
   designProblem: 'deleted' | 'shape' | null;
 };
 
@@ -83,7 +83,8 @@ function PromptsEditor({ prompts, onChange, disabled }: { prompts: VideoBoothVal
   );
 }
 
-export function VideoBoothFields({ value, onChange, disabled }: { value: VideoBoothValue; onChange: (p: Partial<VideoBoothValue>) => void; disabled?: boolean }) {
+// propsOn: the event's props are on (the switch shows only then); undefined on Event defaults (shown, applies where props are on)
+export function VideoBoothFields({ value, onChange, disabled, propsOn }: { value: VideoBoothValue; onChange: (p: Partial<VideoBoothValue>) => void; disabled?: boolean; propsOn?: boolean }) {
   const size = VIDEO_SIZE_OPTIONS.find(o => o.value === value.videoSize);
   return (
     <>
@@ -136,6 +137,10 @@ export function VideoBoothFields({ value, onChange, disabled }: { value: VideoBo
               onChange={e => onChange({ consentText: e.target.value || null })}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand disabled:bg-gray-50"/>
           </Field>
+          {propsOn !== false && (
+            <Toggle checked={value.props} disabled={disabled} onChange={v => onChange({ props: v })} label="Props on video"
+              hint={PROPS_ON_VIDEO_HINT + (propsOn === undefined ? ' Used on events whose props are on.' : '')}/>
+          )}
           <Toggle checked={value.showInGallery} disabled={disabled} onChange={v => onChange({ showInGallery: v })} label="Show videos in the event gallery"
             hint="Off: only the guest's own page and you (the event gallery's Videos tab) see them. On: they also play in the public event gallery."/>
         </div>

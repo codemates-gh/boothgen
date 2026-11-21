@@ -267,7 +267,7 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
   const [text, designWithText, videoBooth] = await Promise.all([
     eventTextForBundle(tenantId, event.id, event.genieTemplates, settings.templateText),
     boomerangDesignWithText(tenantId, event.id, settings.boomerang, design, settings.templateText),
-    bundleVideoBooth(settings.videoBooth, tenantId, event.id, settings.templateText),
+    bundleVideoBooth(settings.videoBooth, tenantId, event.id, settings.templateText, settings.propsEnabled && props.length > 0),
   ]);
   let bundle = assemble(event, settings, gallery, messaging, retention, settings.bundleVersion, props, backdrops, billing.watermark, designWithText, poses, glamourReady, aiBooth, text);
   // Optional; Video Booth (guests record a video message) when it's on for the event (Genie P14). Absent = off, so

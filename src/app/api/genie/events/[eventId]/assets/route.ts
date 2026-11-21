@@ -97,6 +97,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
         // Video Booth (P14): the prompt the guest answered, as they saw it (kept if the prompt is edited later)
         ...(body.promptId ? { promptId: body.promptId } : {}),
         ...(body.promptText ? { promptText: body.promptText.trim() } : {}),
+        // Props on video (P14.1): the prop the guest wore
+        ...(body.propId ? { propId: body.propId } : {}),
         // Boomerang clip / gallery copy first, then shots in order; the printer sheet (archive only) and the
         // boomerang poster (thumbnail only) last
         sortOrder: ['gallery', 'boomerang', 'video', 'gif'].includes(body.kind) ? 0 : body.kind === 'shot' ? (body.shotIndex ?? 0) + 1 : body.kind === 'print' ? 1000 : body.kind === 'galleryOriginal' ? 1002 : 1001,

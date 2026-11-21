@@ -29,7 +29,12 @@ export async function GET(_: NextRequest, props: { params: Promise<{ id: string 
   const session = await getServerSession(authOptions);
   if (!session?.tenantId) return NextResponse.json([], { status: 200 });
   const assets = await prisma.galleryAsset.findMany({ where: { galleryId: params.id, ...NOT_BOOMERANG_POSTER }, orderBy: { createdAt: 'asc' } });
-  return NextResponse.json(assets);
+  // Props on video (P14.1): the name of the prop a guest wore, while it's still in the library
+  const propIds = Array.from(new Set(assets.map(a => a.propId).filter((id): id is string => !!id)));
+  const names = propIds.length
+    ? new Map((await prisma.genieProp.findMany({ where: { id: { in: propIds }, OR: [{ tenantId: null }, { tenantId: session.tenantId }] }, select: { id: true, name: true } })).map(p => [p.id, p.name]))
+    : new Map<string, string>();
+  return NextResponse.json(assets.map(a => (a.propId ? { ...a, propName: names.get(a.propId) ?? null } : a)));
 }
 
 export async function DELETE(_: NextRequest, props: { params: Promise<{ id: string }> }) {

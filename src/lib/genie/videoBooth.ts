@@ -47,7 +47,8 @@ export const videoConsentFor = (s: Pick<StoredVideoBooth, 'consentText' | 'showI
 
 // EventBundle.videoBooth: only while Video Booth is on. The template is sent as a ClipDesign at the video's shape, with
 // the event's words drawn in; one that's gone or no longer at that shape is left out (the plain picture).
-export async function bundleVideoBooth(v: unknown, tenantId: string, eventId: string, templateText: unknown) {
+// propsOn: the event's props are on (with at least one prop); props on video is sent only then
+export async function bundleVideoBooth(v: unknown, tenantId: string, eventId: string, templateText: unknown, propsOn = false) {
   const s = storedVideoBooth(v);
   if (!s?.enabled) return undefined;
   let design;
@@ -66,6 +67,7 @@ export async function bundleVideoBooth(v: unknown, tenantId: string, eventId: st
     ...(design && design.format === s.format ? { design } : {}),
     consentText: videoConsentFor(s),
     showInGallery: s.showInGallery,
+    ...(s.props && propsOn ? { props: true } : {}),
   };
 }
 

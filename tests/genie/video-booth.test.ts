@@ -180,6 +180,30 @@ describe('Video Booth uploads, pages and galleries', () => {
     expect(pc.status).toBe(201);
   });
 
+  it('props on video (P14.1): sent only while the event\'s props are on; propId only on video, stored and named in Videos', async () => {
+    const { tenant, event, token, bundle, patch } = await setup();
+    expect((await patch({ props: true })).status).toBe(200);
+    // The event's props are off: left out
+    expect((await bundle()).videoBooth.props).toBeUndefined();
+    const prop = await prisma.genieProp.create({ data: { tenantId: tenant.id, name: 'Classic shades', category: 'glasses', subcategory: 'all', image: { url: 'https://media.boothgen.test/p.png', sha256: 'c'.repeat(64), contentType: 'image/png', bytes: 10 }, width: 1, height: 0.4, anchor: 'eyes', anchorX: 0.5, anchorY: 0.5 } });
+    await prisma.eventGenieSettings.update({ where: { eventId: event.id }, data: { propsEnabled: true, propIds: [prop.id] } });
+    const on = await bundle();
+    expect(on.videoBooth.props).toBe(true);
+    valid(on);
+    await patch({ props: false });
+    expect((await bundle()).videoBooth.props).toBeUndefined();
+
+    const s = guestSession();
+    expect((await upload(event.id, token, { ...poster(s), propId: prop.id })).status).toBe(400);
+    const r = await upload(event.id, token, video(s, { propId: prop.id }));
+    expect(r.status).toBe(201);
+    const id = (await r.json()).assetId;
+    expect(await prisma.galleryAsset.findUniqueOrThrow({ where: { id } })).toMatchObject({ propId: prop.id });
+    const gallery = await prisma.gallery.findUniqueOrThrow({ where: { eventId: event.id } });
+    const assets = await (await hostAssets(req('/x'), ev(gallery.id))).json();
+    expect(assets.find((a: { id: string }) => a.id === id)).toMatchObject({ propId: prop.id, propName: 'Classic shades' });
+  });
+
   it('session page: the poster with "on its way" until the video lands, then a player with the prompt; hidden videos are left out', async () => {
     const { event, token } = await setup();
     const s = guestSession();

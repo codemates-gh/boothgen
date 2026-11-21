@@ -19,6 +19,7 @@ export const VIDEO_OFFERS = ['alongsidePhotos', 'videoOnly'] as const;
 export type VideoBoothOffer = (typeof VIDEO_OFFERS)[number];
 
 export const MAX_PROMPTS = 8;
+export const PROPS_ON_VIDEO_HINT = 'Guests can wear a prop in their video. The video without the prop stays on the booth iPad for 30 days.';
 export const PROMPT_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
 // Starter prompts to pick from in the editor
@@ -54,6 +55,8 @@ export const VideoBoothPatch = z.object({
   // null = BoothGen's default wording
   consentText: z.string().trim().min(1, "The consent text can't be empty").max(300, 'Keep the consent text to 300 characters').nullable(),
   showInGallery: z.boolean(),
+  // Props on video (P14.1): guests can wear one of the event's props while recording (sent only while props are on)
+  props: z.boolean().default(false),
 }).strict();
 export type VideoBoothPatch = z.infer<typeof VideoBoothPatch>;
 // Stored on EventGenieSettings.videoBooth and GenieDefaults.videoBooth
@@ -61,7 +64,7 @@ export type StoredVideoBooth = Omit<VideoBoothPatch, 'design'> & { design?: z.in
 
 export const VIDEO_BOOTH_DEFAULT: VideoBoothPatch = {
   enabled: false, offer: 'alongsidePhotos', prompts: [{ id: 'message', text: 'Leave a message for the host' }],
-  maxSeconds: 30, retakes: 2, videoSize: '720p', format: 'square', design: null, consentText: null, showInGallery: false,
+  maxSeconds: 30, retakes: 2, videoSize: '720p', format: 'square', design: null, consentText: null, showInGallery: false, props: false,
 };
 
 // A new prompt id the operator never sees

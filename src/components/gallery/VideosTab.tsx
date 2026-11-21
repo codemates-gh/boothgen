@@ -12,6 +12,8 @@ export type VideoMessage = {
   createdAt: string; hiddenAt: string | null; width: number | null; height: number | null;
   // Genie 360 clips (P15) have genieMode spin360
   genieMode?: string | null;
+  // Props on video (P14.1): the prop the guest wore (its name while it's still in the library)
+  propId?: string | null; propName?: string | null;
 };
 
 const length = (ms: number | null) => {
@@ -76,6 +78,7 @@ export function VideosTab({ galleryId, videos, showInGallery, onChange }: { gall
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate">{v.genieMode === 'spin360' ? '360 video' : v.promptText ? `“${v.promptText}”` : 'Video message'}</p>
               <p className="text-xs text-gray-500">{when(v.createdAt)}{v.durationMs ? ` · ${length(v.durationMs)}` : ''}</p>
+              {v.propId && <p className="text-xs text-gray-500">Prop: {v.propName ?? 'a prop no longer in the library'} · Original kept on the booth iPad</p>}
             </div>
             {v.genieMode === 'spin360' && <Badge variant="info">360</Badge>}
             {v.hiddenAt && <Badge variant="default">Hidden</Badge>}

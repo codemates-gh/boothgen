@@ -56,6 +56,8 @@ export const GalleryUpload = z.object({
   // Video Booth (P14): the prompt the guest answered (kind video from a Genie session)
   promptId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).optional(),
   promptText: z.string().min(1).max(120).optional(),
+  // Props on video (P14.1): the prop the guest wore (kind video only; the clean original stays on the iPad)
+  propId: z.string().min(1).max(128).optional(),
   // Sharing station (P12): photos from PC booth software, the print box that sent them, and the original file
   source: z.enum(['genie', 'pcBooth']).optional(),
   boothId: z.string().min(1).max(100).optional(),
@@ -71,7 +73,8 @@ export const GalleryUpload = z.object({
   // A Video Booth video always says how long it is (required for every video by the schema; PC booth videos aren't
   // held to it here so an older Sharing station iPad's upload isn't refused)
   .refine(u => u.kind !== 'video' || u.source === 'pcBooth' || u.durationMs !== undefined, { message: 'durationMs is required for kind video', path: ['durationMs'] })
-  .refine(u => (u.promptId === undefined && u.promptText === undefined) || u.kind === 'video', { message: 'promptId and promptText are only for kind video', path: ['promptId'] });
+  .refine(u => (u.promptId === undefined && u.promptText === undefined) || u.kind === 'video', { message: 'promptId and promptText are only for kind video', path: ['promptId'] })
+  .refine(u => u.propId === undefined || u.kind === 'video', { message: 'propId is only for kind video', path: ['propId'] });
 
 export const ShareJob = z.object({
   id: uuid,
