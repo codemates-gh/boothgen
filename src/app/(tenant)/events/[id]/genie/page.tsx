@@ -254,7 +254,7 @@ export default function EventGeniePage() {
   // "What's in this event?" switches (each also heads its section)
   const fmtPrice = (c?: number) => (c ? '$' + (c / 100).toFixed(c % 100 ? 2 : 0) + ' add-on' : 'Add-on');
   const features: Feature[] = !form || !data ? [] : [
-    { id: 'photos', icon: Camera, title: 'Photo booth', line: 'Photos in your template designs, with filters.', on: form.photosEnabled,
+    { id: 'photos', icon: Camera, title: 'Photo booth', line: form.photosEnabled ? 'Photos in your template designs, with filters.' : (form.boomerang.enabled || form.videoBooth.enabled ? 'Off: iPads offer only the modes switched on below.' : 'Off: with nothing else on, iPads work as a Sharing station for this event.'), on: form.photosEnabled,
       // The Photo booth switch also tells Video Booth whether it runs alongside photos or on its own
       onToggle: on => setForm(f => f && ({ ...f, photosEnabled: on, videoBooth: { ...f.videoBooth, offer: on ? 'alongsidePhotos' : 'videoOnly' } })) },
     { id: 'boomerang', icon: Repeat, title: 'Boomerang', line: 'A short looping clip instead of photos.', on: form.boomerang.enabled, onToggle: on => set('boomerang', { enabled: on }) },

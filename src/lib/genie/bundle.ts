@@ -273,6 +273,9 @@ export async function buildEventBundle(tenantId: string, eventId: string): Promi
   // Optional; Video Booth (guests record a video message) when it's on for the event (Genie P14). Absent = off, so
   // older iPads and events without it are unchanged.
   if (videoBooth) bundle = { ...bundle, videoBooth } as typeof bundle;
+  // Optional; Photo booth off (Genie shared/schemas/PhotoBoothConfig.json). Absent = photos on, so older iPads (which
+  // still get videoBooth.offer "videoOnly") are unchanged.
+  if (!settings.photosEnabled) bundle = { ...bundle, photoBooth: { enabled: false } } as typeof bundle;
   const hash = contentHash(bundle);
 
   for (let attempt = 0; settings.bundleHash !== hash && attempt < 3; attempt++) {

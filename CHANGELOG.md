@@ -4,6 +4,17 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.135.2] — 2026-11-21
+
+### Added
+- **Photo booth off now reaches the iPads** (Genie `EventBundle.photoBooth`, Genie d3fb58c).
+  - **On iPads with the Genie update:**
+    - no photo designs or photo sessions;
+    - Boomerang and Video Booth work as set;
+    - with nothing else on (e.g. Genie 360 only), the iPad works as a Sharing station for that event.
+  - **Older iPads:** they still get Video Booth's "video only".
+  - **Event page:** the Photo booth switch says what the iPads will do.
+
 ## [2.135.1] — 2026-11-21
 
 ### Changed
