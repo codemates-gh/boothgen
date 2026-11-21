@@ -1456,6 +1456,8 @@ model EventGenieSettings {
   aiConsentText                String?   @db.Text
   aiWaitSeconds                Int       @default(45)
   aiReadyText                  String?   @db.Text
+  // Geniefied: show the "Get Geniefied" title on the guests' screens (off = "Pick a look", no Genie name)
+  aiShowTitle                  Boolean   @default(true)
   // Video Booth (Genie P14; StoredVideoBooth in src/lib/genie/videoBooth.ts): prompts, length, retakes, video size,
   // shape + template, consent text (null = BoothGen's default), show in gallery. null = off with BoothGen's defaults
   videoBooth                   Json?

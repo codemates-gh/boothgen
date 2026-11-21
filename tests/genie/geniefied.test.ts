@@ -31,6 +31,7 @@ const providerCalls: any[] = [];
 vi.mock('@/lib/genie/ai/provider', () => ({ renderWithGoogle: vi.fn(async (_i: Buffer, prompt: string, model: string) => { providerCalls.push({ prompt, model }); return providerResult; }) }));
 
 import { prisma } from '@/lib/prisma/client';
+import { readySubjectFor, readyTextFor } from '@/lib/genie/ai/eventConfig';
 import { buildEventBundle } from '@/lib/genie/bundle';
 import { eventBilling, recordCheckout, PAYMENT_KIND } from '@/lib/genie/payments';
 import { eventAllowance, sweepRenderInputs } from '@/lib/genie/ai/renders';
@@ -116,6 +117,23 @@ describe('event settings and bundle', () => {
     b = await buildEventBundle(tenant.id, event.id);
     expect(b.ok && b.bundle.aiBooth).toMatchObject({ mode: 'fixedTheme', fixedThemeId: oil.id, consentText: 'Custom consent' });
     if (validate && b.ok) expect(validate(b.bundle)).toBeNull();
+  });
+
+  it('the "Get Geniefied" title is shown unless turned off; off sends showTitle: false and default wording without the name', async () => {
+    const { tenant, event, oil } = await setup();
+    await PATCH(req('/x', { method: 'PATCH', body: AI([oil.id]) }), ev(event.id));
+    let b = await buildEventBundle(tenant.id, event.id);
+    expect(b.ok && (b.bundle.aiBooth as any).showTitle).toBeUndefined();
+    expect((await (await DASH(req('/x'), ev(event.id))).json()).settings.aiBooth.showTitle).toBe(true);
+
+    await PATCH(req('/x', { method: 'PATCH', body: AI([oil.id], { showTitle: false }) }), ev(event.id));
+    b = await buildEventBundle(tenant.id, event.id);
+    const ai = b.ok && (b.bundle.aiBooth as any);
+    expect(ai.showTitle).toBe(false);
+    expect(ai.consentText).not.toContain('Geniefied');
+    const s = await prisma.eventGenieSettings.findUniqueOrThrow({ where: { eventId: event.id } });
+    expect(readyTextFor(s)).toBe('Your AI photo from {{eventName}} is ready: {{link}}');
+    expect(readySubjectFor(s)).toBe('Your AI photo is ready');
   });
 
   it('checks the themes and the fixed theme, and can be turned on only when Geniefied is available', async () => {

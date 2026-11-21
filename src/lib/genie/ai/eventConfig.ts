@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { EventGenieSettings } from '@prisma/client';
 import { prisma } from '@/lib/prisma/client';
-import { DEFAULT_CONSENT_TEXT, DEFAULT_READY_TEXT } from './settings';
+import { DEFAULT_CONSENT_TEXT, DEFAULT_CONSENT_TEXT_PLAIN, DEFAULT_READY_TEXT, DEFAULT_READY_TEXT_PLAIN, READY_SUBJECT, READY_SUBJECT_PLAIN } from './settings';
 import { eventThemes, storedThemeIds, themeAsset } from './themes';
 import { verifyThemeFiles } from './themeFiles';
 
@@ -19,6 +19,8 @@ export const AiBoothPatch = z.object({
   consentText: z.string().trim().min(1, "The consent text can't be empty").max(600, 'Keep the consent text to 600 characters').nullable(),
   waitSeconds: z.number().int().min(15, 'Wait 15 to 120 seconds').max(120, 'Wait 15 to 120 seconds'),
   readyText: z.string().trim().min(1, "The ready message can't be empty").max(500, 'Keep the ready message to 500 characters').nullable(),
+  // "Get Geniefied" title on the guests' screens (off: "Pick a look", and BoothGen's default wording without the name)
+  showTitle: z.boolean().default(true),
 }).strict();
 export type AiBoothPatch = z.infer<typeof AiBoothPatch>;
 
@@ -34,7 +36,7 @@ export async function aiBoothData(p: AiBoothPatch, tenantId: string): Promise<{ 
   return {
     data: {
       aiEnabled: p.enabled, aiMode: p.mode, aiThemeIds: ids as never, aiFixedThemeId: p.mode === 'fixedTheme' ? p.fixedThemeId : null,
-      aiConsentText: p.consentText, aiWaitSeconds: p.waitSeconds, aiReadyText: p.readyText,
+      aiConsentText: p.consentText, aiWaitSeconds: p.waitSeconds, aiReadyText: p.readyText, aiShowTitle: p.showTitle,
     },
   };
 }
@@ -42,12 +44,15 @@ export async function aiBoothData(p: AiBoothPatch, tenantId: string): Promise<{ 
 export function aiBoothView(s: EventGenieSettings) {
   return {
     enabled: s.aiEnabled, mode: s.aiMode as AiMode, themeIds: storedThemeIds(s.aiThemeIds), fixedThemeId: s.aiFixedThemeId,
-    consentText: s.aiConsentText, waitSeconds: s.aiWaitSeconds, readyText: s.aiReadyText,
+    consentText: s.aiConsentText, waitSeconds: s.aiWaitSeconds, readyText: s.aiReadyText, showTitle: s.aiShowTitle,
   };
 }
 
-export const consentTextFor = (s: Pick<EventGenieSettings, 'aiConsentText'>) => s.aiConsentText?.trim() || DEFAULT_CONSENT_TEXT;
-export const readyTextFor = (s: Pick<EventGenieSettings, 'aiReadyText'>) => s.aiReadyText?.trim() || DEFAULT_READY_TEXT;
+// BoothGen's default wording leaves the Genie name out when the event hides the "Get Geniefied" title
+type Wording = Pick<EventGenieSettings, 'aiShowTitle'>;
+export const consentTextFor = (s: Pick<EventGenieSettings, 'aiConsentText'> & Wording) => s.aiConsentText?.trim() || (s.aiShowTitle === false ? DEFAULT_CONSENT_TEXT_PLAIN : DEFAULT_CONSENT_TEXT);
+export const readyTextFor = (s: Pick<EventGenieSettings, 'aiReadyText'> & Wording) => s.aiReadyText?.trim() || (s.aiShowTitle === false ? DEFAULT_READY_TEXT_PLAIN : DEFAULT_READY_TEXT);
+export const readySubjectFor = (s: Wording) => (s.aiShowTitle === false ? READY_SUBJECT_PLAIN : READY_SUBJECT);
 
 // EventBundle.aiBooth: only while Geniefied is available (Super Admin) and on for the event with a theme that has a
 // sample. A fixed theme that's gone falls back to the guests' choice. rendersLeft is left out: it changes with every
@@ -61,6 +66,8 @@ export async function bundleAiBooth(s: EventGenieSettings, tenantId: string, ava
   return {
     enabled: true, mode, themes, ...(fixed ? { fixedThemeId: fixed } : {}),
     consentText: consentTextFor(s).slice(0, 600),
+    // Absent = the iPad shows "Get Geniefied"
+    ...(s.aiShowTitle === false ? { showTitle: false } : {}),
     ...(s.aiWaitSeconds !== 45 ? { waitSeconds: Math.min(120, Math.max(15, s.aiWaitSeconds)) } : {}),
   };
 }

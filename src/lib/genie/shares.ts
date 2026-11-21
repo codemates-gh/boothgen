@@ -1,8 +1,7 @@
 import { prisma } from '@/lib/prisma/client';
 import { galleryRetentionDates, getGalleryRetention } from '@/lib/gallery/retention';
 import { galleryUrl, sessionUrl } from './urls';
-import { READY_SUBJECT } from './ai/settings';
-import { readyTextFor } from './ai/eventConfig';
+import { readySubjectFor, readyTextFor } from './ai/eventConfig';
 import { BOOTHGEN_SMS_LIMIT_PER_EVENT, getMessaging, sendEmail, sendSms, type SendResult, type Source } from './messaging';
 
 export function renderMergeFields(template: string, fields: { firstName?: string | null; eventName: string; link: string; expiresOn?: string }): string {
@@ -63,7 +62,7 @@ export async function prepareShare(shareId: string): Promise<PreparedShare> {
     eventId: share.eventId,
     to: share.destination,
     // A Geniefied-ready message (Genie P13) uses the event's ready text for both channels
-    subject: share.kind === 'aiReady' ? READY_SUBJECT : renderMergeFields(settings.emailSubject, fields),
+    subject: share.kind === 'aiReady' ? readySubjectFor(settings) : renderMergeFields(settings.emailSubject, fields),
     text: renderMergeFields(share.kind === 'aiReady' ? readyTextFor(settings) : channel === 'sms' ? settings.smsBody : settings.emailBody, fields),
     link,
     buttonColor: share.event.tenant.branding?.primaryColor,

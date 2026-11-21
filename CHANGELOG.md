@@ -4,6 +4,14 @@ All notable changes to BoothGen (Booth Genius) are documented here.
 
 ---
 
+## [2.133.0] — 2026-11-21
+
+### Added
+- **Event → Geniefied → "Show 'Get Geniefied' title"**, on by default.
+  - **Turned off:** iPads show "Pick a look" instead of the Genie name. BoothGen's default consent text and "your photo is ready" message also say "AI photo" instead of "Geniefied". Custom wording is left as written.
+  - **Needs SQL:** `docs/genie/apply-production-geniefied-title.sql`.
+  - **Needs the Genie build** that reads it. Older iPads keep showing the title.
+
 ## [2.132.0] — 2026-11-21
 
 ### Added

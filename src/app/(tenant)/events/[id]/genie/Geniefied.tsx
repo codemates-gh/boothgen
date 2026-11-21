@@ -11,11 +11,11 @@ import { fmtCents } from '@/lib/utils';
 
 export type AiBoothValue = {
   enabled: boolean; mode: 'beforeStart' | 'fixedTheme' | 'afterReview'; themeIds: string[]; fixedThemeId: string | null;
-  consentText: string | null; waitSeconds: number; readyText: string | null;
+  consentText: string | null; waitSeconds: number; readyText: string | null; showTitle: boolean;
 };
 export type GeniefiedInfo = {
   available: boolean; allowance: { covered: boolean; total: number; used: number; left: number }; trialRenders: number; rendersIncluded: number;
-  topUp: { renders: number; priceCents: number }; defaultConsentText: string; defaultReadyText: string;
+  topUp: { renders: number; priceCents: number }; defaultConsentText: string; defaultReadyText: string; plainConsentText: string; plainReadyText: string;
 };
 
 const MODES = [
@@ -61,6 +61,11 @@ export function GeniefiedFields({ value, info, priceCents, disabled, onChange, o
             ))}
           </div>
 
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
+            <input type="checkbox" className="mt-1" checked={value.showTitle} disabled={disabled} onChange={e => onChange({ showTitle: e.target.checked })}/>
+            <span><span className="font-medium">Show &lsquo;Get Geniefied&rsquo; title</span><span className="block text-xs text-gray-500">Turn off if you don&apos;t want the Genie name on the guests&apos; screen. Guests see &lsquo;Pick a look&rsquo; instead, and BoothGen&apos;s default consent and ready messages leave the name out too.</span></span>
+          </label>
+
           <div className="space-y-2">
             <p className="text-sm font-medium">Themes, in the order guests see them</p>
             {themes === null ? <p className="text-sm text-gray-400">Loading themes…</p> : (
@@ -99,7 +104,7 @@ export function GeniefiedFields({ value, info, priceCents, disabled, onChange, o
           </div>
 
           <Field label="Consent text" hint={`Guests tap “I agree” to this before their first Geniefied photo. ${(value.consentText ?? '').length}/600 · leave empty for BoothGen's wording`}>
-            <Textarea rows={3} maxLength={600} value={value.consentText ?? ''} placeholder={info.defaultConsentText} disabled={disabled}
+            <Textarea rows={3} maxLength={600} value={value.consentText ?? ''} placeholder={value.showTitle ? info.defaultConsentText : info.plainConsentText} disabled={disabled}
               onChange={e => onChange({ consentText: e.target.value || null })}/>
           </Field>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -108,7 +113,7 @@ export function GeniefiedFields({ value, info, priceCents, disabled, onChange, o
             </Field>
           </div>
           <Field label="“Your Geniefied photo is ready” message" hint="Sent to guests who already got their photos when a Geniefied one arrives later. {{eventName}} and {{link}} work. Leave empty for BoothGen's wording.">
-            <Textarea rows={2} maxLength={500} value={value.readyText ?? ''} placeholder={info.defaultReadyText} disabled={disabled}
+            <Textarea rows={2} maxLength={500} value={value.readyText ?? ''} placeholder={value.showTitle ? info.defaultReadyText : info.plainReadyText} disabled={disabled}
               onChange={e => onChange({ readyText: e.target.value || null })}/>
           </Field>
         </>

@@ -66,4 +66,10 @@ export const DEFAULT_CONSENT_TEXT =
   "I'm 18 or older, or a parent or guardian is with me.";
 
 export const DEFAULT_READY_TEXT = 'Your Geniefied photo from {{eventName}} is ready: {{link}}';
+// The same wording without the Genie name, for events that hide the "Get Geniefied" title
+export const DEFAULT_CONSENT_TEXT_PLAIN =
+  'Your photo will be sent to our AI provider to create your AI photo. ' +
+  "I'm 18 or older, or a parent or guardian is with me.";
+export const DEFAULT_READY_TEXT_PLAIN = 'Your AI photo from {{eventName}} is ready: {{link}}';
+export const READY_SUBJECT_PLAIN = 'Your AI photo is ready';
 export const READY_SUBJECT = 'Your Geniefied photo is ready';

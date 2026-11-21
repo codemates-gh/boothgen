@@ -3,7 +3,7 @@ import { addOnName, addOnPrices, glamourStyleReady } from '@/lib/genie/addOns';
 import { aiBoothData } from '@/lib/genie/ai/eventConfig';
 import { videoBoothData } from '@/lib/genie/videoBooth';
 import { genie360Ready, spin360Data, storedSpin360 } from '@/lib/genie/spin360';
-import { DEFAULT_CONSENT_TEXT, DEFAULT_READY_TEXT, aiSettings } from '@/lib/genie/ai/settings';
+import { DEFAULT_CONSENT_TEXT, DEFAULT_CONSENT_TEXT_PLAIN, DEFAULT_READY_TEXT, DEFAULT_READY_TEXT_PLAIN, aiSettings } from '@/lib/genie/ai/settings';
 import { eventAllowance } from '@/lib/genie/ai/renders';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -71,6 +71,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       return {
         available: ai.ready, allowance: await eventAllowance(event.id, auth.tenantId, ai), trialRenders: ai.trialRenders, rendersIncluded: ai.rendersIncluded,
         topUp: { renders: ai.topUpRenders, priceCents: ai.topUpPriceCents }, defaultConsentText: DEFAULT_CONSENT_TEXT, defaultReadyText: DEFAULT_READY_TEXT,
+        // Without the Genie name, when the event hides the "Get Geniefied" title
+        plainConsentText: DEFAULT_CONSENT_TEXT_PLAIN, plainReadyText: DEFAULT_READY_TEXT_PLAIN,
       };
     })(),
     lockedAt: s ? effectiveLockedAt(event, s) : null,
